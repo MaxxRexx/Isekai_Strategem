@@ -42,25 +42,29 @@ class StatusEffectEngine {
   /// The brief gives a concrete numeric example ("+1 resistance subtracts
   /// 1 from the result; if the modified result is less than the causer's
   /// Status Effect Infliction value, the effect fails") but doesn't say
-  /// whose roll it is. This is implemented as the *target's* status
-  /// resistance roll (a d20, subject to advantage/disadvantage from
-  /// effects tagged `StatusRollTag.statusResistanceRoll`, e.g. Bleeding's
-  /// "disadvantage on status resistance rolls"): `modified = d20 -
-  /// targetResistance`; the effect applies if `modified >=
-  /// causerInfliction`. Higher Resistance lowers the modified result,
-  /// making it harder to clear the Infliction bar, i.e. higher Resistance
-  /// = effect fails more often, matching the worked example.
+  /// whose roll it is. This is implemented as a d20 roll modified by the
+  /// target's Resistance: `modified = d20 - targetResistance`; the effect
+  /// applies if `modified >= causerInfliction`. Higher Resistance lowers
+  /// the modified result, making it harder to clear the Infliction bar,
+  /// i.e. higher Resistance = effect fails more often, matching the
+  /// worked example.
   ///
-  /// Caveat worth flagging: mathematically, *disadvantage* on this same
-  /// roll also lowers the apply rate (same direction as raising
-  /// Resistance). That means Bleeding's "disadvantage on status
-  /// resistance rolls" - clearly intended as a debuff making the bleeding
-  /// character *more* vulnerable to new effects - actually protects them
-  /// under this formula. That's a genuine tension in the brief (the
-  /// concrete worked example and the "disadvantage as a debuff" framing
-  /// pull in opposite directions); this implementation keeps the
-  /// unambiguous worked-example formula and surfaces the tension here
-  /// rather than silently picking a different formula to paper over it.
+  /// Mathematically, *disadvantage* on this roll also lowers the apply
+  /// rate (same direction as raising Resistance) - a lower roll is always
+  /// harder to clear the bar with, whichever side "owns" the roll. That
+  /// initially looked like a problem for Bleeding ("disadvantage on
+  /// status resistance rolls", intended as a debuff making the bleeding
+  /// character *more* vulnerable to new effects): naively granting
+  /// disadvantage on the bleeding character's own roll would actually
+  /// protect them, the opposite of the intent. Rather than change this
+  /// formula (which would also invert Resistance's protective direction -
+  /// see the worked example above), Bleeding instead grants *advantage*
+  /// on this same roll to whoever is attempting to inflict a new effect
+  /// on the bleeding character (`StatusEffectDefinition.advantageRollTags`
+  /// on `StatusRollTag.statusResistanceRoll`, folded in via
+  /// `CharacterBattleState.rollContextFor`). That raises the apply rate
+  /// against a bleeding target - correctly a debuff - while leaving
+  /// Resistance's math untouched.
   bool resolveInfliction({
     required int causerInfliction,
     required int targetResistance,

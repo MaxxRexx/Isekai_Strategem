@@ -67,18 +67,18 @@ void main() {
       }
     });
 
-    test('disadvantage on the infliction roll lowers the success (apply) rate',
+    test('disadvantage on the roll lowers the apply rate; advantage raises it',
         () {
-      // Note: under the literal worked-example formula (modified = roll -
-      // resistance; applies if modified >= infliction), disadvantage on
-      // "the roll" always lowers the apply rate, mathematically the same
-      // direction as raising Resistance. This means Bleeding's own
-      // "disadvantage on status resistance rolls" (intended as a debuff)
-      // mechanically protects the bleeding character from new effects
-      // landing, under this reading - a tension in the brief flagged in
-      // StatusEffectEngine.resolveInfliction's doc comment. This test
-      // documents the actual (consistent) engine behavior rather than the
-      // flavor-text intent.
+      // Under the worked-example formula (modified = roll - resistance;
+      // applies if modified >= infliction), disadvantage on the roll
+      // always lowers the apply rate and advantage always raises it -
+      // same direction as Resistance/lowering Resistance, respectively.
+      // This is exactly why Bleeding grants *advantage* (not disadvantage
+      // on the bleeding character's own roll) to whoever attempts to
+      // inflict a new effect on them: that's the only way to make
+      // Bleeding a debuff (raises the apply rate against them) without
+      // touching this formula. See StatusEffectEngine.resolveInfliction's
+      // doc comment and the 'Bleeding' group below.
       const samples = 5000;
 
       int successesWithMode(RollMode mode) {
@@ -86,8 +86,8 @@ void main() {
         var count = 0;
         for (var i = 0; i < samples; i++) {
           final context = RollContext();
-          if (mode == RollMode.disadvantage)
-            context.addDisadvantage('bleeding');
+          if (mode == RollMode.disadvantage) context.addDisadvantage('x');
+          if (mode == RollMode.advantage) context.addAdvantage('x');
           if (engine.resolveInfliction(
             causerInfliction: 10,
             targetResistance: 0,
@@ -101,7 +101,9 @@ void main() {
 
       final normalSuccesses = successesWithMode(RollMode.normal);
       final disadvantageSuccesses = successesWithMode(RollMode.disadvantage);
+      final advantageSuccesses = successesWithMode(RollMode.advantage);
       expect(disadvantageSuccesses, lessThan(normalSuccesses));
+      expect(advantageSuccesses, greaterThan(normalSuccesses));
     });
   });
 
@@ -284,15 +286,46 @@ void main() {
           isFalse);
     });
 
-    test('Bleeding grants disadvantage on status resistance rolls', () {
+    test(
+        'Bleeding grants advantage on status resistance rolls made against the bleeding character '
+        '(so it is actually a debuff - see resolveInfliction doc comment)', () {
       final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
       final state = CharacterBattleState(testCharacter());
       engine.apply(state, 'bleeding');
+
+      final context = state.rollContextFor(StatusRollTag.statusResistanceRoll);
+      expect(context.hasAdvantage, isTrue);
+      expect(context.hasDisadvantage, isFalse);
+    });
+
+    test(
+        'Bleeding + StatusEffectEngine.resolveInfliction: raises the apply rate against a bleeding target',
+        () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final bleedingTarget =
+          CharacterBattleState(testCharacter(id: 'bleeding'));
+      engine.apply(bleedingTarget, 'bleeding');
+      final healthyTarget = CharacterBattleState(testCharacter(id: 'healthy'));
+
+      const samples = 5000;
+      int applyCount(CharacterBattleState target) {
+        var count = 0;
+        for (var i = 0; i < samples; i++) {
+          final context =
+              target.rollContextFor(StatusRollTag.statusResistanceRoll);
+          if (engine.resolveInfliction(
+            causerInfliction: 10,
+            targetResistance: 0,
+            targetRollContext: context,
+          )) {
+            count++;
+          }
+        }
+        return count;
+      }
+
       expect(
-          state
-              .rollContextFor(StatusRollTag.statusResistanceRoll)
-              .hasDisadvantage,
-          isTrue);
+          applyCount(bleedingTarget), greaterThan(applyCount(healthyTarget)));
     });
 
     test(

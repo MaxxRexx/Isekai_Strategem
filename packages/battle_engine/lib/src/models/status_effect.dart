@@ -2,8 +2,9 @@ import '../util/dice.dart';
 import 'damage_type.dart';
 
 /// Roll categories that advantage/disadvantage sources can target. Status
-/// effects grant/remove entries from this set on the relevant
-/// [RollContext] (see [StatusEffectDefinition.disadvantageRollTags]).
+/// effects grant entries on the relevant [RollContext] (see
+/// [StatusEffectDefinition.disadvantageRollTags] and
+/// [StatusEffectDefinition.advantageRollTags]).
 enum StatusRollTag { attackRoll, rangedAttackRoll, statusResistanceRoll }
 
 /// How a status effect changes a character's relationship to a damage
@@ -78,8 +79,19 @@ class StatusEffectDefinition {
   final Map<ModifiableStat, double> perRemainingTurnStatModifiers;
 
   /// Roll categories on which the affected character rolls with
-  /// disadvantage while this effect is active.
+  /// disadvantage while this effect is active (Poisoned's own attack
+  /// rolls, Threatened/Blinded's own ranged attack rolls).
   final Set<StatusRollTag> disadvantageRollTags;
+
+  /// Roll categories that get advantage *against* the affected character
+  /// while this effect is active. For `statusResistanceRoll`, this means
+  /// whoever attempts to inflict a *new* status effect on this character
+  /// rolls with advantage (see Bleeding: it's a debuff that makes the
+  /// bleeding character more likely to catch further status effects, not
+  /// a buff to their own rolls - see the doc comment on
+  /// `StatusEffectEngine.resolveInfliction` for why this needed to be
+  /// advantage-for-the-roll rather than disadvantage-on-the-target).
+  final Set<StatusRollTag> advantageRollTags;
 
   /// Damage-type interactions granted by this effect (Wet).
   final List<DamageTypeInteractionRule> damageTypeInteractions;
@@ -121,6 +133,7 @@ class StatusEffectDefinition {
     this.flatStatModifiers = const {},
     this.perRemainingTurnStatModifiers = const {},
     this.disadvantageRollTags = const {},
+    this.advantageRollTags = const {},
     this.damageTypeInteractions = const [],
     this.turnStartDamage,
     this.turnStartDamageType,

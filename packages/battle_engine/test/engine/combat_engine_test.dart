@@ -5,13 +5,39 @@ import 'package:test/test.dart';
 
 import '../test_helpers.dart';
 
+/// A [Random] that returns a fixed sequence of `nextInt` results, so a
+/// test can force an exact tie between the attacker's and defender's d20
+/// rolls (real dice can't be relied on to tie on demand).
+class _SequenceRandom implements Random {
+  final List<int> _sequence;
+  int _index = 0;
+  _SequenceRandom(this._sequence);
+
+  @override
+  int nextInt(int max) => _sequence[_index++];
+
+  @override
+  double nextDouble() => 0;
+
+  @override
+  bool nextBool() => false;
+}
+
 void main() {
   group('CombatEngine.resolveAttackRoll', () {
-    test('higher total wins; a tie favors the defender (miss)', () {
-      // With no randomness involved (mock via forcing equal rolls is hard
-      // with real dice), assert via modifiers instead: a huge attack bonus
-      // should hit essentially always, a huge defense bonus should make
-      // the attacker miss essentially always (barring a natural 20/1).
+    test('higher total wins; a tie favors the attacker (hit)', () {
+      // Force both d20 rolls to come up 10 (attacker rolls first, then
+      // defender), with equal modifiers, so the totals tie exactly.
+      final engine =
+          CombatEngine(diceRoller: DiceRoller(_SequenceRandom([9, 9])));
+      final outcome =
+          engine.resolveAttackRoll(attackerAttack: 5, defenderDefense: 5);
+
+      expect(outcome.attackerRoll.total, outcome.defenderRoll.total);
+      expect(outcome.isHit, isTrue);
+    });
+
+    test('a huge attack bonus hits essentially always', () {
       final engine = CombatEngine(diceRoller: DiceRoller(Random(1)));
 
       var hits = 0;
@@ -215,7 +241,7 @@ void main() {
       );
       statusEngine.apply(target, 'wet');
 
-      // 10 * 2 (vulnerable) = 20, - 0 armor = 20, * 0.5 (resistance) = 10.
+      // 10 base, - 0 armor = 10, * 2 (vulnerable) * 0.5 (resistance) = 10.
       final damage = engine.resolveDamage(
         baseDamage: 10,
         damageType: DamageType.cold,
@@ -223,6 +249,27 @@ void main() {
         target: target,
       );
       expect(damage, 10);
+    });
+
+    test(
+        'Armor is applied before damage-type multipliers (5e/BG3 & Rogue Trader order)',
+        () {
+      final engine = CombatEngine();
+      final statusEngine =
+          StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final target =
+          CharacterBattleState(testCharacter(stats: testStats(armor: 3)));
+      statusEngine.apply(target, 'wet');
+
+      // Armor first: 10 - 3 = 7. Then the Wet vulnerability multiplier: 7 * 2 = 14.
+      // (Applying the multiplier before Armor would instead give (10*2)-3=17.)
+      final damage = engine.resolveDamage(
+        baseDamage: 10,
+        damageType: DamageType.cold,
+        isCriticalHit: false,
+        target: target,
+      );
+      expect(damage, 14);
     });
   });
 }
