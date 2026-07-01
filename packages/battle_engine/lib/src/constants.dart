@@ -186,3 +186,29 @@ class CombatConfig {
 
   static const CombatConfig defaults = CombatConfig();
 }
+
+/// Config for how the Critical Chance stat lowers the natural-roll
+/// threshold at which an attack roll crits.
+///
+/// Critical Chance is a percentage in [minChancePercent, maxChancePercent]
+/// (0-90 by design - crit chance intentionally can't reach 100%, which
+/// would make every attack roll fixed). It maps *linearly* onto the
+/// natural die threshold that counts as a crit: at [minChancePercent] only
+/// a natural [thresholdAtMinChance] (20) crits; at [maxChancePercent] a
+/// natural [thresholdAtMaxChance] (5) or higher crits. See
+/// `CombatEngine.criticalHitThreshold`.
+class CriticalChanceConfig {
+  final double minChancePercent;
+  final double maxChancePercent;
+  final int thresholdAtMinChance;
+  final int thresholdAtMaxChance;
+
+  const CriticalChanceConfig({
+    this.minChancePercent = 0,
+    this.maxChancePercent = 90,
+    this.thresholdAtMinChance = 20,
+    this.thresholdAtMaxChance = 5,
+  });
+
+  static const CriticalChanceConfig defaults = CriticalChanceConfig();
+}

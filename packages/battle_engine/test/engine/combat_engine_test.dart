@@ -6,6 +6,50 @@ import 'package:test/test.dart';
 import '../test_helpers.dart';
 
 void main() {
+  group('CombatEngine.criticalHitThreshold', () {
+    test('0% Critical Chance requires a natural 20', () {
+      final engine = CombatEngine();
+      expect(engine.criticalHitThreshold(0), 20);
+    });
+
+    test('90% Critical Chance requires only a natural 5 or higher', () {
+      final engine = CombatEngine();
+      expect(engine.criticalHitThreshold(90), 5);
+    });
+
+    test('scales linearly between the endpoints', () {
+      final engine = CombatEngine();
+      expect(engine.criticalHitThreshold(30), 15);
+      expect(engine.criticalHitThreshold(60), 10);
+    });
+
+    test('is monotonically non-increasing as Critical Chance rises', () {
+      final engine = CombatEngine();
+      var previous = engine.criticalHitThreshold(0);
+      for (var chance = 5; chance <= 90; chance += 5) {
+        final threshold = engine.criticalHitThreshold(chance.toDouble());
+        expect(threshold, lessThanOrEqualTo(previous));
+        previous = threshold;
+      }
+    });
+
+    test('clamps input outside the configured 0-90 range', () {
+      final engine = CombatEngine();
+      expect(engine.criticalHitThreshold(-50), 20);
+      expect(engine.criticalHitThreshold(1000), 5);
+    });
+
+    test('a custom config is a drop-in replacement', () {
+      final engine = CombatEngine(
+        criticalChanceConfig: const CriticalChanceConfig(
+          maxChancePercent: 100,
+          thresholdAtMaxChance: 1,
+        ),
+      );
+      expect(engine.criticalHitThreshold(100), 1);
+    });
+  });
+
   group('CombatEngine.resolveAttackRoll', () {
     test('higher total wins; a tie favors the attacker (hit)', () {
       // Force both d20 rolls to come up 10 (attacker rolls first, then
@@ -67,6 +111,61 @@ void main() {
         }
       }
       expect(sawCritMiss, isTrue);
+    });
+
+    test('higher attacker Critical Chance raises the observed crit rate', () {
+      final engine = CombatEngine(diceRoller: DiceRoller(Random(5)));
+      const samples = 5000;
+
+      int critCount(double critChance) {
+        var count = 0;
+        for (var i = 0; i < samples; i++) {
+          final outcome = engine.resolveAttackRoll(
+            attackerAttack: 5,
+            defenderDefense: 5,
+            attackerCriticalChancePercent: critChance,
+          );
+          if (outcome.isCriticalHit) count++;
+        }
+        return count;
+      }
+
+      final noCritChance = critCount(0); // only nat 20 -> ~5%
+      final maxCritChance = critCount(90); // nat 5+ -> ~80%
+      expect(maxCritChance, greaterThan(noCritChance));
+      expect(noCritChance / samples, closeTo(0.05, 0.03));
+      expect(maxCritChance / samples, closeTo(0.80, 0.05));
+    });
+
+    test('Critical Chance never affects critical misses (still nat 1 only)',
+        () {
+      final engine = CombatEngine(diceRoller: DiceRoller(Random(6)));
+      var sawNatOne = false;
+      for (var i = 0; i < 2000 && !sawNatOne; i++) {
+        final outcome = engine.resolveAttackRoll(
+          attackerAttack: 0,
+          defenderDefense: 0,
+          attackerCriticalChancePercent: 90,
+        );
+        if (outcome.attackerRoll.kept == 1) {
+          expect(outcome.isCriticalMiss, isTrue);
+          expect(outcome.isHit, isFalse);
+          sawNatOne = true;
+        }
+      }
+      expect(sawNatOne, isTrue);
+    });
+
+    test('resolveBurst threads Critical Chance through every hit', () {
+      final engine = CombatEngine(diceRoller: DiceRoller(Random(7)));
+      final outcomes = engine.resolveBurst(
+        hits: 200,
+        attackerAttack: 5,
+        defenderDefense: 5,
+        attackerCriticalChancePercent: 90,
+      );
+      expect(outcomes.every((o) => o.criticalHitThreshold == 5), isTrue);
+      expect(outcomes.any((o) => o.isCriticalHit), isTrue);
     });
   });
 

@@ -12,12 +12,18 @@ class AttackRollOutcome {
   final bool isCriticalHit;
   final bool isCriticalMiss;
 
+  /// The natural-roll threshold that was in effect for [isCriticalHit],
+  /// derived from the attacker's Critical Chance (see
+  /// `CombatEngine.criticalHitThreshold`). Exposed mainly for tests/UI.
+  final int criticalHitThreshold;
+
   const AttackRollOutcome({
     required this.attackerRoll,
     required this.defenderRoll,
     required this.isHit,
     required this.isCriticalHit,
     required this.isCriticalMiss,
+    required this.criticalHitThreshold,
   });
 }
 
@@ -36,22 +42,49 @@ class AttackRollOutcome {
 /// instead of splitting them across opposite ends of the pipeline.
 class CombatEngine {
   final CombatConfig config;
+  final CriticalChanceConfig criticalChanceConfig;
   final DiceRoller diceRoller;
 
   CombatEngine({
     this.config = CombatConfig.defaults,
+    this.criticalChanceConfig = CriticalChanceConfig.defaults,
     DiceRoller? diceRoller,
   }) : diceRoller = diceRoller ?? DiceRoller();
+
+  /// The natural-roll threshold that counts as a critical hit for an
+  /// attacker with [critChancePercent] Critical Chance: linear from
+  /// `thresholdAtMinChance` (20) at `minChancePercent` (0%) down to
+  /// `thresholdAtMaxChance` (5) at `maxChancePercent` (90%). Input is
+  /// clamped to the configured range; the result is rounded to the
+  /// nearest whole die face.
+  int criticalHitThreshold(double critChancePercent) {
+    final c = criticalChanceConfig;
+    final clamped =
+        critChancePercent.clamp(c.minChancePercent, c.maxChancePercent);
+    final t = (clamped - c.minChancePercent) /
+        (c.maxChancePercent - c.minChancePercent);
+    final threshold = c.thresholdAtMinChance +
+        t * (c.thresholdAtMaxChance - c.thresholdAtMinChance);
+    return threshold.round();
+  }
 
   /// Resolves one opposed attack roll: attacker d20+Attack vs. defender
   /// d20+Defense (or whatever stat an effect/ability substitutes - callers
   /// pass in whichever value is appropriate). Higher total hits; a tie
-  /// favors the attacker (hits). A natural 20 on the attacker's kept die
-  /// is always a critical hit (auto-hit, double damage) regardless of
-  /// totals; a natural 1 is always a critical miss (auto-miss).
+  /// favors the attacker (hits).
+  ///
+  /// [attackerCriticalChancePercent] is the attacker's effective Critical
+  /// Chance (base stat + Team Spirit bonus - see `TeamSpiritCurve`),
+  /// which lowers the natural-roll threshold for a critical hit (see
+  /// `criticalHitThreshold`); it defaults to 0, i.e. only a natural 20
+  /// crits, matching the stat's own floor. A roll meeting that threshold
+  /// is a critical hit (auto-hit, double damage) regardless of totals; a
+  /// natural 1 is always a critical miss (auto-miss) - Critical Chance
+  /// only ever raises the crit rate, it never touches critical misses.
   AttackRollOutcome resolveAttackRoll({
     required int attackerAttack,
     required int defenderDefense,
+    double attackerCriticalChancePercent = 0,
     RollContext? attackerContext,
     RollContext? defenderContext,
   }) {
@@ -64,7 +97,8 @@ class CombatEngine {
       modifier: defenderDefense,
     );
 
-    final isCriticalHit = attackerRoll.isCriticalHit;
+    final threshold = criticalHitThreshold(attackerCriticalChancePercent);
+    final isCriticalHit = attackerRoll.kept >= threshold;
     final isCriticalMiss = attackerRoll.isCriticalMiss;
     final isHit = isCriticalHit ||
         (!isCriticalMiss && attackerRoll.total >= defenderRoll.total);
@@ -75,6 +109,7 @@ class CombatEngine {
       isHit: isHit,
       isCriticalHit: isCriticalHit,
       isCriticalMiss: isCriticalMiss,
+      criticalHitThreshold: threshold,
     );
   }
 
@@ -84,6 +119,7 @@ class CombatEngine {
     required int hits,
     required int attackerAttack,
     required int defenderDefense,
+    double attackerCriticalChancePercent = 0,
     RollContext? attackerContext,
     RollContext? defenderContext,
   }) {
@@ -92,6 +128,7 @@ class CombatEngine {
       (_) => resolveAttackRoll(
         attackerAttack: attackerAttack,
         defenderDefense: defenderDefense,
+        attackerCriticalChancePercent: attackerCriticalChancePercent,
         attackerContext: attackerContext,
         defenderContext: defenderContext,
       ),
