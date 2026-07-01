@@ -20,6 +20,24 @@ class SequenceRandom implements Random {
   bool nextBool() => false;
 }
 
+/// A [Random] that always returns the same `nextInt` result, regardless of
+/// how many times it's called. Useful for forcing a specific die face
+/// (e.g. `FixedRandom(19)` always rolls a natural 20 on a d20) without
+/// needing to know exactly how many rolls a call will consume.
+class FixedRandom implements Random {
+  final int value;
+  const FixedRandom(this.value);
+
+  @override
+  int nextInt(int max) => value;
+
+  @override
+  double nextDouble() => 0;
+
+  @override
+  bool nextBool() => false;
+}
+
 Stats testStats({
   int trionCapacity = 100,
   int trionAffinity = 10,
@@ -84,6 +102,8 @@ Trigger testTrigger({
   int targetCount = 1,
   DamageType? damageType,
   DiceExpression? damage,
+  bool includeDamage = true,
+  List<StatusEffectApplication> inflictedStatusEffects = const [],
 }) {
   return Trigger(
     id: id,
@@ -99,7 +119,8 @@ Trigger testTrigger({
     attackSubtype: attackSubtype,
     hitsPerUse: hitsPerUse,
     targetCount: targetCount,
-    damageType: damageType ?? DamageType.slashing,
-    damage: damage ?? const DiceExpression(1, 6),
+    damageType: includeDamage ? (damageType ?? DamageType.slashing) : null,
+    damage: includeDamage ? (damage ?? const DiceExpression(1, 6)) : null,
+    inflictedStatusEffects: inflictedStatusEffects,
   );
 }
