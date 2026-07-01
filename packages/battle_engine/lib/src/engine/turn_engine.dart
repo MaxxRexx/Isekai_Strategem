@@ -253,12 +253,14 @@ class TurnEngine {
 
   /// Resolves [attacker] using [trigger] against [targets]: rolls to hit
   /// (Single/Unique: one hit against the first target; AoE: one
-  /// independent hit per target; Burst: `trigger.hitsPerUse` hits
-  /// distributed round-robin across `targets`), resolves damage, and
-  /// rolls/applies any status effects the Trigger inflicts on a landed
-  /// hit. Folds in the attacker's effective Critical Chance and Team
-  /// Spirit's damage/crit bonuses (mirroring `rollFatTrigger`'s pattern
-  /// of folding a Team Spirit bonus into a base stat).
+  /// independent hit per target; Burst: `trigger.hitsPerUse` independent
+  /// hits against *each* target - `targetCount` governs how many targets
+  /// the ability can hit at all, `hitsPerUse` governs how many times it
+  /// hits each one it does target), resolves damage, and rolls/applies
+  /// any status effects the Trigger inflicts on a landed hit. Folds in
+  /// the attacker's effective Critical Chance and Team Spirit's damage/
+  /// crit bonuses (mirroring `rollFatTrigger`'s pattern of folding a Team
+  /// Spirit bonus into a base stat).
   ///
   /// Does not check ability legality or spend Trion - call
   /// `canUseAbility`/`useAbility` first. [targets] is defensively clamped
@@ -362,9 +364,9 @@ class TurnEngine {
         }
         break;
       case AttackSubtype.burst:
-        if (clampedTargets.isNotEmpty) {
+        for (final target in clampedTargets) {
           for (var hitIndex = 0; hitIndex < trigger.hitsPerUse; hitIndex++) {
-            resolveHitAgainst(clampedTargets[hitIndex % clampedTargets.length]);
+            resolveHitAgainst(target);
           }
         }
         break;

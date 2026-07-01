@@ -257,7 +257,7 @@ void main() {
   });
 
   group('TurnEngine.resolveAbilityUse - Burst', () {
-    test('distributes hits round-robin across targets', () {
+    test('hits each target hitsPerUse times independently', () {
       final engine = TurnEngine();
       final attacker = CharacterBattleState(testCharacter());
       final targetA = CharacterBattleState(testCharacter(id: 'a'));
@@ -279,11 +279,14 @@ void main() {
       final byId = {
         for (final r in result.targetResults) r.targetCharacterId: r
       };
-      expect(byId['a']!.attackRolls, hasLength(3)); // indices 0,2,4
-      expect(byId['b']!.attackRolls, hasLength(2)); // indices 1,3
+      // targetCount governs how many targets can be hit at all;
+      // hitsPerUse governs how many times each one hit is hit - the two
+      // are independent, so both targets get the full hitsPerUse count.
+      expect(byId['a']!.attackRolls, hasLength(5));
+      expect(byId['b']!.attackRolls, hasLength(5));
     });
 
-    test('targets unreached by round-robin are omitted from results', () {
+    test('targetCount clamps how many targets a Burst ability can reach', () {
       final engine = TurnEngine();
       final attacker = CharacterBattleState(testCharacter());
       final targets = List.generate(
@@ -293,16 +296,19 @@ void main() {
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         hitsPerUse: 2,
-        targetCount: 3,
+        targetCount: 2,
       );
 
       final result = engine.resolveAbilityUse(
         attacker: attacker,
         trigger: trigger,
-        targets: targets,
+        targets: targets, // 3 provided, but targetCount only allows 2
       );
 
       expect(result.targetResults, hasLength(2));
+      for (final targetResult in result.targetResults) {
+        expect(targetResult.attackRolls, hasLength(2));
+      }
       expect(result.targetResults.map((r) => r.targetCharacterId),
           containsAll(['target-0', 'target-1']));
     });

@@ -73,11 +73,14 @@ class Trigger {
   final AttackType attackType;
   final AttackSubtype attackSubtype;
 
-  /// Number of independent to-hit rolls made per use. Only meaningful for
-  /// `AttackSubtype.burst`; every other subtype should leave this at 1.
+  /// Number of independent to-hit rolls made against *each* targeted
+  /// character. Only meaningful for `AttackSubtype.burst`; every other
+  /// subtype should leave this at 1.
   final int hitsPerUse;
 
-  /// Number of simultaneous targets, for AoE-style subtypes.
+  /// Number of simultaneous targets. For Burst, this is independent of
+  /// [hitsPerUse]: `targetCount` governs how many characters the ability
+  /// can hit at all, `hitsPerUse` governs how many times it hits each one.
   final int targetCount;
 
   final DamageType? damageType;
