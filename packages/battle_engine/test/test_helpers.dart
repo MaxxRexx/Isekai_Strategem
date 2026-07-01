@@ -50,7 +50,6 @@ Stats testStats({
   int defense = 10,
   int statusEffectInfliction = 10,
   int statusEffectResistance = 2,
-  int slotCapacity = 6,
 }) {
   return Stats(
     trionCapacity: trionCapacity,
@@ -64,7 +63,6 @@ Stats testStats({
     defense: defense,
     statusEffectInfliction: statusEffectInfliction,
     statusEffectResistance: statusEffectResistance,
-    slotCapacity: slotCapacity,
   );
 }
 
@@ -86,12 +84,11 @@ Character testCharacter({
   );
 }
 
-Trigger testTrigger({
+ActiveTrigger testTrigger({
   String id = 'trigger-1',
   String name = 'Test Trigger',
   TriggerCategory category = TriggerCategory.attacker,
   int equipCost = 10,
-  int slotCost = 1,
   int trionCost = 5,
   int cooldownTurns = 2,
   OriginTag originTag = OriginTag.physical,
@@ -100,17 +97,18 @@ Trigger testTrigger({
   AttackSubtype attackSubtype = AttackSubtype.single,
   int hitsPerUse = 1,
   int targetCount = 1,
+  TargetAffiliation targetAffiliation = TargetAffiliation.opponent,
   DamageType? damageType,
   DiceExpression? damage,
   bool includeDamage = true,
+  DiceExpression? healAmount,
   List<StatusEffectApplication> inflictedStatusEffects = const [],
 }) {
-  return Trigger(
+  return ActiveTrigger(
     id: id,
     name: name,
     category: category,
     equipCost: equipCost,
-    slotCost: slotCost,
     trionCost: trionCost,
     cooldownTurns: cooldownTurns,
     originTag: originTag,
@@ -119,8 +117,26 @@ Trigger testTrigger({
     attackSubtype: attackSubtype,
     hitsPerUse: hitsPerUse,
     targetCount: targetCount,
+    targetAffiliation: targetAffiliation,
     damageType: includeDamage ? (damageType ?? DamageType.slashing) : null,
     damage: includeDamage ? (damage ?? const DiceExpression(1, 6)) : null,
+    healAmount: healAmount,
     inflictedStatusEffects: inflictedStatusEffects,
+  );
+}
+
+PassiveTrigger testPassiveTrigger({
+  String id = 'passive-trigger-1',
+  String name = 'Test Passive Trigger',
+  TriggerCategory category = TriggerCategory.optional,
+  int equipCost = 10,
+  PassiveEffect effect = const PassiveEffect(),
+}) {
+  return PassiveTrigger(
+    id: id,
+    name: name,
+    category: category,
+    equipCost: equipCost,
+    effect: effect,
   );
 }

@@ -1,10 +1,12 @@
 import '../constants.dart';
 import '../models/character.dart';
 import '../models/damage_type.dart';
+import '../models/passive_effect.dart';
 import '../models/stats.dart';
 import '../models/status_effect.dart';
 import '../models/status_effect_catalog.dart';
 import '../models/trigger.dart';
+import '../models/world_ability_effect.dart';
 import '../util/dice.dart';
 
 class _AbilityUseRecord {
@@ -53,8 +55,31 @@ class CharacterBattleState {
 
   final List<TempPercentPenalty> tempPercentPenalties = [];
 
-  CharacterBattleState(this.character)
-      : currentHealth = character.baseStats.maxHealth;
+  /// Passive effects currently equipped (from passive Triggers and any
+  /// Black Trigger passive abilities), applied continuously for as long
+  /// as this state exists - set once at battle start from the
+  /// character's Loadout.
+  final List<PassiveEffect> equippedPassiveEffects;
+
+  /// Remaining charges of a World ability's damage-prevention pool, if
+  /// the character has one equipped (null if not applicable). Each
+  /// instance of damage fully negates and decrements this by 1.
+  int? remainingDamagePreventionInstances;
+
+  /// Whether this character still has an unused "survive lethal damage
+  /// once" World ability charge.
+  bool hasSurviveLethalDamageCharge;
+
+  CharacterBattleState(
+    this.character, {
+    List<PassiveEffect> equippedPassiveEffects = const [],
+    WorldAbilityEffect? worldAbility,
+  })  : currentHealth = character.baseStats.maxHealth,
+        equippedPassiveEffects = equippedPassiveEffects,
+        remainingDamagePreventionInstances =
+            worldAbility?.damagePreventionInstances,
+        hasSurviveLethalDamageCharge =
+            worldAbility?.surviveLethalDamageOnce ?? false;
 
   /// Applies a temporary percentage reduction to [stat] (e.g. the
   /// critical-miss penalty). Multiple active penalties on the same stat
@@ -75,11 +100,21 @@ class CharacterBattleState {
   }
 
   bool isInvulnerableTo(String statusEffectId) =>
-      character.statusInvulnerabilities.contains(statusEffectId);
+      character.statusInvulnerabilities.contains(statusEffectId) ||
+      equippedPassiveEffects.any(
+          (e) => e.statusInvulnerabilitiesGranted.contains(statusEffectId));
+
+  /// Whether this character resists (halves) damage of [type], from
+  /// either the character's permanent `damageResistances` or a currently
+  /// equipped passive effect.
+  bool hasDamageResistance(DamageType type) =>
+      character.damageResistances.contains(type) ||
+      equippedPassiveEffects
+          .any((e) => e.damageResistancesGranted.contains(type));
 
   /// Records that [trigger] was used this turn; cooldown application
   /// (including any FAT doubling penalty) happens in `endTurn`.
-  void recordAbilityUse(Trigger trigger) {
+  void recordAbilityUse(ActiveTrigger trigger) {
     _abilitiesUsedThisTurn
         .add(_AbilityUseRecord(trigger.id, trigger.cooldownTurns));
   }
@@ -143,6 +178,12 @@ class CharacterBattleState {
       zeroed.addAll(def.zeroedStats);
     }
 
+    for (final passive in equippedPassiveEffects) {
+      passive.flatStatModifiers.forEach((stat, delta) {
+        deltas[stat] = (deltas[stat] ?? 0) + delta;
+      });
+    }
+
     final percentPenalties = <ModifiableStat, double>{};
     for (final penalty in tempPercentPenalties) {
       percentPenalties[penalty.stat] =
@@ -169,6 +210,15 @@ class CharacterBattleState {
       maxHealth: resolve(ModifiableStat.maxHealth, base.maxHealth).round(),
       trionAffinity: trionAffinity.round(),
       teamSpirit: resolve(ModifiableStat.teamSpirit, base.teamSpirit).round(),
+      criticalChance:
+          resolve(ModifiableStat.criticalChance, base.criticalChance),
+      fatChance: resolve(ModifiableStat.fatChance, base.fatChance),
+      statusEffectInfliction: resolve(ModifiableStat.statusEffectInfliction,
+              base.statusEffectInfliction)
+          .round(),
+      statusEffectResistance: resolve(ModifiableStat.statusEffectResistance,
+              base.statusEffectResistance)
+          .round(),
     );
   }
 

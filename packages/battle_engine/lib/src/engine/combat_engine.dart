@@ -153,10 +153,12 @@ class CombatEngine {
   /// Resolves final damage dealt to [target] for one hit of [damageType],
   /// given the pre-mitigation [baseDamage].
   ///
-  /// Order: critical doubling -> Armor (flat reduction, floor 0) ->
-  /// combined damage-type multiplier (status effect interactions like
-  /// Wet, and static Damage Resistance, multiplied together in one step).
-  /// Flat reduction before type-based multipliers, with
+  /// Order: World-ability damage prevention (fully negates the whole
+  /// instance, consuming one charge, if [target] has any remaining) ->
+  /// critical doubling -> Armor (flat reduction, floor 0) -> combined
+  /// damage-type multiplier (status effect interactions like Wet, and
+  /// static/passive-granted Damage Resistance, multiplied together in one
+  /// step). Flat reduction before type-based multipliers, with
   /// resistance/vulnerability combined rather than sequenced, matches
   /// both the 5e/BG3 convention (Sage Advice: flat reducers like Heavy
   /// Armor Master apply before resistance) and Rogue Trader-style
@@ -167,6 +169,12 @@ class CombatEngine {
     required bool isCriticalHit,
     required CharacterBattleState target,
   }) {
+    final remainingPrevention = target.remainingDamagePreventionInstances;
+    if (remainingPrevention != null && remainingPrevention > 0) {
+      target.remainingDamagePreventionInstances = remainingPrevention - 1;
+      return 0;
+    }
+
     double damage = baseDamage.toDouble();
 
     if (isCriticalHit) damage *= config.criticalHitDamageMultiplier;
@@ -175,7 +183,7 @@ class CombatEngine {
     damage = (damage - armor).clamp(0, double.infinity);
 
     damage *= target.statusDamageTypeMultiplier(damageType);
-    if (target.character.damageResistances.contains(damageType)) {
+    if (target.hasDamageResistance(damageType)) {
       damage *= 0.5;
     }
 

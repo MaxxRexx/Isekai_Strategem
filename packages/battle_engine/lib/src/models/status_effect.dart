@@ -42,7 +42,11 @@ enum ModifiableStat {
   armor,
   maxHealth,
   trionAffinity,
-  teamSpirit
+  teamSpirit,
+  criticalChance,
+  fatChance,
+  statusEffectInfliction,
+  statusEffectResistance,
 }
 
 /// A data-driven status effect definition.
@@ -90,6 +94,14 @@ class StatusEffectDefinition {
   final DiceExpression? turnStartDamage;
   final DamageType? turnStartDamageType;
 
+  /// Health healed at the start of the affected character's turn
+  /// (Regenerating), scaled by the character's own Team Spirit-driven
+  /// Health Regeneration bonus. Health is not a mechanic on its own per
+  /// the design brief, it's entirely ability-driven, so this (and
+  /// [ActiveTrigger.healAmount] for instant heals) are the only two ways
+  /// health is restored.
+  final DiceExpression? turnStartHeal;
+
   /// Fraction (0-1) of the target's Trion Capacity drained to the
   /// causing character each turn this effect is active (Sapped).
   final double? trionCapacityDrainPercentToCauser;
@@ -125,6 +137,7 @@ class StatusEffectDefinition {
     this.damageTypeInteractions = const [],
     this.turnStartDamage,
     this.turnStartDamageType,
+    this.turnStartHeal,
     this.trionCapacityDrainPercentToCauser,
     this.vulnerableToRandomDamageTypesCount,
     this.locksRandomAbilityEachTurn = false,

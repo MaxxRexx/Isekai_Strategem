@@ -3,14 +3,16 @@ import 'character_type.dart';
 /// Resonance grade between a character's [CharacterType] and their Black
 /// Trigger's [BlackTriggerType].
 ///
-/// Only S/A/B/C/D are populated today. This is deliberately a plain enum
-/// (not an int/index) specifically so it can grow to a finer scale later
-/// (e.g. SSS/SS/S/A+/A/A-/...) by adding new members - nothing in
+/// A-D for now (S dropped per design revision - the one cell that used to
+/// be S, Defense char x Support Black Trigger, is now A, the new top
+/// grade). This is deliberately a plain enum (not an int/index)
+/// specifically so it can grow to a finer scale later (e.g.
+/// SSS/SS/S/A+/A/A-/...) by adding new members - nothing in
 /// [ResonanceGrid] or [ResonanceMultipliers] depends on enum ordering or
 /// index, only on explicit map lookups, so adding grades is additive and
 /// doesn't change the lookup interface (`ResonanceGrade lookup(...)` /
 /// `double multiplierFor(...)`).
-enum ResonanceGrade { d, c, b, a, s }
+enum ResonanceGrade { d, c, b, a }
 
 /// Maps a [ResonanceGrade] to a mechanical multiplier. Kept separate from
 /// the grade lookup table so the "exact mechanical effect of each grade"
@@ -33,11 +35,13 @@ class ResonanceMultipliers {
 
   /// Placeholder default multipliers (exact mechanical effect TBD, see
   /// design notes) - tune freely, this is the single source of truth for
-  /// "how strong is grade X".
+  /// "how strong is grade X". Applied by whichever engine resolves a
+  /// Black Trigger ability (see `TurnEngine.resonanceMultiplierFor`) as a
+  /// multiplier on damage/heal, an inverse multiplier on cooldown, and a
+  /// multiplier on passive/World ability magnitudes.
   static const ResonanceMultipliers defaults = ResonanceMultipliers({
-    ResonanceGrade.s: 1.5,
-    ResonanceGrade.a: 1.25,
-    ResonanceGrade.b: 1.1,
+    ResonanceGrade.a: 1.5,
+    ResonanceGrade.b: 1.15,
     ResonanceGrade.c: 1.0,
     ResonanceGrade.d: 0.85,
   });
@@ -74,7 +78,7 @@ class ResonanceGrid {
     CharacterType.defense: {
       BlackTriggerType.attack: ResonanceGrade.c,
       BlackTriggerType.defense: ResonanceGrade.a,
-      BlackTriggerType.support: ResonanceGrade.s,
+      BlackTriggerType.support: ResonanceGrade.a,
       BlackTriggerType.unique: ResonanceGrade.b,
     },
     CharacterType.support: {

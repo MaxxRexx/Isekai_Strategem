@@ -7,6 +7,7 @@ export 'src/models/character.dart';
 export 'src/models/character_type.dart';
 export 'src/models/damage_type.dart';
 export 'src/models/loadout.dart';
+export 'src/models/passive_effect.dart';
 export 'src/models/resonance.dart';
 export 'src/models/stats.dart';
 export 'src/models/status_effect.dart';
@@ -14,6 +15,7 @@ export 'src/models/status_effect_catalog.dart';
 export 'src/models/team.dart';
 export 'src/models/trigger.dart';
 export 'src/models/trion.dart';
+export 'src/models/world_ability_effect.dart';
 
 // Config
 export 'src/constants.dart';

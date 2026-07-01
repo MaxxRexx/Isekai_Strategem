@@ -152,6 +152,13 @@ class StatusEffectCatalog {
         turnStartDamage: const DiceExpression(1, 4),
         turnStartDamageType: DamageType.lightning,
       ),
+      StatusEffectDefinition(
+        id: 'regenerating',
+        name: 'Regenerating',
+        defaultDurationTurns: magnitudes.regeneratingDurationTurns,
+        turnStartHeal:
+            DiceExpression(0, 1, flatBonus: magnitudes.regeneratingHealPerTurn),
+      ),
     ];
     return StatusEffectCatalog._({for (final d in defs) d.id: d});
   }

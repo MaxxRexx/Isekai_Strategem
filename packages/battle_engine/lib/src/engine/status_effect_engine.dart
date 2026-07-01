@@ -17,10 +17,17 @@ class TrionDrainEvent {
   const TrionDrainEvent(this.causerCharacterId, this.amount);
 }
 
+class TurnStartHealEvent {
+  final int amount;
+  const TurnStartHealEvent(this.amount);
+}
+
 class StatusTickResult {
   final List<TurnStartDamageEvent> damageEvents;
   final List<TrionDrainEvent> trionDrainEvents;
-  const StatusTickResult(this.damageEvents, this.trionDrainEvents);
+  final List<TurnStartHealEvent> healEvents;
+  const StatusTickResult(
+      this.damageEvents, this.trionDrainEvents, this.healEvents);
 }
 
 /// Outcome of a single opposed status-infliction roll. Mirrors
@@ -134,9 +141,9 @@ class StatusEffectEngine {
 
   /// Re-picks the locked ability for any active Prone-like effect on
   /// [target] (locksRandomAbilityEachTurn), given their currently
-  /// equipped Triggers. No-op if there are no equipped triggers.
+  /// equipped active Triggers. No-op if there are no equipped triggers.
   void refreshAbilityLocks(
-      CharacterBattleState target, List<Trigger> equippedTriggers) {
+      CharacterBattleState target, List<ActiveTrigger> equippedTriggers) {
     if (equippedTriggers.isEmpty) return;
     for (final instance in target.statusEffects) {
       final def = catalog[instance.definitionId];
@@ -154,6 +161,7 @@ class StatusEffectEngine {
   StatusTickResult tickStartOfTurn(CharacterBattleState target) {
     final damageEvents = <TurnStartDamageEvent>[];
     final drainEvents = <TrionDrainEvent>[];
+    final healEvents = <TurnStartHealEvent>[];
 
     for (final instance in List.of(target.statusEffects)) {
       final def = catalog[instance.definitionId];
@@ -162,6 +170,10 @@ class StatusEffectEngine {
         final amount = def.turnStartDamage!.roll(diceRoller);
         damageEvents
             .add(TurnStartDamageEvent(def.turnStartDamageType!, amount));
+      }
+
+      if (def.turnStartHeal != null) {
+        healEvents.add(TurnStartHealEvent(def.turnStartHeal!.roll(diceRoller)));
       }
 
       if (def.trionCapacityDrainPercentToCauser != null &&
@@ -180,6 +192,6 @@ class StatusEffectEngine {
     target.statusEffects
         .removeWhere((i) => i.remainingTurns != null && i.remainingTurns! <= 0);
 
-    return StatusTickResult(damageEvents, drainEvents);
+    return StatusTickResult(damageEvents, drainEvents, healEvents);
   }
 }

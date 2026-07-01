@@ -44,9 +44,6 @@ class Stats {
   /// [StatusEffectEngine]).
   final int statusEffectResistance;
 
-  /// Maximum number of Trigger slots this character can equip.
-  final int slotCapacity;
-
   const Stats({
     required this.trionCapacity,
     required this.trionAffinity,
@@ -59,7 +56,6 @@ class Stats {
     required this.defense,
     required this.statusEffectInfliction,
     required this.statusEffectResistance,
-    required this.slotCapacity,
   });
 
   Stats copyWith({
@@ -74,7 +70,6 @@ class Stats {
     int? defense,
     int? statusEffectInfliction,
     int? statusEffectResistance,
-    int? slotCapacity,
   }) {
     return Stats(
       trionCapacity: trionCapacity ?? this.trionCapacity,
@@ -90,7 +85,6 @@ class Stats {
           statusEffectInfliction ?? this.statusEffectInfliction,
       statusEffectResistance:
           statusEffectResistance ?? this.statusEffectResistance,
-      slotCapacity: slotCapacity ?? this.slotCapacity,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'damage_type.dart';
+import 'passive_effect.dart';
 import '../util/dice.dart';
 
 /// Broad equipment category for a Trigger.
@@ -38,6 +39,9 @@ extension AttackTypeSubtypes on AttackType {
   }
 }
 
+/// Who an active ability can be used on.
+enum TargetAffiliation { opponent, ally, self }
+
 /// A status effect a Trigger may inflict on hit, with its own infliction
 /// value override (falls back to the wielder's stat when null) and
 /// duration.
@@ -51,7 +55,13 @@ class StatusEffectApplication {
 
 /// An equippable ability. Triggers are not fixed per character; they're
 /// assigned during the pre-match Loadout phase (see [Loadout]).
-class Trigger {
+///
+/// A Trigger is either [ActiveTrigger] (costs Trion, has a cooldown, rolls
+/// to hit/heal/inflict) or [PassiveTrigger] (always on while equipped, no
+/// activation at all) - never both, so the two shapes are split into
+/// separate classes rather than one class with a pile of nullable fields
+/// that only make sense for one kind or the other.
+sealed class Trigger {
   final String id;
   final String name;
   final TriggerCategory category;
@@ -59,9 +69,17 @@ class Trigger {
   /// Trion cost paid once to equip this Trigger during the Loadout phase.
   final int equipCost;
 
-  /// Slot cost consumed from the wielder's slot capacity.
-  final int slotCost;
+  const Trigger({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.equipCost,
+  });
+}
 
+/// An activated ability: costs Trion per use, has a cooldown, and rolls
+/// to hit/heal/inflict a target.
+class ActiveTrigger extends Trigger {
   /// Trion cost paid from the team's [TrionPool] each time this is used.
   final int trionCost;
 
@@ -83,17 +101,26 @@ class Trigger {
   /// can hit at all, `hitsPerUse` governs how many times it hits each one.
   final int targetCount;
 
+  /// Who this ability can be used on. Defaults to `opponent` (an attack);
+  /// support abilities set this to `ally` or `self`.
+  final TargetAffiliation targetAffiliation;
+
   final DamageType? damageType;
   final DiceExpression? damage;
 
+  /// Instant heal on a landed hit, scaled by the target's own Team
+  /// Spirit-driven Health Regeneration bonus. Health isn't a mechanic on
+  /// its own per the design brief, so this (and the `regenerating` status
+  /// effect for heal-over-time) are the only two ways health is restored.
+  final DiceExpression? healAmount;
+
   final List<StatusEffectApplication> inflictedStatusEffects;
 
-  Trigger({
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.equipCost,
-    required this.slotCost,
+  ActiveTrigger({
+    required super.id,
+    required super.name,
+    required super.category,
+    required super.equipCost,
     required this.trionCost,
     required this.cooldownTurns,
     required this.originTag,
@@ -102,11 +129,27 @@ class Trigger {
     required this.attackSubtype,
     this.hitsPerUse = 1,
     this.targetCount = 1,
+    this.targetAffiliation = TargetAffiliation.opponent,
     this.damageType,
     this.damage,
+    this.healAmount,
     this.inflictedStatusEffects = const [],
   }) : assert(
           attackType.validSubtypes.contains(attackSubtype),
           '$attackSubtype is not a valid subtype for $attackType',
         );
+}
+
+/// An always-on ability: no cooldown, no Trion cost, no targeting -
+/// just a [PassiveEffect] applied for as long as it's equipped.
+class PassiveTrigger extends Trigger {
+  final PassiveEffect effect;
+
+  const PassiveTrigger({
+    required super.id,
+    required super.name,
+    required super.category,
+    required super.equipCost,
+    required this.effect,
+  });
 }

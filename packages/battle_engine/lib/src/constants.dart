@@ -141,6 +141,8 @@ class StatusEffectMagnitudes {
   final int bracedDurationTurns;
   final int charmedDurationTurns;
   final int electrocutedDurationTurns;
+  final int regeneratingDurationTurns;
+  final int regeneratingHealPerTurn;
 
   const StatusEffectMagnitudes({
     this.acidArmorReduction = 5,
@@ -165,6 +167,8 @@ class StatusEffectMagnitudes {
     this.bracedDurationTurns = 3,
     this.charmedDurationTurns = 3,
     this.electrocutedDurationTurns = 2,
+    this.regeneratingDurationTurns = 3,
+    this.regeneratingHealPerTurn = 8,
   });
 
   static const StatusEffectMagnitudes defaults = StatusEffectMagnitudes();
@@ -211,4 +215,37 @@ class CriticalChanceConfig {
   });
 
   static const CriticalChanceConfig defaults = CriticalChanceConfig();
+}
+
+/// Config for the pre-match Loadout phase's equip rules.
+class LoadoutRulesConfig {
+  /// Max total equipped items (regular Triggers plus the Black Trigger,
+  /// if any, counted together) - a ceiling, not a required target.
+  final int maxEquippedTriggers;
+
+  /// Exact number of active abilities a valid Loadout must provide,
+  /// summing 1 per equipped `ActiveTrigger` plus however many of the
+  /// Black Trigger's abilities are active. Passive count is uncapped
+  /// beyond `maxEquippedTriggers` and the Trion Capacity budget.
+  final int requiredActiveAbilityCount;
+
+  const LoadoutRulesConfig({
+    this.maxEquippedTriggers = 8,
+    this.requiredActiveAbilityCount = 4,
+  });
+
+  static const LoadoutRulesConfig defaults = LoadoutRulesConfig();
+}
+
+/// Config for the per-team turn timer: how long a team has to lock in
+/// their actions and pass/end the turn before it's forfeited
+/// automatically with nothing committed. The countdown itself (starting
+/// it, ticking it, detecting expiry) is a host-app/UI concern, not
+/// something this synchronous engine owns; this is just the tunable base
+/// duration, which a Black Trigger's World ability can raise or lower for
+/// a team (see `WorldAbilityEffect.turnTimerSecondsDelta`).
+class TurnTimerConfig {
+  final int secondsPerTurn;
+  const TurnTimerConfig({this.secondsPerTurn = 15});
+  static const TurnTimerConfig defaults = TurnTimerConfig();
 }

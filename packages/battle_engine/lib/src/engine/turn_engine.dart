@@ -1,4 +1,7 @@
 import '../constants.dart';
+import '../models/character_type.dart';
+import '../models/damage_type.dart';
+import '../models/resonance.dart';
 import '../models/status_effect.dart';
 import '../models/status_effect_catalog.dart';
 import '../models/team.dart';
@@ -103,25 +106,29 @@ class TurnEngine {
     return result;
   }
 
-  /// Applies start-of-turn status effect ticking (damage, Trion drain) to
-  /// [state]. Trion drained by an effect like Sapped is credited to the
-  /// causer's pool via [causerTrionPools] (character id -> their team's
-  /// pool), if supplied.
+  /// Applies start-of-turn status effect ticking (damage, heals, Trion
+  /// drain) to [state]. Trion drained by an effect like Sapped is
+  /// credited to the causer's pool via [causerTrionPools] (character id
+  /// -> their team's pool), if supplied.
   StatusTickResult tickStatusEffects(
     CharacterBattleState state, {
     Map<String, TrionPool>? causerTrionPools,
   }) {
     final result = statusEffectEngine.tickStartOfTurn(state);
+    final maxHealth = state.effectiveStats(fatConfig: fatConfig).maxHealth;
 
     for (final event in result.damageEvents) {
-      final damage = combatEngine.resolveDamage(
+      _applyDamage(
+        target: state,
         baseDamage: event.amount,
         damageType: event.damageType,
         isCriticalHit: false,
-        target: state,
       );
-      final maxHealth = state.effectiveStats(fatConfig: fatConfig).maxHealth;
-      state.currentHealth = (state.currentHealth - damage).clamp(0, maxHealth);
+    }
+
+    for (final event in result.healEvents) {
+      final healed = _scaledHealAmount(state, event.amount);
+      state.currentHealth = (state.currentHealth + healed).clamp(0, maxHealth);
     }
 
     for (final drain in result.trionDrainEvents) {
@@ -129,6 +136,46 @@ class TurnEngine {
     }
 
     return result;
+  }
+
+  /// Scales a heal amount by [recipient]'s own effective Team Spirit
+  /// Health Regeneration bonus - Team Spirit's brief says higher values
+  /// increase "Health Regeneration amount when healed", i.e. this is the
+  /// receiving character's own bonus, not the healer's.
+  int _scaledHealAmount(CharacterBattleState recipient, int baseAmount) {
+    final stats = recipient.effectiveStats(fatConfig: fatConfig);
+    final bonus = teamSpiritCurve.bonusesFor(stats.teamSpirit).healthRegenBonus;
+    return (baseAmount * (1 + bonus)).round();
+  }
+
+  /// Resolves damage against [target] and applies it to their health,
+  /// honoring a World ability's "survive lethal damage once" charge: if
+  /// this hit would reduce health to 0 while current health is above 1,
+  /// and the charge is still available, health is clamped to 1 instead
+  /// and the charge is consumed.
+  void _applyDamage({
+    required CharacterBattleState target,
+    required int baseDamage,
+    required DamageType damageType,
+    required bool isCriticalHit,
+  }) {
+    final damage = combatEngine.resolveDamage(
+      baseDamage: baseDamage,
+      damageType: damageType,
+      isCriticalHit: isCriticalHit,
+      target: target,
+    );
+    final maxHealth = target.effectiveStats(fatConfig: fatConfig).maxHealth;
+    final wouldBeLethal =
+        target.currentHealth > 1 && target.currentHealth - damage <= 0;
+
+    if (wouldBeLethal && target.hasSurviveLethalDamageCharge) {
+      target.hasSurviveLethalDamageCharge = false;
+      target.currentHealth = 1;
+    } else {
+      target.currentHealth =
+          (target.currentHealth - damage).clamp(0, maxHealth);
+    }
   }
 
   /// Rolls whether Full Arms Trigger activates for [state] this turn,
@@ -142,7 +189,8 @@ class TurnEngine {
   /// Whether [state] may use [trigger] right now: not on cooldown, not
   /// action-prevented (Stunned/Frozen), not locked by Prone, and within
   /// this turn's ability-use limit (1, or up to 3 if FAT triggered).
-  bool canUseAbility(CharacterBattleState state, Trigger trigger) {
+  /// Passive Triggers are never "used" - this only applies to actives.
+  bool canUseAbility(CharacterBattleState state, ActiveTrigger trigger) {
     if (state.isActionPrevented()) return false;
     if ((state.cooldowns[trigger.id] ?? 0) > 0) return false;
     if (!fatEngine.canUseAnotherAbility(state)) return false;
@@ -156,18 +204,18 @@ class TurnEngine {
   /// against [state]'s per-turn ability count / pending cooldown. Returns
   /// false (no state change) if the team pool can't afford it.
   bool useAbility(
-      CharacterBattleState state, Trigger trigger, TrionPool teamPool) {
+      CharacterBattleState state, ActiveTrigger trigger, TrionPool teamPool) {
     if (!teamPool.trySpend(trigger.trionCost)) return false;
     state.recordAbilityUse(trigger);
     return true;
   }
 
   /// Max targets a ranged Trigger can hit for [attacker] right now:
-  /// [Trigger.targetCount], reduced by 1 (minimum 1) if [attacker] is
-  /// Blinded and [trigger] is ranged - melee/psychic Triggers are
+  /// [ActiveTrigger.targetCount], reduced by 1 (minimum 1) if [attacker]
+  /// is Blinded and [trigger] is ranged - melee/psychic Triggers are
   /// unaffected. Callers (AI/UI) should consult this before building a
   /// target list; [resolveAbilityUse] also defensively clamps to it.
-  int maxRangedTargets(CharacterBattleState attacker, Trigger trigger,
+  int maxRangedTargets(CharacterBattleState attacker, ActiveTrigger trigger,
       {StatusEffectCatalog? catalog}) {
     if (trigger.rangeTag != RangeTag.ranged) return trigger.targetCount;
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
@@ -223,7 +271,7 @@ class TurnEngine {
   /// every attack type) merged with Threatened/Blinded's
   /// `StatusRollTag.rangedAttackRoll` disadvantage if [trigger] is ranged.
   RollContext _attackRollContextFor(
-      CharacterBattleState attacker, Trigger trigger) {
+      CharacterBattleState attacker, ActiveTrigger trigger) {
     final context = RollContext();
     for (final source in attacker
         .rollContextFor(StatusRollTag.attackRoll)
@@ -256,11 +304,18 @@ class TurnEngine {
   /// independent hit per target; Burst: `trigger.hitsPerUse` independent
   /// hits against *each* target - `targetCount` governs how many targets
   /// the ability can hit at all, `hitsPerUse` governs how many times it
-  /// hits each one it does target), resolves damage, and rolls/applies
-  /// any status effects the Trigger inflicts on a landed hit. Folds in
-  /// the attacker's effective Critical Chance and Team Spirit's damage/
-  /// crit bonuses (mirroring `rollFatTrigger`'s pattern of folding a Team
-  /// Spirit bonus into a base stat).
+  /// hits each one it does target), resolves damage/heal, and
+  /// rolls/applies any status effects the Trigger inflicts on a landed
+  /// hit. Folds in the attacker's effective Critical Chance and Team
+  /// Spirit's damage/crit bonuses (mirroring `rollFatTrigger`'s pattern of
+  /// folding a Team Spirit bonus into a base stat); the heal amount is
+  /// scaled by the *target's* own Health Regeneration bonus instead (see
+  /// `_scaledHealAmount`).
+  ///
+  /// [damageMultiplier]/[healMultiplier] additionally scale this use's
+  /// damage/heal - used for Black Trigger abilities, whose particulars
+  /// are scaled by the wielder's resonance grade (see
+  /// `resonanceMultiplierFor`); regular Triggers leave these at 1.0.
   ///
   /// Does not check ability legality or spend Trion - call
   /// `canUseAbility`/`useAbility` first. [targets] is defensively clamped
@@ -268,8 +323,10 @@ class TurnEngine {
   /// to have already consulted those before choosing targets.
   AbilityUseResult resolveAbilityUse({
     required CharacterBattleState attacker,
-    required Trigger trigger,
+    required ActiveTrigger trigger,
     required List<CharacterBattleState> targets,
+    double damageMultiplier = 1.0,
+    double healMultiplier = 1.0,
   }) {
     final maxTargets = maxRangedTargets(attacker, trigger);
     final clampedTargets =
@@ -310,22 +367,31 @@ class TurnEngine {
         return;
       }
 
-      var damage = 0;
+      var damageDealt = 0;
       if (trigger.damageType != null) {
         final baseDamage = trigger.damage?.roll(combatEngine.diceRoller) ?? 0;
         final damageBonus = isBurst
             ? bonuses.burstDamageBonus
             : bonuses.singleTargetDamageBonus;
-        final adjustedBaseDamage = (baseDamage * (1 + damageBonus)).round();
-        damage = combatEngine.resolveDamage(
+        final adjustedBaseDamage =
+            (baseDamage * (1 + damageBonus) * damageMultiplier).round();
+        final healthBefore = target.currentHealth;
+        _applyDamage(
+          target: target,
           baseDamage: adjustedBaseDamage,
           damageType: trigger.damageType!,
           isCriticalHit: outcome.isCriticalHit,
-          target: target,
         );
+        damageDealt = healthBefore - target.currentHealth;
+      }
+
+      if (trigger.healAmount != null) {
+        final baseHeal = trigger.healAmount!.roll(combatEngine.diceRoller);
+        final healed =
+            (_scaledHealAmount(target, baseHeal) * healMultiplier).round();
         final maxHealth = target.effectiveStats(fatConfig: fatConfig).maxHealth;
         target.currentHealth =
-            (target.currentHealth - damage).clamp(0, maxHealth);
+            (target.currentHealth + healed).clamp(0, maxHealth);
       }
 
       final appliedIds = <String>[];
@@ -350,7 +416,7 @@ class TurnEngine {
         }
       }
 
-      record(damage, appliedIds);
+      record(damageDealt, appliedIds);
     }
 
     switch (trigger.attackSubtype) {
@@ -397,4 +463,52 @@ class TurnEngine {
   /// penalty for next turn, and ticks down existing cooldowns/penalties.
   void endCharacterTurn(CharacterBattleState state) =>
       state.endTurn(fatConfig: fatConfig);
+
+  /// The resonance multiplier applying to [wielder]'s own equipped Black
+  /// Trigger, from [wielder]'s [CharacterType] x the Black Trigger's
+  /// [BlackTriggerType] (see [ResonanceGrid]). 1.0 (no scaling) if
+  /// [wielder] has no Black Trigger equipped. Callers pass this in as
+  /// [resolveAbilityUse]'s `damageMultiplier`/`healMultiplier` when
+  /// resolving one of the Black Trigger's own active abilities; regular
+  /// Triggers are never resonance-scaled.
+  double resonanceMultiplierFor(
+    CharacterBattleState wielder, {
+    ResonanceGrid grid = ResonanceGrid.defaultGrid,
+    ResonanceMultipliers multipliers = ResonanceMultipliers.defaults,
+  }) {
+    final blackTrigger = wielder.character.blackTrigger;
+    if (blackTrigger == null) return 1.0;
+    final grade = grid.lookup(wielder.character.type, blackTrigger.type);
+    return multipliers.multiplierFor(grade);
+  }
+
+  /// Scales a Black Trigger active ability's [baseCooldownTurns] by its
+  /// wielder's resonance [multiplier]: a stronger resonance (multiplier >
+  /// 1) shortens the cooldown, a weaker one (multiplier < 1) lengthens it,
+  /// matching the design brief's "could have less cooldowns on its
+  /// ability" example. Never negative.
+  int resonanceScaledCooldown(int baseCooldownTurns, double multiplier) {
+    if (multiplier <= 0) return baseCooldownTurns;
+    return (baseCooldownTurns / multiplier).round().clamp(0, 1 << 30);
+  }
+
+  /// This turn's timer duration for [team]: the configured base
+  /// [TurnTimerConfig.secondsPerTurn] plus every living-or-not team
+  /// member's equipped Black Trigger World ability's
+  /// `turnTimerSecondsDelta` (the timer is per-team per-turn, so all 3
+  /// members' deltas stack). Floored at 1 second. The actual countdown is
+  /// a host-app/UI concern; this only computes the duration.
+  int effectiveTurnTimerSeconds(
+    Team team, {
+    TurnTimerConfig config = TurnTimerConfig.defaults,
+  }) {
+    final delta = team.characters.fold<int>(
+      0,
+      (sum, c) =>
+          sum + (c.blackTrigger?.worldAbility?.turnTimerSecondsDelta ?? 0),
+    );
+    return (config.secondsPerTurn + delta) < 1
+        ? 1
+        : config.secondsPerTurn + delta;
+  }
 }

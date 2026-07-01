@@ -16,7 +16,7 @@ void main() {
         CharacterType.defense: {
           BlackTriggerType.attack: ResonanceGrade.c,
           BlackTriggerType.defense: ResonanceGrade.a,
-          BlackTriggerType.support: ResonanceGrade.s,
+          BlackTriggerType.support: ResonanceGrade.a,
           BlackTriggerType.unique: ResonanceGrade.b,
         },
         CharacterType.support: {
@@ -44,30 +44,18 @@ void main() {
       }
     });
 
-    test('Defense char x Support Black Trigger is the sole S grade', () {
+    test('Defense char x Support Black Trigger is a top A grade', () {
       const grid = ResonanceGrid.defaultGrid;
-      var sCount = 0;
-      for (final characterType in CharacterType.values) {
-        for (final blackTriggerType in BlackTriggerType.values) {
-          if (grid.lookup(characterType, blackTriggerType) ==
-              ResonanceGrade.s) {
-            sCount++;
-            expect(characterType, CharacterType.defense);
-            expect(blackTriggerType, BlackTriggerType.support);
-          }
-        }
-      }
-      expect(sCount, 1);
+      expect(
+        grid.lookup(CharacterType.defense, BlackTriggerType.support),
+        ResonanceGrade.a,
+      );
     });
   });
 
   group('ResonanceMultipliers', () {
-    test('defaults are strictly ordered S > A > B > C > D', () {
+    test('defaults are strictly ordered A > B > C > D', () {
       const multipliers = ResonanceMultipliers.defaults;
-      expect(
-        multipliers.multiplierFor(ResonanceGrade.s),
-        greaterThan(multipliers.multiplierFor(ResonanceGrade.a)),
-      );
       expect(
         multipliers.multiplierFor(ResonanceGrade.a),
         greaterThan(multipliers.multiplierFor(ResonanceGrade.b)),
@@ -82,19 +70,16 @@ void main() {
       );
     });
 
-    test(
-        'an extended custom scale is a drop-in replacement (no interface change)',
-        () {
+    test('a custom scale is a drop-in replacement (no interface change)', () {
       final extended = ResonanceMultipliers({
         ...const {
-          ResonanceGrade.s: 1.5,
           ResonanceGrade.a: 1.25,
           ResonanceGrade.b: 1.1,
           ResonanceGrade.c: 1.0,
           ResonanceGrade.d: 0.85,
         },
       });
-      expect(extended.multiplierFor(ResonanceGrade.s), 1.5);
+      expect(extended.multiplierFor(ResonanceGrade.a), 1.25);
     });
 
     test('throws for an unconfigured grade rather than silently defaulting',
