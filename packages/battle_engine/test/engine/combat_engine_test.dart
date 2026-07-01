@@ -5,31 +5,13 @@ import 'package:test/test.dart';
 
 import '../test_helpers.dart';
 
-/// A [Random] that returns a fixed sequence of `nextInt` results, so a
-/// test can force an exact tie between the attacker's and defender's d20
-/// rolls (real dice can't be relied on to tie on demand).
-class _SequenceRandom implements Random {
-  final List<int> _sequence;
-  int _index = 0;
-  _SequenceRandom(this._sequence);
-
-  @override
-  int nextInt(int max) => _sequence[_index++];
-
-  @override
-  double nextDouble() => 0;
-
-  @override
-  bool nextBool() => false;
-}
-
 void main() {
   group('CombatEngine.resolveAttackRoll', () {
     test('higher total wins; a tie favors the attacker (hit)', () {
       // Force both d20 rolls to come up 10 (attacker rolls first, then
       // defender), with equal modifiers, so the totals tie exactly.
       final engine =
-          CombatEngine(diceRoller: DiceRoller(_SequenceRandom([9, 9])));
+          CombatEngine(diceRoller: DiceRoller(SequenceRandom([9, 9])));
       final outcome =
           engine.resolveAttackRoll(attackerAttack: 5, defenderDefense: 5);
 

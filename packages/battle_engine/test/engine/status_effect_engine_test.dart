@@ -7,34 +7,35 @@ import '../test_helpers.dart';
 
 void main() {
   group('StatusEffectEngine.resolveInfliction', () {
-    test('fails when modified roll is less than causer infliction', () {
-      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
-      // Even a natural 20 (20 - resistance) must clear the infliction bar.
-      final succeeded =
-          engine.resolveInfliction(causerInfliction: 25, targetResistance: 0);
-      // 20 - 0 = 20 < 25 -> always fails regardless of roll.
-      expect(succeeded, isFalse);
+    test('higher causer Infliction raises the apply rate', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(42)));
+      const samples = 5000;
+
+      int successes(int infliction) {
+        var count = 0;
+        for (var i = 0; i < samples; i++) {
+          final outcome = engine.resolveInfliction(
+              causerInfliction: infliction, targetResistance: 10);
+          if (outcome.applies) count++;
+        }
+        return count;
+      }
+
+      final lowInfliction = successes(0);
+      final highInfliction = successes(8);
+      expect(highInfliction, greaterThan(lowInfliction));
     });
 
-    test('succeeds when modified roll meets or exceeds causer infliction', () {
-      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
-      // 1 - 0 = 1 >= 1 -> always succeeds regardless of roll (min roll is 1).
-      final succeeded =
-          engine.resolveInfliction(causerInfliction: 1, targetResistance: 0);
-      expect(succeeded, isTrue);
-    });
-
-    test('higher target resistance lowers the success rate', () {
+    test('higher target Resistance lowers the apply rate', () {
       final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(42)));
       const samples = 5000;
 
       int successes(int resistance) {
         var count = 0;
         for (var i = 0; i < samples; i++) {
-          if (engine.resolveInfliction(
-              causerInfliction: 10, targetResistance: resistance)) {
-            count++;
-          }
+          final outcome = engine.resolveInfliction(
+              causerInfliction: 10, targetResistance: resistance);
+          if (outcome.applies) count++;
         }
         return count;
       }
@@ -44,41 +45,64 @@ void main() {
       expect(highResistance, lessThan(lowResistance));
     });
 
-    test('matches the worked example: +1 resistance subtracts 1 from the roll',
-        () {
-      // Roll a bunch of times with resistance 0 and resistance 1 using
-      // separately-seeded rollers that produce the same die sequence, and
-      // verify the pass/fail boundary shifted by exactly 1 point of
-      // infliction threshold.
-      final rollerA = DiceRoller(Random(7));
-      final engineA = StatusEffectEngine(diceRoller: rollerA);
-      final rollerB = DiceRoller(Random(7));
-      final engineB = StatusEffectEngine(diceRoller: rollerB);
+    test('a tie between causer total and target total favors the causer', () {
+      // Force both d20 rolls to come up 10 (causer rolls first, then
+      // target), with equal modifiers, so the totals tie exactly.
+      final engine =
+          StatusEffectEngine(diceRoller: DiceRoller(SequenceRandom([9, 9])));
+      final outcome =
+          engine.resolveInfliction(causerInfliction: 5, targetResistance: 5);
 
-      // Same underlying roll sequence (same seed) - resistance 1 against
-      // infliction N behaves exactly like resistance 0 against infliction
-      // N+1.
-      for (var i = 0; i < 100; i++) {
-        final a =
-            engineA.resolveInfliction(causerInfliction: 9, targetResistance: 1);
-        final b = engineB.resolveInfliction(
-            causerInfliction: 10, targetResistance: 0);
-        expect(a, b);
-      }
+      expect(outcome.causerRoll.total, outcome.targetRoll.total);
+      expect(outcome.applies, isTrue);
     });
 
-    test('disadvantage on the roll lowers the apply rate; advantage raises it',
+    test('a natural 20 for the causer always applies, regardless of totals',
         () {
-      // Under the worked-example formula (modified = roll - resistance;
-      // applies if modified >= infliction), disadvantage on the roll
-      // always lowers the apply rate and advantage always raises it -
-      // same direction as Resistance/lowering Resistance, respectively.
-      // This is exactly why Bleeding grants *advantage* (not disadvantage
-      // on the bleeding character's own roll) to whoever attempts to
-      // inflict a new effect on them: that's the only way to make
-      // Bleeding a debuff (raises the apply rate against them) without
-      // touching this formula. See StatusEffectEngine.resolveInfliction's
-      // doc comment and the 'Bleeding' group below.
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(3)));
+      var sawCrit = false;
+      for (var i = 0; i < 2000 && !sawCrit; i++) {
+        // Force a huge disadvantage for the causer's total so only a
+        // natural 20 could possibly win, then check the crit flag correlates.
+        final outcome = engine.resolveInfliction(
+            causerInfliction: -1000, targetResistance: 0);
+        if (outcome.causerRoll.kept == 20) {
+          expect(outcome.isCriticalSuccess, isTrue);
+          expect(outcome.applies, isTrue);
+          sawCrit = true;
+        }
+      }
+      expect(sawCrit, isTrue);
+    });
+
+    test('a natural 1 for the causer always fails, regardless of totals', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(4)));
+      var sawCritFailure = false;
+      for (var i = 0; i < 2000 && !sawCritFailure; i++) {
+        // Force a huge causer Infliction bonus so only a natural 1 could
+        // possibly lose.
+        final outcome = engine.resolveInfliction(
+            causerInfliction: 1000, targetResistance: 0);
+        if (outcome.causerRoll.kept == 1) {
+          expect(outcome.isCriticalFailure, isTrue);
+          expect(outcome.applies, isFalse);
+          sawCritFailure = true;
+        }
+      }
+      expect(sawCritFailure, isTrue);
+    });
+
+    test(
+        "disadvantage on the target's roll raises the apply rate; advantage lowers it",
+        () {
+      // Under the two-roll opposed formula (applies if causerTotal >=
+      // targetTotal), weakening the target's own roll makes their side of
+      // the contest easier to beat - the natural, expected direction for
+      // an opposed roll (same as a defender's disadvantage helping an
+      // attacker land a hit in CombatEngine.resolveAttackRoll). This is
+      // exactly why Bleeding grants disadvantage on the bleeding
+      // character's own status-resistance roll (see the 'Bleeding' group
+      // below) rather than needing a special-cased workaround.
       const samples = 5000;
 
       int successesWithMode(RollMode mode) {
@@ -88,13 +112,12 @@ void main() {
           final context = RollContext();
           if (mode == RollMode.disadvantage) context.addDisadvantage('x');
           if (mode == RollMode.advantage) context.addAdvantage('x');
-          if (engine.resolveInfliction(
+          final outcome = engine.resolveInfliction(
             causerInfliction: 10,
             targetResistance: 0,
             targetRollContext: context,
-          )) {
-            count++;
-          }
+          );
+          if (outcome.applies) count++;
         }
         return count;
       }
@@ -102,8 +125,8 @@ void main() {
       final normalSuccesses = successesWithMode(RollMode.normal);
       final disadvantageSuccesses = successesWithMode(RollMode.disadvantage);
       final advantageSuccesses = successesWithMode(RollMode.advantage);
-      expect(disadvantageSuccesses, lessThan(normalSuccesses));
-      expect(advantageSuccesses, greaterThan(normalSuccesses));
+      expect(disadvantageSuccesses, greaterThan(normalSuccesses));
+      expect(advantageSuccesses, lessThan(normalSuccesses));
     });
   });
 
@@ -287,15 +310,15 @@ void main() {
     });
 
     test(
-        'Bleeding grants advantage on status resistance rolls made against the bleeding character '
+        'Bleeding grants disadvantage on the bleeding character\'s own status resistance roll '
         '(so it is actually a debuff - see resolveInfliction doc comment)', () {
       final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
       final state = CharacterBattleState(testCharacter());
       engine.apply(state, 'bleeding');
 
       final context = state.rollContextFor(StatusRollTag.statusResistanceRoll);
-      expect(context.hasAdvantage, isTrue);
-      expect(context.hasDisadvantage, isFalse);
+      expect(context.hasDisadvantage, isTrue);
+      expect(context.hasAdvantage, isFalse);
     });
 
     test(
@@ -313,13 +336,12 @@ void main() {
         for (var i = 0; i < samples; i++) {
           final context =
               target.rollContextFor(StatusRollTag.statusResistanceRoll);
-          if (engine.resolveInfliction(
+          final outcome = engine.resolveInfliction(
             causerInfliction: 10,
             targetResistance: 0,
             targetRollContext: context,
-          )) {
-            count++;
-          }
+          );
+          if (outcome.applies) count++;
         }
         return count;
       }

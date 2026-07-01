@@ -172,15 +172,14 @@ class CharacterBattleState {
     );
   }
 
-  /// Builds a [RollContext] pre-populated with advantage/disadvantage
-  /// sources from this character's active status effects for the given
-  /// roll category. This is "this character's own context" for that roll
-  /// type - usually because it's their own roll (Poisoned's disadvantage
-  /// on their own attack rolls), but for `statusResistanceRoll` it's the
-  /// context used whenever *someone else* attempts to inflict a new
-  /// status effect on them (Bleeding grants advantage there - see
-  /// `StatusEffectEngine.resolveInfliction`). Callers may add further
-  /// advantage/disadvantage sources (e.g. from an ability) before rolling.
+  /// Builds a [RollContext] pre-populated with disadvantage sources from
+  /// this character's active status effects for the given roll category -
+  /// this is "this character's own roll" for that category, whether it's
+  /// their own outgoing attack roll (Poisoned) or their own
+  /// status-resistance roll rolled when someone attempts to inflict a new
+  /// effect on them (Bleeding - see `StatusEffectEngine.resolveInfliction`).
+  /// Callers may add further advantage/disadvantage sources (e.g. from an
+  /// ability) before rolling.
   RollContext rollContextFor(StatusRollTag tag,
       {StatusEffectCatalog? catalog}) {
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
@@ -189,9 +188,6 @@ class CharacterBattleState {
       final def = cat[instance.definitionId];
       if (def.disadvantageRollTags.contains(tag)) {
         context.addDisadvantage('status:${def.id}');
-      }
-      if (def.advantageRollTags.contains(tag)) {
-        context.addAdvantage('status:${def.id}');
       }
     }
     return context;

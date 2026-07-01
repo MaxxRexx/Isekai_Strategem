@@ -23,6 +23,25 @@ class StatusTickResult {
   const StatusTickResult(this.damageEvents, this.trionDrainEvents);
 }
 
+/// Outcome of a single opposed status-infliction roll. Mirrors
+/// `AttackRollOutcome` in combat_engine.dart, since the roll mechanic is
+/// now structurally identical to attack resolution.
+class InflictionRollOutcome {
+  final D20RollResult causerRoll;
+  final D20RollResult targetRoll;
+  final bool applies;
+  final bool isCriticalSuccess;
+  final bool isCriticalFailure;
+
+  const InflictionRollOutcome({
+    required this.causerRoll,
+    required this.targetRoll,
+    required this.applies,
+    required this.isCriticalSuccess,
+    required this.isCriticalFailure,
+  });
+}
+
 /// Resolves status effect infliction rolls, applies effects (including
 /// any randomized instance data), and ticks them at the start of a
 /// character's turn.
@@ -36,44 +55,51 @@ class StatusEffectEngine {
   })  : catalog = catalog ?? StatusEffectCatalog.defaultCatalog,
         diceRoller = diceRoller ?? DiceRoller();
 
-  /// Resolves whether a status effect infliction attempt succeeds.
+  /// Resolves whether a status effect infliction attempt succeeds: an
+  /// opposed roll where the causer rolls d20+Infliction, the target rolls
+  /// d20+Resistance, and the effect applies if the causer's total is
+  /// greater than or equal to the target's (ties favor the causer,
+  /// matching `CombatEngine.resolveAttackRoll`'s tie-breaking). A natural
+  /// 20 on the causer's kept die always applies the effect regardless of
+  /// totals; a natural 1 always fails it - again mirroring
+  /// `resolveAttackRoll`, since this is now the same opposed d20+mod
+  /// contest shape.
   ///
-  /// ## Design note (flagged ambiguity)
-  /// The brief gives a concrete numeric example ("+1 resistance subtracts
-  /// 1 from the result; if the modified result is less than the causer's
-  /// Status Effect Infliction value, the effect fails") but doesn't say
-  /// whose roll it is. This is implemented as a d20 roll modified by the
-  /// target's Resistance: `modified = d20 - targetResistance`; the effect
-  /// applies if `modified >= causerInfliction`. Higher Resistance lowers
-  /// the modified result, making it harder to clear the Infliction bar,
-  /// i.e. higher Resistance = effect fails more often, matching the
-  /// worked example.
-  ///
-  /// Mathematically, *disadvantage* on this roll also lowers the apply
-  /// rate (same direction as raising Resistance) - a lower roll is always
-  /// harder to clear the bar with, whichever side "owns" the roll. That
-  /// initially looked like a problem for Bleeding ("disadvantage on
-  /// status resistance rolls", intended as a debuff making the bleeding
-  /// character *more* vulnerable to new effects): naively granting
-  /// disadvantage on the bleeding character's own roll would actually
-  /// protect them, the opposite of the intent. Rather than change this
-  /// formula (which would also invert Resistance's protective direction -
-  /// see the worked example above), Bleeding instead grants *advantage*
-  /// on this same roll to whoever is attempting to inflict a new effect
-  /// on the bleeding character (`StatusEffectDefinition.advantageRollTags`
-  /// on `StatusRollTag.statusResistanceRoll`, folded in via
-  /// `CharacterBattleState.rollContextFor`). That raises the apply rate
-  /// against a bleeding target - correctly a debuff - while leaving
-  /// Resistance's math untouched.
-  bool resolveInfliction({
+  /// This also resolves what used to be a real tension with Bleeding
+  /// ("disadvantage on status resistance rolls", intended as a debuff
+  /// making the bleeding character more vulnerable to new effects): under
+  /// the old single-roll subtractive formula, disadvantage on that one
+  /// roll always *protected* whoever it was applied to. Under this
+  /// two-roll opposed model, disadvantage on the *target's* own roll
+  /// naturally weakens their side of the contest, correctly raising the
+  /// apply rate against them - no special-casing required.
+  InflictionRollOutcome resolveInfliction({
     required int causerInfliction,
     required int targetResistance,
+    RollContext? causerRollContext,
     RollContext? targetRollContext,
   }) {
-    final mode = (targetRollContext ?? RollContext()).netMode;
-    final roll = diceRoller.rollD20(mode: mode);
-    final modified = roll.kept - targetResistance;
-    return modified >= causerInfliction;
+    final causerRoll = diceRoller.rollD20(
+      mode: (causerRollContext ?? RollContext()).netMode,
+      modifier: causerInfliction,
+    );
+    final targetRoll = diceRoller.rollD20(
+      mode: (targetRollContext ?? RollContext()).netMode,
+      modifier: targetResistance,
+    );
+
+    final isCriticalSuccess = causerRoll.isCriticalHit;
+    final isCriticalFailure = causerRoll.isCriticalMiss;
+    final applies = isCriticalSuccess ||
+        (!isCriticalFailure && causerRoll.total >= targetRoll.total);
+
+    return InflictionRollOutcome(
+      causerRoll: causerRoll,
+      targetRoll: targetRoll,
+      applies: applies,
+      isCriticalSuccess: isCriticalSuccess,
+      isCriticalFailure: isCriticalFailure,
+    );
   }
 
   /// Attempts to apply [statusEffectId] to [target]. Returns false without

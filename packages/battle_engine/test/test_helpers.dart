@@ -1,4 +1,24 @@
+import 'dart:math';
+
 import 'package:battle_engine/battle_engine.dart';
+
+/// A [Random] that returns a fixed sequence of `nextInt` results, so a test
+/// can force exact die outcomes (e.g. an exact tie, or a specific natural
+/// roll) that real dice can't be relied on to produce on demand.
+class SequenceRandom implements Random {
+  final List<int> _sequence;
+  int _index = 0;
+  SequenceRandom(this._sequence);
+
+  @override
+  int nextInt(int max) => _sequence[_index++];
+
+  @override
+  double nextDouble() => 0;
+
+  @override
+  bool nextBool() => false;
+}
 
 Stats testStats({
   int trionCapacity = 100,

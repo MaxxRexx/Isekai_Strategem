@@ -118,12 +118,12 @@ class StatusEffectCatalog {
         turnStartDamage:
             DiceExpression(0, 1, flatBonus: magnitudes.bleedingDamagePerTurn),
         turnStartDamageType: DamageType.slashing,
-        // Advantage for whoever attempts to inflict a *new* status effect
-        // on the bleeding character (not disadvantage on their own roll)
-        // - see StatusEffectEngine.resolveInfliction for why this is the
-        // direction that actually makes Bleeding a debuff under the
-        // brief's infliction formula.
-        advantageRollTags: const {StatusRollTag.statusResistanceRoll},
+        // Disadvantage on the bleeding character's own status-resistance
+        // roll. Under the two-roll opposed infliction formula (see
+        // StatusEffectEngine.resolveInfliction), weakening their own roll
+        // makes it easier for a causer's roll to beat/tie it, i.e. this
+        // correctly raises the apply rate against them - a debuff.
+        disadvantageRollTags: const {StatusRollTag.statusResistanceRoll},
       ),
       StatusEffectDefinition(
         id: 'blinded',
