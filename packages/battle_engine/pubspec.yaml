@@ -1,0 +1,14 @@
+name: battle_engine
+description: >
+  Pure-Dart turn-based tactical combat engine for Isekai Strategem.
+  Contains the data models and rules engine only; no UI/Flutter dependency.
+  Designed to be consumed by the Flutter app and connected to the story
+  module via a simple event/callback interface.
+version: 0.1.0
+publish_to: "none"
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dev_dependencies:
+  test: ^1.25.0
