@@ -239,15 +239,50 @@ class CharacterBattleState {
       if (def.disadvantageRollTags.contains(tag)) {
         context.addDisadvantage('status:${def.id}');
       }
+      if (def.advantageRollTags.contains(tag)) {
+        context.addAdvantage('status:${def.id}');
+      }
     }
     return context;
   }
 
+  /// Whether this character is currently blocked from being healed by any
+  /// active status effect (Cursed, Necrotic Wound).
+  bool isHealingPrevented([StatusEffectCatalog? catalog]) {
+    final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
+    return statusEffects.any((i) => cat[i.definitionId].preventsHealing);
+  }
+
+  /// Combined Trion-cost multiplier from active status effects
+  /// (Overcharged, Choked). 1.0 if none are active.
+  double trionCostMultiplier([StatusEffectCatalog? catalog]) {
+    final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
+    var multiplier = 1.0;
+    for (final instance in statusEffects) {
+      final m = cat[instance.definitionId].trionCostMultiplier;
+      if (m != null) multiplier *= m;
+    }
+    return multiplier;
+  }
+
+  /// Combined outgoing-damage multiplier from active status effects
+  /// (Empowered, Weakened). 1.0 if none are active.
+  double outgoingDamageMultiplier([StatusEffectCatalog? catalog]) {
+    final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
+    var multiplier = 1.0;
+    for (final instance in statusEffects) {
+      final m = cat[instance.definitionId].outgoingDamageMultiplier;
+      if (m != null) multiplier *= m;
+    }
+    return multiplier;
+  }
+
   /// Combined damage-type multiplier contributed by active status
-  /// effects (Wet-style immune/vulnerable interactions, and Sickened's
-  /// randomly-chosen vulnerable types). Does not include the character's
-  /// static Damage Resistance, which is a separate, final-step halving
-  /// applied by the combat engine.
+  /// effects (Wet-style immune/vulnerable interactions, Sickened's
+  /// randomly-chosen vulnerable types, and any type-agnostic
+  /// [StatusEffectDefinition.allDamageTakenMultiplier] like Guarded/
+  /// Exposed). Does not include the character's static Damage Resistance,
+  /// which is a separate, final-step halving applied by the combat engine.
   double statusDamageTypeMultiplier(DamageType type,
       {StatusEffectCatalog? catalog}) {
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
@@ -265,6 +300,9 @@ class CharacterBattleState {
         if (chosen != null && chosen.contains(type)) {
           multiplier *= 2.0;
         }
+      }
+      if (def.allDamageTakenMultiplier != null) {
+        multiplier *= def.allDamageTakenMultiplier!;
       }
     }
     return multiplier;

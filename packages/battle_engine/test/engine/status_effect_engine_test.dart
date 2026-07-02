@@ -417,4 +417,111 @@ void main() {
       expect(['a', 'b', 'c'], contains(locked));
     });
   });
+
+  group('StatusEffectCatalog.defaultCatalog completeness', () {
+    test('has exactly 50 built-in effects', () {
+      expect(StatusEffectCatalog.defaultCatalog.all, hasLength(50));
+    });
+
+    test('every effect has a unique id', () {
+      final ids = StatusEffectCatalog.defaultCatalog.all.map((d) => d.id);
+      expect(ids.toSet(), hasLength(ids.length));
+    });
+  });
+
+  group('Focused / Hastened (advantageRollTags)', () {
+    test('Focused grants advantage on attack rolls only', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final state = CharacterBattleState(testCharacter());
+      engine.apply(state, 'focused');
+      expect(
+          state.rollContextFor(StatusRollTag.attackRoll).hasAdvantage, isTrue);
+      expect(state.rollContextFor(StatusRollTag.rangedAttackRoll).hasAdvantage,
+          isFalse);
+    });
+
+    test('Hastened grants advantage plus +Attack per remaining turn', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final state =
+          CharacterBattleState(testCharacter(stats: testStats(attack: 10)));
+      engine.apply(state, 'hastened', durationOverride: 2);
+      expect(
+          state.rollContextFor(StatusRollTag.attackRoll).hasAdvantage, isTrue);
+      expect(state.effectiveStats().attack, 12); // 10 + 1*2
+    });
+  });
+
+  group('Guarded / Exposed / Marked (allDamageTakenMultiplier)', () {
+    test('Guarded reduces all incoming damage regardless of type', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final state = CharacterBattleState(testCharacter());
+      engine.apply(state, 'guarded');
+      expect(state.statusDamageTypeMultiplier(DamageType.fire),
+          StatusEffectMagnitudes.defaults.guardedAllDamageTakenMultiplier);
+      expect(state.statusDamageTypeMultiplier(DamageType.psychic),
+          StatusEffectMagnitudes.defaults.guardedAllDamageTakenMultiplier);
+    });
+
+    test('Exposed raises all incoming damage regardless of type', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final state = CharacterBattleState(testCharacter());
+      engine.apply(state, 'exposed');
+      expect(state.statusDamageTypeMultiplier(DamageType.bludgeoning),
+          StatusEffectMagnitudes.defaults.exposedAllDamageTakenMultiplier);
+    });
+
+    test('Marked grants the source advantage against the marked target', () {
+      final def = StatusEffectCatalog.defaultCatalog['marked'];
+      expect(def.sourceHasAdvantageAgainstTarget, isTrue);
+      expect(def.allDamageTakenMultiplier, greaterThan(1.0));
+    });
+  });
+
+  group('Empowered / Weakened (outgoingDamageMultiplier)', () {
+    test(
+        'outgoingDamageMultiplier combines multiplicatively from all active '
+        'effects', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final state = CharacterBattleState(testCharacter());
+      expect(state.outgoingDamageMultiplier(), 1.0);
+
+      engine.apply(state, 'empowered');
+      expect(state.outgoingDamageMultiplier(),
+          StatusEffectMagnitudes.defaults.empoweredOutgoingDamageMultiplier);
+
+      engine.apply(state, 'weakened');
+      expect(
+        state.outgoingDamageMultiplier(),
+        closeTo(
+          StatusEffectMagnitudes.defaults.empoweredOutgoingDamageMultiplier *
+              StatusEffectMagnitudes.defaults.weakenedOutgoingDamageMultiplier,
+          1e-9,
+        ),
+      );
+    });
+  });
+
+  group('Cursed / Necrotic Wound (preventsHealing)', () {
+    test('a cursed character is flagged as healing-prevented', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final state = CharacterBattleState(testCharacter());
+      expect(state.isHealingPrevented(), isFalse);
+      engine.apply(state, 'cursed');
+      expect(state.isHealingPrevented(), isTrue);
+    });
+  });
+
+  group('Overcharged / Choked (trionCostMultiplier)', () {
+    test(
+        'trionCostMultiplier combines multiplicatively from all active '
+        'effects', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final state = CharacterBattleState(testCharacter());
+      expect(state.trionCostMultiplier(), 1.0);
+
+      engine.apply(state, 'overcharged');
+      expect(state.trionCostMultiplier(),
+          StatusEffectMagnitudes.defaults.overchargedTrionCostMultiplier);
+    });
+  });
 }

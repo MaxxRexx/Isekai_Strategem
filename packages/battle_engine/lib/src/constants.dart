@@ -112,13 +112,17 @@ class FatConfig {
   static const FatConfig defaults = FatConfig();
 }
 
-/// Default durations/magnitudes for the built-in status effect catalog.
-/// Two values are given explicitly by the design brief (Sickened's 4
-/// random damage types, Sapped's 25% Trion Capacity drain); everything
-/// else (durations, flat magnitudes) is an unspecified "X turns" / "value
-/// X" placeholder in the brief, so it's collected here as an explicit,
-/// tunable guess rather than a silently hardcoded magic number.
+/// Default durations/magnitudes for the built-in 50-entry status effect
+/// catalog (see `StatusEffectCatalog`), tuned against the baseline stat
+/// block in `Stats`/`testStats` (100 max Health, ~10 Attack/Defense, 5
+/// Armor, 100 Trion Capacity, Team Spirit centered on 50). Two values are
+/// given explicitly by the original design brief (Sickened's 4 random
+/// damage types, Sapped's 25% Trion Capacity drain); everything else is
+/// collected here as an explicit, tunable value rather than a silently
+/// hardcoded magic number - to rebalance, change values here (or
+/// construct an alternate config instance and inject it).
 class StatusEffectMagnitudes {
+  // --- Original 18 ---
   final int acidArmorReduction;
   final int acidDurationTurns;
   final int wetDurationTurns;
@@ -143,6 +147,69 @@ class StatusEffectMagnitudes {
   final int electrocutedDurationTurns;
   final int regeneratingDurationTurns;
   final int regeneratingHealPerTurn;
+
+  // --- 32 additions (D&D / Naruto-Arena / World Trigger inspired) ---
+  final int empoweredDurationTurns;
+  final double empoweredOutgoingDamageMultiplier;
+  final int weakenedDurationTurns;
+  final double weakenedOutgoingDamageMultiplier;
+  final int focusedDurationTurns;
+  final int guardedDurationTurns;
+  final double guardedAllDamageTakenMultiplier;
+  final int exposedDurationTurns;
+  final double exposedAllDamageTakenMultiplier;
+  final int markedDurationTurns;
+  final double markedAllDamageTakenMultiplier;
+  final int cursedDurationTurns;
+  final int silencedDurationTurns;
+  final int enragedDurationTurns;
+  final double enragedOutgoingDamageMultiplier;
+  final int enragedDefensePenalty;
+  final int fatiguedDurationTurns;
+  final int fatiguedAttackPenalty;
+  final int fatiguedDefensePenalty;
+  final int inspiredDurationTurns;
+  final int inspiredAttackBonus;
+  final int inspiredDefenseBonus;
+  final int shatteredGuardDurationTurns;
+  final int overchargedDurationTurns;
+  final double overchargedTrionCostMultiplier;
+  final int chokedDurationTurns;
+  final double chokedTrionCostMultiplier;
+  final int petrifiedDurationTurns;
+  final double petrifiedAllDamageTakenMultiplier;
+  final int terrifiedDurationTurns;
+  final int slowedDurationTurns;
+  final int slowedDefensePenaltyPerTurn;
+  final int hastenedDurationTurns;
+  final int hastenedAttackBonusPerTurn;
+  final int scorchedDurationTurns;
+  final int scorchedDamagePerTurn;
+  final int chilledDurationTurns;
+  final int chilledAttackPenaltyPerTurn;
+  final int corrodedDurationTurns;
+  final int corrodedArmorReduction;
+  final int shadowBoundDurationTurns;
+  final int genjutsuTrappedDurationTurns;
+  final double genjutsuTrappedDrainPercentOfTrionCapacity;
+  final int sealedDurationTurns;
+  final int overwhelmedDurationTurns;
+  final int adrenalineRushDurationTurns;
+  final int adrenalineRushCriticalChanceBonus;
+  final int battleTranceDurationTurns;
+  final int battleTranceFatChanceBonus;
+  final int suppressedDurationTurns;
+  final int suppressedInflictionPenalty;
+  final int wardedDurationTurns;
+  final int wardedResistanceBonus;
+  final int hexedDurationTurns;
+  final int hexedResistancePenalty;
+  final int radiantBlessingDurationTurns;
+  final int radiantBlessingHealPerTurn;
+  final int radiantBlessingMaxHealthBonus;
+  final double radiantBlessingAllDamageTakenMultiplier;
+  final int necroticWoundDurationTurns;
+  final int necroticWoundDamagePerTurn;
 
   const StatusEffectMagnitudes({
     this.acidArmorReduction = 5,
@@ -169,6 +236,67 @@ class StatusEffectMagnitudes {
     this.electrocutedDurationTurns = 2,
     this.regeneratingDurationTurns = 3,
     this.regeneratingHealPerTurn = 8,
+    this.empoweredDurationTurns = 2,
+    this.empoweredOutgoingDamageMultiplier = 1.25,
+    this.weakenedDurationTurns = 3,
+    this.weakenedOutgoingDamageMultiplier = 0.75,
+    this.focusedDurationTurns = 2,
+    this.guardedDurationTurns = 2,
+    this.guardedAllDamageTakenMultiplier = 0.75,
+    this.exposedDurationTurns = 2,
+    this.exposedAllDamageTakenMultiplier = 1.25,
+    this.markedDurationTurns = 1,
+    this.markedAllDamageTakenMultiplier = 1.5,
+    this.cursedDurationTurns = 3,
+    this.silencedDurationTurns = 1,
+    this.enragedDurationTurns = 2,
+    this.enragedOutgoingDamageMultiplier = 1.5,
+    this.enragedDefensePenalty = 3,
+    this.fatiguedDurationTurns = 3,
+    this.fatiguedAttackPenalty = 2,
+    this.fatiguedDefensePenalty = 2,
+    this.inspiredDurationTurns = 2,
+    this.inspiredAttackBonus = 2,
+    this.inspiredDefenseBonus = 2,
+    this.shatteredGuardDurationTurns = 2,
+    this.overchargedDurationTurns = 2,
+    this.overchargedTrionCostMultiplier = 0.5,
+    this.chokedDurationTurns = 2,
+    this.chokedTrionCostMultiplier = 2.0,
+    this.petrifiedDurationTurns = 2,
+    this.petrifiedAllDamageTakenMultiplier = 0.5,
+    this.terrifiedDurationTurns = 2,
+    this.slowedDurationTurns = 2,
+    this.slowedDefensePenaltyPerTurn = 1,
+    this.hastenedDurationTurns = 2,
+    this.hastenedAttackBonusPerTurn = 1,
+    this.scorchedDurationTurns = 2,
+    this.scorchedDamagePerTurn = 3,
+    this.chilledDurationTurns = 2,
+    this.chilledAttackPenaltyPerTurn = 1,
+    this.corrodedDurationTurns = 2,
+    this.corrodedArmorReduction = 3,
+    this.shadowBoundDurationTurns = 2,
+    this.genjutsuTrappedDurationTurns = 1,
+    this.genjutsuTrappedDrainPercentOfTrionCapacity = 0.15,
+    this.sealedDurationTurns = 2,
+    this.overwhelmedDurationTurns = 2,
+    this.adrenalineRushDurationTurns = 2,
+    this.adrenalineRushCriticalChanceBonus = 15,
+    this.battleTranceDurationTurns = 2,
+    this.battleTranceFatChanceBonus = 20,
+    this.suppressedDurationTurns = 2,
+    this.suppressedInflictionPenalty = 5,
+    this.wardedDurationTurns = 2,
+    this.wardedResistanceBonus = 10,
+    this.hexedDurationTurns = 2,
+    this.hexedResistancePenalty = 10,
+    this.radiantBlessingDurationTurns = 3,
+    this.radiantBlessingHealPerTurn = 4,
+    this.radiantBlessingMaxHealthBonus = 10,
+    this.radiantBlessingAllDamageTakenMultiplier = 0.9,
+    this.necroticWoundDurationTurns = 3,
+    this.necroticWoundDamagePerTurn = 3,
   });
 
   static const StatusEffectMagnitudes defaults = StatusEffectMagnitudes();

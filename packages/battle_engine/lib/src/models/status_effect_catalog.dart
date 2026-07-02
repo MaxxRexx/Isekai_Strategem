@@ -159,6 +159,272 @@ class StatusEffectCatalog {
         turnStartHeal:
             DiceExpression(0, 1, flatBonus: magnitudes.regeneratingHealPerTurn),
       ),
+
+      // --- 32 additions (D&D / Naruto-Arena / World Trigger inspired) ---
+      StatusEffectDefinition(
+        id: 'empowered',
+        name: 'Empowered',
+        defaultDurationTurns: magnitudes.empoweredDurationTurns,
+        outgoingDamageMultiplier: magnitudes.empoweredOutgoingDamageMultiplier,
+      ),
+      StatusEffectDefinition(
+        id: 'weakened',
+        name: 'Weakened',
+        defaultDurationTurns: magnitudes.weakenedDurationTurns,
+        outgoingDamageMultiplier: magnitudes.weakenedOutgoingDamageMultiplier,
+      ),
+      StatusEffectDefinition(
+        id: 'focused',
+        name: 'Focused',
+        defaultDurationTurns: magnitudes.focusedDurationTurns,
+        advantageRollTags: const {StatusRollTag.attackRoll},
+      ),
+      StatusEffectDefinition(
+        id: 'guarded',
+        name: 'Guarded',
+        defaultDurationTurns: magnitudes.guardedDurationTurns,
+        allDamageTakenMultiplier: magnitudes.guardedAllDamageTakenMultiplier,
+      ),
+      StatusEffectDefinition(
+        id: 'exposed',
+        name: 'Exposed',
+        defaultDurationTurns: magnitudes.exposedDurationTurns,
+        allDamageTakenMultiplier: magnitudes.exposedAllDamageTakenMultiplier,
+      ),
+      StatusEffectDefinition(
+        id: 'marked',
+        name: 'Marked',
+        defaultDurationTurns: magnitudes.markedDurationTurns,
+        allDamageTakenMultiplier: magnitudes.markedAllDamageTakenMultiplier,
+        sourceHasAdvantageAgainstTarget: true,
+      ),
+      StatusEffectDefinition(
+        id: 'cursed',
+        name: 'Cursed',
+        defaultDurationTurns: magnitudes.cursedDurationTurns,
+        preventsHealing: true,
+      ),
+      StatusEffectDefinition(
+        id: 'silenced',
+        name: 'Silenced',
+        defaultDurationTurns: magnitudes.silencedDurationTurns,
+        preventsActions: true,
+      ),
+      StatusEffectDefinition(
+        id: 'enraged',
+        name: 'Enraged',
+        defaultDurationTurns: magnitudes.enragedDurationTurns,
+        outgoingDamageMultiplier: magnitudes.enragedOutgoingDamageMultiplier,
+        flatStatModifiers: {
+          ModifiableStat.defense: -magnitudes.enragedDefensePenalty.toDouble()
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'fatigued',
+        name: 'Fatigued',
+        defaultDurationTurns: magnitudes.fatiguedDurationTurns,
+        flatStatModifiers: {
+          ModifiableStat.attack: -magnitudes.fatiguedAttackPenalty.toDouble(),
+          ModifiableStat.defense: -magnitudes.fatiguedDefensePenalty.toDouble(),
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'inspired',
+        name: 'Inspired',
+        defaultDurationTurns: magnitudes.inspiredDurationTurns,
+        flatStatModifiers: {
+          ModifiableStat.attack: magnitudes.inspiredAttackBonus.toDouble(),
+          ModifiableStat.defense: magnitudes.inspiredDefenseBonus.toDouble(),
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'shattered_guard',
+        name: 'Shattered Guard',
+        defaultDurationTurns: magnitudes.shatteredGuardDurationTurns,
+        zeroedStats: const {ModifiableStat.armor},
+      ),
+      StatusEffectDefinition(
+        id: 'overcharged',
+        name: 'Overcharged',
+        defaultDurationTurns: magnitudes.overchargedDurationTurns,
+        trionCostMultiplier: magnitudes.overchargedTrionCostMultiplier,
+      ),
+      StatusEffectDefinition(
+        id: 'choked',
+        name: 'Choked',
+        defaultDurationTurns: magnitudes.chokedDurationTurns,
+        trionCostMultiplier: magnitudes.chokedTrionCostMultiplier,
+      ),
+      StatusEffectDefinition(
+        id: 'petrified',
+        name: 'Petrified',
+        defaultDurationTurns: magnitudes.petrifiedDurationTurns,
+        preventsActions: true,
+        allDamageTakenMultiplier: magnitudes.petrifiedAllDamageTakenMultiplier,
+        zeroedStats: const {ModifiableStat.teamSpirit},
+      ),
+      StatusEffectDefinition(
+        id: 'terrified',
+        name: 'Terrified',
+        defaultDurationTurns: magnitudes.terrifiedDurationTurns,
+        disadvantageRollTags: const {
+          StatusRollTag.attackRoll,
+          StatusRollTag.rangedAttackRoll,
+        },
+        cannotTargetSource: true,
+      ),
+      StatusEffectDefinition(
+        id: 'slowed',
+        name: 'Slowed',
+        defaultDurationTurns: magnitudes.slowedDurationTurns,
+        perRemainingTurnStatModifiers: {
+          ModifiableStat.defense:
+              -magnitudes.slowedDefensePenaltyPerTurn.toDouble()
+        },
+        disadvantageRollTags: const {StatusRollTag.attackRoll},
+      ),
+      StatusEffectDefinition(
+        id: 'hastened',
+        name: 'Hastened',
+        defaultDurationTurns: magnitudes.hastenedDurationTurns,
+        advantageRollTags: const {StatusRollTag.attackRoll},
+        perRemainingTurnStatModifiers: {
+          ModifiableStat.attack:
+              magnitudes.hastenedAttackBonusPerTurn.toDouble()
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'scorched',
+        name: 'Scorched',
+        defaultDurationTurns: magnitudes.scorchedDurationTurns,
+        damageTypeInteractions: const [
+          DamageTypeInteractionRule.vulnerable(DamageType.fire),
+        ],
+        turnStartDamage:
+            DiceExpression(0, 1, flatBonus: magnitudes.scorchedDamagePerTurn),
+        turnStartDamageType: DamageType.fire,
+      ),
+      StatusEffectDefinition(
+        id: 'chilled',
+        name: 'Chilled',
+        defaultDurationTurns: magnitudes.chilledDurationTurns,
+        damageTypeInteractions: const [
+          DamageTypeInteractionRule.vulnerable(DamageType.cold),
+        ],
+        perRemainingTurnStatModifiers: {
+          ModifiableStat.attack:
+              -magnitudes.chilledAttackPenaltyPerTurn.toDouble()
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'corroded',
+        name: 'Corroded',
+        defaultDurationTurns: magnitudes.corrodedDurationTurns,
+        flatStatModifiers: {
+          ModifiableStat.armor: -magnitudes.corrodedArmorReduction.toDouble()
+        },
+        damageTypeInteractions: const [
+          DamageTypeInteractionRule.vulnerable(DamageType.acid),
+        ],
+      ),
+      StatusEffectDefinition(
+        id: 'shadow_bound',
+        name: 'Shadow-Bound',
+        defaultDurationTurns: magnitudes.shadowBoundDurationTurns,
+        locksRandomAbilityEachTurn: true,
+        disadvantageRollTags: const {StatusRollTag.attackRoll},
+      ),
+      StatusEffectDefinition(
+        id: 'genjutsu_trapped',
+        name: 'Genjutsu Trapped',
+        defaultDurationTurns: magnitudes.genjutsuTrappedDurationTurns,
+        preventsActions: true,
+        trionCapacityDrainPercentToCauser:
+            magnitudes.genjutsuTrappedDrainPercentOfTrionCapacity,
+      ),
+      StatusEffectDefinition(
+        id: 'sealed',
+        name: 'Sealed',
+        defaultDurationTurns: magnitudes.sealedDurationTurns,
+        zeroedStats: const {
+          ModifiableStat.trionAffinity,
+          ModifiableStat.fatChance,
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'overwhelmed',
+        name: 'Overwhelmed',
+        defaultDurationTurns: magnitudes.overwhelmedDurationTurns,
+        zeroedStats: const {ModifiableStat.criticalChance},
+        disadvantageRollTags: const {StatusRollTag.attackRoll},
+      ),
+      StatusEffectDefinition(
+        id: 'adrenaline_rush',
+        name: 'Adrenaline Rush',
+        defaultDurationTurns: magnitudes.adrenalineRushDurationTurns,
+        flatStatModifiers: {
+          ModifiableStat.criticalChance:
+              magnitudes.adrenalineRushCriticalChanceBonus.toDouble()
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'battle_trance',
+        name: 'Battle Trance',
+        defaultDurationTurns: magnitudes.battleTranceDurationTurns,
+        flatStatModifiers: {
+          ModifiableStat.fatChance:
+              magnitudes.battleTranceFatChanceBonus.toDouble()
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'suppressed',
+        name: 'Suppressed',
+        defaultDurationTurns: magnitudes.suppressedDurationTurns,
+        flatStatModifiers: {
+          ModifiableStat.statusEffectInfliction:
+              -magnitudes.suppressedInflictionPenalty.toDouble()
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'warded',
+        name: 'Warded',
+        defaultDurationTurns: magnitudes.wardedDurationTurns,
+        flatStatModifiers: {
+          ModifiableStat.statusEffectResistance:
+              magnitudes.wardedResistanceBonus.toDouble()
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'hexed',
+        name: 'Hexed',
+        defaultDurationTurns: magnitudes.hexedDurationTurns,
+        flatStatModifiers: {
+          ModifiableStat.statusEffectResistance:
+              -magnitudes.hexedResistancePenalty.toDouble()
+        },
+      ),
+      StatusEffectDefinition(
+        id: 'radiant_blessing',
+        name: 'Radiant Blessing',
+        defaultDurationTurns: magnitudes.radiantBlessingDurationTurns,
+        turnStartHeal: DiceExpression(0, 1,
+            flatBonus: magnitudes.radiantBlessingHealPerTurn),
+        flatStatModifiers: {
+          ModifiableStat.maxHealth:
+              magnitudes.radiantBlessingMaxHealthBonus.toDouble()
+        },
+        allDamageTakenMultiplier:
+            magnitudes.radiantBlessingAllDamageTakenMultiplier,
+      ),
+      StatusEffectDefinition(
+        id: 'necrotic_wound',
+        name: 'Necrotic Wound',
+        defaultDurationTurns: magnitudes.necroticWoundDurationTurns,
+        turnStartDamage: DiceExpression(0, 1,
+            flatBonus: magnitudes.necroticWoundDamagePerTurn),
+        turnStartDamageType: DamageType.necrotic,
+        preventsHealing: true,
+      ),
     ];
     return StatusEffectCatalog._({for (final d in defs) d.id: d});
   }

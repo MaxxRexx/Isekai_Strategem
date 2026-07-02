@@ -120,5 +120,62 @@ void main() {
       }
       expect(triggeredAtLeastOnce, isTrue);
     });
+
+    test(
+        'useAbility scales Trion cost by an active trionCostMultiplier '
+        'status effect (Overcharged halves it)', () {
+      final state = CharacterBattleState(testCharacter());
+      final engine = TurnEngine();
+      engine.statusEffectEngine.apply(state, 'overcharged');
+      final teamPool = TrionPool(current: 20);
+      final trigger = testTrigger(trionCost: 10);
+
+      expect(engine.useAbility(state, trigger, teamPool), isTrue);
+      expect(teamPool.current, 15); // 20 - (10 * 0.5)
+    });
+
+    test(
+        'tickStatusEffects skips heal-over-time while healing is prevented '
+        '(Cursed + Regenerating)', () {
+      final engine = TurnEngine();
+      final state =
+          CharacterBattleState(testCharacter(stats: testStats(maxHealth: 100)));
+      state.currentHealth = 50;
+      engine.statusEffectEngine.apply(state, 'regenerating');
+      engine.statusEffectEngine.apply(state, 'cursed');
+
+      final healthBefore = state.currentHealth;
+      engine.tickStatusEffects(state);
+      expect(state.currentHealth, healthBefore);
+    });
+
+    test(
+        'resolveAbilityUse scales dealt damage by the attacker\'s outgoing '
+        'damage multiplier (Empowered)', () {
+      final combatEngine =
+          CombatEngine(diceRoller: DiceRoller(const FixedRandom(9)));
+      final engine = TurnEngine(combatEngine: combatEngine);
+      final attacker = CharacterBattleState(
+          testCharacter(id: 'attacker', stats: testStats(attack: 1000)));
+      final target = CharacterBattleState(
+          testCharacter(id: 'target', stats: testStats(armor: 0)));
+      final trigger =
+          testTrigger(damage: const DiceExpression(0, 1, flatBonus: 10));
+
+      final baseline = engine
+          .resolveAbilityUse(attacker: attacker, trigger: trigger, targets: [
+        CharacterBattleState(
+            testCharacter(id: 'target-2', stats: testStats(armor: 0))),
+      ]);
+
+      engine.statusEffectEngine.apply(attacker, 'empowered');
+      final empowered = engine.resolveAbilityUse(
+          attacker: attacker, trigger: trigger, targets: [target]);
+
+      expect(
+        empowered.targetResults.single.totalDamageDealt,
+        greaterThan(baseline.targetResults.single.totalDamageDealt),
+      );
+    });
   });
 }

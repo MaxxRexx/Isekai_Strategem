@@ -126,9 +126,12 @@ class TurnEngine {
       );
     }
 
-    for (final event in result.healEvents) {
-      final healed = _scaledHealAmount(state, event.amount);
-      state.currentHealth = (state.currentHealth + healed).clamp(0, maxHealth);
+    if (!state.isHealingPrevented()) {
+      for (final event in result.healEvents) {
+        final healed = _scaledHealAmount(state, event.amount);
+        state.currentHealth =
+            (state.currentHealth + healed).clamp(0, maxHealth);
+      }
     }
 
     for (final drain in result.trionDrainEvents) {
@@ -200,12 +203,15 @@ class TurnEngine {
     return true;
   }
 
-  /// Spends [trigger]'s Trion cost from [teamPool] and records the use
-  /// against [state]'s per-turn ability count / pending cooldown. Returns
-  /// false (no state change) if the team pool can't afford it.
+  /// Spends [trigger]'s Trion cost (scaled by [state]'s active Trion-cost
+  /// multiplier status effects, e.g. Overcharged/Choked) from [teamPool]
+  /// and records the use against [state]'s per-turn ability count/pending
+  /// cooldown. Returns false (no state change) if the team pool can't
+  /// afford it.
   bool useAbility(
       CharacterBattleState state, ActiveTrigger trigger, TrionPool teamPool) {
-    if (!teamPool.trySpend(trigger.trionCost)) return false;
+    final cost = (trigger.trionCost * state.trionCostMultiplier()).round();
+    if (!teamPool.trySpend(cost)) return false;
     state.recordAbilityUse(trigger);
     return true;
   }
@@ -373,8 +379,11 @@ class TurnEngine {
         final damageBonus = isBurst
             ? bonuses.burstDamageBonus
             : bonuses.singleTargetDamageBonus;
-        final adjustedBaseDamage =
-            (baseDamage * (1 + damageBonus) * damageMultiplier).round();
+        final adjustedBaseDamage = (baseDamage *
+                (1 + damageBonus) *
+                damageMultiplier *
+                attacker.outgoingDamageMultiplier())
+            .round();
         final healthBefore = target.currentHealth;
         _applyDamage(
           target: target,
@@ -385,7 +394,7 @@ class TurnEngine {
         damageDealt = healthBefore - target.currentHealth;
       }
 
-      if (trigger.healAmount != null) {
+      if (trigger.healAmount != null && !target.isHealingPrevented()) {
         final baseHeal = trigger.healAmount!.roll(combatEngine.diceRoller);
         final healed =
             (_scaledHealAmount(target, baseHeal) * healMultiplier).round();

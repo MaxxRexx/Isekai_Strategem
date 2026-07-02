@@ -125,6 +125,34 @@ class StatusEffectDefinition {
   /// `disadvantageRollTags: {StatusRollTag.rangedAttackRoll}` as needed.
   final bool rangedTargetsReducedByOne;
 
+  /// Roll categories on which the affected character rolls with
+  /// *advantage* while this effect is active (Focused's own attack rolls,
+  /// Hastened's own attack rolls) - the buff mirror of
+  /// [disadvantageRollTags].
+  final Set<StatusRollTag> advantageRollTags;
+
+  /// Flat multiplier on *all* damage the affected character takes,
+  /// regardless of damage type, combined multiplicatively with any
+  /// type-specific [damageTypeInteractions] (Guarded: 0.75, Exposed/
+  /// Marked: >1.0). Unlike [damageTypeInteractions], this isn't keyed to a
+  /// single damage type.
+  final double? allDamageTakenMultiplier;
+
+  /// Flat multiplier on all damage the affected character *deals* with
+  /// their own abilities (Empowered: >1.0, Weakened/Enraged's fragility
+  /// trade-off: <1.0). Applied by `TurnEngine.resolveAbilityUse` alongside
+  /// the Team Spirit damage bonus.
+  final double? outgoingDamageMultiplier;
+
+  /// While active, the affected character cannot be healed by any means
+  /// (instant heal-on-hit or heal-over-time) (Cursed, Necrotic Wound).
+  final bool preventsHealing;
+
+  /// Flat multiplier on the Trion cost of abilities the affected character
+  /// uses (Overcharged: <1.0 cheaper, Choked: >1.0 more expensive).
+  /// Applied by `TurnEngine.useAbility`.
+  final double? trionCostMultiplier;
+
   const StatusEffectDefinition({
     required this.id,
     required this.name,
@@ -144,6 +172,11 @@ class StatusEffectDefinition {
     this.cannotTargetSource = false,
     this.sourceHasAdvantageAgainstTarget = false,
     this.rangedTargetsReducedByOne = false,
+    this.advantageRollTags = const {},
+    this.allDamageTakenMultiplier,
+    this.outgoingDamageMultiplier,
+    this.preventsHealing = false,
+    this.trionCostMultiplier,
   });
 }
 
