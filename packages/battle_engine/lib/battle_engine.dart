@@ -24,6 +24,7 @@ export 'src/constants.dart';
 export 'src/util/dice.dart';
 
 // Engine
+export 'src/engine/battle.dart';
 export 'src/engine/character_battle_state.dart';
 export 'src/engine/combat_engine.dart';
 export 'src/engine/fat_engine.dart';
