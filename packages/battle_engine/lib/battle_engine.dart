@@ -1,6 +1,9 @@
 /// Pure-Dart tactical combat engine: data models + rules engine, no UI.
 library battle_engine;
 
+// AI
+export 'src/ai/rule_based_ai.dart';
+
 // Models
 export 'src/models/black_trigger.dart';
 export 'src/models/character.dart';

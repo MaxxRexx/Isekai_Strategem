@@ -136,6 +136,11 @@ class DiceExpression {
 
   int roll(DiceRoller roller) => roller.rollDice(count, sides) + flatBonus;
 
+  /// Expected value of a roll, e.g. `1d6+2` -> 5.5. Used by heuristics
+  /// (like `RuleBasedAi`'s ability scoring) that need a single comparable
+  /// number rather than an actual roll.
+  double get average => count * (sides + 1) / 2 + flatBonus;
+
   @override
   String toString() =>
       '${count}d$sides${flatBonus == 0 ? '' : (flatBonus > 0 ? '+$flatBonus' : '$flatBonus')}';
