@@ -26,6 +26,11 @@ export 'src/constants.dart';
 // Util
 export 'src/util/dice.dart';
 
+// Story
+export 'src/story/scene.dart';
+export 'src/story/scene_node.dart';
+export 'src/story/story_engine.dart';
+
 // Engine
 export 'src/engine/battle.dart';
 export 'src/engine/character_battle_state.dart';
