@@ -108,11 +108,20 @@ class ActiveTrigger extends Trigger {
   final DamageType? damageType;
   final DiceExpression? damage;
 
-  /// Instant heal on a landed hit, scaled by the target's own Team
+  /// Instant heal on a landed hit, scaled by the recipient's own Team
   /// Spirit-driven Health Regeneration bonus. Health isn't a mechanic on
   /// its own per the design brief, so this (and the `regenerating` status
   /// effect for heal-over-time) are the only two ways health is restored.
+  ///
+  /// By default the recipient is whoever the ability's damage landed on
+  /// (or the target, for a non-damaging support ability). If
+  /// [healsCasterInstead] is true, the recipient is the ability's own
+  /// user instead - a drain: damage the target, heal the caster off it
+  /// (e.g. "Soul Siphon"). Only meaningful when [targetAffiliation] is
+  /// `opponent`, since an ally/self-targeted heal already heals the
+  /// caster or a chosen ally directly.
   final DiceExpression? healAmount;
+  final bool healsCasterInstead;
 
   final List<StatusEffectApplication> inflictedStatusEffects;
 
@@ -133,6 +142,7 @@ class ActiveTrigger extends Trigger {
     this.damageType,
     this.damage,
     this.healAmount,
+    this.healsCasterInstead = false,
     this.inflictedStatusEffects = const [],
   }) : assert(
           attackType.validSubtypes.contains(attackSubtype),

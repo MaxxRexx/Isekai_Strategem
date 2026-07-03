@@ -73,6 +73,7 @@ Character testCharacter({
   Stats? stats,
   Set<DamageType> damageResistances = const {},
   Set<String> statusInvulnerabilities = const {},
+  CharacterPerk? perk,
 }) {
   return Character(
     id: id,
@@ -81,6 +82,7 @@ Character testCharacter({
     baseStats: stats ?? testStats(),
     damageResistances: damageResistances,
     statusInvulnerabilities: statusInvulnerabilities,
+    perk: perk,
   );
 }
 
@@ -102,6 +104,7 @@ ActiveTrigger testTrigger({
   DiceExpression? damage,
   bool includeDamage = true,
   DiceExpression? healAmount,
+  bool healsCasterInstead = false,
   List<StatusEffectApplication> inflictedStatusEffects = const [],
 }) {
   return ActiveTrigger(
@@ -121,6 +124,7 @@ ActiveTrigger testTrigger({
     damageType: includeDamage ? (damageType ?? DamageType.slashing) : null,
     damage: includeDamage ? (damage ?? const DiceExpression(1, 6)) : null,
     healAmount: healAmount,
+    healsCasterInstead: healsCasterInstead,
     inflictedStatusEffects: inflictedStatusEffects,
   );
 }

@@ -27,6 +27,16 @@ class TempPercentPenalty {
   TempPercentPenalty(this.stat, this.percent, this.remainingTurns);
 }
 
+/// A temporary flat bonus to a stat (e.g. Ilona's Riposte perk: a
+/// stacking Attack buff after a melee miss against her). The additive
+/// counterpart to [TempPercentPenalty].
+class TempFlatBonus {
+  final ModifiableStat stat;
+  final double amount;
+  int remainingTurns;
+  TempFlatBonus(this.stat, this.amount, this.remainingTurns);
+}
+
 /// Mutable in-battle state for a single character: current health, active
 /// status effects, ability cooldowns, and Full Arms Trigger bookkeeping.
 /// The [Character] itself stays an immutable template so it can be reused
@@ -54,6 +64,7 @@ class CharacterBattleState {
   final List<_AbilityUseRecord> _abilitiesUsedThisTurn = [];
 
   final List<TempPercentPenalty> tempPercentPenalties = [];
+  final List<TempFlatBonus> tempFlatBonuses = [];
 
   /// Passive effects currently equipped (from passive Triggers and any
   /// Black Trigger passive abilities), applied continuously for as long
@@ -69,6 +80,29 @@ class CharacterBattleState {
   /// Whether this character still has an unused "survive lethal damage
   /// once" World ability charge.
   bool hasSurviveLethalDamageCharge;
+
+  /// The other living-or-dead members of this character's own team,
+  /// populated by whoever sets up the battle (see `Battle`'s
+  /// constructor) - needed for [CharacterPerk]s that read team state
+  /// (Kaito's "last one standing" crit bonus, Marren's ally-health-aware
+  /// Armor bonus). Empty until wired up; perks that need it are simply
+  /// inactive until then.
+  List<CharacterBattleState> teammates = [];
+
+  /// Whether this character's [CharacterPerk]'s once-per-battle charge
+  /// (whichever mechanic it grants - reroll, dodge, redirect, first-hit
+  /// mitigation, etc.) has already been spent. Each perk uses at most one
+  /// such charge, so a single flag is enough rather than per-mechanic
+  /// bookkeeping.
+  bool perkChargeUsed = false;
+
+  /// The category of the last [ActiveTrigger] this character used, for
+  /// Tobias's "Versatile" perk. Null until their first ability use.
+  TriggerCategory? lastActiveTriggerCategory;
+
+  /// Whether this character has used any ability yet this battle, for
+  /// Ren's "First Strike" perk (a first-turn-only Attack bonus).
+  bool hasActedThisBattle = false;
 
   CharacterBattleState(
     this.character, {
@@ -117,6 +151,25 @@ class CharacterBattleState {
   void recordAbilityUse(ActiveTrigger trigger) {
     _abilitiesUsedThisTurn
         .add(_AbilityUseRecord(trigger.id, trigger.cooldownTurns));
+    lastActiveTriggerCategory = trigger.category;
+    hasActedThisBattle = true;
+  }
+
+  /// Consumes this character's [CharacterPerk] once-per-battle charge if
+  /// it hasn't been used yet, returning whether it was available. Callers
+  /// check the specific perk field that gates their mechanic first (e.g.
+  /// `character.perk?.canRerollOwnAttackRollOncePerBattle`) and only call
+  /// this once they know the mechanic applies.
+  bool consumePerkChargeIfAvailable() {
+    if (perkChargeUsed) return false;
+    perkChargeUsed = true;
+    return true;
+  }
+
+  /// Applies a temporary flat bonus to [stat] (e.g. Ilona's Riposte
+  /// perk). Multiple active bonuses on the same stat stack additively.
+  void applyFlatBonus(ModifiableStat stat, double amount, int turns) {
+    tempFlatBonuses.add(TempFlatBonus(stat, amount, turns));
   }
 
   /// Finalizes cooldowns/penalties for abilities used this turn and
@@ -150,6 +203,11 @@ class CharacterBattleState {
       penalty.remainingTurns--;
     }
     tempPercentPenalties.removeWhere((p) => p.remainingTurns <= 0);
+
+    for (final bonus in tempFlatBonuses) {
+      bonus.remainingTurns--;
+    }
+    tempFlatBonuses.removeWhere((b) => b.remainingTurns <= 0);
   }
 
   /// Effective stats after folding in active status effect modifiers and
@@ -184,6 +242,31 @@ class CharacterBattleState {
       });
     }
 
+    for (final bonus in tempFlatBonuses) {
+      deltas[bonus.stat] = (deltas[bonus.stat] ?? 0) + bonus.amount;
+    }
+
+    // Tobias-style "Versatile" perk: a small bonus to whichever stat
+    // matches the category of the last ability used. Attacker/Sniper/
+    // Shooter categories are offense-flavored (Attack), Trapper is
+    // affliction-flavored (Status Effect Infliction), Optional is
+    // support/defense-flavored (Defense).
+    final perk = character.perk;
+    if (perk != null &&
+        perk.grantsBonusForLastUsedAbilityCategory &&
+        lastActiveTriggerCategory != null) {
+      const bonusMagnitude = 2.0;
+      final stat = switch (lastActiveTriggerCategory!) {
+        TriggerCategory.attacker ||
+        TriggerCategory.sniper ||
+        TriggerCategory.shooter =>
+          ModifiableStat.attack,
+        TriggerCategory.trapper => ModifiableStat.statusEffectInfliction,
+        TriggerCategory.optional => ModifiableStat.defense,
+      };
+      deltas[stat] = (deltas[stat] ?? 0) + bonusMagnitude;
+    }
+
     final percentPenalties = <ModifiableStat, double>{};
     for (final penalty in tempPercentPenalties) {
       percentPenalties[penalty.stat] =
@@ -203,15 +286,32 @@ class CharacterBattleState {
       trionAffinity *= fatConfig.trionAffinityPenaltyMultiplier;
     }
 
+    var criticalChance =
+        resolve(ModifiableStat.criticalChance, base.criticalChance);
+    if (perk != null &&
+        perk.doublesCritChanceWhenLastAlive &&
+        teammates.isNotEmpty &&
+        teammates.every((t) => !t.isAlive)) {
+      criticalChance *= 2;
+    }
+
+    var armor = resolve(ModifiableStat.armor, base.armor);
+    if (perk != null &&
+        perk.doublesArmorWhileAllyBelowQuarterHealth &&
+        teammates.any((t) =>
+            t.isAlive &&
+            t.currentHealth < t.character.baseStats.maxHealth * 0.25)) {
+      armor *= 2;
+    }
+
     return base.copyWith(
       attack: resolve(ModifiableStat.attack, base.attack).round(),
       defense: resolve(ModifiableStat.defense, base.defense).round(),
-      armor: resolve(ModifiableStat.armor, base.armor).round(),
+      armor: armor.round(),
       maxHealth: resolve(ModifiableStat.maxHealth, base.maxHealth).round(),
       trionAffinity: trionAffinity.round(),
       teamSpirit: resolve(ModifiableStat.teamSpirit, base.teamSpirit).round(),
-      criticalChance:
-          resolve(ModifiableStat.criticalChance, base.criticalChance),
+      criticalChance: criticalChance,
       fatChance: resolve(ModifiableStat.fatChance, base.fatChance),
       statusEffectInfliction: resolve(ModifiableStat.statusEffectInfliction,
               base.statusEffectInfliction)

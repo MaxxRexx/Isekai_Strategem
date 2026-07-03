@@ -63,7 +63,19 @@ class Battle {
             {
               for (final c in teamA.characters) c.id: CharacterBattleState(c),
               for (final c in teamB.characters) c.id: CharacterBattleState(c),
-            };
+            } {
+    // Wire up each character's `teammates` for team-aware CharacterPerks
+    // (Kaito's last-one-standing crit bonus, Marren's ally-health-aware
+    // Armor bonus, Sable's guardian redirect).
+    for (final team in [teamA, teamB]) {
+      final teamStates =
+          team.characters.map((c) => this.states[c.id]!).toList();
+      for (final state in teamStates) {
+        state.teammates =
+            teamStates.where((s) => !identical(s, state)).toList();
+      }
+    }
+  }
 
   Team get activeTeam => isTeamATurn ? teamA : teamB;
   Team get inactiveTeam => isTeamATurn ? teamB : teamA;
