@@ -2,6 +2,10 @@
 library battle_engine;
 
 // AI
+export 'src/ai/ai_profile.dart';
+export 'src/ai/ai_skill_class.dart';
+export 'src/ai/loadout_builder.dart';
+export 'src/ai/profile_driven_ai.dart';
 export 'src/ai/rule_based_ai.dart';
 
 // Content
