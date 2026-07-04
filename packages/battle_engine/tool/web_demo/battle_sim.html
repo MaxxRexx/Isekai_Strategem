@@ -800,6 +800,18 @@
   .perk-name { color: var(--ink); font-weight: 600; }
   .char-name { color: var(--ink); font-weight: 700; font-size: 13px; }
 
+  .char-stats-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 10.5px;
+    color: var(--ink-dim);
+    margin: 2px 0;
+  }
+  .char-stats-line .stat-label { color: var(--ink-faint); }
+
   .char-card .card-body { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
 
   .t-desc {
@@ -1456,11 +1468,23 @@ BATTLE_DEMO_JS_PLACEHOLDER
     });
   }
 
+  function charStatsLineHtml(c) {
+    const stats = [
+      ['TC', c.trionCapacity], ['TA', c.trionAffinity], ['TS', c.teamSpirit], ['ARM', c.armor],
+      ['ATK', c.attack], ['DEF', c.defense], ['CRIT', Math.round(c.criticalChance) + '%'],
+      ['FAT', Math.round(c.fatChance) + '%'], ['INFL', c.statusEffectInfliction], ['RES', c.statusEffectResistance],
+    ];
+    return '<div class="char-stats-line">' +
+      stats.map(([label, value]) => '<span><span class="stat-label">' + label + '</span> ' + value + '</span>').join('') +
+      '</div>';
+  }
+
   function charCardHtml(c) {
     return icon(typeIcon[c.type]) +
       '<div class="card-body">' +
         '<div><span class="char-name">' + escapeHtml(c.name) + '</span> ' +
           '<span class="type-tag">' + typeLabel[c.type] + '</span></div>' +
+        charStatsLineHtml(c) +
         '<div><span class="perk-name">' + (c.perkName ? c.perkName : 'No perk') + '</span></div>' +
         (CHARACTER_FLAVOR[c.id] ? '<div class="flavor-text">' + escapeHtml(CHARACTER_FLAVOR[c.id]) + '</div>' : '') +
         (c.perkDescription ? '<div class="perk-desc">' + escapeHtml(c.perkDescription) + '</div>' : '') +

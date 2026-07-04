@@ -91,6 +91,15 @@ Map<String, dynamic> _characterSummary(Character c) => {
       'perkName': c.perk?.name,
       'perkDescription': c.perk?.description,
       'trionCapacity': c.baseStats.trionCapacity,
+      'trionAffinity': c.baseStats.trionAffinity,
+      'teamSpirit': c.baseStats.teamSpirit,
+      'armor': c.baseStats.armor,
+      'attack': c.baseStats.attack,
+      'defense': c.baseStats.defense,
+      'criticalChance': c.baseStats.criticalChance,
+      'fatChance': c.baseStats.fatChance,
+      'statusEffectInfliction': c.baseStats.statusEffectInfliction,
+      'statusEffectResistance': c.baseStats.statusEffectResistance,
     };
 
 Map<String, dynamic> _profileSummary(AiProfile p) => {
