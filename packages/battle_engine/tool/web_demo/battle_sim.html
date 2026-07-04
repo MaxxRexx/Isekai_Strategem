@@ -186,6 +186,87 @@
     min-height: 1.4em;
   }
   .char-card .icon { margin-top: 3px; color: var(--team-color); }
+
+  .char-card.char-pick-wrap { display: block; padding: 0; min-height: 0; }
+  .char-pick-btn {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    text-align: left;
+    background: var(--bg-recessed);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 26px 8px 10px;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 11.5px;
+    position: relative;
+  }
+  .char-pick-btn::after {
+    content: '\25BE';
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    color: var(--ink-faint);
+  }
+  .char-pick-btn:hover, .char-pick-btn.open { border-color: var(--accent); }
+  .char-pick-btn .placeholder { color: var(--ink-faint); font-size: 12.5px; }
+  .char-pick-btn .icon { margin-top: 3px; color: var(--team-color); }
+
+  .char-pick-panel {
+    display: none;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-top: none;
+    background: var(--bg-recessed);
+  }
+  .char-pick-panel.open { display: block; }
+  .char-pick-group-label {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    padding: 6px 10px;
+    background: var(--bg-panel);
+    position: sticky;
+    top: 0;
+  }
+  .char-pick-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 11.5px;
+  }
+  .char-pick-row:last-child { border-bottom: none; }
+  .char-pick-row:hover:not(:disabled) { background: rgba(255,255,255,0.05); }
+  .char-pick-row.selected { background: rgba(52,209,200,0.12); }
+  .char-pick-row:disabled { opacity: 0.35; cursor: not-allowed; }
+  .char-pick-row .icon { margin-top: 3px; color: var(--team-color); }
+
+  .visually-hidden-select {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
   .char-card .type-tag {
     font-family: var(--font-mono);
     text-transform: uppercase;
@@ -716,6 +797,7 @@
     line-height: 1.4;
   }
   .perk-name { color: var(--ink); font-weight: 600; }
+  .char-name { color: var(--ink); font-weight: 700; font-size: 13px; }
 
   .char-card .card-body { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
 
@@ -1356,7 +1438,10 @@ BATTLE_DEMO_JS_PLACEHOLDER
 
   for (const team of ['a', 'b']) {
     populateProfileSelect(profileSelects[team]);
-    charSelects[team].forEach(populateCharSelect);
+    charSelects[team].forEach((select, slot) => {
+      populateCharSelect(select);
+      initCharPicker(select, charCards[team][slot]);
+    });
   }
 
   function updateProfileHint(team) {
@@ -1367,18 +1452,80 @@ BATTLE_DEMO_JS_PLACEHOLDER
   function charCardHtml(c) {
     return icon(typeIcon[c.type]) +
       '<div class="card-body">' +
-        '<div><span class="type-tag">' + typeLabel[c.type] + '</span> ' +
-          '<span class="perk-name">' + (c.perkName ? c.perkName : 'No perk') + '</span></div>' +
+        '<div><span class="char-name">' + escapeHtml(c.name) + '</span> ' +
+          '<span class="type-tag">' + typeLabel[c.type] + '</span></div>' +
+        '<div><span class="perk-name">' + (c.perkName ? c.perkName : 'No perk') + '</span></div>' +
         (CHARACTER_FLAVOR[c.id] ? '<div class="flavor-text">' + escapeHtml(CHARACTER_FLAVOR[c.id]) + '</div>' : '') +
         (c.perkDescription ? '<div class="perk-desc">' + escapeHtml(c.perkDescription) + '</div>' : '') +
       '</div>';
   }
 
+  // A native <select> hides its option list behind the OS's own picker on
+  // mobile (just names, no room for icons/flavor/perk text), so character
+  // slots use a custom rich list instead: the <select> stays in the DOM
+  // (hidden) as the single source of truth so all the existing value/
+  // change-event/option-disabling logic below keeps working unmodified,
+  // and this list is just a view over it.
+  let openCharPicker = null;
+
+  function closeCharPicker() {
+    if (openCharPicker) {
+      openCharPicker.panel.classList.remove('open');
+      openCharPicker.btn.classList.remove('open');
+      openCharPicker = null;
+    }
+  }
+  document.addEventListener('click', (e) => {
+    if (openCharPicker && !openCharPicker.btn.contains(e.target) && !openCharPicker.panel.contains(e.target)) {
+      closeCharPicker();
+    }
+  });
+
+  function charPickerPanelHtml() {
+    const byType = { attack: [], defense: [], support: [], unique: [] };
+    for (const c of characters) byType[c.type].push(c);
+    return ['attack', 'defense', 'support', 'unique'].map((type) =>
+      '<div class="char-pick-group-label">' + typeLabel[type] + '</div>' +
+      byType[type].map((c) =>
+        '<button type="button" class="char-pick-row" data-id="' + c.id + '">' + charCardHtml(c) + '</button>'
+      ).join('')
+    ).join('');
+  }
+
+  function initCharPicker(select, container) {
+    select.classList.add('visually-hidden-select');
+    container.classList.add('char-pick-wrap');
+    container.innerHTML = '<button type="button" class="char-pick-btn"></button>' +
+      '<div class="char-pick-panel">' + charPickerPanelHtml() + '</div>';
+    const btn = container.querySelector('.char-pick-btn');
+    const panel = container.querySelector('.char-pick-panel');
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (openCharPicker && openCharPicker.panel === panel) { closeCharPicker(); return; }
+      closeCharPicker();
+      panel.classList.add('open');
+      btn.classList.add('open');
+      openCharPicker = { btn, panel };
+    });
+
+    panel.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        select.value = row.dataset.id;
+        select.dispatchEvent(new Event('change'));
+        closeCharPicker();
+      });
+    });
+  }
+
   function updateCharCard(team, slot) {
     const c = charById[charSelects[team][slot].value];
-    const card = charCards[team][slot];
-    if (!c) { card.innerHTML = ''; return; }
-    card.innerHTML = charCardHtml(c);
+    const container = charCards[team][slot];
+    const btn = container.querySelector('.char-pick-btn');
+    btn.innerHTML = c ? charCardHtml(c) : '<span class="placeholder">Choose a character...</span>';
+    container.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.classList.toggle('selected', !!c && row.dataset.id === c.id);
+    });
   }
 
   function enforceNoDuplicates(team) {
@@ -1387,6 +1534,11 @@ BATTLE_DEMO_JS_PLACEHOLDER
       for (const opt of select.querySelectorAll('option')) {
         opt.disabled = opt.value !== select.value && chosen.includes(opt.value);
       }
+      const container = charCards[team][slot];
+      container.querySelectorAll('.char-pick-row').forEach((row) => {
+        const opt = select.querySelector('option[value="' + row.dataset.id + '"]');
+        row.disabled = !!opt && opt.disabled;
+      });
     });
   }
 
@@ -1700,22 +1852,36 @@ BATTLE_DEMO_JS_PLACEHOLDER
   const playProfileSelectB = document.getElementById('play-profile-b');
   const playProfileHintB = document.getElementById('play-profile-hint-b');
 
-  playCharSelects.a.forEach(populateCharSelect);
-  playCharSelects.b.forEach(populateCharSelect);
+  playCharSelects.a.forEach((select, slot) => {
+    populateCharSelect(select);
+    initCharPicker(select, playCharCards.a[slot]);
+  });
+  playCharSelects.b.forEach((select, slot) => {
+    populateCharSelect(select);
+    initCharPicker(select, playCharCards.b[slot]);
+  });
   populateProfileSelect(playProfileSelectB);
 
   function playUpdateCharCard(team, slot) {
     const c = charById[playCharSelects[team][slot].value];
-    const card = playCharCards[team][slot];
-    if (!c) { card.innerHTML = ''; return; }
-    card.innerHTML = charCardHtml(c);
+    const container = playCharCards[team][slot];
+    const btn = container.querySelector('.char-pick-btn');
+    btn.innerHTML = c ? charCardHtml(c) : '<span class="placeholder">Choose a character...</span>';
+    container.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.classList.toggle('selected', !!c && row.dataset.id === c.id);
+    });
   }
   function playEnforceNoDuplicates(team) {
     const chosen = playCharSelects[team].map((s) => s.value);
-    playCharSelects[team].forEach((select) => {
+    playCharSelects[team].forEach((select, slot) => {
       for (const opt of select.querySelectorAll('option')) {
         opt.disabled = opt.value !== select.value && chosen.includes(opt.value);
       }
+      const container = playCharCards[team][slot];
+      container.querySelectorAll('.char-pick-row').forEach((row) => {
+        const opt = select.querySelector('option[value="' + row.dataset.id + '"]');
+        row.disabled = !!opt && opt.disabled;
+      });
     });
   }
   function playUpdateProfileHintB() {
