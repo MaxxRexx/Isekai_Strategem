@@ -5,6 +5,7 @@
 import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
+import 'dart:math';
 
 import 'package:battle_engine/battle_engine.dart';
 
@@ -147,6 +148,7 @@ Map<String, dynamic> _runBattle({
     teamA: teamADraft.team,
     teamB: teamBDraft.team,
     states: {...teamADraft.states, ...teamBDraft.states},
+    teamAGoesFirst: Random().nextBool(),
   );
 
   final rounds = <Map<String, dynamic>>[];
@@ -500,18 +502,46 @@ String _startSessionJson(String configJsonString) {
     profile: _profileById(teamBConfig['profileId'] as String),
   );
 
+  // Which team acts first is random by default (matching the real rules -
+  // it's not always the player), except the Guided Tutorial passes
+  // 'teamA' explicitly so its scripted walkthrough stays predictable.
+  final firstTurn = config['firstTurn'] as String? ?? 'random';
+  final teamAGoesFirst = switch (firstTurn) {
+    'teamA' => true,
+    'teamB' => false,
+    _ => Random().nextBool(),
+  };
+
   final battle = Battle(
     teamA: teamATeam,
     teamB: teamBDraft.team,
     states: {...teamAStates, ...teamBDraft.states},
+    teamAGoesFirst: teamAGoesFirst,
   );
-  battle.startTurn(equippedActiveTriggers: equippedA);
+  final aiB = ProfileDrivenAi(_profileById(teamBConfig['profileId'] as String));
+
+  Map<String, dynamic>? openingAiTurn;
+  if (teamAGoesFirst) {
+    battle.startTurn(equippedActiveTriggers: equippedA);
+  } else {
+    // The player's session always opens on their own turn, even when team
+    // B randomly won the opening move - resolve team B's entire opening
+    // turn immediately (_playAiTurns calls startTurn itself, since neither
+    // team's turn has started yet on a fresh Battle) rather than surfacing
+    // a session that starts on the opponent's turn with nothing for the
+    // player to do yet.
+    openingAiTurn =
+        _playAiTurns(battle, teamBDraft.equippedActiveTriggers, aiB);
+    if (!battle.isOver) {
+      battle.startTurn(equippedActiveTriggers: equippedA);
+    }
+  }
 
   final session = _Session(
     battle: battle,
     equippedA: equippedA,
     equippedB: teamBDraft.equippedActiveTriggers,
-    aiB: ProfileDrivenAi(_profileById(teamBConfig['profileId'] as String)),
+    aiB: aiB,
   );
   final sessionId = _nextSessionId++;
   _sessions[sessionId] = session;
@@ -526,6 +556,7 @@ String _startSessionJson(String configJsonString) {
       for (final c in teamBDraft.team.characters)
         c.id: _loadoutSummary(teamBDraft.loadouts[c.id]!)
     },
+    if (openingAiTurn != null) 'openingAiTurn': openingAiTurn,
     'state': _sessionSnapshot(sessionId, session),
   });
 }
@@ -635,29 +666,28 @@ String _useAbilityJson(String reqJsonString) {
   });
 }
 
-/// [reqJsonString] shape: `{"sessionId": N}`. Ends the player's turn,
-/// then automatically plays out the AI's turn (collecting its actions
-/// into `aiLog`, same shape as the batch simulator's round log) and
-/// starts the player's next turn - unless the battle ends first.
-String _endTurnJson(String reqJsonString) {
-  final req = jsonDecode(reqJsonString) as Map<String, dynamic>;
-  final sessionId = (req['sessionId'] as num).toInt();
-  final session = _sessionFor(sessionId);
-  final battle = session.battle;
-
-  battle.endTurn();
-
+/// Resolves consecutive AI (team B) turns - normally just one - starting
+/// from wherever `battle.isTeamATurn` currently stands, stopping once
+/// control returns to team A or the battle ends. Shared by [_endTurnJson]
+/// (the common case) and [_startSessionJson] (when team B happens to have
+/// been randomly assigned the opening turn, so the player's session still
+/// always begins on their own turn).
+Map<String, dynamic> _playAiTurns(
+  Battle battle,
+  Map<String, List<ActiveTrigger>> equippedB,
+  ProfileDrivenAi aiB,
+) {
   final aiLog = <Map<String, dynamic>>[];
   var aiRoundNumber = battle.roundNumber;
   while (!battle.isTeamATurn && !battle.isOver) {
-    battle.startTurn(equippedActiveTriggers: session.equippedB);
+    battle.startTurn(equippedActiveTriggers: equippedB);
     aiRoundNumber = battle.roundNumber;
     if (battle.isOver) break;
 
     final actionResults =
-        session.aiB.takeTurn(battle, equippedActiveTriggers: session.equippedB);
+        aiB.takeTurn(battle, equippedActiveTriggers: equippedB);
     for (final result in actionResults) {
-      final trigger = session.equippedB[result.characterId]!
+      final trigger = equippedB[result.characterId]!
           .firstWhere((t) => t.id == result.triggerId);
       aiLog.add({
         'characterId': result.characterId,
@@ -686,14 +716,29 @@ String _endTurnJson(String reqJsonString) {
     if (battle.isOver) break;
     battle.endTurn();
   }
+  return {'aiRoundNumber': aiRoundNumber, 'aiLog': aiLog};
+}
+
+/// [reqJsonString] shape: `{"sessionId": N}`. Ends the player's turn,
+/// then automatically plays out the AI's turn (collecting its actions
+/// into `aiLog`, same shape as the batch simulator's round log) and
+/// starts the player's next turn - unless the battle ends first.
+String _endTurnJson(String reqJsonString) {
+  final req = jsonDecode(reqJsonString) as Map<String, dynamic>;
+  final sessionId = (req['sessionId'] as num).toInt();
+  final session = _sessionFor(sessionId);
+  final battle = session.battle;
+
+  battle.endTurn();
+  final aiResult = _playAiTurns(battle, session.equippedB, session.aiB);
 
   if (!battle.isOver) {
     battle.startTurn(equippedActiveTriggers: session.equippedA);
   }
 
   return jsonEncode({
-    'aiRoundNumber': aiRoundNumber,
-    'aiLog': aiLog,
+    'aiRoundNumber': aiResult['aiRoundNumber'],
+    'aiLog': aiResult['aiLog'],
     'state': _sessionSnapshot(sessionId, session),
   });
 }

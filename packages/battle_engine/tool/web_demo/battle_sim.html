@@ -1050,7 +1050,8 @@
 <div id="mode-play" style="display: none;">
 <p class="subhead">
   Draft your own squad and Loadouts, then play it turn by turn against an AI
-  opponent, you always act first (with the first-move Trion handicap).
+  opponent. Whichever side acts first is random, with a first-move Trion
+  handicap for whoever that is.
 </p>
 
 <div class="tutorial-banner" id="tutorial-banner" style="display: none;">
@@ -2173,6 +2174,10 @@ BATTLE_DEMO_JS_PLACEHOLDER
       },
       teamB: { characterIds: playState.teamBIds, profileId: playState.teamBProfileId },
     };
+    // Who goes first is random by default (matching the real rules), except
+    // the Guided Tutorial forces the player first so its script stays
+    // predictable.
+    if (tutorialActive) config.firstTurn = 'teamA';
     const result = JSON.parse(battleDemoStartSession(JSON.stringify(config)));
     if (result.error) {
       document.getElementById('play-loadout-errors').textContent = result.error;
@@ -2181,9 +2186,13 @@ BATTLE_DEMO_JS_PLACEHOLDER
     playState.sessionId = result.sessionId;
     playState.loadoutSummaries = { ...result.teamALoadouts, ...result.teamBLoadouts };
     playState.roundsLog = [];
+    if (result.openingAiTurn) {
+      playState.roundsLog.push({ roundNumber: result.openingAiTurn.aiRoundNumber, team: 'B', actions: result.openingAiTurn.aiLog });
+    }
     document.getElementById('play-results').classList.remove('visible');
     document.getElementById('play-end-turn-btn').style.display = '';
     showWizardStep('play-step-battle');
+    renderPlayLog();
     renderBattleState(result.state);
   }
 
@@ -2291,6 +2300,12 @@ BATTLE_DEMO_JS_PLACEHOLDER
 
     if (action.targetAffiliation === 'self') {
       picker.innerHTML = '<div>Target: ' + character.name + ' (self)</div>';
+    } else if (action.maxTargets === 1) {
+      // A single-target ability should only ever let you pick one target,
+      // not tick several boxes and have the extras silently discarded.
+      picker.innerHTML = action.legalTargetIds.map((tid, idx) =>
+        '<label><input type="radio" name="target-radio-' + character.id + '" value="' + tid + '"' + (idx === 0 ? ' checked' : '') + '>' +
+        (namesById[tid] || tid) + '</label>').join('');
     } else {
       picker.innerHTML = action.legalTargetIds.map((tid, idx) =>
         '<label><input type="checkbox" value="' + tid + '"' + (idx < action.maxTargets ? ' checked' : '') + '>' +
@@ -2592,6 +2607,28 @@ BATTLE_DEMO_JS_PLACEHOLDER
   renderLoadoutBuilderForCurrent = function () {
     _origRenderLoadoutBuilderForCurrent();
     tutorialLockLoadoutBuilder();
+  };
+
+  // A Black Trigger is genuinely optional per the real Loadout rules, so
+  // the engine's own validation (which the "Confirm Loadout" button relies
+  // on) has no opinion on which one, if any, is equipped - it only cares
+  // about the 4 active abilities and the Trion budget. The tutorial script
+  // for Ilona Vance specifically wants Bastion Frame equipped, so that has
+  // to be enforced as an extra tutorial-only gate on top.
+  const _origValidateCurrentLoadout = validateCurrentLoadout;
+  validateCurrentLoadout = function (charId) {
+    const isValid = _origValidateCurrentLoadout(charId);
+    if (tutorialActive && tutorialPhase === 'loadout') {
+      const script = TUTORIAL_LOADOUTS[charId];
+      if (script && script.blackTriggerId) {
+        const loadout = getOrInitLoadout(charId);
+        if (loadout.blackTriggerId !== script.blackTriggerId) {
+          document.getElementById('play-confirm-loadout-btn').disabled = true;
+          return false;
+        }
+      }
+    }
+    return isValid;
   };
 
   function tutorialLockActionArea(state) {
