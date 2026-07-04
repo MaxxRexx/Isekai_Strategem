@@ -1,0 +1,926 @@
+<title>Engagement Simulator — Isekai Strategem</title>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --bg-panel: #121822;
+    --bg-recessed: #0d131b;
+    --ink: #e7edf3;
+    --ink-dim: #8793a1;
+    --ink-faint: #56626e;
+    --line: rgba(255,255,255,0.09);
+    --accent: #34d1c8;
+    --accent-ink: #06211f;
+    --warn: #ffab4d;
+    --danger: #ff5468;
+    --good: #57d98a;
+    --team-a: #34d1c8;
+    --team-b: #ff8a52;
+    --font-display: 'Bahnschrift', 'DIN Alternate', 'Arial Narrow', sans-serif;
+    --font-body: 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f3;
+    --bg-panel: #ffffff;
+    --bg-recessed: #f3f5f6;
+    --ink: #121822;
+    --ink-dim: #57646f;
+    --ink-faint: #8a95a0;
+    --line: rgba(10,20,30,0.10);
+    --accent: #0d8c87;
+    --accent-ink: #ffffff;
+    --warn: #b3620f;
+    --danger: #c92e42;
+    --good: #1c8a52;
+    --team-a: #0d8c87;
+    --team-b: #b3521f;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eef1f3;
+      --bg-panel: #ffffff;
+      --bg-recessed: #f3f5f6;
+      --ink: #121822;
+      --ink-dim: #57646f;
+      --ink-faint: #8a95a0;
+      --line: rgba(10,20,30,0.10);
+      --accent: #0d8c87;
+      --accent-ink: #ffffff;
+      --warn: #b3620f;
+      --danger: #c92e42;
+      --good: #1c8a52;
+      --team-a: #0d8c87;
+      --team-b: #b3521f;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+  }
+  body {
+    padding: clamp(16px, 3vw, 40px);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: clamp(26px, 4vw, 38px);
+    margin: 2px 0 0;
+    text-wrap: balance;
+  }
+  .subhead {
+    color: var(--ink-dim);
+    font-size: 14px;
+    max-width: 62ch;
+    line-height: 1.55;
+  }
+
+  .arena {
+    display: grid;
+    grid-template-columns: 1fr minmax(200px, 220px) 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .arena { grid-template-columns: 1fr; }
+    .engage-col { order: 3; }
+  }
+
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .team-panel { border-top: 3px solid var(--team-color); }
+  .team-a { --team-color: var(--team-a); }
+  .team-b { --team-color: var(--team-b); }
+
+  .team-label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 13px;
+    color: var(--team-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .team-label button {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    background: transparent;
+    color: var(--ink-dim);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .team-label button:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+  label.field-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  select {
+    width: 100%;
+    background: var(--bg-recessed);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 10px;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+  }
+  select:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .profile-hint {
+    font-size: 12px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+    min-height: 2.7em;
+  }
+
+  .roster-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .char-card {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    padding: 2px 2px 0;
+    min-height: 1.4em;
+  }
+  .char-card .type-tag {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--team-color);
+  }
+
+  .engage-col {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding-top: 8px;
+  }
+  .vs-mark {
+    font-family: var(--font-display);
+    text-align: center;
+    font-size: 22px;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+  }
+  .round-cap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+  .round-cap input {
+    width: 70px;
+    background: var(--bg-recessed);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 5px 7px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  button.engage {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 15px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    padding: 13px 10px;
+    cursor: pointer;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  button.engage:hover { filter: brightness(1.08); }
+  button.engage:disabled { opacity: 0.5; cursor: progress; }
+
+  .error-msg {
+    font-size: 12px;
+    color: var(--danger);
+    text-align: center;
+    min-height: 1.4em;
+  }
+
+  .results { display: none; flex-direction: column; gap: 20px; }
+  .results.visible { display: flex; }
+
+  .outcome-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .outcome-banner {
+    flex: 1 1 auto;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 18px;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+  }
+  button.copy-report {
+    flex: 0 0 auto;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 12px;
+    background: var(--bg-panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 0 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  button.copy-report:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-status {
+    font-family: var(--font-body);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 11px;
+    color: var(--good);
+    min-width: 62px;
+  }
+  details.report-details {
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    padding: 4px 16px;
+  }
+  details.report-details summary {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 12px;
+    color: var(--ink-dim);
+    cursor: pointer;
+    padding: 10px 0;
+  }
+  #report-text {
+    width: 100%;
+    height: 220px;
+    margin-bottom: 14px;
+    background: var(--bg-recessed);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.5;
+    padding: 10px;
+    resize: vertical;
+  }
+  .outcome-banner .rounds-note {
+    font-family: var(--font-body);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 12px;
+    color: var(--ink-dim);
+    display: block;
+    margin-top: 4px;
+  }
+  .outcome-a { border-left: 4px solid var(--team-a); color: var(--team-a); }
+  .outcome-b { border-left: 4px solid var(--team-b); color: var(--team-b); }
+  .outcome-draw { border-left: 4px solid var(--ink-faint); color: var(--ink-dim); }
+  .outcome-ongoing { border-left: 4px solid var(--warn); color: var(--warn); }
+
+  .roster-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 700px) { .roster-results { grid-template-columns: 1fr; } }
+
+  .fighter-row {
+    display: grid;
+    grid-template-columns: 108px 1fr 62px;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .fighter-row:last-child { border-bottom: none; }
+  .fighter-row.dead { color: var(--ink-faint); }
+  .fighter-row.dead .fighter-name { text-decoration: line-through; text-decoration-color: var(--ink-faint); }
+  .fighter-name { font-weight: 600; }
+  .hp-track {
+    height: 8px;
+    background: var(--bg-recessed);
+    border-radius: 2px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .hp-fill { height: 100%; background: var(--good); }
+  .hp-fill.low { background: var(--warn); }
+  .hp-fill.critical { background: var(--danger); }
+  .hp-fill.dead { background: var(--ink-faint); }
+  .hp-text {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: var(--ink-dim);
+    text-align: right;
+  }
+
+  details.loadout-details {
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    padding: 4px 16px;
+  }
+  details.loadout-details summary {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 12px;
+    color: var(--ink-dim);
+    cursor: pointer;
+    padding: 10px 0;
+  }
+  .loadout-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-bottom: 14px;
+  }
+  @media (max-width: 700px) { .loadout-grid { grid-template-columns: 1fr; } }
+  .loadout-entry { font-size: 12.5px; margin-bottom: 10px; }
+  .loadout-entry .name { font-weight: 600; }
+  .loadout-entry .bt { color: var(--warn); }
+  .loadout-entry ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink-dim); }
+
+  .log-wrap {
+    border: 1px solid var(--line);
+    background: var(--bg-recessed);
+  }
+  .log-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .log-head .label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+  .log-body {
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    padding: 12px 16px;
+  }
+  .log-round-head {
+    color: var(--ink-faint);
+    margin-top: 10px;
+    padding-top: 4px;
+    border-top: 1px solid var(--line);
+  }
+  .log-round-head:first-child { margin-top: 0; border-top: none; }
+  .log-line { white-space: pre-wrap; }
+  .log-line .actor-a { color: var(--team-a); }
+  .log-line .actor-b { color: var(--team-b); }
+  .log-line .crit { color: var(--warn); font-weight: 600; }
+  .log-line .dmg { color: var(--ink); }
+  .log-line .status-tag { color: var(--accent); }
+  .log-line .died { color: var(--danger); font-weight: 600; }
+  .log-line .no-action { color: var(--ink-faint); font-style: italic; }
+
+  footer {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-align: center;
+    padding-top: 4px;
+  }
+</style>
+
+<div class="eyebrow">Isekai Strategem &mdash; Combat Engine Preview</div>
+<h1>Engagement Simulator</h1>
+<p class="subhead">
+  Draft two 3-Agent squads from the full character roster, assign each side an AI Profile
+  (skill class, target/ability doctrine, Loadout bias), and run a full engagement on the real
+  Trion / Trigger / Black Trigger rules engine &mdash; the same one driving every automated match.
+</p>
+
+<div class="arena">
+  <section class="panel team-panel team-a" id="panel-a">
+    <div class="team-label">SQUAD A <button type="button" data-team="a" class="randomize">Randomize</button></div>
+
+    <div>
+      <label class="field-label" for="profile-a">AI Profile</label>
+      <select id="profile-a"></select>
+      <div class="profile-hint" id="profile-hint-a"></div>
+    </div>
+
+    <div class="roster-slots">
+      <div>
+        <label class="field-label" for="char-a-0">Agent I</label>
+        <select id="char-a-0" data-team="a" data-slot="0"></select>
+        <div class="char-card" id="card-a-0"></div>
+      </div>
+      <div>
+        <label class="field-label" for="char-a-1">Agent II</label>
+        <select id="char-a-1" data-team="a" data-slot="1"></select>
+        <div class="char-card" id="card-a-1"></div>
+      </div>
+      <div>
+        <label class="field-label" for="char-a-2">Agent III</label>
+        <select id="char-a-2" data-team="a" data-slot="2"></select>
+        <div class="char-card" id="card-a-2"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="engage-col">
+    <div class="vs-mark">VS</div>
+    <div class="round-cap">
+      <label for="round-cap-input">Round cap</label>
+      <input type="number" id="round-cap-input" value="40" min="10" max="200" step="5">
+    </div>
+    <button type="button" class="engage" id="engage-btn">Engage</button>
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+
+  <section class="panel team-panel team-b" id="panel-b">
+    <div class="team-label">SQUAD B <button type="button" data-team="b" class="randomize">Randomize</button></div>
+
+    <div>
+      <label class="field-label" for="profile-b">AI Profile</label>
+      <select id="profile-b"></select>
+      <div class="profile-hint" id="profile-hint-b"></div>
+    </div>
+
+    <div class="roster-slots">
+      <div>
+        <label class="field-label" for="char-b-0">Agent I</label>
+        <select id="char-b-0" data-team="b" data-slot="0"></select>
+        <div class="char-card" id="card-b-0"></div>
+      </div>
+      <div>
+        <label class="field-label" for="char-b-1">Agent II</label>
+        <select id="char-b-1" data-team="b" data-slot="1"></select>
+        <div class="char-card" id="card-b-1"></div>
+      </div>
+      <div>
+        <label class="field-label" for="char-b-2">Agent III</label>
+        <select id="char-b-2" data-team="b" data-slot="2"></select>
+        <div class="char-card" id="card-b-2"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="results" id="results">
+  <div class="outcome-row">
+    <div class="outcome-banner" id="outcome-banner"></div>
+    <button type="button" class="copy-report" id="copy-report-btn">
+      Copy Full Report <span class="copy-status" id="copy-status"></span>
+    </button>
+  </div>
+
+  <details class="report-details">
+    <summary>Raw Report (for pasting to Claude)</summary>
+    <textarea id="report-text" readonly spellcheck="false"></textarea>
+  </details>
+
+  <div class="roster-results">
+    <div class="panel" style="border-top: 3px solid var(--team-a);">
+      <div class="team-label" style="color: var(--team-a);">Squad A &mdash; Final State</div>
+      <div id="final-a"></div>
+    </div>
+    <div class="panel" style="border-top: 3px solid var(--team-b);">
+      <div class="team-label" style="color: var(--team-b);">Squad B &mdash; Final State</div>
+      <div id="final-b"></div>
+    </div>
+  </div>
+
+  <details class="loadout-details">
+    <summary>Drafted Loadouts</summary>
+    <div class="loadout-grid" id="loadout-grid"></div>
+  </details>
+
+  <div class="log-wrap">
+    <div class="log-head">
+      <div class="label">Engagement Log</div>
+      <div class="label" id="log-count"></div>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+</div>
+
+<footer>Battle logic runs entirely client-side, compiled from the project's Dart <code>battle_engine</code> package.</footer>
+
+<script>
+BATTLE_DEMO_JS_PLACEHOLDER
+</script>
+
+<script>
+(function () {
+  const characters = JSON.parse(battleDemoListCharacters());
+  const profiles = JSON.parse(battleDemoListProfiles());
+  const charById = Object.fromEntries(characters.map((c) => [c.id, c]));
+  const profileById = Object.fromEntries(profiles.map((p) => [p.id, p]));
+
+  const skillClassOrder = ['beginner', 'amateur', 'intermediate', 'professional', 'expert'];
+  const skillClassLabel = {
+    beginner: 'Beginner',
+    amateur: 'Amateur',
+    intermediate: 'Intermediate',
+    professional: 'Professional',
+    expert: 'Expert',
+  };
+  const typeLabel = { attack: 'ATK', defense: 'DEF', support: 'SUP', unique: 'UNQ' };
+
+  function populateProfileSelect(select) {
+    for (const cls of skillClassOrder) {
+      const group = document.createElement('optgroup');
+      group.label = skillClassLabel[cls];
+      for (const p of profiles.filter((p) => p.skillClass === cls)) {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        group.appendChild(opt);
+      }
+      select.appendChild(group);
+    }
+  }
+
+  function populateCharSelect(select) {
+    const byType = { attack: [], defense: [], support: [], unique: [] };
+    for (const c of characters) byType[c.type].push(c);
+    for (const type of ['attack', 'defense', 'support', 'unique']) {
+      const group = document.createElement('optgroup');
+      group.label = typeLabel[type];
+      for (const c of byType[type]) {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        group.appendChild(opt);
+      }
+      select.appendChild(group);
+    }
+  }
+
+  const profileSelects = { a: document.getElementById('profile-a'), b: document.getElementById('profile-b') };
+  const profileHints = { a: document.getElementById('profile-hint-a'), b: document.getElementById('profile-hint-b') };
+  const charSelects = {
+    a: [0, 1, 2].map((i) => document.getElementById('char-a-' + i)),
+    b: [0, 1, 2].map((i) => document.getElementById('char-b-' + i)),
+  };
+  const charCards = {
+    a: [0, 1, 2].map((i) => document.getElementById('card-a-' + i)),
+    b: [0, 1, 2].map((i) => document.getElementById('card-b-' + i)),
+  };
+
+  for (const team of ['a', 'b']) {
+    populateProfileSelect(profileSelects[team]);
+    charSelects[team].forEach(populateCharSelect);
+  }
+
+  function updateProfileHint(team) {
+    const p = profileById[profileSelects[team].value];
+    profileHints[team].textContent = p ? p.description : '';
+  }
+
+  function updateCharCard(team, slot) {
+    const c = charById[charSelects[team][slot].value];
+    const card = charCards[team][slot];
+    if (!c) { card.innerHTML = ''; return; }
+    card.innerHTML =
+      '<span class="type-tag">' + typeLabel[c.type] + '</span><span>' +
+      (c.perkName ? c.perkName : 'No perk') + '</span>';
+    card.title = c.perkDescription || '';
+  }
+
+  function enforceNoDuplicates(team) {
+    const chosen = charSelects[team].map((s) => s.value);
+    charSelects[team].forEach((select, slot) => {
+      for (const opt of select.querySelectorAll('option')) {
+        opt.disabled = opt.value !== select.value && chosen.includes(opt.value);
+      }
+    });
+  }
+
+  function distinctRandom(n, pool) {
+    const copy = pool.slice();
+    const picked = [];
+    for (let i = 0; i < n && copy.length; i++) {
+      const idx = Math.floor(Math.random() * copy.length);
+      picked.push(copy.splice(idx, 1)[0]);
+    }
+    return picked;
+  }
+
+  function randomizeTeam(team) {
+    const ids = distinctRandom(3, characters.map((c) => c.id));
+    charSelects[team].forEach((select, slot) => { select.value = ids[slot]; });
+    profileSelects[team].value = profiles[Math.floor(Math.random() * profiles.length)].id;
+    for (let slot = 0; slot < 3; slot++) updateCharCard(team, slot);
+    enforceNoDuplicates(team);
+    updateProfileHint(team);
+  }
+
+  for (const team of ['a', 'b']) {
+    profileSelects[team].addEventListener('change', () => updateProfileHint(team));
+    charSelects[team].forEach((select, slot) => {
+      select.addEventListener('change', () => {
+        updateCharCard(team, slot);
+        enforceNoDuplicates(team);
+      });
+    });
+  }
+  document.querySelectorAll('button.randomize').forEach((btn) => {
+    btn.addEventListener('click', () => randomizeTeam(btn.dataset.team));
+  });
+
+  randomizeTeam('a');
+  randomizeTeam('b');
+
+  function hpFillClass(current, max) {
+    const frac = max > 0 ? current / max : 0;
+    if (current <= 0) return 'dead';
+    if (frac <= 0.25) return 'critical';
+    if (frac <= 0.5) return 'low';
+    return '';
+  }
+
+  function renderFighterList(container, fighters) {
+    container.innerHTML = fighters.map((f) => {
+      const frac = f.maxHealth > 0 ? Math.max(0, f.currentHealth / f.maxHealth) : 0;
+      return (
+        '<div class="fighter-row' + (f.alive ? '' : ' dead') + '">' +
+          '<div class="fighter-name">' + f.name + '</div>' +
+          '<div class="hp-track"><div class="hp-fill ' + hpFillClass(f.currentHealth, f.maxHealth) +
+            '" style="width:' + (frac * 100).toFixed(1) + '%"></div></div>' +
+          '<div class="hp-text">' + f.currentHealth + ' / ' + f.maxHealth + '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function renderLoadouts(container, loadoutsByChar, team) {
+    container.innerHTML = Object.entries(loadoutsByChar).map(([charId, loadout]) => {
+      const c = charById[charId];
+      const btLine = loadout.blackTrigger
+        ? '<div class="bt">Black Trigger: ' + loadout.blackTrigger.name + '</div>'
+        : '<div class="bt" style="color:var(--ink-faint)">No Black Trigger equipped</div>';
+      return (
+        '<div class="loadout-entry">' +
+          '<div class="name">' + (c ? c.name : charId) + '</div>' +
+          btLine +
+          '<ul>' + loadout.triggers.map((t) => '<li>' + t.name + '</li>').join('') + '</ul>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+
+  function renderLog(container, rounds) {
+    let lineCount = 0;
+    const html = rounds.map((round) => {
+      const actorClass = round.team === 'A' ? 'actor-a' : 'actor-b';
+      let block = '<div class="log-round-head">— Round ' + round.roundNumber + ', Squad ' + round.team + ' —</div>';
+      if (round.actions.length === 0) {
+        block += '<div class="log-line no-action">(no legal action taken)</div>';
+        lineCount++;
+        return block;
+      }
+      for (const action of round.actions) {
+        for (const t of action.targets) {
+          lineCount++;
+          const parts = [];
+          parts.push('<span class="' + actorClass + '">' + escapeHtml(action.characterName) + '</span>');
+          parts.push('uses <strong>' + escapeHtml(action.triggerName) + '</strong> on ' + escapeHtml(t.targetName));
+          const rollBits = [];
+          if (t.crits > 0) rollBits.push('<span class="crit">' + t.crits + ' crit</span>');
+          const normalHits = t.hits - t.crits - t.misses;
+          if (normalHits > 0) rollBits.push(normalHits + ' hit');
+          if (t.misses > 0) rollBits.push(t.misses + ' miss');
+          if (rollBits.length) parts.push('(' + rollBits.join(', ') + ')');
+          if (t.damage > 0) parts.push('<span class="dmg">' + t.damage + ' dmg</span>');
+          if (t.statusEffectsApplied.length) {
+            parts.push('<span class="status-tag">[' + t.statusEffectsApplied.join(', ') + ']</span>');
+          }
+          parts.push('&rarr; HP ' + t.healthAfter);
+          if (t.died) parts.push('<span class="died">DEFEATED</span>');
+          block += '<div class="log-line">' + parts.join(' ') + '</div>';
+        }
+      }
+      return block;
+    }).join('');
+    container.innerHTML = html;
+    document.getElementById('log-count').textContent = lineCount + ' events';
+  }
+
+  function buildReportText(config, result) {
+    const line = (s) => s + '\n';
+    const teamName = (t) => (t === 'A' ? 'Squad A' : 'Squad B');
+    let out = '';
+    out += line('=== Isekai Strategem Engagement Report ===');
+    out += line('');
+    out += line('Squad A: ' + config.teamA.characterIds.map((id) => charById[id].name).join(', ') +
+      '  [AI: ' + profileById[config.teamA.profileId].name + ']');
+    out += line('Squad B: ' + config.teamB.characterIds.map((id) => charById[id].name).join(', ') +
+      '  [AI: ' + profileById[config.teamB.profileId].name + ']');
+    out += line('Round cap: ' + config.maxRounds);
+    out += line('');
+    const outcomeText = (outcomeCopy[result.outcome] || outcomeCopy.ongoing).text;
+    out += line('OUTCOME: ' + outcomeText + (result.concluded
+      ? ' (concluded in ' + result.roundsPlayed + ' round(s))'
+      : ' (round cap reached after ' + result.roundsPlayed + ' round(s), not concluded)'));
+    out += line('');
+
+    out += line('--- Final State ---');
+    out += line('Squad A:');
+    for (const f of result.finalTeamA) {
+      out += line('  ' + f.name + ': ' + f.currentHealth + '/' + f.maxHealth + (f.alive ? '' : ' (defeated)'));
+    }
+    out += line('Squad B:');
+    for (const f of result.finalTeamB) {
+      out += line('  ' + f.name + ': ' + f.currentHealth + '/' + f.maxHealth + (f.alive ? '' : ' (defeated)'));
+    }
+    out += line('');
+
+    out += line('--- Drafted Loadouts ---');
+    const loadouts = { ...result.teamALoadouts, ...result.teamBLoadouts };
+    for (const [charId, loadout] of Object.entries(loadouts)) {
+      const c = charById[charId];
+      out += line((c ? c.name : charId) + ':');
+      out += line('  Black Trigger: ' + (loadout.blackTrigger ? loadout.blackTrigger.name : 'none'));
+      out += line('  Triggers: ' + loadout.triggers.map((t) => t.name).join(', '));
+    }
+    out += line('');
+
+    out += line('--- Engagement Log ---');
+    for (const round of result.rounds) {
+      out += line('Round ' + round.roundNumber + ', ' + teamName(round.team) + ':');
+      if (round.actions.length === 0) {
+        out += line('  (no legal action taken)');
+        continue;
+      }
+      for (const action of round.actions) {
+        for (const t of action.targets) {
+          const bits = [];
+          if (t.crits > 0) bits.push(t.crits + ' crit');
+          const normalHits = t.hits - t.crits - t.misses;
+          if (normalHits > 0) bits.push(normalHits + ' hit');
+          if (t.misses > 0) bits.push(t.misses + ' miss');
+          let entry = '  ' + action.characterName + ' uses ' + action.triggerName +
+            ' on ' + t.targetName + ' (' + bits.join(', ') + ')';
+          if (t.damage > 0) entry += ' ' + t.damage + ' dmg';
+          if (t.statusEffectsApplied.length) entry += ' [' + t.statusEffectsApplied.join(', ') + ']';
+          entry += ' -> HP ' + t.healthAfter;
+          if (t.died) entry += ' DEFEATED';
+          out += line(entry);
+        }
+      }
+    }
+    return out;
+  }
+
+  const engageBtn = document.getElementById('engage-btn');
+  const errorMsg = document.getElementById('error-msg');
+  const resultsEl = document.getElementById('results');
+  const outcomeBanner = document.getElementById('outcome-banner');
+  const reportText = document.getElementById('report-text');
+  const copyReportBtn = document.getElementById('copy-report-btn');
+  const copyStatus = document.getElementById('copy-status');
+
+  copyReportBtn.addEventListener('click', async () => {
+    const text = reportText.value;
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      copyStatus.textContent = 'Copied!';
+    } catch (e) {
+      reportText.focus();
+      reportText.select();
+      try {
+        document.execCommand('copy');
+        copyStatus.textContent = 'Copied!';
+      } catch (e2) {
+        copyStatus.textContent = 'Select & copy below';
+      }
+    }
+    setTimeout(() => { copyStatus.textContent = ''; }, 2500);
+  });
+
+  const outcomeCopy = {
+    teamAWins: { text: 'SQUAD A WINS', cls: 'outcome-a' },
+    teamBWins: { text: 'SQUAD B WINS', cls: 'outcome-b' },
+    draw: { text: 'MUTUAL DEFEAT', cls: 'outcome-draw' },
+    ongoing: { text: 'NO CONCLUSION REACHED', cls: 'outcome-ongoing' },
+  };
+
+  engageBtn.addEventListener('click', () => {
+    errorMsg.textContent = '';
+    const teamAIds = charSelects.a.map((s) => s.value);
+    const teamBIds = charSelects.b.map((s) => s.value);
+    if (new Set(teamAIds).size !== 3 || new Set(teamBIds).size !== 3) {
+      errorMsg.textContent = 'Each squad needs 3 distinct Agents.';
+      return;
+    }
+
+    const roundCap = Math.max(10, Math.min(200, parseInt(document.getElementById('round-cap-input').value, 10) || 40));
+    const config = {
+      teamA: { characterIds: teamAIds, profileId: profileSelects.a.value },
+      teamB: { characterIds: teamBIds, profileId: profileSelects.b.value },
+      maxRounds: roundCap,
+    };
+
+    engageBtn.disabled = true;
+    engageBtn.textContent = 'Simulating…';
+
+    setTimeout(() => {
+      let result;
+      try {
+        result = JSON.parse(battleDemoSimulate(JSON.stringify(config)));
+      } catch (e) {
+        errorMsg.textContent = 'Simulation failed: ' + e;
+        engageBtn.disabled = false;
+        engageBtn.textContent = 'Engage';
+        return;
+      }
+
+      const copy = outcomeCopy[result.outcome] || outcomeCopy.ongoing;
+      outcomeBanner.className = 'outcome-banner ' + copy.cls;
+      outcomeBanner.innerHTML = copy.text +
+        (result.concluded
+          ? '<span class="rounds-note">Concluded in ' + result.roundsPlayed + ' round(s).</span>'
+          : '<span class="rounds-note">Still contesting after ' + result.roundsPlayed +
+            ' rounds (round cap reached) &mdash; raise the round cap to let it play out further.</span>');
+
+      renderFighterList(document.getElementById('final-a'), result.finalTeamA);
+      renderFighterList(document.getElementById('final-b'), result.finalTeamB);
+      renderLoadouts(document.getElementById('loadout-grid'), { ...result.teamALoadouts, ...result.teamBLoadouts });
+      renderLog(document.getElementById('log-body'), result.rounds);
+      reportText.value = buildReportText(config, result);
+      copyStatus.textContent = '';
+
+      resultsEl.classList.add('visible');
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      engageBtn.disabled = false;
+      engageBtn.textContent = 'Engage';
+    }, 10);
+  });
+})();
+</script>
