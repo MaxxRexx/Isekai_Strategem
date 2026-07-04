@@ -65,27 +65,80 @@ void main() {
     test('rolls Trion gain for the active team only', () {
       const config = TrionTierConfig(
           baseChanceLowToMedium: 1.0, baseChanceMediumToHigh: 0.0);
-      final teamA = Team(
-        id: 'a-team',
-        characters: List.generate(
-          3,
-          (i) => testCharacter(
-              id: 'a-${i + 1}', stats: testStats(trionAffinity: 0)),
-        ),
-      );
+      Team zeroAffinityTeam(String prefix) => Team(
+            id: '$prefix-team',
+            characters: List.generate(
+              3,
+              (i) => testCharacter(
+                  id: '$prefix-${i + 1}', stats: testStats(trionAffinity: 0)),
+            ),
+          );
       final battle = Battle(
-        teamA: teamA,
-        teamB: _team('b'),
+        teamA: zeroAffinityTeam('a'),
+        teamB: zeroAffinityTeam('b'),
         turnEngine: TurnEngine(
           trionGainEngine: TrionGainEngine(
               config: config, diceRoller: DiceRoller(Random(1))),
         ),
       );
 
+      // Team A's turn here is the very first turn of the whole battle, so
+      // the first-move handicap (tested in detail below) forces the Low
+      // tier regardless of the config - advance past it to team B's first
+      // turn to observe this config's normal (unhandicapped) odds.
+      battle.startTurn();
+      battle.endTurn();
       final result = battle.startTurn();
       expect(result.trionGain.tier, TrionTier.medium);
-      expect(battle.teamA.trionPool.current, config.mediumAmount);
-      expect(battle.teamB.trionPool.current, 0);
+      expect(battle.teamB.trionPool.current, config.mediumAmount);
+      expect(battle.teamA.trionPool.current, config.lowAmount);
+    });
+
+    test(
+        "forces the Low tier on the battle's very first turn regardless of "
+        "the roll, then rolls normally from the second turn onward "
+        '(first-move handicap, Naruto-Arena-style)', () {
+      const config = TrionTierConfig(
+          baseChanceLowToMedium: 1.0, baseChanceMediumToHigh: 1.0);
+      final battle = Battle(
+        teamA: _team('a'),
+        teamB: _team('b'),
+        turnEngine: TurnEngine(
+          trionGainEngine: TrionGainEngine(config: config),
+        ),
+      );
+
+      final firstResult = battle.startTurn();
+      expect(firstResult.trionGain.tier, TrionTier.low);
+      expect(battle.teamA.trionPool.current, config.lowAmount);
+
+      battle.endTurn();
+      final secondResult = battle.startTurn();
+      expect(secondResult.trionGain.tier, TrionTier.high);
+    });
+
+    test(
+        'the handicap still applies when team B goes first, and does not '
+        "reapply to team A's own first turn afterward", () {
+      const config = TrionTierConfig(
+          baseChanceLowToMedium: 1.0, baseChanceMediumToHigh: 1.0);
+      final battle = Battle(
+        teamA: _team('a'),
+        teamB: _team('b'),
+        teamAGoesFirst: false,
+        turnEngine: TurnEngine(
+          trionGainEngine: TrionGainEngine(config: config),
+        ),
+      );
+
+      final firstResult = battle.startTurn();
+      expect(firstResult.trionGain.tier, TrionTier.low);
+      expect(battle.activeTeam, battle.teamB);
+
+      battle.endTurn();
+      final secondResult = battle.startTurn();
+      expect(battle.activeTeam, battle.teamA);
+      expect(secondResult.trionGain.tier, TrionTier.high);
     });
 
     test('ticks status effects for every living member of the active team', () {

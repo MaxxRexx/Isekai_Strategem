@@ -87,11 +87,26 @@ class TurnEngine {
   /// Rolls this turn's Trion gain for [team] (using the sum of living
   /// members' effective Trion Affinity, so the FAT halving penalty is
   /// reflected) and adds it to the team's pool.
+  ///
+  /// [forceLowestTier] skips the roll entirely and grants only the Low
+  /// tier - the first-move handicap (see `Battle.startTurn`): the team
+  /// that acts first in the battle gets a reduced Trion gain on that
+  /// single turn only, mirroring Naruto-Arena's "first player only draws
+  /// 1 random Chakra instead of 3" offset for the tempo advantage of
+  /// acting first.
   TrionGainResult resolveTeamTrionGain(
     Team team,
     Map<String, CharacterBattleState> states, {
     double modifier = 0,
+    bool forceLowestTier = false,
   }) {
+    if (forceLowestTier) {
+      final result =
+          TrionGainResult(TrionTier.low, trionGainEngine.config.lowAmount);
+      team.trionPool.gain(result.amount);
+      return result;
+    }
+
     final living =
         team.characters.map((c) => states[c.id]!).where((s) => s.isAlive);
 

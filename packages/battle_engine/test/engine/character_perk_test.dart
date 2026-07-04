@@ -127,6 +127,14 @@ void main() {
             TurnEngine(trionGainEngine: TrionGainEngine(config: config)),
       );
 
+      // Team A's very first turn is the whole battle's first turn, which
+      // the first-move handicap forces to Low regardless of any modifier -
+      // advance to team A's second turn to observe Haru's perk cleanly.
+      battle.startTurn();
+      battle.endTurn();
+      battle.startTurn();
+      battle.endTurn();
+
       // With 0% base chance and 0 Trion Affinity, only Haru's +1.0
       // modifier (a guaranteed upgrade) can push the roll past Low.
       final result = battle.startTurn();

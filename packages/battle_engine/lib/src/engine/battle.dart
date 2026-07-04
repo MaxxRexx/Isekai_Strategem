@@ -51,6 +51,11 @@ class Battle {
   int roundNumber = 1;
   bool isTeamATurn;
 
+  /// Whether the very first turn of the battle (round 1's opening turn,
+  /// whichever team that belongs to) has already had its first-move
+  /// Trion handicap applied - see [startTurn].
+  bool _firstTurnHandicapApplied = false;
+
   Battle({
     required this.teamA,
     required this.teamB,
@@ -108,17 +113,23 @@ class Battle {
 
   /// Begins [activeTeam]'s turn: rolls the team's Trion gain (using
   /// members' health at the start of the turn, before any status damage
-  /// below), then for each living member ticks start-of-turn status
-  /// effects (damage/heal/Trion drain - crediting drains to whichever
-  /// team the causer belongs to), refreshes any Prone-style random
-  /// ability lock (if that character's currently equipped active
-  /// abilities are supplied via [equippedActiveTriggers]), and rolls
-  /// whether Full Arms Trigger triggers for them this turn.
+  /// below - forced to the Low tier on the very first turn of the whole
+  /// battle, a first-move handicap offsetting the tempo advantage of
+  /// acting first, mirroring Naruto-Arena's reduced opening Chakra draw
+  /// for whoever goes first), then for each living member ticks
+  /// start-of-turn status effects (damage/heal/Trion drain - crediting
+  /// drains to whichever team the causer belongs to), refreshes any
+  /// Prone-style random ability lock (if that character's currently
+  /// equipped active abilities are supplied via [equippedActiveTriggers]),
+  /// and rolls whether Full Arms Trigger triggers for them this turn.
   TeamTurnStartResult startTurn({
     Map<String, List<ActiveTrigger>> equippedActiveTriggers = const {},
   }) {
     final team = activeTeam;
-    final trionGain = turnEngine.resolveTeamTrionGain(team, states);
+    final isFirstTurnOfBattle = !_firstTurnHandicapApplied;
+    _firstTurnHandicapApplied = true;
+    final trionGain = turnEngine.resolveTeamTrionGain(team, states,
+        forceLowestTier: isFirstTurnOfBattle);
 
     final statusTicks = <String, StatusTickResult>{};
     final fatTriggered = <String, bool>{};

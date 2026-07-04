@@ -56,14 +56,17 @@ class LoadoutBuilder {
     return tags;
   }
 
-  double _score(ActiveTrigger trigger, AiProfile profile) {
+  double _rawDamagePower(ActiveTrigger trigger) {
     final damage = trigger.damage;
     final hits =
         trigger.attackSubtype == AttackSubtype.burst ? trigger.hitsPerUse : 1;
-    final damagePower = damage == null ? 0.0 : damage.average * hits;
+    return damage == null ? 0.0 : damage.average * hits;
+  }
+
+  double _score(ActiveTrigger trigger, AiProfile profile) {
     final matchedTags =
         triggerTags(trigger).intersection(profile.preferredTriggerTags).length;
-    return damagePower + matchedTags * 50;
+    return _rawDamagePower(trigger) + matchedTags * 50;
   }
 
   int _resonanceRank(ResonanceGrade grade) => switch (grade) {
@@ -178,28 +181,47 @@ class LoadoutBuilder {
     }
 
     // A heavily support/defense-tagged profile can otherwise end up with
-    // zero damage-dealing actives at all (every slot scored higher as a
-    // buff than any attack ever could) - leaving that character with no
-    // way to ever contribute to a kill. If the Black Trigger doesn't
-    // already supply an attack option, swap the lowest-scoring chosen
-    // active for the best-fitting damage-capable one still available.
-    final hasDamageOption = chosenActives.any((t) => t.damageType != null) ||
-        (finalBlackTrigger?.activeAbilities.any((a) => a.damageType != null) ??
-            false);
-    if (!hasDamageOption && chosenActives.isNotEmpty) {
-      final damageCandidates = scoredActives
-          .where((t) => t.damageType != null && !chosenActives.contains(t));
-      final byWorstFirst = List.of(chosenActives)
-        ..sort((a, b) => _score(a, profile).compareTo(_score(b, profile)));
+    // almost no damage-dealing actives at all (every non-damage option
+    // scores higher purely from the preferred-tag bonus, which dwarfs any
+    // realistic damage average) - leaving that character with too few
+    // ways to ever meaningfully contribute to a kill, no matter how
+    // strong the content's damage numbers are. Guarantee at least half of
+    // the chosen actives are damage-capable (a Black Trigger's own active
+    // abilities count towards this), swapping out the worst-scoring
+    // non-damage picks for the hardest-hitting damage candidates still
+    // available - by raw damage power, not the tag-boosted `_score`,
+    // since the point is restoring real throughput, not just picking
+    // whichever attack happens to also carry a preferred tag (e.g. a
+    // drain Trigger tagged 'heal').
+    final blackTriggerDamageCount = finalBlackTrigger?.activeAbilities
+            .where((a) => a.damageType != null)
+            .length ??
+        0;
+    final minDamageActives = ((rules.requiredActiveAbilityCount / 2).ceil() -
+            blackTriggerDamageCount)
+        .clamp(0, chosenActives.length);
 
-      outer:
-      for (final replacement in damageCandidates) {
-        for (final toRemove in byWorstFirst) {
+    int damageActiveCount() =>
+        chosenActives.where((t) => t.damageType != null).length;
+
+    if (damageActiveCount() < minDamageActives) {
+      final damageCandidatesByPower = scoredActives
+          .where((t) => t.damageType != null && !chosenActives.contains(t))
+          .toList()
+        ..sort((a, b) => _rawDamagePower(b).compareTo(_rawDamagePower(a)));
+
+      for (final replacement in damageCandidatesByPower) {
+        if (damageActiveCount() >= minDamageActives) break;
+        final nonDamageByWorstFirst = chosenActives
+            .where((t) => t.damageType == null)
+            .toList()
+          ..sort((a, b) => _score(a, profile).compareTo(_score(b, profile)));
+        for (final toRemove in nonDamageByWorstFirst) {
           if (spent - toRemove.equipCost + replacement.equipCost <= budget) {
             chosenActives.remove(toRemove);
             chosenActives.add(replacement);
             spent = spent - toRemove.equipCost + replacement.equipCost;
-            break outer;
+            break;
           }
         }
       }
