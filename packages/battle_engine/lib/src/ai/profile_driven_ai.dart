@@ -49,7 +49,7 @@ class ProfileDrivenAi {
             .toList();
         if (usable.isEmpty) break;
 
-        final trigger = _chooseAbility(state, usable, config);
+        final trigger = _chooseAbility(state, usable, config, battle);
         final targets = _chooseTargets(engine, state, trigger, battle, config);
         if (targets.isEmpty) {
           unusableThisTurn.add(trigger.id);
@@ -95,6 +95,7 @@ class ProfileDrivenAi {
     CharacterBattleState state,
     List<ActiveTrigger> usable,
     AiSkillClassConfig config,
+    Battle battle,
   ) {
     if (_isMistake(config)) {
       return usable[random.nextInt(usable.length)];
@@ -111,13 +112,19 @@ class ProfileDrivenAi {
         return usable.first;
 
       case AiAbilityPriority.supportFirst:
-        final support = usable
+        // Only "useful" support counts - a heal with nobody hurt, or a
+        // buff everyone eligible already has, doesn't count, so the AI
+        // doesn't loop forever re-applying a no-op instead of attacking
+        // (this is exactly what let two support-heavy teams stalemate at
+        // full health indefinitely before this check existed).
+        final usefulSupport = usable
             .where((t) =>
                 t.targetAffiliation != TargetAffiliation.opponent &&
-                (t.healAmount != null || t.inflictedStatusEffects.isNotEmpty))
+                (t.healAmount != null || t.inflictedStatusEffects.isNotEmpty) &&
+                _isSupportActionUseful(state, t, battle))
             .toList();
-        return support.isNotEmpty
-            ? byPower(support).first
+        return usefulSupport.isNotEmpty
+            ? byPower(usefulSupport).first
             : byPower(usable).first;
 
       case AiAbilityPriority.debuffFocused:
@@ -142,6 +149,40 @@ class ProfileDrivenAi {
       case AiAbilityPriority.highestDamage:
         return byPower(usable).first;
     }
+  }
+
+  /// Whether using [trigger] (a heal and/or buff, ally/self-targeted)
+  /// would actually accomplish something worth skipping an attack for:
+  /// a heal only counts once a recipient has taken meaningful damage
+  /// (below 80% health, not merely "not literally full"), and a buff
+  /// only counts if the recipient currently has *no* active status
+  /// effects of its own at all - several short buffs with staggered
+  /// expiries would otherwise always have exactly one due for a refresh,
+  /// so "any single buff missing" would mean this character never
+  /// attacks. Requiring a clean slate makes buff-chasing a periodic
+  /// top-up between attacks instead of a permanent substitute for them.
+  bool _isSupportActionUseful(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    Battle battle,
+  ) {
+    final pool = trigger.targetAffiliation == TargetAffiliation.self
+        ? [attacker]
+        : battle.activeTeam.characters.map((c) => battle.states[c.id]!);
+
+    for (final candidate in pool) {
+      if (!candidate.isAlive) continue;
+      if (trigger.healAmount != null &&
+          candidate.currentHealth <
+              candidate.effectiveStats().maxHealth * 0.8) {
+        return true;
+      }
+      if (trigger.inflictedStatusEffects.isNotEmpty &&
+          candidate.statusEffects.isEmpty) {
+        return true;
+      }
+    }
+    return false;
   }
 
   double _abilityPower(ActiveTrigger trigger) {

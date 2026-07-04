@@ -177,6 +177,34 @@ class LoadoutBuilder {
       }
     }
 
+    // A heavily support/defense-tagged profile can otherwise end up with
+    // zero damage-dealing actives at all (every slot scored higher as a
+    // buff than any attack ever could) - leaving that character with no
+    // way to ever contribute to a kill. If the Black Trigger doesn't
+    // already supply an attack option, swap the lowest-scoring chosen
+    // active for the best-fitting damage-capable one still available.
+    final hasDamageOption = chosenActives.any((t) => t.damageType != null) ||
+        (finalBlackTrigger?.activeAbilities.any((a) => a.damageType != null) ??
+            false);
+    if (!hasDamageOption && chosenActives.isNotEmpty) {
+      final damageCandidates = scoredActives
+          .where((t) => t.damageType != null && !chosenActives.contains(t));
+      final byWorstFirst = List.of(chosenActives)
+        ..sort((a, b) => _score(a, profile).compareTo(_score(b, profile)));
+
+      outer:
+      for (final replacement in damageCandidates) {
+        for (final toRemove in byWorstFirst) {
+          if (spent - toRemove.equipCost + replacement.equipCost <= budget) {
+            chosenActives.remove(toRemove);
+            chosenActives.add(replacement);
+            spent = spent - toRemove.equipCost + replacement.equipCost;
+            break outer;
+          }
+        }
+      }
+    }
+
     final chosenPassives = <PassiveTrigger>[];
     final scoredPassives = passiveTriggerPool.toList()
       ..sort((a, b) => a.equipCost.compareTo(b.equipCost));
