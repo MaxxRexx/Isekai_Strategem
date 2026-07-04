@@ -175,7 +175,8 @@ class ProfileDrivenAi {
         .toList();
     if (legal.isEmpty) return const [];
 
-    if (_isMistake(config)) {
+    final isMistake = _isMistake(config);
+    if (isMistake) {
       legal.shuffle(random);
     } else {
       switch (profile.targetPriority) {
@@ -201,6 +202,13 @@ class ProfileDrivenAi {
       }
     }
 
+    if (config.usesLookahead &&
+        !isMistake &&
+        trigger.damageType != null &&
+        legal.length > 1) {
+      _preferALethalTargetIfAvailable(engine, attacker, trigger, legal);
+    }
+
     final maxTargets = trigger.rangeTag == RangeTag.ranged
         ? engine.maxRangedTargets(attacker, trigger)
         : trigger.targetCount;
@@ -213,6 +221,67 @@ class ProfileDrivenAi {
   double _matchupScore(CharacterBattleState t) {
     final stats = t.effectiveStats();
     return t.currentHealth + stats.armor * 2 + stats.defense * 0.5;
+  }
+
+  /// Expert-only lookahead: if [trigger]'s predicted damage wouldn't
+  /// finish off [legal]'s current top pick, but it would finish off some
+  /// other legal target, move that target to the front instead - don't
+  /// waste this hit on a target that survives it when a kill was
+  /// available. Mutates [legal] in place; a no-op if the top pick is
+  /// already predicted lethal or no other candidate is.
+  void _preferALethalTargetIfAvailable(
+    TurnEngine engine,
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> legal,
+  ) {
+    final topPick = legal.first;
+    if (_predictedDamage(engine, attacker, topPick, trigger) >=
+        topPick.currentHealth) {
+      return;
+    }
+    for (final candidate in legal.skip(1)) {
+      if (_predictedDamage(engine, attacker, candidate, trigger) >=
+          candidate.currentHealth) {
+        legal.remove(candidate);
+        legal.insert(0, candidate);
+        return;
+      }
+    }
+  }
+
+  /// A rough expected-damage estimate for [trigger] used by [attacker]
+  /// against [target] - the dice expression's average, scaled by Team
+  /// Spirit's damage bonus and any outgoing-damage perk/status
+  /// multiplier, then mitigated by [target]'s Armor and damage-type
+  /// multiplier/resistance. Assumes the hit lands (no miss-chance
+  /// modeling) - a lookahead heuristic, not a full simulation.
+  double _predictedDamage(
+    TurnEngine engine,
+    CharacterBattleState attacker,
+    CharacterBattleState target,
+    ActiveTrigger trigger,
+  ) {
+    final damage = trigger.damage;
+    if (damage == null || trigger.damageType == null) return 0;
+
+    final stats = attacker.effectiveStats();
+    final bonuses = engine.teamSpiritCurve.bonusesFor(stats.teamSpirit);
+    final isBurst = trigger.attackSubtype == AttackSubtype.burst;
+    final damageBonus =
+        isBurst ? bonuses.burstDamageBonus : bonuses.singleTargetDamageBonus;
+    final hits = isBurst ? trigger.hitsPerUse : 1;
+
+    final raw = damage.average *
+        hits *
+        (1 + damageBonus) *
+        attacker.outgoingDamageMultiplier();
+    final armor = target.effectiveStats().armor;
+    final afterArmor = (raw - armor).clamp(0, double.infinity);
+    final typeMultiplier =
+        target.statusDamageTypeMultiplier(trigger.damageType!) *
+            (target.hasDamageResistance(trigger.damageType!) ? 0.5 : 1.0);
+    return afterArmor * typeMultiplier;
   }
 
   bool _shouldKeepChaining(

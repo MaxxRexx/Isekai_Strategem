@@ -215,6 +215,76 @@ void main() {
     });
   });
 
+  group('ProfileDrivenAi Expert lookahead', () {
+    // A: low matchup score (favored by plain matchupAware sorting) but
+    // its health (15) survives this trigger's ~10 predicted damage.
+    // B: worse matchup score (high Defense drags it down) but its
+    // health (8) would actually die to that same ~10 predicted damage.
+    Team lookaheadOpponents() => Team(id: 'b-team', characters: [
+          Character(
+            id: 'b-a',
+            name: 'Survivor',
+            type: CharacterType.attack,
+            baseStats: testStats(armor: 0, defense: 0, maxHealth: 15),
+          ),
+          Character(
+            id: 'b-b',
+            name: 'Killable',
+            type: CharacterType.attack,
+            baseStats: testStats(armor: 0, defense: 100, maxHealth: 8),
+          ),
+          testCharacter(id: 'b-c'),
+        ]);
+
+    test(
+        'Expert prefers a target it can actually kill over the normal '
+        'matchup-aware top pick', () {
+      final battle = Battle(teamA: _team('a'), teamB: lookaheadOpponents());
+      battle.teamA.trionPool.gain(1000);
+      battle.states['b-a']!.currentHealth = 15;
+      battle.states['b-b']!.currentHealth = 8;
+
+      final ai = ProfileDrivenAi(AiProfile.theGrandmaster,
+          random: const _FixedDoubleRandom(1.0));
+      final trigger =
+          testTrigger(damage: const DiceExpression(0, 1, flatBonus: 10));
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [trigger],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(
+        results.single.useResult.targetResults.single.targetCharacterId,
+        'b-b',
+      );
+    });
+
+    test(
+        'Professional (same matchupAware targeting, no lookahead) sticks '
+        "with the normal top pick even though it can't kill it", () {
+      final battle = Battle(teamA: _team('a'), teamB: lookaheadOpponents());
+      battle.teamA.trionPool.gain(1000);
+      battle.states['b-a']!.currentHealth = 15;
+      battle.states['b-b']!.currentHealth = 8;
+
+      final ai = ProfileDrivenAi(AiProfile.theTactician,
+          random: const _FixedDoubleRandom(1.0));
+      final trigger =
+          testTrigger(damage: const DiceExpression(0, 1, flatBonus: 10));
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [trigger],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(
+        results.single.useResult.targetResults.single.targetCharacterId,
+        'b-a',
+      );
+    });
+  });
+
   group('ProfileDrivenAi mistake chance', () {
     test(
         'a forced mistake picks a different ability than the profile '
