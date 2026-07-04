@@ -1,4 +1,4 @@
-<title>Engagement Simulator — Isekai Strategem</title>
+<title>Engagement Simulator - Isekai Strategem</title>
 <style>
   :root {
     --bg: #0b0f14;
@@ -178,13 +178,14 @@
 
   .char-card {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     gap: 8px;
     font-size: 11.5px;
     color: var(--ink-faint);
-    padding: 2px 2px 0;
+    padding: 2px 2px 4px;
     min-height: 1.4em;
   }
+  .char-card .icon { margin-top: 3px; color: var(--team-color); }
   .char-card .type-tag {
     font-family: var(--font-mono);
     text-transform: uppercase;
@@ -676,21 +677,142 @@
     color: var(--ink-dim);
     padding: 6px 0;
   }
+
+  .icon {
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.15em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex: none;
+  }
+  .icon.filled { fill: currentColor; stroke: none; }
+  .icon.lg { width: 1.3em; height: 1.3em; }
+
+  .dmg-bludgeoning, .dmg-piercing, .dmg-slashing { color: #b8bfc7; }
+  .dmg-acid { color: #8fd14f; }
+  .dmg-cold { color: #6fd6e8; }
+  .dmg-fire { color: #ff7a45; }
+  .dmg-lightning { color: #f3d24a; }
+  .dmg-poison { color: #9a6bd6; }
+  .dmg-force { color: #9aa7ff; }
+  .dmg-radiant { color: #ffd76a; }
+  .dmg-necrotic { color: #b04fd1; }
+  .dmg-psychic { color: #ff6fa8; }
+
+  .flavor-text {
+    font-size: 11px;
+    font-style: italic;
+    color: var(--ink-faint);
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+  .perk-desc {
+    font-size: 11px;
+    color: var(--ink-dim);
+    line-height: 1.4;
+  }
+  .perk-name { color: var(--ink); font-weight: 600; }
+
+  .char-card .card-body { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+
+  .t-desc {
+    display: block;
+    color: var(--ink-dim);
+    font-size: 11px;
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+
+  button.ability-btn .btn-desc {
+    display: block;
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    font-weight: 400;
+    margin-top: 3px;
+    max-width: 220px;
+    white-space: normal;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border-bottom: 1px dotted var(--ink-faint);
+    cursor: help;
+  }
+
+  .guide-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 78ch;
+  }
+  .guide-section h2 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 16px;
+    color: var(--accent);
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .guide-section p, .guide-section li {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink-dim);
+  }
+  .guide-section strong { color: var(--ink); }
+  .guide-section ul { margin: 4px 0; padding-left: 20px; }
+  .guide-grade-table {
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin: 8px 0;
+  }
+  .guide-grade-table th, .guide-grade-table td {
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    text-align: center;
+  }
+  .guide-grade-table th { color: var(--ink-dim); font-weight: 600; }
 </style>
 
-<div class="eyebrow">Isekai Strategem &mdash; Combat Engine Preview</div>
+<svg style="display:none" aria-hidden="true">
+  <symbol id="icon-attack" viewBox="0 0 24 24"><path d="M3 21l4.5-4.5m0 0L18 6l3-3-3 3-9.5 9.5m0 0L6 21l1.5-4.5M14 4l6 6-2 2-6-6 2-2z"/></symbol>
+  <symbol id="icon-defense" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.4 8.7-8 11-4.6-2.3-8-6-8-11V5l8-3z"/></symbol>
+  <symbol id="icon-support" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.3-9.1C1.4 8.8 2.9 5.6 6 5c2-.4 3.7.7 6 3 2.3-2.3 4-3.4 6-3 3.1.6 4.6 3.8 3.3 6.9C19 16.5 12 21 12 21z"/></symbol>
+  <symbol id="icon-unique" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.6 6.8L12 16.9 5.8 20.4l1.6-6.8-5.2-4.6 6.9-.7L12 2z"/></symbol>
+  <symbol id="icon-melee" viewBox="0 0 24 24"><path d="M3 21l3-3M6 18l9-9m0 0l3-3-2-2-3 3m2 2l-9 9M14 4l6 6"/></symbol>
+  <symbol id="icon-ranged" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></symbol>
+  <symbol id="icon-burst" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+  <symbol id="icon-heal" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.3-9.1C1.4 8.8 2.9 5.6 6 5c2-.4 3.7.7 6 3 2.3-2.3 4-3.4 6-3 3.1.6 4.6 3.8 3.3 6.9C19 16.5 12 21 12 21z"/><path d="M12 8v6M9 11h6" stroke-width="1.6"/></symbol>
+  <symbol id="icon-status" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v5l4-2"/></symbol>
+  <symbol id="icon-passive" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V19a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2A1.7 1.7 0 0 0 4.8 6.4a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9.3A1.7 1.7 0 0 0 10.3 1V0.8a2 2 0 1 1 4 0V1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"/></symbol>
+  <symbol id="icon-blacktrigger" viewBox="0 0 24 24"><path d="M12 2l6 4-1 8-5 8-5-8-1-8 6-4z"/></symbol>
+  <symbol id="icon-buff" viewBox="0 0 24 24"><path d="M12 4l7 7h-4v9h-6v-9H5l7-7z"/></symbol>
+  <symbol id="icon-debuff" viewBox="0 0 24 24"><path d="M12 20l-7-7h4V4h6v9h4l-7 7z"/></symbol>
+  <symbol id="icon-book" viewBox="0 0 24 24"><path d="M4 4h7a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H4V4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5H20V4z"/></symbol>
+</svg>
+
+<div class="eyebrow">Isekai Strategem - Combat Engine Preview</div>
 <h1>Engagement Simulator</h1>
 
 <div class="mode-tabs">
   <button type="button" class="mode-tab active" id="tab-simulate">Simulate (AI vs AI)</button>
   <button type="button" class="mode-tab" id="tab-play">Play (You vs AI)</button>
+  <button type="button" class="mode-tab" id="tab-guide">How to Play</button>
 </div>
 
 <div id="mode-simulate">
 <p class="subhead">
   Draft two 3-Agent squads from the full character roster, assign each side an AI Profile
   (skill class, target/ability doctrine, Loadout bias), and run a full engagement on the real
-  Trion / Trigger / Black Trigger rules engine &mdash; the same one driving every automated match.
+  Trion / Trigger / Black Trigger rules engine, the same one driving every automated match.
 </p>
 
 <div class="arena">
@@ -776,11 +898,11 @@
 
   <div class="roster-results">
     <div class="panel" style="border-top: 3px solid var(--team-a);">
-      <div class="team-label" style="color: var(--team-a);">Squad A &mdash; Final State</div>
+      <div class="team-label" style="color: var(--team-a);">Squad A - Final State</div>
       <div id="final-a"></div>
     </div>
     <div class="panel" style="border-top: 3px solid var(--team-b);">
-      <div class="team-label" style="color: var(--team-b);">Squad B &mdash; Final State</div>
+      <div class="team-label" style="color: var(--team-b);">Squad B - Final State</div>
       <div id="final-b"></div>
     </div>
   </div>
@@ -803,7 +925,7 @@
 <div id="mode-play" style="display: none;">
 <p class="subhead">
   Draft your own squad and Loadouts, then play it turn by turn against an AI
-  opponent &mdash; you always act first (with the first-move Trion handicap).
+  opponent, you always act first (with the first-move Trion handicap).
 </p>
 
 <!-- Step 1: team setup -->
@@ -941,6 +1063,82 @@
 </div>
 </div>
 
+<div id="mode-guide" style="display: none;">
+<p class="subhead">
+  A condensed reference for everything below. The full write-up (with the complete
+  roster, Trigger list, and status effect catalog) lives in the repo's
+  <code>packages/battle_engine/doc</code> folder.
+</p>
+<div class="guide-wrap">
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-book"/></svg>Before the Battle: Draft Your Loadout</h2>
+    <p>Each of your 3 characters needs a Loadout before the fight starts:</p>
+    <ul>
+      <li><strong>Trion Capacity budget.</strong> Every character has a Trion Capacity stat (100-130). Everything you equip, Triggers and your Black Trigger, has an equip cost, and the total can't exceed this budget.</li>
+      <li><strong>Exactly 4 active abilities.</strong> A valid Loadout provides exactly 4 active abilities total. A Black Trigger's own active abilities (0-2 of them) count toward this.</li>
+      <li><strong>8 equipped items, max.</strong> Triggers plus your Black Trigger (if any), counted together, can't exceed 8.</li>
+      <li><strong>One Black Trigger, optional.</strong> It can contribute active abilities, passive abilities, and/or a World ability, a battle-wide effect distinct from a stat bonus.</li>
+      <li><strong>Any character can equip anything.</strong> Your character's type never blocks equipping a Trigger of a different flavor. The only place type matters is Resonance, below.</li>
+    </ul>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-blacktrigger"/></svg>Resonance: How Well a Black Trigger Suits Your Character</h2>
+    <p>A Black Trigger has its own type. How well that matches your character's type sets a Resonance Grade, which multiplies that Black Trigger's damage/healing, divides its cooldowns, and scales its passive/World ability magnitudes.</p>
+    <table class="guide-grade-table" id="guide-resonance-table"></table>
+    <p>Grade multipliers: <strong>A</strong> = 1.5x, <strong>B</strong> = 1.15x, <strong>C</strong> = 1.0x, <strong>D</strong> = 0.85x. A mismatched Black Trigger isn't illegal, just weaker.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-burst"/></svg>Turn Structure</h2>
+    <ul>
+      <li>A turn belongs to a whole team, not one character. Any/all of your 3 living members may act.</li>
+      <li>A round is one turn for each team. Teams alternate; the round counter increments once both sides have gone.</li>
+      <li><strong>First-move handicap:</strong> whichever team acts first in the battle gets a reduced Trion gain roll on that single opening turn only, forced to the lowest tier.</li>
+    </ul>
+    <p>At the start of your team's turn: your team rolls for Trion gain, status effects tick for each living member, and Full Arms Trigger (FAT) is rolled per character. Normally each character gets 1 ability use per turn; if FAT triggers for them, they get up to 3 instead.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-passive"/></svg>Trion: Two Separate Resources</h2>
+    <ul>
+      <li><strong>Trion Capacity</strong> (per character): your Loadout budget, spent once during drafting. Doesn't change in battle.</li>
+      <li><strong>Trion Pool</strong> (per team, starts empty): the in-battle currency spent to use abilities, refilled each of your team's turns via the Trion gain roll. Shared by your whole team.</li>
+    </ul>
+    <p>Each turn you roll for a tier of Trion income: Low (10), Medium (20), or High (35), as two upgrade checks in sequence. Higher Trion Affinity raises your odds of a bigger income turn.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-status"/></svg>Full Arms Trigger (FAT)</h2>
+    <p>FAT is rolled per character at the start of your turn, using their FAT Chance stat plus a Team Spirit bonus. If it triggers, that character may use up to 3 abilities that turn instead of 1.</p>
+    <p>Chaining 2 or more abilities via FAT in the same turn carries a real cost for that character only: all cooldowns used that turn are doubled, their Trion Affinity is halved for their next turn, and FAT itself goes on a 3-turn cooldown before it can trigger for them again. Using only 1 ability in a FAT-triggered turn avoids this penalty entirely.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-buff"/></svg>Team Spirit: a Dual-Direction Stat</h2>
+    <p>Team Spirit runs 0-100 with 50 as a neutral midpoint, and pulls in two different directions depending which side of the midpoint you're on:</p>
+    <ul>
+      <li><strong>Below 50</strong> (aggressive end): bonus single-target damage, bonus Burst damage, and bonus Critical Chance, all scaling toward the extreme.</li>
+      <li><strong>Above 50</strong> (sustain end): bonus Health Regeneration amount when healed, and bonus FAT Chance.</li>
+    </ul>
+    <p>A character sitting exactly at 50 gets neither bonus. It's a build axis, not a stat to always maximize.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-melee"/></svg>Combat Resolution</h2>
+    <p>An attack is an opposed roll: the attacker rolls d20 + Attack, the target rolls d20 + Defense. The attacker wins ties. A natural 1 on the attacker's die is always a critical miss (automatic failure, and inflicts a 1-turn penalty on the attacker). A roll at or above a threshold set by the attacker's Critical Chance is always a critical hit (automatic success, double damage).</p>
+    <p>Damage resolution order once a hit lands: critical doubling, then flat Armor reduction (floored at 0), then damage-type multiplier (status effects like Wet, or a granted Damage Resistance). A World ability's damage-prevention charge, if any remain, fully negates the whole instance before any of this.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-debuff"/></svg>Status Effects, Perks, and Black Triggers</h2>
+    <p>Nothing in the engine special-cases a status effect, perk, or Black Trigger by name, they're all just data read by the same generic rules (stat modifiers, roll advantage/disadvantage, damage multipliers, action prevention, etc). Every character's innate perk is always active regardless of Loadout, and combines with whatever you equip.</p>
+  </section>
+
+</div>
+</div>
+
 <footer>Battle logic runs entirely client-side, compiled from the project's Dart <code>battle_engine</code> package.</footer>
 
 <script>
@@ -963,6 +1161,157 @@ BATTLE_DEMO_JS_PLACEHOLDER
     expert: 'Expert',
   };
   const typeLabel = { attack: 'ATK', defense: 'DEF', support: 'SUP', unique: 'UNQ' };
+
+  // ===================== Descriptive content: icons, flavor text, computed descriptions =====================
+  const CHARACTER_FLAVOR = {
+    kaito_reyes: 'A duelist who fights alone by choice, at his most dangerous with no one left to protect.',
+    vela_ashworth: 'Strikes before her target even registers the fight has started.',
+    dross: 'Reads the battlefield like a puzzle, and punishes anyone already bleeding.',
+    ren_kobayashi: 'Opens every engagement at full intensity and never eases off.',
+    airi_tanaka: 'Lets the first blow land wrong, then makes the enemy regret ever swinging.',
+    marren_osei: 'A wall that gets harder to break the more his team needs him to hold.',
+    ilona_vance: 'Turns every failed attack against her into the opening for her own.',
+    bastian_cole: 'Shrugs off the first real hit of any fight like it never happened.',
+    dorian_voss: 'Nothing narrows his aim. His shots always find as many targets as intended.',
+    sable_whitlock: 'Steps between his allies and danger without waiting to be asked, once.',
+    priya_nakamura: 'Finds the ally closest to falling and pours everything into keeping them up.',
+    soren_talvik: "Layers curse over curse until the target can barely remember what normal feels like.",
+    yuki_amaral: 'Draws in every kind of healing like a plant turning toward the sun.',
+    haru_ellison: "Her presence alone keeps her team's resources flowing a little faster.",
+    celestine_moreau: "Wraps her allies' buffs in a ward that shrugs off whatever follows.",
+    zheng_anders: "Sees the roll before it lands, and gets to try again if it doesn't.",
+    nadia_kessler: 'Chains one strike into the next, each one hitting harder than the last.',
+    rurik_voss: 'The closer he gets to zero, the more dangerous he becomes.',
+    mireille_song: 'Sometimes an attack against her simply finds nothing there.',
+    tobias_renner: 'Adapts mid-fight, sharpening whatever he leaned on last.',
+  };
+
+  const STATUS_INFO = {
+    'Acid': { duration: 3, effect: '-5 Armor' },
+    'Wet': { duration: 3, effect: 'Immune to Fire; vulnerable to Lightning and Cold' },
+    'Stunned': { duration: 1, effect: 'Prevents all actions; zeroes Team Spirit' },
+    'Threatened': { duration: 2, effect: 'Disadvantage on ranged attack rolls' },
+    'Sickened': { duration: 3, effect: 'Vulnerable to 4 random damage types' },
+    'Sapped': { duration: 3, effect: 'Drains 25% of Trion Capacity to whoever inflicted it' },
+    'Reeling': { duration: 3, effect: '-1 Attack per remaining turn (stronger early, fades out)' },
+    'Rallied': { duration: 3, effect: '+20 max health' },
+    'Prone': { duration: 1, effect: 'Locks a random equipped ability each turn' },
+    'Prepared': { duration: 3, effect: '+1 Attack per remaining turn (builds up)' },
+    'Poisoned': { duration: 3, effect: "Disadvantage on the poisoned character's own attack rolls" },
+    'Frozen': { duration: 1, effect: 'Prevents all actions; zeroes Trion Affinity' },
+    'Bleeding': { duration: 3, effect: '8 damage at turn start (Slashing); disadvantage on their own status-resistance rolls' },
+    'Blinded': { duration: 2, effect: 'Ranged target count reduced by 1; disadvantage on ranged attack rolls' },
+    'Braced': { duration: 3, effect: '+1 Defense per remaining turn' },
+    'Charmed': { duration: 3, effect: "Can't target the charmer; charmer has advantage on rolls against them" },
+    'Electrocuted': { duration: 2, effect: '1d4 damage at turn start (Lightning)' },
+    'Regenerating': { duration: 3, effect: 'Heals 3 at turn start' },
+    'Empowered': { duration: 2, effect: '+25% outgoing damage' },
+    'Weakened': { duration: 3, effect: '-25% outgoing damage' },
+    'Focused': { duration: 2, effect: 'Advantage on attack rolls' },
+    'Guarded': { duration: 2, effect: 'Takes 25% less damage from everything' },
+    'Exposed': { duration: 2, effect: 'Takes 25% more damage from everything' },
+    'Marked': { duration: 1, effect: 'Takes 50% more damage; marker has advantage on rolls against them' },
+    'Cursed': { duration: 3, effect: 'Prevents all healing' },
+    'Silenced': { duration: 1, effect: 'Prevents all actions' },
+    'Enraged': { duration: 2, effect: '+50% outgoing damage, -3 Defense' },
+    'Fatigued': { duration: 3, effect: '-2 Attack, -2 Defense' },
+    'Inspired': { duration: 2, effect: '+2 Attack, +2 Defense' },
+    'Shattered Guard': { duration: 2, effect: 'Zeroes Armor' },
+    'Overcharged': { duration: 2, effect: 'Trion costs halved' },
+    'Choked': { duration: 2, effect: 'Trion costs doubled' },
+    'Petrified': { duration: 2, effect: 'Prevents all actions; takes 50% less damage; zeroes Team Spirit' },
+    'Terrified': { duration: 2, effect: "Disadvantage on attack/ranged-attack rolls; can't target the source" },
+    'Slowed': { duration: 2, effect: '-1 Defense per remaining turn; disadvantage on attack rolls' },
+    'Hastened': { duration: 2, effect: 'Advantage on attack rolls; +1 Attack per remaining turn' },
+    'Scorched': { duration: 2, effect: 'Vulnerable to Fire; 12 damage at turn start (Fire)' },
+    'Chilled': { duration: 2, effect: 'Vulnerable to Cold; -1 Attack per remaining turn' },
+    'Corroded': { duration: 2, effect: '-3 Armor; vulnerable to Acid' },
+    'Shadow-Bound': { duration: 2, effect: 'Locks a random equipped ability each turn; disadvantage on attack rolls' },
+    'Genjutsu Trapped': { duration: 1, effect: 'Prevents all actions; drains 15% Trion Capacity to the causer' },
+    'Sealed': { duration: 2, effect: 'Zeroes Trion Affinity and FAT Chance' },
+    'Overwhelmed': { duration: 2, effect: 'Zeroes Critical Chance; disadvantage on attack rolls' },
+    'Adrenaline Rush': { duration: 2, effect: '+15 Critical Chance' },
+    'Battle Trance': { duration: 2, effect: '+20 FAT Chance' },
+    'Suppressed': { duration: 2, effect: '-5 Status Effect Infliction' },
+    'Warded': { duration: 2, effect: '+10 Status Effect Resistance' },
+    'Hexed': { duration: 2, effect: '-10 Status Effect Resistance' },
+    'Radiant Blessing': { duration: 3, effect: 'Heals 1 at turn start; +10 max health; takes 10% less damage' },
+    'Necrotic Wound': { duration: 3, effect: '12 damage at turn start (Necrotic); prevents all healing' },
+  };
+
+  const STAT_LABEL = {
+    attack: 'Attack', defense: 'Defense', armor: 'Armor', maxHealth: 'Max Health',
+    trionAffinity: 'Trion Affinity', teamSpirit: 'Team Spirit', criticalChance: 'Critical Chance',
+    fatChance: 'FAT Chance', statusEffectInfliction: 'Status Effect Infliction',
+    statusEffectResistance: 'Status Effect Resistance',
+  };
+
+  const typeIcon = { attack: 'icon-attack', defense: 'icon-defense', support: 'icon-support', unique: 'icon-unique' };
+
+  function icon(name, extraClass) {
+    return '<svg class="icon' + (extraClass ? ' ' + extraClass : '') + '"><use href="#' + name + '"/></svg>';
+  }
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  function statusBadge(name) {
+    const info = STATUS_INFO[name];
+    const title = info ? (capitalize(name) + ' (' + info.duration + ' turn' + (info.duration === 1 ? '' : 's') + '): ' + info.effect) : name;
+    return '<span class="status-badge" title="' + escapeHtml(title) + '">' + escapeHtml(name) + '</span>';
+  }
+
+  function describeActiveTrigger(t) {
+    const parts = [];
+    const rangeWord = t.rangeTag === 'ranged' ? 'Ranged' : 'Melee';
+    if (t.attackSubtype === 'aoe') {
+      parts.push(rangeWord + ' attack, hits all ' + t.targetCount + ' targets at once.');
+    } else if (t.attackSubtype === 'burst') {
+      parts.push(rangeWord + ' attack: ' + t.hitsPerUse + ' hits split across up to ' + t.targetCount + ' target(s).');
+    } else if (t.targetAffiliation === 'self') {
+      parts.push('Affects the user only.');
+    } else if (t.targetAffiliation === 'ally') {
+      parts.push(rangeWord + ', targets one ally.');
+    } else {
+      parts.push(rangeWord + ' attack on a single target.');
+    }
+    if (t.damageType && t.damageAvg) {
+      parts.push(capitalize(t.damageType) + ' damage, avg ' + Math.round(t.damageAvg) + (t.attackSubtype === 'burst' ? ' per hit' : '') + '.');
+    }
+    if (t.healAvg) {
+      parts.push('Heals ' + (t.healsCasterInstead ? 'the user' : 'the target') + ' for avg ' + Math.round(t.healAvg) + '.');
+    }
+    if (t.inflictedStatusEffects && t.inflictedStatusEffects.length) {
+      parts.push('Inflicts ' + t.inflictedStatusEffects.map((s) => s.statusEffectName).join(' + ') + '.');
+    }
+    parts.push('Costs ' + t.trionCost + ' Trion, cooldown ' + t.cooldownTurns + ' turn' + (t.cooldownTurns === 1 ? '' : 's') + '.');
+    return parts.join(' ');
+  }
+
+  function describePassiveEffect(effect) {
+    const bits = [];
+    const mods = Object.entries(effect.flatStatModifiers || {});
+    if (mods.length) bits.push(mods.map(([k, v]) => (v > 0 ? '+' : '') + v + ' ' + (STAT_LABEL[k] || k)).join(', '));
+    if (effect.statusInvulnerabilitiesGranted && effect.statusInvulnerabilitiesGranted.length) {
+      bits.push('Immune to ' + effect.statusInvulnerabilitiesGranted.join(', '));
+    }
+    if (effect.damageResistancesGranted && effect.damageResistancesGranted.length) {
+      bits.push('Resists ' + effect.damageResistancesGranted.map(capitalize).join(', ') + ' damage');
+    }
+    return bits.length ? bits.join('. ') + '.' : 'No stat effect.';
+  }
+
+  function describeTriggerCatalogEntry(t) {
+    return t.isPassive ? describePassiveEffect(t.effect) : describeActiveTrigger(t);
+  }
+
+  function triggerIcon(t) {
+    if (t.isPassive) return icon('icon-passive');
+    if (t.attackSubtype === 'burst') return icon('icon-burst');
+    if (t.rangeTag === 'ranged') return icon('icon-ranged');
+    if (t.healAvg) return icon('icon-heal');
+    if (!t.damageType && t.inflictedStatusEffects && t.inflictedStatusEffects.length) return icon('icon-status');
+    return icon('icon-melee');
+  }
 
   function populateProfileSelect(select) {
     for (const cls of skillClassOrder) {
@@ -1015,14 +1364,21 @@ BATTLE_DEMO_JS_PLACEHOLDER
     profileHints[team].textContent = p ? p.description : '';
   }
 
+  function charCardHtml(c) {
+    return icon(typeIcon[c.type]) +
+      '<div class="card-body">' +
+        '<div><span class="type-tag">' + typeLabel[c.type] + '</span> ' +
+          '<span class="perk-name">' + (c.perkName ? c.perkName : 'No perk') + '</span></div>' +
+        (CHARACTER_FLAVOR[c.id] ? '<div class="flavor-text">' + escapeHtml(CHARACTER_FLAVOR[c.id]) + '</div>' : '') +
+        (c.perkDescription ? '<div class="perk-desc">' + escapeHtml(c.perkDescription) + '</div>' : '') +
+      '</div>';
+  }
+
   function updateCharCard(team, slot) {
     const c = charById[charSelects[team][slot].value];
     const card = charCards[team][slot];
     if (!c) { card.innerHTML = ''; return; }
-    card.innerHTML =
-      '<span class="type-tag">' + typeLabel[c.type] + '</span><span>' +
-      (c.perkName ? c.perkName : 'No perk') + '</span>';
-    card.title = c.perkDescription || '';
+    card.innerHTML = charCardHtml(c);
   }
 
   function enforceNoDuplicates(team) {
@@ -1115,7 +1471,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
     let lineCount = 0;
     const html = rounds.map((round) => {
       const actorClass = round.team === 'A' ? 'actor-a' : 'actor-b';
-      let block = '<div class="log-round-head">— Round ' + round.roundNumber + ', Squad ' + round.team + ' —</div>';
+      let block = '<div class="log-round-head">- Round ' + round.roundNumber + ', Squad ' + round.team + ' -</div>';
       if (round.actions.length === 0) {
         block += '<div class="log-line no-action">(no legal action taken)</div>';
         lineCount++;
@@ -1135,7 +1491,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
           if (rollBits.length) parts.push('(' + rollBits.join(', ') + ')');
           if (t.damage > 0) parts.push('<span class="dmg">' + t.damage + ' dmg</span>');
           if (t.statusEffectsApplied.length) {
-            parts.push('<span class="status-tag">[' + t.statusEffectsApplied.join(', ') + ']</span>');
+            parts.push('<span class="status-tag">[' + t.statusEffectsApplied.map(statusBadge).join(', ') + ']</span>');
           }
           parts.push('&rarr; HP ' + t.healthAfter);
           if (t.died) parts.push('<span class="died">DEFEATED</span>');
@@ -1284,7 +1640,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
         (result.concluded
           ? '<span class="rounds-note">Concluded in ' + result.roundsPlayed + ' round(s).</span>'
           : '<span class="rounds-note">Still contesting after ' + result.roundsPlayed +
-            ' rounds (round cap reached) &mdash; raise the round cap to let it play out further.</span>');
+            ' rounds (round cap reached), raise the round cap to let it play out further.</span>');
 
       renderFighterList(document.getElementById('final-a'), result.finalTeamA);
       renderFighterList(document.getElementById('final-b'), result.finalTeamB);
@@ -1305,16 +1661,33 @@ BATTLE_DEMO_JS_PLACEHOLDER
   function switchMode(mode) {
     document.getElementById('mode-simulate').style.display = mode === 'simulate' ? '' : 'none';
     document.getElementById('mode-play').style.display = mode === 'play' ? '' : 'none';
+    document.getElementById('mode-guide').style.display = mode === 'guide' ? '' : 'none';
     document.getElementById('tab-simulate').classList.toggle('active', mode === 'simulate');
     document.getElementById('tab-play').classList.toggle('active', mode === 'play');
+    document.getElementById('tab-guide').classList.toggle('active', mode === 'guide');
   }
   document.getElementById('tab-simulate').addEventListener('click', () => switchMode('simulate'));
   document.getElementById('tab-play').addEventListener('click', () => switchMode('play'));
+  document.getElementById('tab-guide').addEventListener('click', () => switchMode('guide'));
 
   // ===================== Play mode =====================
   const triggerCatalog = JSON.parse(battleDemoListTriggers());
   const blackTriggerCatalog = JSON.parse(battleDemoListBlackTriggers());
   const resonanceGrid = JSON.parse(battleDemoResonanceGrid());
+
+  (function renderResonanceTable() {
+    const table = document.getElementById('guide-resonance-table');
+    const btTypes = ['attack', 'defense', 'support', 'unique'];
+    const charTypes = ['attack', 'defense', 'support', 'unique'];
+    let html = '<tr><th>Your Type \\ Black Trigger Type</th>' +
+      btTypes.map((t) => '<th>' + typeLabel[t] + '</th>').join('') + '</tr>';
+    for (const ct of charTypes) {
+      html += '<tr><th>' + typeLabel[ct] + '</th>' +
+        btTypes.map((bt) => '<td class="bt-grade grade-' + resonanceGrid[ct][bt].grade + '">' +
+          resonanceGrid[ct][bt].grade.toUpperCase() + '</td>').join('') + '</tr>';
+    }
+    table.innerHTML = html;
+  })();
 
   const playCharSelects = {
     a: [0, 1, 2].map((i) => document.getElementById('play-char-a-' + i)),
@@ -1335,9 +1708,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
     const c = charById[playCharSelects[team][slot].value];
     const card = playCharCards[team][slot];
     if (!c) { card.innerHTML = ''; return; }
-    card.innerHTML = '<span class="type-tag">' + typeLabel[c.type] + '</span><span>' +
-      (c.perkName || 'No perk') + '</span>';
-    card.title = c.perkDescription || '';
+    card.innerHTML = charCardHtml(c);
   }
   function playEnforceNoDuplicates(team) {
     const chosen = playCharSelects[team].map((s) => s.value);
@@ -1431,7 +1802,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
     if (t.damageType) bits.push(t.damageType + ' ' + Math.round(t.damageAvg));
     if (t.healAvg) bits.push('heal ' + Math.round(t.healAvg) + (t.healsCasterInstead ? ' (self)' : ''));
     if (t.inflictedStatusEffects.length) bits.push(t.inflictedStatusEffects.map((s) => s.statusEffectName).join(', '));
-    return bits.length ? bits.join(' · ') : '—';
+    return bits.length ? bits.join(' · ') : 'no direct effect';
   }
 
   function renderLoadoutBuilderForCurrent() {
@@ -1439,7 +1810,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
     const c = charById[charId];
     const loadout = getOrInitLoadout(charId);
     document.getElementById('play-loadout-heading').textContent =
-      c.name + ' — Trion Capacity ' + c.trionCapacity;
+      c.name + ' - Trion Capacity ' + c.trionCapacity;
 
     const activeList = document.getElementById('play-active-triggers');
     const passiveList = document.getElementById('play-passive-triggers');
@@ -1449,19 +1820,19 @@ BATTLE_DEMO_JS_PLACEHOLDER
       const checked = loadout.triggerIds.includes(t.id);
       return '<label class="trigger-check-item">' +
         '<input type="checkbox" data-tid="' + t.id + '"' + (checked ? ' checked' : '') + '>' +
-        '<span><span class="t-name">' + t.name + '</span><br><span class="t-meta">' +
-        t.category + ' · ' + t.rangeTag + ' · ' + t.attackSubtype + ' · ' + triggerSummaryLine(t) +
-        '</span></span><span class="t-cost">' + t.equipCost + '</span></label>';
+        '<span>' + triggerIcon(t) + ' <span class="t-name">' + t.name + '</span><br><span class="t-meta">' +
+        t.category + ' · ' + t.rangeTag + ' · ' + t.attackSubtype +
+        '</span><span class="t-desc">' + escapeHtml(describeActiveTrigger(t)) + '</span></span>' +
+        '<span class="t-cost">' + t.equipCost + '</span></label>';
     }).join('');
 
     passiveList.innerHTML = triggerCatalog.filter((t) => t.isPassive).map((t) => {
       const checked = loadout.triggerIds.includes(t.id);
-      const mods = Object.entries(t.effect.flatStatModifiers)
-        .map(([k, v]) => (v > 0 ? '+' : '') + v + ' ' + k).join(', ');
       return '<label class="trigger-check-item">' +
         '<input type="checkbox" data-tid="' + t.id + '"' + (checked ? ' checked' : '') + '>' +
-        '<span><span class="t-name">' + t.name + '</span><br><span class="t-meta">' + mods +
-        '</span></span><span class="t-cost">' + t.equipCost + '</span></label>';
+        '<span>' + triggerIcon(t) + ' <span class="t-name">' + t.name + '</span>' +
+        '<span class="t-desc">' + escapeHtml(describePassiveEffect(t.effect)) + '</span></span>' +
+        '<span class="t-cost">' + t.equipCost + '</span></label>';
     }).join('');
 
     const noneChecked = loadout.blackTriggerId === null;
@@ -1470,9 +1841,15 @@ BATTLE_DEMO_JS_PLACEHOLDER
       blackTriggerCatalog.map((bt) => {
         const grade = resonanceGrid[c.type][bt.type].grade;
         const checked = loadout.blackTriggerId === bt.id;
+        const abilityLines = [
+          ...bt.activeAbilities.map((a) => a.name + ': ' + describeActiveTrigger(a)),
+          ...bt.passiveAbilities.map((p) => p.name + ': ' + describePassiveEffect(p.effect)),
+          ...(bt.worldAbility ? ['World ability: ' + bt.description] : []),
+        ];
         return '<label class="bt-option"><input type="radio" name="play-bt" value="' + bt.id + '"' +
-          (checked ? ' checked' : '') + '><span><span class="t-name">' + bt.name +
-          '</span><br><span class="t-meta">' + escapeHtml(bt.description) + '</span></span>' +
+          (checked ? ' checked' : '') + '><span>' + icon('icon-blacktrigger') + ' <span class="t-name">' + bt.name +
+          '</span><br><span class="t-meta">' + escapeHtml(bt.description) + '</span>' +
+          '<span class="t-desc">' + abilityLines.map(escapeHtml).join('<br>') + '</span></span>' +
           '<span class="bt-grade grade-' + grade + '">' + grade.toUpperCase() + '</span>' +
           '<span class="t-cost">' + bt.equipCost + '</span></label>';
       }).join('');
@@ -1549,7 +1926,8 @@ BATTLE_DEMO_JS_PLACEHOLDER
   function renderPlayFighterList(container, fighters) {
     container.innerHTML = fighters.map((f) => {
       const frac = f.maxHealth > 0 ? Math.max(0, f.currentHealth / f.maxHealth) : 0;
-      const statusText = (f.statusEffects || []).map((s) => s.name + ' (' + s.remainingTurns + ')').join(', ');
+      const statusText = (f.statusEffects || [])
+        .map((s) => statusBadge(s.name) + ' (' + s.remainingTurns + ')').join(', ');
       return '<div class="fighter-row' + (f.alive ? '' : ' dead') + '">' +
         '<div class="fighter-name">' + f.name +
         (statusText ? '<br><span style="font-weight:400;font-size:10px;color:var(--accent)">' + statusText + '</span>' : '') +
@@ -1570,7 +1948,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
       banner.textContent = 'Battle Over';
     } else if (state.isPlayerTurn) {
       banner.className = 'turn-banner your-turn';
-      banner.textContent = 'Your Turn — Round ' + state.roundNumber + ' (Team Trion: ' + state.teamATrion + ')';
+      banner.textContent = 'Your Turn - Round ' + state.roundNumber + ' (Team Trion: ' + state.teamATrion + ')';
     } else {
       banner.className = 'turn-banner ai-turn';
       banner.textContent = "Opponent's Turn...";
@@ -1609,12 +1987,15 @@ BATTLE_DEMO_JS_PLACEHOLDER
       const btnRow = document.createElement('div');
       btnRow.className = 'ability-btn-row';
       for (const action of legal) {
+        const catalogEntry = triggerCatalog.find((t) => t.id === action.id);
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'ability-btn';
         btn.disabled = !action.affordable;
-        btn.innerHTML = escapeHtml(action.name) + '<span class="btn-cost">' + action.actualTrionCost + ' Trion</span>';
-        if (!action.affordable) btn.title = 'Not enough Trion this turn.';
+        btn.innerHTML = (catalogEntry ? triggerIcon(catalogEntry) + ' ' : '') + escapeHtml(action.name) +
+          '<span class="btn-cost">' + action.actualTrionCost + ' Trion</span>' +
+          (catalogEntry ? '<span class="btn-desc">' + escapeHtml(describeActiveTrigger(catalogEntry)) + '</span>' : '');
+        btn.title = !action.affordable ? 'Not enough Trion this turn.' : (catalogEntry ? describeActiveTrigger(catalogEntry) : '');
         btn.addEventListener('click', () => {
           btnRow.querySelectorAll('button').forEach((b) => b.classList.remove('selected'));
           btn.classList.add('selected');

@@ -188,7 +188,7 @@ Map<String, dynamic> _runBattle({
                   .where((r) => !r.isHit && !r.isCriticalMiss)
                   .length,
               'damage': t.totalDamageDealt,
-              'statusEffectsApplied': t.statusEffectsApplied,
+              'statusEffectsApplied': _statusEffectNames(t.statusEffectsApplied),
               'healthAfter': battle.states[t.targetCharacterId]!.currentHealth,
               'died': !battle.states[t.targetCharacterId]!.isAlive,
             }
@@ -239,6 +239,9 @@ String _listProfilesJson() =>
 // session, for a human player against an AI-drafted/controlled opponent.
 // The batch `_simulateBattleJson` above (AI vs AI, one shot) is unrelated
 // and unaffected by any of this.
+
+List<String> _statusEffectNames(List<String> ids) =>
+    [for (final id in ids) _statusCatalog[id].name];
 
 Map<String, dynamic> _statusApplicationSummary(StatusEffectApplication a) => {
       'statusEffectId': a.statusEffectId,
@@ -614,7 +617,7 @@ String _useAbilityJson(String reqJsonString) {
           'misses':
               t.attackRolls.where((r) => !r.isHit && !r.isCriticalMiss).length,
           'damage': t.totalDamageDealt,
-          'statusEffectsApplied': t.statusEffectsApplied,
+          'statusEffectsApplied': _statusEffectNames(t.statusEffectsApplied),
           'healthAfter': battle.states[t.targetCharacterId]!.currentHealth,
           'died': !battle.states[t.targetCharacterId]!.isAlive,
         }
@@ -663,7 +666,7 @@ String _endTurnJson(String reqJsonString) {
                   .where((r) => !r.isHit && !r.isCriticalMiss)
                   .length,
               'damage': t.totalDamageDealt,
-              'statusEffectsApplied': t.statusEffectsApplied,
+              'statusEffectsApplied': _statusEffectNames(t.statusEffectsApplied),
               'healthAfter': battle.states[t.targetCharacterId]!.currentHealth,
               'died': !battle.states[t.targetCharacterId]!.isAlive,
             }
