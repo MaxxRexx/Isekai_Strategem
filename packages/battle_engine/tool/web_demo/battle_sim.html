@@ -169,6 +169,7 @@
     line-height: 1.5;
     min-height: 2.7em;
   }
+  .profile-hint.char-pick-wrap { min-height: 0; }
 
   .roster-slots {
     display: flex;
@@ -1438,6 +1439,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
 
   for (const team of ['a', 'b']) {
     populateProfileSelect(profileSelects[team]);
+    initProfilePicker(profileSelects[team], profileHints[team]);
     charSelects[team].forEach((select, slot) => {
       populateCharSelect(select);
       initCharPicker(select, charCards[team][slot]);
@@ -1446,7 +1448,12 @@ BATTLE_DEMO_JS_PLACEHOLDER
 
   function updateProfileHint(team) {
     const p = profileById[profileSelects[team].value];
-    profileHints[team].textContent = p ? p.description : '';
+    const container = profileHints[team];
+    const btn = container.querySelector('.char-pick-btn');
+    btn.innerHTML = p ? profileCardHtml(p) : '<span class="placeholder">Choose an AI Profile...</span>';
+    container.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.classList.toggle('selected', !!p && row.dataset.id === p.id);
+    });
   }
 
   function charCardHtml(c) {
@@ -1492,11 +1499,11 @@ BATTLE_DEMO_JS_PLACEHOLDER
     ).join('');
   }
 
-  function initCharPicker(select, container) {
+  function initPickerFromHtml(select, container, panelHtml) {
     select.classList.add('visually-hidden-select');
     container.classList.add('char-pick-wrap');
     container.innerHTML = '<button type="button" class="char-pick-btn"></button>' +
-      '<div class="char-pick-panel">' + charPickerPanelHtml() + '</div>';
+      '<div class="char-pick-panel">' + panelHtml + '</div>';
     const btn = container.querySelector('.char-pick-btn');
     const panel = container.querySelector('.char-pick-panel');
 
@@ -1516,6 +1523,29 @@ BATTLE_DEMO_JS_PLACEHOLDER
         closeCharPicker();
       });
     });
+  }
+
+  function initCharPicker(select, container) {
+    initPickerFromHtml(select, container, charPickerPanelHtml());
+  }
+
+  function profileCardHtml(p) {
+    return '<div><span class="char-name">' + escapeHtml(p.name) + '</span> ' +
+        '<span class="type-tag">' + skillClassLabel[p.skillClass] + '</span></div>' +
+      '<div class="perk-desc">' + escapeHtml(p.description) + '</div>';
+  }
+
+  function profilePickerPanelHtml() {
+    return skillClassOrder.map((cls) =>
+      '<div class="char-pick-group-label">' + skillClassLabel[cls] + '</div>' +
+      profiles.filter((p) => p.skillClass === cls).map((p) =>
+        '<button type="button" class="char-pick-row" data-id="' + p.id + '">' + profileCardHtml(p) + '</button>'
+      ).join('')
+    ).join('');
+  }
+
+  function initProfilePicker(select, container) {
+    initPickerFromHtml(select, container, profilePickerPanelHtml());
   }
 
   function updateCharCard(team, slot) {
@@ -1861,6 +1891,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
     initCharPicker(select, playCharCards.b[slot]);
   });
   populateProfileSelect(playProfileSelectB);
+  initProfilePicker(playProfileSelectB, playProfileHintB);
 
   function playUpdateCharCard(team, slot) {
     const c = charById[playCharSelects[team][slot].value];
@@ -1886,7 +1917,11 @@ BATTLE_DEMO_JS_PLACEHOLDER
   }
   function playUpdateProfileHintB() {
     const p = profileById[playProfileSelectB.value];
-    playProfileHintB.textContent = p ? p.description : '';
+    const btn = playProfileHintB.querySelector('.char-pick-btn');
+    btn.innerHTML = p ? profileCardHtml(p) : '<span class="placeholder">Choose an AI Profile...</span>';
+    playProfileHintB.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.classList.toggle('selected', !!p && row.dataset.id === p.id);
+    });
   }
   function playRandomizeTeam(team) {
     const ids = distinctRandom(3, characters.map((c) => c.id));
