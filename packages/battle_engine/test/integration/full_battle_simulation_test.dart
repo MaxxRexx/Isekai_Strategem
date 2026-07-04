@@ -228,18 +228,19 @@ void main() {
 
     test(
         'a full round-robin of every AiProfile mirrored against itself '
-        'runs cleanly for many rounds', () {
-      // Not asserting a definitive conclusion here, deliberately: a
-      // mirror match of the same heal/buff-heavy profile on both sides
-      // (e.g. The Healer's Crutch) is a genuinely extreme, near-balanced
-      // sustain-vs-chip-damage matchup with the current draft magnitude
-      // tuning (item 5's numbers) - real dice variance can still take an
-      // enormous number of rounds to break that near-equilibrium, which
-      // is a content-balance property, not an orchestration bug. This
-      // instead confirms the whole stack (roster, catalogs, LoadoutBuilder,
-      // Battle, ProfileDrivenAi) runs every profile against itself for a
-      // few hundred rounds without throwing and without producing invalid
-      // state (health outside [0, maxHealth]).
+        'concludes within the 15-20 round design target', () {
+      // With the draft magnitude tuning that replaced item 5's original
+      // numbers (100 flat max health, damage/heal/cooldown/Attack/Trion
+      // Affinity scaling to hit a 15-20 round conclusion target), even the
+      // most extreme sustain-heavy mirror (The Healer's Crutch vs itself,
+      // once the slowest matchup by a wide margin) now typically concludes
+      // in well under 20 rounds - so this asserts a real conclusion, not
+      // just "ran cleanly for a while". Nothing here seeds the dice RNG
+      // (matching every other test in this file), so true variance can
+      // still occasionally push a given run past the typical case; 150 is
+      // a generous cap purely as a regression guard against a future
+      // rebalance reintroducing a genuine stall, not a tight bound on the
+      // design target itself.
       for (final profile in AiProfile.all) {
         final teamADraft = DraftedTeam.draft(
           teamId: 'team-a',
@@ -267,7 +268,7 @@ void main() {
         final teamAAi = ProfileDrivenAi(profile);
         final teamBAi = ProfileDrivenAi(profile);
 
-        for (var round = 0; round < 300 && !battle.isOver; round++) {
+        for (var round = 0; round < 150 && !battle.isOver; round++) {
           final activeDraft = battle.isTeamATurn ? teamADraft : teamBDraft;
           final activeAi = battle.isTeamATurn ? teamAAi : teamBAi;
           battle.startTurn(
@@ -278,6 +279,10 @@ void main() {
           }
           if (!battle.isOver) battle.endTurn();
         }
+
+        expect(battle.isOver, isTrue,
+            reason:
+                '${profile.name} mirror did not conclude within 150 rounds');
 
         for (final c in [
           ...teamADraft.team.characters,

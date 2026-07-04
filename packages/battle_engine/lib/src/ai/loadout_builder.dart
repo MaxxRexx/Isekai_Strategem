@@ -63,10 +63,18 @@ class LoadoutBuilder {
     return damage == null ? 0.0 : damage.average * hits;
   }
 
+  /// Flat score bonus per matched preferred tag. Kept proportionate to
+  /// the content catalog's typical single-target damage average (a
+  /// meaningful nudge that can still be outweighed by a much
+  /// harder-hitting untagged option, not an unconditional override of
+  /// raw damage) - re-tune this alongside any future rebalance of the
+  /// Trigger catalog's damage magnitudes.
+  static const _tagMatchBonus = 200.0;
+
   double _score(ActiveTrigger trigger, AiProfile profile) {
     final matchedTags =
         triggerTags(trigger).intersection(profile.preferredTriggerTags).length;
-    return _rawDamagePower(trigger) + matchedTags * 50;
+    return _rawDamagePower(trigger) + matchedTags * _tagMatchBonus;
   }
 
   int _resonanceRank(ResonanceGrade grade) => switch (grade) {

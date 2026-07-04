@@ -121,15 +121,16 @@ Map<String, dynamic> _characterStateSummary(CharacterBattleState s) => {
 /// Runs one full battle between two drafted teams, collecting a
 /// turn-by-turn log for the demo UI to render, up to [maxRounds] (a
 /// battle that hasn't concluded by then reports `concluded: false` rather
-/// than looping forever - see the real engine's own integration test for
-/// why some AI-mirror matchups can be this slow: a content-balance
-/// property of the current placeholder damage/heal magnitudes, not a bug).
+/// than looping forever). With the current draft magnitude tuning (100
+/// flat max health, damage/heal/cooldown/Attack/Trion Affinity scaled for
+/// a 15-20 round conclusion target), battles typically conclude well
+/// under this cap - it's a generous safety margin, not the expected case.
 Map<String, dynamic> _runBattle({
   required _DraftedTeam teamADraft,
   required _DraftedTeam teamBDraft,
   required ProfileDrivenAi teamAAi,
   required ProfileDrivenAi teamBAi,
-  int maxRounds = 800,
+  int maxRounds = 60,
 }) {
   final battle = Battle(
     teamA: teamADraft.team,
@@ -251,7 +252,7 @@ String _simulateBattleJson(String configJsonString) {
   final teamADraft = draft('team-a', config['teamA'] as Map<String, dynamic>);
   final teamBDraft = draft('team-b', config['teamB'] as Map<String, dynamic>);
 
-  final maxRounds = (config['maxRounds'] as num?)?.toInt() ?? 800;
+  final maxRounds = (config['maxRounds'] as num?)?.toInt() ?? 60;
   final result = _runBattle(
     teamADraft: teamADraft,
     teamBDraft: teamBDraft,
