@@ -26,6 +26,14 @@ tightly coupled.
   source for design notes on rules that were underspecified and required an
   explicit (documented) interpretation.
 
+## Playing / rules
+
+See [`packages/battle_engine/doc`](packages/battle_engine/doc) for the
+player-facing guide (how to play, the character roster, Triggers/Black
+Triggers, status effects, and the 20 AI opponents), and
+[`packages/battle_engine/tool/web_demo`](packages/battle_engine/tool/web_demo)
+for a browser-playable Engagement Simulator built on the real engine.
+
 ## Development
 
 The battle engine is a standalone Dart package:
