@@ -213,6 +213,7 @@
     color: var(--ink-faint);
   }
   .char-pick-btn:hover, .char-pick-btn.open { border-color: var(--accent); }
+  .char-pick-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .char-pick-btn .placeholder { color: var(--ink-faint); font-size: 12.5px; }
   .char-pick-btn .icon { margin-top: 3px; color: var(--team-color); }
 
@@ -578,6 +579,7 @@
     cursor: pointer;
   }
   button.secondary:hover { color: var(--ink); border-color: var(--ink-faint); }
+  button.secondary:disabled { opacity: 0.4; cursor: not-allowed; }
   button.primary {
     font-family: var(--font-display);
     text-transform: uppercase;
@@ -760,6 +762,33 @@
     padding: 6px 0;
   }
 
+  .tutorial-banner {
+    border: 1px solid var(--accent);
+    background: rgba(52,209,200,0.08);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .tutorial-banner-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tutorial-banner-text {
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .tutorial-locked {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .tutorial-highlight {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
   .icon {
     width: 1em;
     height: 1em;
@@ -900,6 +929,7 @@
 <div class="mode-tabs">
   <button type="button" class="mode-tab active" id="tab-simulate">Simulate (AI vs AI)</button>
   <button type="button" class="mode-tab" id="tab-play">Play (You vs AI)</button>
+  <button type="button" class="mode-tab" id="tab-tutorial">Guided Tutorial</button>
   <button type="button" class="mode-tab" id="tab-guide">How to Play</button>
 </div>
 
@@ -1022,6 +1052,14 @@
   Draft your own squad and Loadouts, then play it turn by turn against an AI
   opponent, you always act first (with the first-move Trion handicap).
 </p>
+
+<div class="tutorial-banner" id="tutorial-banner" style="display: none;">
+  <div class="tutorial-banner-head">
+    <span class="eyebrow">Guided Tutorial</span>
+    <button type="button" class="secondary" id="tutorial-exit-btn">Exit Tutorial</button>
+  </div>
+  <div class="tutorial-banner-text" id="tutorial-banner-text"></div>
+</div>
 
 <!-- Step 1: team setup -->
 <div class="wizard-step visible" id="play-step-setup">
@@ -1624,7 +1662,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
       });
     });
   }
-  document.querySelectorAll('button.randomize').forEach((btn) => {
+  document.querySelectorAll('#mode-simulate button.randomize').forEach((btn) => {
     btn.addEventListener('click', () => randomizeTeam(btn.dataset.team));
   });
 
@@ -1866,10 +1904,11 @@ BATTLE_DEMO_JS_PLACEHOLDER
   // ===================== Mode switcher =====================
   function switchMode(mode) {
     document.getElementById('mode-simulate').style.display = mode === 'simulate' ? '' : 'none';
-    document.getElementById('mode-play').style.display = mode === 'play' ? '' : 'none';
+    document.getElementById('mode-play').style.display = (mode === 'play' || mode === 'tutorial') ? '' : 'none';
     document.getElementById('mode-guide').style.display = mode === 'guide' ? '' : 'none';
     document.getElementById('tab-simulate').classList.toggle('active', mode === 'simulate');
     document.getElementById('tab-play').classList.toggle('active', mode === 'play');
+    document.getElementById('tab-tutorial').classList.toggle('active', mode === 'tutorial');
     document.getElementById('tab-guide').classList.toggle('active', mode === 'guide');
   }
   document.getElementById('tab-simulate').addEventListener('click', () => switchMode('simulate'));
@@ -2203,6 +2242,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
 
       const card = document.createElement('div');
       card.className = 'action-card';
+      card.dataset.characterId = c.id;
       const heading = document.createElement('div');
       heading.className = 'char-heading';
       heading.innerHTML = '<span>' + c.name + '</span><span style="color:var(--ink-faint);font-weight:400;">' +
@@ -2216,6 +2256,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'ability-btn';
+        btn.dataset.triggerId = action.id;
         btn.disabled = !action.affordable;
         btn.innerHTML = (catalogEntry ? triggerIcon(catalogEntry) + ' ' : '') + escapeHtml(action.name) +
           '<span class="btn-cost">' + action.actualTrionCost + ' Trion</span>' +
@@ -2304,12 +2345,13 @@ BATTLE_DEMO_JS_PLACEHOLDER
     renderBattleState(result.state);
   }
 
-  document.getElementById('play-end-turn-btn').addEventListener('click', () => {
+  function handleEndTurnClick() {
     const result = JSON.parse(battleDemoEndTurn(JSON.stringify({ sessionId: playState.sessionId })));
     playState.roundsLog.push({ roundNumber: result.aiRoundNumber, team: 'B', actions: result.aiLog });
     renderPlayLog();
     renderBattleState(result.state);
-  });
+  }
+  document.getElementById('play-end-turn-btn').addEventListener('click', () => handleEndTurnClick());
 
   function buildPlayReportText(state) {
     const line = (s) => s + '\n';
@@ -2397,6 +2439,288 @@ BATTLE_DEMO_JS_PLACEHOLDER
       }
     }
     setTimeout(() => { playCopyStatus.textContent = ''; }, 2500);
+  });
+
+  // ===================== Guided Tutorial =====================
+  // Walks a first-time player through one full team turn end to end: pick a
+  // fixed squad (one Attacker, one Defender, one Support), draft a fixed
+  // Loadout for each (one of them with a Black Trigger), then use one
+  // specific ability per character in battle and end the turn. Reuses the
+  // exact same Play mode DOM/state (this tab just calls switchMode('play')
+  // under the hood) - at every step, everything except the single scripted
+  // action is disabled, so "wait for the action to complete" is enforced by
+  // the UI itself rather than by validating after the fact. The render
+  // functions below are wrapped (reassigned) rather than edited in place,
+  // so normal Play mode behaves identically whether or not this tab has
+  // ever been opened.
+
+  const TUTORIAL_OPPONENT_IDS = ['yuki_amaral', 'celestine_moreau', 'haru_ellison'];
+  const TUTORIAL_OPPONENT_PROFILE_ID = 'the_turtle';
+
+  const TUTORIAL_LOADOUTS = {
+    ren_kobayashi: {
+      triggerIds: ['twin_fang_strike', 'cleave', 'piercing_thrust', 'whirlwind_slash'],
+      blackTriggerId: null,
+    },
+    ilona_vance: {
+      triggerIds: ['shatterpoint', 'binding_snare', 'fortify', 'second_wind'],
+      blackTriggerId: 'bastion_frame',
+    },
+    priya_nakamura: {
+      triggerIds: ['mending_light', 'vital_surge', 'rally_cry', 'cleansing_ward'],
+      blackTriggerId: null,
+    },
+  };
+
+  const TUTORIAL_SETUP_STEPS = [
+    { slot: 0, charId: 'ren_kobayashi',
+      text: "Let's play through one full battle turn together. First, select Ren Kobayashi for Agent I, your Attacker." },
+    { slot: 1, charId: 'ilona_vance',
+      text: 'Good. Now select Ilona Vance for Agent II, your Defender.' },
+    { slot: 2, charId: 'priya_nakamura',
+      text: 'Last one: select Priya Nakamura for Agent III, your Support.' },
+  ];
+
+  const TUTORIAL_BATTLE_STEPS = [
+    { characterId: 'ren_kobayashi', triggerId: 'twin_fang_strike',
+      text: 'Use Twin Fang Strike with Ren Kobayashi against one of the opponents.' },
+    { characterId: 'ilona_vance', triggerId: 'fortify',
+      text: "Now use Fortify with Ilona Vance. It targets herself, so just confirm the ability." },
+    { characterId: 'priya_nakamura', triggerId: 'rally_cry',
+      text: 'Finally, use Rally Cry with Priya Nakamura on one of your allies.' },
+  ];
+
+  let tutorialActive = false;
+  let tutorialPhase = 'setup';
+  let tutorialStepIndex = 0;
+  // Battle phase state: each of the 3 characters gets an entire team turn to
+  // itself (a shared team Trion Pool starting from the forced-Low first-turn
+  // handicap only covers one 10-Trion ability, not three), so the script
+  // waits for an explicit End Turn between each scripted ability use rather
+  // than letting all 3 act in the same turn.
+  let tutorialBattleSubIndex = 0;
+  let tutorialAwaitingEndTurn = false;
+
+  function tutorialBanner() { return document.getElementById('tutorial-banner'); }
+
+  function tutorialRenderBanner() {
+    if (!tutorialActive) return;
+    const el = document.getElementById('tutorial-banner-text');
+    if (tutorialPhase === 'setup') {
+      el.textContent = tutorialStepIndex < TUTORIAL_SETUP_STEPS.length
+        ? TUTORIAL_SETUP_STEPS[tutorialStepIndex].text
+        : 'Your squad is set. Click "Next: Build Loadouts" to continue.';
+    } else if (tutorialPhase === 'loadout') {
+      const charId = playState.teamAIds[playState.currentLoadoutIndex];
+      const script = TUTORIAL_LOADOUTS[charId];
+      const triggerNames = script.triggerIds.map((id) => triggerCatalog.find((t) => t.id === id).name);
+      let text = "Build " + charById[charId].name + "'s Loadout: check " + triggerNames.join(', ') + '.';
+      if (script.blackTriggerId) {
+        const btName = blackTriggerCatalog.find((bt) => bt.id === script.blackTriggerId).name;
+        text += ' Then select the ' + btName + ' Black Trigger below.';
+      }
+      text += ' Click "Confirm Loadout" once everything is checked.';
+      el.textContent = text;
+    } else if (tutorialPhase === 'battle') {
+      if (tutorialAwaitingEndTurn) {
+        el.textContent = 'Click "End Turn" to pass control to your opponent, then we will continue with the next character.';
+      } else if (tutorialBattleSubIndex < TUTORIAL_BATTLE_STEPS.length) {
+        el.textContent = TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex].text;
+      } else {
+        el.textContent = 'Nicely done. Continue playing freely, or explore Simulate mode.';
+      }
+    }
+  }
+
+  function tutorialLockCharPanelToOne(container, allowedCharId) {
+    container.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.disabled = row.dataset.id !== allowedCharId;
+    });
+  }
+
+  function tutorialRefreshSetupLocks() {
+    const currentStep = tutorialStepIndex < TUTORIAL_SETUP_STEPS.length ? TUTORIAL_SETUP_STEPS[tutorialStepIndex] : null;
+    playCharSelects.a.forEach((select, slot) => {
+      const btn = playCharCards.a[slot].querySelector('.char-pick-btn');
+      if (currentStep && slot === currentStep.slot) {
+        btn.disabled = false;
+        tutorialLockCharPanelToOne(playCharCards.a[slot], currentStep.charId);
+      } else {
+        btn.disabled = true;
+        closeCharPicker();
+      }
+    });
+    playCharSelects.b.forEach((select, slot) => {
+      playCharCards.b[slot].querySelector('.char-pick-btn').disabled = true;
+    });
+    playProfileHintB.querySelector('.char-pick-btn').disabled = true;
+    document.getElementById('play-randomize-a').disabled = true;
+    document.getElementById('play-randomize-b').disabled = true;
+    document.getElementById('play-continue-loadout-btn').disabled = !!currentStep;
+  }
+
+  function tutorialCheckSetupAdvance(slot) {
+    if (!tutorialActive || tutorialPhase !== 'setup') return;
+    const step = TUTORIAL_SETUP_STEPS[tutorialStepIndex];
+    if (!step || step.slot !== slot) return;
+    if (playCharSelects.a[slot].value !== step.charId) return;
+    tutorialStepIndex++;
+    tutorialRefreshSetupLocks();
+    tutorialRenderBanner();
+  }
+  playCharSelects.a.forEach((select, slot) => {
+    select.addEventListener('change', () => tutorialCheckSetupAdvance(slot));
+  });
+
+  function tutorialLockLoadoutBuilder() {
+    if (!tutorialActive) return;
+    tutorialPhase = 'loadout';
+    const charId = playState.teamAIds[playState.currentLoadoutIndex];
+    const script = TUTORIAL_LOADOUTS[charId];
+    if (!script) return;
+    document.querySelectorAll('#play-active-triggers input, #play-passive-triggers input').forEach((el) => {
+      el.disabled = !script.triggerIds.includes(el.dataset.tid);
+    });
+    document.querySelectorAll('#play-black-triggers input').forEach((el) => {
+      const allowed = script.blackTriggerId ? el.value === script.blackTriggerId : el.value === '';
+      el.disabled = !allowed;
+    });
+    document.getElementById('play-back-to-setup').disabled = true;
+    tutorialRenderBanner();
+  }
+  const _origRenderLoadoutBuilderForCurrent = renderLoadoutBuilderForCurrent;
+  renderLoadoutBuilderForCurrent = function () {
+    _origRenderLoadoutBuilderForCurrent();
+    tutorialLockLoadoutBuilder();
+  };
+
+  function tutorialLockActionArea(state) {
+    if (!tutorialActive) return;
+    if (tutorialPhase !== 'battle') {
+      tutorialPhase = 'battle';
+      tutorialBattleSubIndex = 0;
+      tutorialAwaitingEndTurn = false;
+    }
+    const area = document.getElementById('play-action-area');
+    const step = (!tutorialAwaitingEndTurn && tutorialBattleSubIndex < TUTORIAL_BATTLE_STEPS.length)
+      ? TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex] : null;
+    area.querySelectorAll('.action-card').forEach((card) => {
+      if (!step || card.dataset.characterId !== step.characterId) {
+        card.classList.add('tutorial-locked');
+        return;
+      }
+      card.querySelectorAll('button.ability-btn').forEach((btn) => {
+        if (btn.dataset.triggerId !== step.triggerId) {
+          btn.disabled = true;
+        } else {
+          btn.classList.add('tutorial-highlight');
+        }
+      });
+    });
+    tutorialRenderBanner();
+  }
+  const _origRenderActionArea = renderActionArea;
+  renderActionArea = function (state) {
+    _origRenderActionArea(state);
+    tutorialLockActionArea(state);
+  };
+
+  function tutorialCheckBattleAdvance(characterId, triggerId) {
+    if (!tutorialActive || tutorialPhase !== 'battle' || tutorialAwaitingEndTurn) return;
+    const step = TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex];
+    if (!step || step.characterId !== characterId || step.triggerId !== triggerId) return;
+    tutorialAwaitingEndTurn = true;
+    tutorialRenderBanner();
+  }
+  const _origPushLogAction = pushLogAction;
+  pushLogAction = function (team, roundNumber, actionEntry) {
+    _origPushLogAction(team, roundNumber, actionEntry);
+    if (team === 'A') tutorialCheckBattleAdvance(actionEntry.characterId, actionEntry.triggerId);
+  };
+
+  const _origHandleEndTurnClick = handleEndTurnClick;
+  handleEndTurnClick = function () {
+    if (tutorialActive && tutorialAwaitingEndTurn) {
+      tutorialAwaitingEndTurn = false;
+      tutorialBattleSubIndex++;
+    }
+    _origHandleEndTurnClick();
+  };
+
+  const _origRenderBattleState = renderBattleState;
+  renderBattleState = function (state) {
+    _origRenderBattleState(state);
+    if (!tutorialActive) return;
+    if (state.isOver) {
+      tutorialFinish();
+    } else if (tutorialPhase === 'battle' && tutorialBattleSubIndex >= TUTORIAL_BATTLE_STEPS.length &&
+        !tutorialAwaitingEndTurn && state.isPlayerTurn) {
+      tutorialFinish();
+      // The action area above was rendered while still tutorial-locked (this
+      // check only runs after that render); re-render now that the lock is
+      // off so the player regains full control immediately, not on their
+      // next action.
+      renderActionArea(state);
+    } else {
+      tutorialRenderBanner();
+    }
+  };
+
+  function tutorialUnlockEverything() {
+    document.getElementById('play-randomize-a').disabled = false;
+    document.getElementById('play-randomize-b').disabled = false;
+    document.getElementById('play-continue-loadout-btn').disabled = false;
+    document.getElementById('play-back-to-setup').disabled = false;
+    playCharCards.a.forEach((c) => { c.querySelector('.char-pick-btn').disabled = false; });
+    playCharCards.b.forEach((c) => { c.querySelector('.char-pick-btn').disabled = false; });
+    playProfileHintB.querySelector('.char-pick-btn').disabled = false;
+    playEnforceNoDuplicates('a');
+    playEnforceNoDuplicates('b');
+    document.querySelectorAll('#play-active-triggers input, #play-passive-triggers input, #play-black-triggers input')
+      .forEach((el) => { el.disabled = false; });
+  }
+
+  function tutorialFinish() {
+    if (!tutorialActive) return;
+    tutorialActive = false;
+    tutorialBanner().style.display = 'none';
+    tutorialUnlockEverything();
+  }
+
+  function tutorialStart() {
+    tutorialActive = true;
+    tutorialPhase = 'setup';
+    tutorialStepIndex = 0;
+    tutorialBattleSubIndex = 0;
+    tutorialAwaitingEndTurn = false;
+
+    showWizardStep('play-step-setup');
+    document.getElementById('play-results').classList.remove('visible');
+    document.getElementById('play-setup-error').textContent = '';
+
+    TUTORIAL_OPPONENT_IDS.forEach((id, slot) => {
+      playCharSelects.b[slot].value = id;
+      playUpdateCharCard('b', slot);
+    });
+    playEnforceNoDuplicates('b');
+    playProfileSelectB.value = TUTORIAL_OPPONENT_PROFILE_ID;
+    playUpdateProfileHintB();
+
+    tutorialBanner().style.display = '';
+    tutorialRefreshSetupLocks();
+    tutorialRenderBanner();
+  }
+
+  document.getElementById('tab-tutorial').addEventListener('click', () => {
+    switchMode('tutorial');
+    tutorialStart();
+  });
+  document.getElementById('tab-play').addEventListener('click', () => tutorialFinish());
+  document.getElementById('tab-simulate').addEventListener('click', () => tutorialFinish());
+  document.getElementById('tab-guide').addEventListener('click', () => tutorialFinish());
+  document.getElementById('tutorial-exit-btn').addEventListener('click', () => {
+    tutorialFinish();
+    switchMode('play');
   });
 })();
 </script>
