@@ -285,6 +285,318 @@ void main() {
     });
   });
 
+  group('ProfileDrivenAi bespoke habits', () {
+    test(
+        'The Berserker keeps targeting whoever it last damaged, ahead of '
+        'its normal firstAvailable priority', () {
+      final battle = Battle(teamA: _team('a'), teamB: _team('b'));
+      battle.teamA.trionPool.gain(1000);
+      battle.states['a-1']!.lastDamagedTargetId = 'b-3';
+
+      final ai = ProfileDrivenAi(AiProfile.theBerserker,
+          random: const _FixedDoubleRandom(1.0));
+      final trigger =
+          testTrigger(damage: const DiceExpression(0, 1, flatBonus: 5));
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [trigger],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(
+        results.single.useResult.targetResults.single.targetCharacterId,
+        'b-3',
+      );
+    });
+
+    test(
+        'The Grudge Holder targets whoever dealt the most cumulative '
+        'damage, not whoever has the highest Attack stat', () {
+      final highAttackLowThreat = Character(
+        id: 'b-1',
+        name: 'Glass Cannon',
+        type: CharacterType.attack,
+        baseStats: testStats(attack: 999),
+      );
+      final teamB = Team(id: 'b-team', characters: [
+        highAttackLowThreat,
+        testCharacter(id: 'b-2'),
+        testCharacter(id: 'b-3'),
+      ]);
+      final battle = Battle(teamA: _team('a'), teamB: teamB);
+      battle.teamA.trionPool.gain(1000);
+      battle.states['b-2']!.cumulativeDamageDealt = 500;
+
+      final ai = ProfileDrivenAi(AiProfile.theGrudgeHolder,
+          random: const _FixedDoubleRandom(1.0));
+      final trigger =
+          testTrigger(damage: const DiceExpression(0, 1, flatBonus: 5));
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [trigger],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(
+        results.single.useResult.targetResults.single.targetCharacterId,
+        'b-2',
+      );
+    });
+
+    test(
+        'The Copycat prefers a usable ability matching the category the '
+        "opponent team most recently used, over its normal highest-damage "
+        'pick', () {
+      final battle = Battle(teamA: _team('a'), teamB: _team('b'));
+      battle.teamA.trionPool.gain(1000);
+      battle.states['b-1']!.lastActiveTriggerCategory = TriggerCategory.trapper;
+
+      final ai = ProfileDrivenAi(AiProfile.theCopycat,
+          random: const _FixedDoubleRandom(1.0));
+      final strongAttacker = testTrigger(
+        id: 'strong_attacker',
+        category: TriggerCategory.attacker,
+        damage: const DiceExpression(0, 1, flatBonus: 50),
+      );
+      final weakTrapper = testTrigger(
+        id: 'weak_trapper',
+        category: TriggerCategory.trapper,
+        damage: const DiceExpression(0, 1, flatBonus: 1),
+      );
+
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [strongAttacker, weakTrapper],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(results.single.triggerId, 'weak_trapper');
+    });
+
+    test(
+        'The Sharpshooter overvalues a Ranged option in battle, not just '
+        'when drafting a Loadout', () {
+      final battle = Battle(teamA: _team('a'), teamB: _team('b'));
+      battle.teamA.trionPool.gain(1000);
+
+      final ai = ProfileDrivenAi(AiProfile.theSharpshooter,
+          random: const _FixedDoubleRandom(1.0));
+      final melee = testTrigger(
+        id: 'melee',
+        rangeTag: RangeTag.melee,
+        damage: const DiceExpression(0, 1, flatBonus: 10),
+      );
+      final ranged = testTrigger(
+        id: 'ranged',
+        rangeTag: RangeTag.ranged,
+        damage: const DiceExpression(0, 1, flatBonus: 10),
+      );
+
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [melee, ranged],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(results.single.triggerId, 'ranged');
+    });
+
+    test(
+        'The Turtle keeps buffing itself even when the buff would be a '
+        'no-op, unlike a profile with the normal usefulness gate', () {
+      final battle = Battle(teamA: _team('a'), teamB: _team('b'));
+      battle.teamA.trionPool.gain(1000);
+      battle.turnEngine.statusEffectEngine
+          .apply(battle.states['a-1']!, 'guarded');
+
+      final ai = ProfileDrivenAi(AiProfile.theTurtle,
+          random: const _FixedDoubleRandom(1.0));
+      final buff = testTrigger(
+        id: 'buff',
+        targetAffiliation: TargetAffiliation.self,
+        includeDamage: false,
+        inflictedStatusEffects: const [StatusEffectApplication('guarded')],
+      );
+      final attack = testTrigger(
+        id: 'attack',
+        damage: const DiceExpression(0, 1, flatBonus: 50),
+      );
+
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [buff, attack],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(results.single.triggerId, 'buff');
+    });
+
+    test(
+        'The Sweeper switches to AOE once two or more enemies are in kill '
+        'range together', () {
+      final teamB = Team(id: 'b-team', characters: [
+        Character(
+          id: 'b-1',
+          name: 'Fragile A',
+          type: CharacterType.attack,
+          baseStats: testStats(armor: 0, defense: 0, maxHealth: 100),
+        ),
+        Character(
+          id: 'b-2',
+          name: 'Fragile B',
+          type: CharacterType.attack,
+          baseStats: testStats(armor: 0, defense: 0, maxHealth: 100),
+        ),
+        Character(
+          id: 'b-3',
+          name: 'Sturdy',
+          type: CharacterType.attack,
+          baseStats: testStats(armor: 0, defense: 0, maxHealth: 100),
+        ),
+      ]);
+      final battle = Battle(teamA: _team('a'), teamB: teamB);
+      battle.teamA.trionPool.gain(1000);
+      battle.states['b-1']!.currentHealth = 1;
+      battle.states['b-2']!.currentHealth = 1;
+      battle.states['b-3']!.currentHealth = 100;
+
+      final ai = ProfileDrivenAi(AiProfile.theSweeper,
+          random: const _FixedDoubleRandom(1.0));
+      final aoeWeak = testTrigger(
+        id: 'aoe_weak',
+        attackType: AttackType.melee,
+        attackSubtype: AttackSubtype.aoe,
+        targetCount: 3,
+        damage: const DiceExpression(0, 1, flatBonus: 1),
+      );
+      final singleStrong = testTrigger(
+        id: 'single_strong',
+        attackSubtype: AttackSubtype.single,
+        damage: const DiceExpression(0, 1, flatBonus: 100),
+      );
+
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [singleStrong, aoeWeak],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(results.single.triggerId, 'aoe_weak');
+    });
+
+    test(
+        'The Sweeper stays on single-target focus fire when only one enemy '
+        'is actually in kill range', () {
+      final teamB = Team(id: 'b-team', characters: [
+        Character(
+          id: 'b-1',
+          name: 'Fragile A',
+          type: CharacterType.attack,
+          baseStats: testStats(armor: 0, defense: 0, maxHealth: 100),
+        ),
+        Character(
+          id: 'b-2',
+          name: 'Sturdy A',
+          type: CharacterType.attack,
+          baseStats: testStats(armor: 0, defense: 0, maxHealth: 100),
+        ),
+        Character(
+          id: 'b-3',
+          name: 'Sturdy B',
+          type: CharacterType.attack,
+          baseStats: testStats(armor: 0, defense: 0, maxHealth: 100),
+        ),
+      ]);
+      final battle = Battle(teamA: _team('a'), teamB: teamB);
+      battle.teamA.trionPool.gain(1000);
+      battle.states['b-1']!.currentHealth = 1;
+      battle.states['b-2']!.currentHealth = 100;
+      battle.states['b-3']!.currentHealth = 100;
+
+      final ai = ProfileDrivenAi(AiProfile.theSweeper,
+          random: const _FixedDoubleRandom(1.0));
+      final aoeWeak = testTrigger(
+        id: 'aoe_weak',
+        attackType: AttackType.melee,
+        attackSubtype: AttackSubtype.aoe,
+        targetCount: 3,
+        damage: const DiceExpression(0, 1, flatBonus: 1),
+      );
+      final singleStrong = testTrigger(
+        id: 'single_strong',
+        attackSubtype: AttackSubtype.single,
+        damage: const DiceExpression(0, 1, flatBonus: 100),
+      );
+
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [singleStrong, aoeWeak],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(results.single.triggerId, 'single_strong');
+    });
+
+    test(
+        'The Prodigy switches to AOE when multiple enemies are alive, even '
+        'though its base priority is otherwise damage-driven', () {
+      final battle = Battle(teamA: _team('a'), teamB: _team('b'));
+      battle.teamA.trionPool.gain(1000);
+
+      final ai = ProfileDrivenAi(AiProfile.theProdigy,
+          random: const _FixedDoubleRandom(1.0));
+      final singleStrong = testTrigger(
+        id: 'single_strong',
+        attackSubtype: AttackSubtype.single,
+        damage: const DiceExpression(0, 1, flatBonus: 50),
+      );
+      final aoeWeak = testTrigger(
+        id: 'aoe_weak',
+        attackType: AttackType.melee,
+        attackSubtype: AttackSubtype.aoe,
+        targetCount: 3,
+        damage: const DiceExpression(0, 1, flatBonus: 1),
+      );
+
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [singleStrong, aoeWeak],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(results.single.triggerId, 'aoe_weak');
+    });
+
+    test(
+        'The Prodigy falls back to setting up a debuff when only one enemy '
+        'remains and it has no status effects yet', () {
+      final battle = Battle(teamA: _team('a'), teamB: _team('b'));
+      battle.teamA.trionPool.gain(1000);
+      battle.states['b-2']!.currentHealth = 0;
+      battle.states['b-3']!.currentHealth = 0;
+
+      final ai = ProfileDrivenAi(AiProfile.theProdigy,
+          random: const _FixedDoubleRandom(1.0));
+      final plainStrong = testTrigger(
+        id: 'plain_strong',
+        damage: const DiceExpression(0, 1, flatBonus: 50),
+      );
+      final debuffWeak = testTrigger(
+        id: 'debuff_weak',
+        damage: const DiceExpression(0, 1, flatBonus: 1),
+        inflictedStatusEffects: const [StatusEffectApplication('poisoned')],
+      );
+
+      final results = ai.takeTurn(battle, equippedActiveTriggers: {
+        'a-1': [plainStrong, debuffWeak],
+        'a-2': [],
+        'a-3': [],
+      });
+
+      expect(results.single.triggerId, 'debuff_weak');
+    });
+  });
+
   group('ProfileDrivenAi mistake chance', () {
     test(
         'a forced mistake picks a different ability than the profile '

@@ -557,6 +557,10 @@ class TurnEngine {
           isCriticalHit: outcome.isCriticalHit,
         );
         damageDealt = healthBefore - target.currentHealth;
+        if (damageDealt > 0) {
+          attacker.cumulativeDamageDealt += damageDealt;
+          attacker.lastDamagedTargetId = target.character.id;
+        }
       }
 
       if (trigger.healAmount != null) {

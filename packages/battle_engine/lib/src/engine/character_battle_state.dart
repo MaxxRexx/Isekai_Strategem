@@ -104,6 +104,17 @@ class CharacterBattleState {
   /// Ren's "First Strike" perk (a first-turn-only Attack bonus).
   bool hasActedThisBattle = false;
 
+  /// Running total of damage this character has personally dealt this
+  /// battle, for `AiTargetPriority.highestThreat` (The Grudge Holder) - a
+  /// "who has actually hurt my team the most" read, rather than a static
+  /// Attack-stat proxy.
+  int cumulativeDamageDealt = 0;
+
+  /// The character id this character's last landed damaging hit was
+  /// against, for `AiProfile.fixatesOnLastDamagedTarget` (The Berserker).
+  /// Null until this character's first landed hit.
+  String? lastDamagedTargetId;
+
   CharacterBattleState(
     this.character, {
     List<PassiveEffect> equippedPassiveEffects = const [],

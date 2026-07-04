@@ -7,6 +7,7 @@ import '../models/team.dart';
 import '../models/trigger.dart';
 import 'ai_profile.dart';
 import 'ai_skill_class.dart';
+import 'loadout_builder.dart';
 import 'rule_based_ai.dart';
 
 /// Plays one [AiProfile]'s strategy for a [Battle]'s active team: which
@@ -22,6 +23,8 @@ import 'rule_based_ai.dart';
 class ProfileDrivenAi {
   final AiProfile profile;
   final Random random;
+
+  static const _tagLookup = LoadoutBuilder();
 
   ProfileDrivenAi(this.profile, {Random? random}) : random = random ?? Random();
 
@@ -107,6 +110,19 @@ class ProfileDrivenAi {
       return sorted;
     }
 
+    // The Copycat: before applying its own priority, try to just repeat
+    // whatever TriggerCategory the opponent team most recently acted
+    // with - copying, not reading the board independently.
+    if (profile.mirrorsOpponentLastCategory) {
+      final opponentCategories = battle.inactiveTeam.characters
+          .map((c) => battle.states[c.id]!.lastActiveTriggerCategory)
+          .whereType<TriggerCategory>()
+          .toSet();
+      final mirrored =
+          usable.where((t) => opponentCategories.contains(t.category)).toList();
+      if (mirrored.isNotEmpty) return byPower(mirrored).first;
+    }
+
     switch (profile.abilityPriority) {
       case AiAbilityPriority.fixedOrder:
         return usable.first;
@@ -116,13 +132,20 @@ class ProfileDrivenAi {
         // buff everyone eligible already has, doesn't count, so the AI
         // doesn't loop forever re-applying a no-op instead of attacking
         // (this is exactly what let two support-heavy teams stalemate at
-        // full health indefinitely before this check existed).
-        final usefulSupport = usable
+        // full health indefinitely before this check existed). The
+        // Turtle opts out of this gate entirely (see
+        // `AiProfile.ignoresSupportUsefulnessGate`) - it leans on
+        // support to a fault, need or not.
+        final supportCandidates = usable
             .where((t) =>
                 t.targetAffiliation != TargetAffiliation.opponent &&
-                (t.healAmount != null || t.inflictedStatusEffects.isNotEmpty) &&
-                _isSupportActionUseful(state, t, battle))
+                (t.healAmount != null || t.inflictedStatusEffects.isNotEmpty))
             .toList();
+        final usefulSupport = profile.ignoresSupportUsefulnessGate
+            ? supportCandidates
+            : supportCandidates
+                .where((t) => _isSupportActionUseful(state, t, battle))
+                .toList();
         return usefulSupport.isNotEmpty
             ? byPower(usefulSupport).first
             : byPower(usable).first;
@@ -137,7 +160,26 @@ class ProfileDrivenAi {
       case AiAbilityPriority.aoeFavoring:
         final aoe =
             usable.where((t) => t.attackSubtype == AttackSubtype.aoe).toList();
-        return aoe.isNotEmpty ? byPower(aoe).first : byPower(usable).first;
+        if (aoe.isEmpty) return byPower(usable).first;
+        if (!profile.aoeOnlyWhenMultipleInKillRange) return byPower(aoe).first;
+
+        // The Sweeper: only actually reach for AOE once it's worth it -
+        // at least two legal enemies predicted lethal from this hit -
+        // otherwise focus fire like normal.
+        final engine = battle.turnEngine;
+        final livingEnemies = battle.inactiveTeam.characters
+            .map((c) => battle.states[c.id]!)
+            .where((s) => s.isAlive)
+            .toList();
+        for (final candidate in byPower(aoe)) {
+          final inKillRange = livingEnemies
+              .where((t) =>
+                  _predictedDamage(engine, state, t, candidate) >=
+                  t.currentHealth)
+              .length;
+          if (inKillRange >= 2) return candidate;
+        }
+        return byPower(usable).first;
 
       case AiAbilityPriority.blackTriggerFavoring:
         final blackTriggerAbilities =
@@ -147,6 +189,28 @@ class ProfileDrivenAi {
             : byPower(usable).first;
 
       case AiAbilityPriority.highestDamage:
+        return byPower(usable).first;
+
+      case AiAbilityPriority.adaptive:
+        // The Prodigy: re-reads the board every ability choice instead
+        // of committing to one fixed strategy - AOE once it'd hit
+        // multiple enemies, debuff setup on an undebuffed enemy, else
+        // whatever hits hardest.
+        final aliveEnemyStates = battle.inactiveTeam.characters
+            .map((c) => battle.states[c.id]!)
+            .where((s) => s.isAlive)
+            .toList();
+        if (aliveEnemyStates.length >= 2) {
+          final aoe = usable
+              .where((t) => t.attackSubtype == AttackSubtype.aoe)
+              .toList();
+          if (aoe.isNotEmpty) return byPower(aoe).first;
+        }
+        if (aliveEnemyStates.any((s) => s.statusEffects.isEmpty)) {
+          final debuffs =
+              usable.where((t) => t.inflictedStatusEffects.isNotEmpty).toList();
+          if (debuffs.isNotEmpty) return byPower(debuffs).first;
+        }
         return byPower(usable).first;
     }
   }
@@ -185,12 +249,21 @@ class ProfileDrivenAi {
     return false;
   }
 
+  /// Raw damage power plus a bonus for matching [AiProfile.
+  /// preferredTriggerTags] - the same tags Loadout-building already
+  /// favors also bias which usable ability this profile actually reaches
+  /// for in battle (e.g. The Sharpshooter overvaluing Ranged/Burst
+  /// options even when a weaker choice this turn).
   double _abilityPower(ActiveTrigger trigger) {
     final damage = trigger.damage;
-    if (damage == null) return 0;
     final hits =
         trigger.attackSubtype == AttackSubtype.burst ? trigger.hitsPerUse : 1;
-    return damage.average * hits;
+    final damagePower = damage == null ? 0.0 : damage.average * hits;
+    final matchedTags = _tagLookup
+        .triggerTags(trigger)
+        .intersection(profile.preferredTriggerTags)
+        .length;
+    return damagePower + matchedTags * 50;
   }
 
   List<CharacterBattleState> _chooseTargets(
@@ -233,13 +306,27 @@ class ProfileDrivenAi {
           break;
         case AiTargetPriority.highestThreat:
           legal.sort((a, b) =>
-              b.effectiveStats().attack.compareTo(a.effectiveStats().attack));
+              b.cumulativeDamageDealt.compareTo(a.cumulativeDamageDealt));
           break;
         case AiTargetPriority.firstAvailable:
           break;
         case AiTargetPriority.random:
           legal.shuffle(random);
           break;
+      }
+    }
+
+    // The Berserker: once it's drawn blood from someone, it keeps
+    // hitting that same target ahead of its normal priority - a no-op
+    // for ally/self-targeted triggers, since `lastDamagedTargetId` is
+    // always an opponent's id.
+    if (profile.fixatesOnLastDamagedTarget && !isMistake) {
+      final fixation =
+          legal.where((t) => t.character.id == attacker.lastDamagedTargetId);
+      if (fixation.isNotEmpty) {
+        final target = fixation.first;
+        legal.remove(target);
+        legal.insert(0, target);
       }
     }
 
