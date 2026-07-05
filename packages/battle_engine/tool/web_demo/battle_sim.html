@@ -904,6 +904,35 @@
     text-align: center;
   }
   .guide-grade-table th { color: var(--ink-dim); font-weight: 600; }
+
+  .guide-section h3 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin: 16px 0 8px;
+  }
+  .guide-list {
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    background: var(--bg-recessed);
+    padding: 2px 14px;
+    margin: 8px 0;
+  }
+  .guide-entry {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-dim);
+  }
+  .guide-entry:last-child { border-bottom: none; }
+  .guide-entry strong { color: var(--ink); }
+  .guide-entry .icon { margin-right: 4px; color: var(--accent); }
+  .guide-entry .t-meta { color: var(--ink-faint); font-size: 11px; }
+  .guide-entry .t-desc { display: block; margin-top: 3px; }
 </style>
 
 <svg style="display:none" aria-hidden="true">
@@ -927,13 +956,13 @@
 <h1>Engagement Simulator</h1>
 
 <div class="mode-tabs">
-  <button type="button" class="mode-tab active" id="tab-simulate">Simulate (AI vs AI)</button>
-  <button type="button" class="mode-tab" id="tab-play">Play (You vs AI)</button>
+  <button type="button" class="mode-tab active" id="tab-play">Play (You vs AI)</button>
+  <button type="button" class="mode-tab" id="tab-simulate">Simulate (AI vs AI)</button>
   <button type="button" class="mode-tab" id="tab-tutorial">Guided Tutorial</button>
   <button type="button" class="mode-tab" id="tab-guide">How to Play</button>
 </div>
 
-<div id="mode-simulate">
+<div id="mode-simulate" style="display: none;">
 <p class="subhead">
   Draft two 3-Agent squads from the full character roster, assign each side an AI Profile
   (skill class, target/ability doctrine, Loadout bias), and run a full engagement on the real
@@ -1047,7 +1076,7 @@
 </div>
 </div>
 
-<div id="mode-play" style="display: none;">
+<div id="mode-play">
 <p class="subhead">
   Draft your own squad and Loadouts, then play it turn by turn against an AI
   opponent. Whichever side acts first is random, with a first-move Trion
@@ -1266,8 +1295,42 @@
   </section>
 
   <section class="panel guide-section">
-    <h2><svg class="icon lg"><use href="#icon-debuff"/></svg>Status Effects, Perks, and Black Triggers</h2>
-    <p>Nothing in the engine special-cases a status effect, perk, or Black Trigger by name, they're all just data read by the same generic rules (stat modifiers, roll advantage/disadvantage, damage multipliers, action prevention, etc). Every character's innate perk is always active regardless of Loadout, and combines with whatever you equip.</p>
+    <h2><svg class="icon lg"><use href="#icon-passive"/></svg>Character Stats</h2>
+    <p>Every character card shows the same 10 base stats, abbreviated to fit:</p>
+    <ul>
+      <li><strong>TC (Trion Capacity).</strong> Your Loadout budget (100-130), spent once during drafting. Doesn't change in battle.</li>
+      <li><strong>TA (Trion Affinity).</strong> Raises your team's chance of a higher Trion gain tier each turn.</li>
+      <li><strong>TS (Team Spirit).</strong> A dual-direction stat, see above: below 50 boosts damage and Critical Chance, above 50 boosts Health Regeneration and FAT Chance.</li>
+      <li><strong>ARM (Armor).</strong> Flat damage reduction, applied after critical doubling and before damage-type multipliers.</li>
+      <li><strong>ATK (Attack).</strong> Added to the attacker's d20 roll during combat resolution.</li>
+      <li><strong>DEF (Defense).</strong> Added to the defender's d20 roll during combat resolution.</li>
+      <li><strong>CRIT (Critical Chance).</strong> Raises the odds of a critical hit (automatic success, double damage). Higher values lower the natural roll needed to crit.</li>
+      <li><strong>FAT (FAT Chance).</strong> Odds of Full Arms Trigger activating on a character's turn, allowing up to 3 ability uses instead of 1.</li>
+      <li><strong>INFL (Status Effect Infliction).</strong> Compared against a target's Status Effect Resistance to determine whether a status effect you inflict actually lands.</li>
+      <li><strong>RES (Status Effect Resistance).</strong> Subtracted from an attacker's infliction roll when they try to inflict a status effect on you.</li>
+    </ul>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-unique"/></svg>Character Perks</h2>
+    <p>Every character has one innate perk, always active regardless of Loadout, that combines with whatever you equip. Nothing in the engine special-cases a perk by name, they're just data read by the same generic rules as everything else (stat modifiers, roll advantage/disadvantage, damage multipliers, action prevention, etc).</p>
+    <div class="guide-list" id="guide-perks-list"></div>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-debuff"/></svg>Status Effects</h2>
+    <p>50 status effects, all expressed as data against the same generic definition, nothing special-cases an effect by name. Duration is in turns, ticked down at the start of the affected character's team's turn, unless noted otherwise.</p>
+    <div class="guide-list" id="guide-status-list"></div>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-burst"/></svg>Triggers</h2>
+    <p>40 regular Triggers (active and passive) plus 10 Black Triggers form the shared draft pool, any character may equip any of them regardless of their own type (see Resonance, above, for how well a Black Trigger suits a given character). "Avg" damage/heal figures below are the expected value of the dice before Armor/resistances/Team Spirit/perk modifiers are applied.</p>
+    <div class="guide-list" id="guide-triggers-list"></div>
+
+    <h3>Black Triggers</h3>
+    <p>Each character may equip at most one. A Black Trigger can carry active abilities (count toward the Loadout's required 4), passive abilities (always on), and/or a World ability (a battle-wide effect, distinct from a passive stat bonus).</p>
+    <div class="guide-list" id="guide-black-triggers-list"></div>
   </section>
 
 </div>
@@ -1933,6 +1996,54 @@ BATTLE_DEMO_JS_PLACEHOLDER
           resonanceGrid[ct][bt].grade.toUpperCase() + '</td>').join('') + '</tr>';
     }
     table.innerHTML = html;
+  })();
+
+  (function renderGuidePerks() {
+    const el = document.getElementById('guide-perks-list');
+    el.innerHTML = characters.map((c) =>
+      '<div class="guide-entry">' + icon(typeIcon[c.type]) +
+        '<strong>' + escapeHtml(c.name) + '</strong> <span class="t-meta">' + typeLabel[c.type] + '</span>' +
+        '<div><strong>' + escapeHtml(c.perkName || 'No perk') + '.</strong> ' +
+        escapeHtml(c.perkDescription || '') + '</div>' +
+      '</div>'
+    ).join('');
+  })();
+
+  (function renderGuideStatusEffects() {
+    const el = document.getElementById('guide-status-list');
+    el.innerHTML = Object.entries(STATUS_INFO).map(([name, info]) =>
+      '<div class="guide-entry">' + icon('icon-status') +
+        '<strong>' + escapeHtml(name) + '</strong> <span class="t-meta">' +
+        info.duration + ' turn' + (info.duration === 1 ? '' : 's') + '</span>' +
+        '<div>' + escapeHtml(info.effect) + '</div>' +
+      '</div>'
+    ).join('');
+  })();
+
+  (function renderGuideTriggers() {
+    const el = document.getElementById('guide-triggers-list');
+    el.innerHTML = triggerCatalog.map((t) =>
+      '<div class="guide-entry">' + triggerIcon(t) +
+        '<strong>' + escapeHtml(t.name) + '</strong> <span class="t-meta">' +
+        (t.isPassive ? (t.category + ' - passive') : (t.category + ' - ' + t.rangeTag + ' - ' + t.attackSubtype)) +
+        '</span>' +
+        '<div class="t-desc">' + escapeHtml(describeTriggerCatalogEntry(t)) + '</div>' +
+      '</div>'
+    ).join('');
+
+    const btEl = document.getElementById('guide-black-triggers-list');
+    btEl.innerHTML = blackTriggerCatalog.map((bt) => {
+      const abilityLines = [
+        ...bt.activeAbilities.map((a) => a.name + ': ' + describeActiveTrigger(a)),
+        ...bt.passiveAbilities.map((p) => p.name + ': ' + describePassiveEffect(p.effect)),
+        ...(bt.worldAbility ? ['World ability: ' + bt.description] : []),
+      ];
+      return '<div class="guide-entry">' + icon('icon-blacktrigger') +
+        '<strong>' + escapeHtml(bt.name) + '</strong> <span class="t-meta">' + typeLabel[bt.type] + ' type - equip ' + bt.equipCost + '</span>' +
+        '<div>' + escapeHtml(bt.description) + '</div>' +
+        '<div class="t-desc">' + abilityLines.map(escapeHtml).join('<br>') + '</div>' +
+      '</div>';
+    }).join('');
   })();
 
   const playCharSelects = {
@@ -2654,6 +2765,9 @@ BATTLE_DEMO_JS_PLACEHOLDER
         }
       });
     });
+    // Only reveal End Turn once the scripted ability for this step has
+    // actually been used, so there is no way to skip past it.
+    document.getElementById('play-end-turn-btn').style.display = tutorialAwaitingEndTurn ? '' : 'none';
     tutorialRenderBanner();
   }
   const _origRenderActionArea = renderActionArea;
