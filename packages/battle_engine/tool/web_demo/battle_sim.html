@@ -869,6 +869,28 @@
     cursor: help;
   }
 
+  @keyframes fat-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 171, 77, 0.55); }
+    50% { box-shadow: 0 0 0 5px rgba(255, 171, 77, 0); }
+  }
+  .fat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: var(--warn);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1px 6px;
+    border-radius: 3px;
+    animation: fat-pulse 1.3s ease-in-out infinite;
+    vertical-align: middle;
+    cursor: help;
+  }
+  .fat-badge .icon { width: 0.8em; height: 0.8em; }
+
   .guide-wrap {
     display: flex;
     flex-direction: column;
@@ -1457,6 +1479,11 @@ BATTLE_DEMO_JS_PLACEHOLDER
     return '<span class="status-badge" title="' + escapeHtml(title) + '">' + escapeHtml(name) + '</span>';
   }
 
+  function fatBadgeHtml() {
+    return '<span class="fat-badge" title="Full Arms Trigger is active: up to 3 ability uses this turn instead of 1.">' +
+      icon('icon-burst') + 'FAT</span>';
+  }
+
   function describeActiveTrigger(t) {
     const parts = [];
     const rangeWord = t.rangeTag === 'ranged' ? 'Ranged' : 'Melee';
@@ -1790,6 +1817,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
           lineCount++;
           const parts = [];
           parts.push('<span class="' + actorClass + '">' + escapeHtml(action.characterName) + '</span>');
+          if (action.fatTriggered) parts.push(fatBadgeHtml());
           parts.push('uses <strong>' + escapeHtml(action.triggerName) + '</strong> on ' + escapeHtml(t.targetName));
           const rollBits = [];
           if (t.crits > 0) rollBits.push('<span class="crit">' + t.crits + ' crit</span>');
@@ -1865,7 +1893,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
           const normalHits = t.hits - t.crits - t.misses;
           if (normalHits > 0) bits.push(normalHits + ' hit');
           if (t.misses > 0) bits.push(t.misses + ' miss');
-          let entry = '  ' + action.characterName + ' uses ' + action.triggerName +
+          let entry = '  ' + action.characterName + (action.fatTriggered ? ' [FAT]' : '') + ' uses ' + action.triggerName +
             ' on ' + t.targetName + ' (' + bits.join(', ') + ')';
           if (t.damage > 0) entry += ' ' + t.damage + ' dmg';
           if (t.statusEffectsApplied.length) entry += ' [' + t.statusEffectsApplied.join(', ') + ']';
@@ -2313,7 +2341,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
       const statusText = (f.statusEffects || [])
         .map((s) => statusBadge(s.name) + ' (' + s.remainingTurns + ')').join(', ');
       return '<div class="fighter-row' + (f.alive ? '' : ' dead') + '">' +
-        '<div class="fighter-name">' + f.name +
+        '<div class="fighter-name">' + f.name + (f.fatTriggered ? ' ' + fatBadgeHtml() : '') +
         (statusText ? '<br><span style="font-weight:400;font-size:10px;color:var(--accent)">' + statusText + '</span>' : '') +
         '</div><div class="hp-track"><div class="hp-fill ' + hpFillClass(f.currentHealth, f.maxHealth) +
         '" style="width:' + (frac * 100).toFixed(1) + '%"></div></div>' +
@@ -2365,7 +2393,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
       card.dataset.characterId = c.id;
       const heading = document.createElement('div');
       heading.className = 'char-heading';
-      heading.innerHTML = '<span>' + c.name + '</span><span style="color:var(--ink-faint);font-weight:400;">' +
+      heading.innerHTML = '<span>' + c.name + (c.fatTriggered ? ' ' + fatBadgeHtml() : '') + '</span><span style="color:var(--ink-faint);font-weight:400;">' +
         (legal.length ? legal.length + ' action(s) available' : 'no actions available this turn') + '</span>';
       card.appendChild(heading);
 
@@ -2466,6 +2494,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
     }
     pushLogAction('A', result.state.roundNumber, {
       characterId, characterName, triggerId, triggerName: result.triggerName, targets: result.targets,
+      fatTriggered: result.fatTriggered,
     });
     renderPlayLog();
     renderBattleState(result.state);
@@ -2518,7 +2547,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
           const normalHits = t.hits - t.crits - t.misses;
           if (normalHits > 0) bits.push(normalHits + ' hit');
           if (t.misses > 0) bits.push(t.misses + ' miss');
-          let entry = '  ' + action.characterName + ' uses ' + action.triggerName + ' on ' + t.targetName +
+          let entry = '  ' + action.characterName + (action.fatTriggered ? ' [FAT]' : '') + ' uses ' + action.triggerName + ' on ' + t.targetName +
             ' (' + bits.join(', ') + ')';
           if (t.damage > 0) entry += ' ' + t.damage + ' dmg';
           if (t.statusEffectsApplied.length) entry += ' [' + t.statusEffectsApplied.join(', ') + ']';
@@ -2608,12 +2637,14 @@ BATTLE_DEMO_JS_PLACEHOLDER
   ];
 
   const TUTORIAL_BATTLE_STEPS = [
-    { characterId: 'ren_kobayashi', triggerId: 'twin_fang_strike',
+    { type: 'single', characterId: 'ren_kobayashi', triggerId: 'twin_fang_strike',
       text: 'Use Twin Fang Strike with Ren Kobayashi against one of the opponents.' },
-    { characterId: 'ilona_vance', triggerId: 'fortify',
+    { type: 'single', characterId: 'ilona_vance', triggerId: 'fortify',
       text: "Now use Fortify with Ilona Vance. It targets herself, so just confirm the ability." },
-    { characterId: 'priya_nakamura', triggerId: 'rally_cry',
+    { type: 'single', characterId: 'priya_nakamura', triggerId: 'rally_cry',
       text: 'Finally, use Rally Cry with Priya Nakamura on one of your allies.' },
+    { type: 'fat', characterId: 'ren_kobayashi', minUses: 2,
+      text: 'Full Arms Trigger (FAT) just triggered for Ren Kobayashi! Normally each character gets 1 ability use per turn, but a FAT trigger allows up to 3 in the same turn instead. Chaining 2 or more does carry a real cost afterward (doubled cooldowns and halved Trion Affinity next turn), but it is worth it for the burst.' },
   ];
 
   let tutorialActive = false;
@@ -2626,6 +2657,12 @@ BATTLE_DEMO_JS_PLACEHOLDER
   // than letting all 3 act in the same turn.
   let tutorialBattleSubIndex = 0;
   let tutorialAwaitingEndTurn = false;
+  // Round 4 demonstrates Full Arms Trigger, forced (rather than left to the
+  // real probabilistic roll) via battleDemoForceFat so the walkthrough is
+  // deterministic; the player must then use more than 1 of Ren's abilities
+  // before End Turn is revealed, same as everywhere else in the tutorial.
+  let tutorialFatForced = false;
+  let tutorialFatUsesThisRound = 0;
 
   function tutorialBanner() { return document.getElementById('tutorial-banner'); }
 
@@ -2651,7 +2688,15 @@ BATTLE_DEMO_JS_PLACEHOLDER
       if (tutorialAwaitingEndTurn) {
         el.textContent = 'Click "End Turn" to pass control to your opponent, then we will continue with the next character.';
       } else if (tutorialBattleSubIndex < TUTORIAL_BATTLE_STEPS.length) {
-        el.textContent = TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex].text;
+        const step = TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex];
+        if (step.type === 'fat') {
+          const remaining = step.minUses - tutorialFatUsesThisRound;
+          el.textContent = step.text + (remaining > 0
+            ? (' Use ' + remaining + ' more ' + (remaining === 1 ? 'ability' : 'abilities') + ' with Ren this turn.')
+            : '');
+        } else {
+          el.textContent = step.text;
+        }
       } else {
         el.textContent = 'Nicely done. Continue playing freely, or explore Simulate mode.';
       }
@@ -2757,6 +2802,11 @@ BATTLE_DEMO_JS_PLACEHOLDER
         card.classList.add('tutorial-locked');
         return;
       }
+      if (step.type === 'fat') {
+        // Leave every one of this character's abilities enabled - the whole
+        // point of this step is that FAT lets them use more than one.
+        return;
+      }
       card.querySelectorAll('button.ability-btn').forEach((btn) => {
         if (btn.dataset.triggerId !== step.triggerId) {
           btn.disabled = true;
@@ -2770,6 +2820,18 @@ BATTLE_DEMO_JS_PLACEHOLDER
     document.getElementById('play-end-turn-btn').style.display = tutorialAwaitingEndTurn ? '' : 'none';
     tutorialRenderBanner();
   }
+
+  function tutorialMaybeForceFat() {
+    if (!tutorialActive || tutorialPhase !== 'battle') return null;
+    const step = TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex];
+    if (step && step.type === 'fat' && !tutorialFatForced) {
+      tutorialFatForced = true;
+      tutorialFatUsesThisRound = 0;
+      battleDemoForceFat(JSON.stringify({ sessionId: playState.sessionId, characterId: step.characterId }));
+      return step.characterId;
+    }
+    return null;
+  }
   const _origRenderActionArea = renderActionArea;
   renderActionArea = function (state) {
     _origRenderActionArea(state);
@@ -2779,7 +2841,14 @@ BATTLE_DEMO_JS_PLACEHOLDER
   function tutorialCheckBattleAdvance(characterId, triggerId) {
     if (!tutorialActive || tutorialPhase !== 'battle' || tutorialAwaitingEndTurn) return;
     const step = TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex];
-    if (!step || step.characterId !== characterId || step.triggerId !== triggerId) return;
+    if (!step || step.characterId !== characterId) return;
+    if (step.type === 'fat') {
+      tutorialFatUsesThisRound++;
+      if (tutorialFatUsesThisRound >= step.minUses) tutorialAwaitingEndTurn = true;
+      tutorialRenderBanner();
+      return;
+    }
+    if (step.triggerId !== triggerId) return;
     tutorialAwaitingEndTurn = true;
     tutorialRenderBanner();
   }
@@ -2800,6 +2869,16 @@ BATTLE_DEMO_JS_PLACEHOLDER
 
   const _origRenderBattleState = renderBattleState;
   renderBattleState = function (state) {
+    const forcedCharacterId = tutorialMaybeForceFat();
+    if (forcedCharacterId) {
+      // The state snapshot was captured before the force-FAT call above
+      // mutated the session server-side, so it still says false here -
+      // patch it in place (before the fighter list and action area below
+      // both read it) so the FAT badge shows up immediately rather than
+      // only after the next ability use.
+      const forcedChar = state.teamA.find((c) => c.id === forcedCharacterId);
+      if (forcedChar) forcedChar.fatTriggered = true;
+    }
     _origRenderBattleState(state);
     if (!tutorialActive) return;
     if (state.isOver) {
@@ -2844,6 +2923,8 @@ BATTLE_DEMO_JS_PLACEHOLDER
     tutorialStepIndex = 0;
     tutorialBattleSubIndex = 0;
     tutorialAwaitingEndTurn = false;
+    tutorialFatForced = false;
+    tutorialFatUsesThisRound = 0;
 
     showWizardStep('play-step-setup');
     document.getElementById('play-results').classList.remove('visible');

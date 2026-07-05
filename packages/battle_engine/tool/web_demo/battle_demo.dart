@@ -188,6 +188,7 @@ Map<String, dynamic> _runBattle({
         'characterName': battle.states[result.characterId]!.character.name,
         'triggerId': trigger.id,
         'triggerName': trigger.name,
+        'fatTriggered': battle.states[result.characterId]!.fatTriggeredThisTurn,
         'targets': [
           for (final t in result.useResult.targetResults)
             {
@@ -415,6 +416,7 @@ Map<String, dynamic> _sessionCharacterSummary(
         for (final t in equipped[s.character.id] ?? const <ActiveTrigger>[])
           if ((s.cooldowns[t.id] ?? 0) > 0) t.id: s.cooldowns[t.id]
       },
+      'fatTriggered': s.fatTriggeredThisTurn,
     };
 
 class _Session {
@@ -647,6 +649,7 @@ String _useAbilityJson(String reqJsonString) {
   return jsonEncode({
     'success': true,
     'triggerName': trigger.name,
+    'fatTriggered': state.fatTriggeredThisTurn,
     'targets': [
       for (final t in useResult.targetResults)
         {
@@ -664,6 +667,20 @@ String _useAbilityJson(String reqJsonString) {
     ],
     'state': _sessionSnapshot(sessionId, session),
   });
+}
+
+/// [reqJsonString] shape: `{"sessionId": N, "characterId": "..."}`. Forces
+/// Full Arms Trigger to be active for the rest of this character's current
+/// turn, bypassing the normal FAT Chance roll. Not part of the real rules,
+/// this exists solely so the Guided Tutorial can demonstrate the FAT
+/// mechanic (up to 3 ability uses in one turn) deterministically rather
+/// than waiting on a probabilistic roll.
+String _forceFatJson(String reqJsonString) {
+  final req = jsonDecode(reqJsonString) as Map<String, dynamic>;
+  final session = _sessionFor((req['sessionId'] as num).toInt());
+  final characterId = req['characterId'] as String;
+  session.battle.states[characterId]!.fatTriggeredThisTurn = true;
+  return jsonEncode({'success': true});
 }
 
 /// Resolves consecutive AI (team B) turns - normally just one - starting
@@ -694,6 +711,7 @@ Map<String, dynamic> _playAiTurns(
         'characterName': battle.states[result.characterId]!.character.name,
         'triggerId': trigger.id,
         'triggerName': trigger.name,
+        'fatTriggered': battle.states[result.characterId]!.fatTriggeredThisTurn,
         'targets': [
           for (final t in result.useResult.targetResults)
             {
@@ -813,4 +831,6 @@ void main() {
       ((JSString reqJson) => _useAbilityJson(reqJson.toDart).toJS).toJS);
   globalContext.setProperty('battleDemoEndTurn'.toJS,
       ((JSString reqJson) => _endTurnJson(reqJson.toDart).toJS).toJS);
+  globalContext.setProperty('battleDemoForceFat'.toJS,
+      ((JSString reqJson) => _forceFatJson(reqJson.toDart).toJS).toJS);
 }
