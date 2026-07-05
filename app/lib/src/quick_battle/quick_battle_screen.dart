@@ -79,7 +79,10 @@ class _OutcomeBanner extends StatelessWidget {
       BattleOutcome.teamAWins => ('SQUAD A WINS', const Color(0xFF34D1C8)),
       BattleOutcome.teamBWins => ('SQUAD B WINS', const Color(0xFFFF8A52)),
       BattleOutcome.draw => ('MUTUAL DEFEAT', Colors.grey),
-      BattleOutcome.ongoing => ('NO CONCLUSION REACHED', const Color(0xFFFFAB4D)),
+      BattleOutcome.ongoing => (
+        'NO CONCLUSION REACHED',
+        const Color(0xFFFFAB4D),
+      ),
     };
     return Container(
       width: double.infinity,
@@ -92,9 +95,14 @@ class _OutcomeBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(text,
-              style: TextStyle(
-                  color: color, fontWeight: FontWeight.bold, letterSpacing: 1)),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
           Text(
             result.concluded
                 ? 'Concluded in ${result.roundsPlayed} round(s).'
@@ -111,7 +119,11 @@ class _TeamPanel extends StatelessWidget {
   final String label;
   final Color color;
   final List<QuickBattleFighter> fighters;
-  const _TeamPanel({required this.label, required this.color, required this.fighters});
+  const _TeamPanel({
+    required this.label,
+    required this.color,
+    required this.fighters,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -124,8 +136,14 @@ class _TeamPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(),
-              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
           const SizedBox(height: 8),
           for (final f in fighters) _FighterRow(fighter: f),
         ],
@@ -146,10 +164,10 @@ class _FighterRow extends StatelessWidget {
     final barColor = !fighter.alive
         ? Colors.grey
         : frac <= 0.25
-            ? const Color(0xFFFF5468)
-            : frac <= 0.5
-                ? const Color(0xFFFFAB4D)
-                : const Color(0xFF57D98A);
+        ? const Color(0xFFFF5468)
+        : frac <= 0.5
+        ? const Color(0xFFFFAB4D)
+        : const Color(0xFF57D98A);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -179,8 +197,10 @@ class _FighterRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text('${fighter.currentHealth}/${fighter.maxHealth}',
-              style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          Text(
+            '${fighter.currentHealth}/${fighter.maxHealth}',
+            style: const TextStyle(color: Colors.white54, fontSize: 11),
+          ),
         ],
       ),
     );
@@ -204,9 +224,14 @@ class _BattleLog extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Text('BATTLE LOG',
-                style: TextStyle(
-                    color: Colors.white54, fontSize: 12, letterSpacing: 1)),
+            child: Text(
+              'BATTLE LOG',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                letterSpacing: 1,
+              ),
+            ),
           ),
           const Divider(height: 1, color: Colors.white12),
           Expanded(
@@ -228,21 +253,27 @@ class _RoundEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actorColor =
-        round.team == 'A' ? const Color(0xFF34D1C8) : const Color(0xFFFF8A52);
+    final actorColor = round.team == 'A'
+        ? const Color(0xFF34D1C8)
+        : const Color(0xFFFF8A52);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('- Round ${round.roundNumber}, Squad ${round.team} -',
-              style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          Text(
+            '- Round ${round.roundNumber}, Squad ${round.team} -',
+            style: const TextStyle(color: Colors.white38, fontSize: 11),
+          ),
           if (round.actions.isEmpty)
-            const Text('(no legal action taken)',
-                style: TextStyle(
-                    color: Colors.white38,
-                    fontStyle: FontStyle.italic,
-                    fontSize: 12)),
+            const Text(
+              '(no legal action taken)',
+              style: TextStyle(
+                color: Colors.white38,
+                fontStyle: FontStyle.italic,
+                fontSize: 12,
+              ),
+            ),
           for (final action in round.actions)
             for (final t in action.targets)
               Padding(
@@ -252,33 +283,43 @@ class _RoundEntry extends StatelessWidget {
                     style: const TextStyle(fontSize: 12, color: Colors.white70),
                     children: [
                       TextSpan(
-                          text: action.characterName,
-                          style: TextStyle(
-                              color: actorColor, fontWeight: FontWeight.bold)),
+                        text: action.characterName,
+                        style: TextStyle(
+                          color: actorColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       if (action.fatTriggered)
                         const TextSpan(
-                            text: ' [FAT]',
-                            style: TextStyle(
-                                color: Color(0xFFFFAB4D),
-                                fontWeight: FontWeight.bold)),
-                      TextSpan(text: ' uses ${action.triggerName} on ${t.targetName}'),
+                          text: ' [FAT]',
+                          style: TextStyle(
+                            color: Color(0xFFFFAB4D),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      TextSpan(
+                        text: ' uses ${action.triggerName} on ${t.targetName}',
+                      ),
                       if (t.crits > 0)
                         TextSpan(
-                            text: ' ${t.crits} crit',
-                            style:
-                                const TextStyle(color: Color(0xFFFFAB4D))),
+                          text: ' ${t.crits} crit',
+                          style: const TextStyle(color: Color(0xFFFFAB4D)),
+                        ),
                       if (t.damage > 0) TextSpan(text: ' ${t.damage} dmg'),
                       if (t.statusEffectsApplied.isNotEmpty)
                         TextSpan(
-                            text: ' [${t.statusEffectsApplied.join(', ')}]',
-                            style: const TextStyle(color: Color(0xFF34D1C8))),
+                          text: ' [${t.statusEffectsApplied.join(', ')}]',
+                          style: const TextStyle(color: Color(0xFF34D1C8)),
+                        ),
                       TextSpan(text: ' -> HP ${t.healthAfter}'),
                       if (t.died)
                         const TextSpan(
-                            text: ' DEFEATED',
-                            style: TextStyle(
-                                color: Color(0xFFFF5468),
-                                fontWeight: FontWeight.bold)),
+                          text: ' DEFEATED',
+                          style: TextStyle(
+                            color: Color(0xFFFF5468),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                     ],
                   ),
                 ),

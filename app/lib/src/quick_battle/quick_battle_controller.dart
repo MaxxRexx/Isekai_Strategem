@@ -10,8 +10,9 @@ final _triggers = TriggerCatalog.defaultCatalog;
 final _blackTriggers = BlackTriggerCatalog.defaultCatalog;
 final _statusCatalog = StatusEffectCatalog.defaultCatalog;
 
-List<String> _statusEffectNames(List<String> ids) =>
-    [for (final id in ids) _statusCatalog[id].name];
+List<String> _statusEffectNames(List<String> ids) => [
+  for (final id in ids) _statusCatalog[id].name,
+];
 
 /// Mirrors the web demo's `_buildBattleState`: folds a drafted [Loadout]'s
 /// equipped Passive Triggers/Black Trigger passives into
@@ -69,15 +70,17 @@ class _DraftedTeam {
         profile: profile,
       );
       states[character.id] = _buildBattleState(character, loadout);
-      equipped[character.id] =
-          loadout.triggers.whereType<ActiveTrigger>().toList();
+      equipped[character.id] = loadout.triggers
+          .whereType<ActiveTrigger>()
+          .toList();
     }
 
     return _DraftedTeam(team, states, equipped);
   }
 }
 
-QuickBattleFighter _fighterSummary(CharacterBattleState s) => QuickBattleFighter(
+QuickBattleFighter _fighterSummary(CharacterBattleState s) =>
+    QuickBattleFighter(
       name: s.character.name,
       currentHealth: s.currentHealth,
       maxHealth: s.effectiveStats().maxHealth,
@@ -87,7 +90,10 @@ QuickBattleFighter _fighterSummary(CharacterBattleState s) => QuickBattleFighter
 /// Picks 3 distinct random character ids from the full roster, avoiding any
 /// id already in [taken].
 List<String> _randomTeam(Random random, Set<String> taken) {
-  final pool = _roster.all.map((c) => c.id).where((id) => !taken.contains(id)).toList();
+  final pool = _roster.all
+      .map((c) => c.id)
+      .where((id) => !taken.contains(id))
+      .toList();
   pool.shuffle(random);
   final picked = pool.take(3).toList();
   taken.addAll(picked);
@@ -110,9 +116,15 @@ QuickBattleResult runQuickBattle({int maxRounds = 60}) {
   final teamBProfile = _randomProfile(random);
 
   final teamADraft = _DraftedTeam.draft(
-      teamId: 'team-a', characterIds: teamAIds, profile: teamAProfile);
+    teamId: 'team-a',
+    characterIds: teamAIds,
+    profile: teamAProfile,
+  );
   final teamBDraft = _DraftedTeam.draft(
-      teamId: 'team-b', characterIds: teamBIds, profile: teamBProfile);
+    teamId: 'team-b',
+    characterIds: teamBIds,
+    profile: teamBProfile,
+  );
   final teamAAi = ProfileDrivenAi(teamAProfile);
   final teamBAi = ProfileDrivenAi(teamBProfile);
 
@@ -136,47 +148,66 @@ QuickBattleResult runQuickBattle({int maxRounds = 60}) {
     final activeDraft = battle.isTeamATurn ? teamADraft : teamBDraft;
     final activeAi = battle.isTeamATurn ? teamAAi : teamBAi;
 
-    battle.startTurn(equippedActiveTriggers: activeDraft.equippedActiveTriggers);
+    battle.startTurn(
+      equippedActiveTriggers: activeDraft.equippedActiveTriggers,
+    );
     if (battle.isOver) {
-      rounds.add(QuickBattleRound(
-          roundNumber: battle.roundNumber, team: teamLabel, actions: const []));
+      rounds.add(
+        QuickBattleRound(
+          roundNumber: battle.roundNumber,
+          team: teamLabel,
+          actions: const [],
+        ),
+      );
       concluded = true;
       break;
     }
 
-    final actionResults = activeAi.takeTurn(battle,
-        equippedActiveTriggers: activeDraft.equippedActiveTriggers);
+    final actionResults = activeAi.takeTurn(
+      battle,
+      equippedActiveTriggers: activeDraft.equippedActiveTriggers,
+    );
 
     final actions = <QuickBattleAction>[];
     for (final result in actionResults) {
       final trigger = activeDraft.equippedActiveTriggers[result.characterId]!
           .firstWhere((t) => t.id == result.triggerId);
-      actions.add(QuickBattleAction(
-        characterName: battle.states[result.characterId]!.character.name,
-        triggerName: trigger.name,
-        fatTriggered: battle.states[result.characterId]!.fatTriggeredThisTurn,
-        targets: [
-          for (final t in result.useResult.targetResults)
-            QuickBattleTargetResult(
-              targetName: battle.states[t.targetCharacterId]!.character.name,
-              hits: t.attackRolls.length,
-              crits: t.attackRolls.where((r) => r.isCriticalHit).length,
-              misses: t.attackRolls
-                  .where((r) => !r.isHit && !r.isCriticalMiss)
-                  .length,
-              damage: t.totalDamageDealt,
-              statusEffectsApplied: _statusEffectNames(t.statusEffectsApplied),
-              healthAfter: battle.states[t.targetCharacterId]!.currentHealth,
-              maxHealth:
-                  battle.states[t.targetCharacterId]!.effectiveStats().maxHealth,
-              died: !battle.states[t.targetCharacterId]!.isAlive,
-            ),
-        ],
-      ));
+      actions.add(
+        QuickBattleAction(
+          characterName: battle.states[result.characterId]!.character.name,
+          triggerName: trigger.name,
+          fatTriggered: battle.states[result.characterId]!.fatTriggeredThisTurn,
+          targets: [
+            for (final t in result.useResult.targetResults)
+              QuickBattleTargetResult(
+                targetName: battle.states[t.targetCharacterId]!.character.name,
+                hits: t.attackRolls.length,
+                crits: t.attackRolls.where((r) => r.isCriticalHit).length,
+                misses: t.attackRolls
+                    .where((r) => !r.isHit && !r.isCriticalMiss)
+                    .length,
+                damage: t.totalDamageDealt,
+                statusEffectsApplied: _statusEffectNames(
+                  t.statusEffectsApplied,
+                ),
+                healthAfter: battle.states[t.targetCharacterId]!.currentHealth,
+                maxHealth: battle.states[t.targetCharacterId]!
+                    .effectiveStats()
+                    .maxHealth,
+                died: !battle.states[t.targetCharacterId]!.isAlive,
+              ),
+          ],
+        ),
+      );
     }
 
-    rounds.add(QuickBattleRound(
-        roundNumber: battle.roundNumber, team: teamLabel, actions: actions));
+    rounds.add(
+      QuickBattleRound(
+        roundNumber: battle.roundNumber,
+        team: teamLabel,
+        actions: actions,
+      ),
+    );
 
     if (battle.isOver) {
       concluded = true;
@@ -192,11 +223,11 @@ QuickBattleResult runQuickBattle({int maxRounds = 60}) {
     rounds: rounds,
     finalTeamA: [
       for (final c in teamADraft.team.characters)
-        _fighterSummary(battle.states[c.id]!)
+        _fighterSummary(battle.states[c.id]!),
     ],
     finalTeamB: [
       for (final c in teamBDraft.team.characters)
-        _fighterSummary(battle.states[c.id]!)
+        _fighterSummary(battle.states[c.id]!),
     ],
   );
 }
