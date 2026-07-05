@@ -26,13 +26,25 @@ tightly coupled.
   source for design notes on rules that were underspecified and required an
   explicit (documented) interpretation.
 
+## App
+
+`app/` is the real Flutter application (currently web-enabled; other
+platforms can be added later with `flutter create --platforms=... .`). It
+depends on `packages/battle_engine` as a path dependency and calls it
+directly, no JSON/JS interop boundary like the browser demo below. So far it
+only has a Quick Battle screen (drafts two random AI-controlled squads and
+runs a full battle through the real engine) to prove the wiring end to end;
+squad drafting, a real Loadout builder UI, playing your own turns, and the
+Story module UI are still ahead.
+
 ## Playing / rules
 
 See [`packages/battle_engine/doc`](packages/battle_engine/doc) for the
 player-facing guide (how to play, the character roster, Triggers/Black
 Triggers, status effects, and the 20 AI opponents), and
 [`packages/battle_engine/tool/web_demo`](packages/battle_engine/tool/web_demo)
-for a browser-playable Engagement Simulator built on the real engine.
+for a browser-playable Engagement Simulator built on the real engine (a
+standalone HTML demo, separate from the `app/` Flutter application above).
 
 ## Development
 
@@ -42,4 +54,13 @@ The battle engine is a standalone Dart package:
 cd packages/battle_engine
 dart pub get
 dart test
+```
+
+The Flutter app:
+
+```
+cd app
+flutter pub get
+flutter test
+flutter run -d chrome   # or another connected device
 ```
