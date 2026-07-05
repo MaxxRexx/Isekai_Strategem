@@ -64,3 +64,9 @@ flutter pub get
 flutter test
 flutter run -d chrome   # or another connected device
 ```
+
+No local machine is required to try the app, though. Every push to `main`
+or a `claude/**` branch that touches `app/` or `packages/` runs
+[`deploy-web.yml`](.github/workflows/deploy-web.yml), which tests, builds,
+and publishes the web app to GitHub Pages at
+<https://maxxrexx.github.io/Isekai_Strategem/>.
