@@ -42,7 +42,8 @@ class FatBadge extends StatelessWidget {
   }
 }
 
-/// A status effect name chip; tapping shows duration + effect summary.
+/// A status-effect square icon badge (the effect-strip look from the
+/// approved mockup); tapping shows the name, duration, and effect summary.
 class StatusBadge extends StatelessWidget {
   final String name;
   final int? remainingTurns;
@@ -58,14 +59,32 @@ class StatusBadge extends StatelessWidget {
       message: message,
       triggerMode: TooltipTriggerMode.tap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        width: 19,
+        height: 19,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Palette.accent.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(3),
+          color: Palette.panel,
+          border: Border.all(color: Palette.accent),
         ),
-        child: Text(
-          remainingTurns == null ? name : '$name ($remainingTurns)',
-          style: const TextStyle(color: Palette.accent, fontSize: 10),
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(GameIcons.status, size: 11, color: Palette.accent),
+            if (remainingTurns != null)
+              Positioned(
+                bottom: -4,
+                right: -4,
+                child: Text(
+                  '$remainingTurns',
+                  style: const TextStyle(
+                    color: Palette.accent,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

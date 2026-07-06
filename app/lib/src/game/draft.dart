@@ -108,6 +108,7 @@ class DraftedTeam {
 FighterSnapshot fighterSnapshot(CharacterBattleState s) => FighterSnapshot(
   id: s.character.id,
   name: s.character.name,
+  type: s.character.type,
   currentHealth: s.currentHealth,
   maxHealth: s.effectiveStats().maxHealth,
   alive: s.isAlive,

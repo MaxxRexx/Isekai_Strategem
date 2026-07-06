@@ -11,6 +11,7 @@ import '../game/play_session.dart';
 import '../game/report.dart';
 import '../game/tutorial.dart';
 import '../ui/palette.dart';
+import '../widgets/ability_slot.dart';
 import '../widgets/badges.dart';
 import '../widgets/fighter_row.dart';
 import '../widgets/game_icons.dart';
@@ -845,33 +846,17 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-          decoration: BoxDecoration(
-            color: session.isOver
-                ? Colors.white10
-                : Palette.teamA.withValues(alpha: 0.12),
-            border: Border.all(
-              color: session.isOver ? Colors.white24 : Palette.teamA,
-            ),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            session.isOver
-                ? 'Battle Over'
-                : 'Your Turn - Round ${session.roundNumber} (Team Trion: ${session.teamATrion})',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+        _BattleTopBar(
+          isOver: session.isOver,
+          roundNumber: session.roundNumber,
+          teamATrion: session.teamATrion,
         ),
         const SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
+              flex: 78,
               child: TeamPanel(
                 label: 'Your Squad',
                 color: Palette.teamA,
@@ -880,10 +865,13 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
+              flex: 22,
               child: TeamPanel(
                 label: 'Opponent Squad',
                 color: Palette.teamB,
                 fighters: session.teamB,
+                portraitSize: 48,
+                compact: true,
               ),
             ),
           ],
@@ -951,6 +939,61 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: children,
       ),
+    );
+  }
+}
+
+/// Round + team Trion readout above the squads, matching the approved
+/// battle-screen mockup's top bar.
+class _BattleTopBar extends StatelessWidget {
+  final bool isOver;
+  final int roundNumber;
+  final int teamATrion;
+
+  const _BattleTopBar({
+    required this.isOver,
+    required this.roundNumber,
+    required this.teamATrion,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        border: Border.all(color: isOver ? Colors.white24 : Palette.accent),
+      ),
+      child: isOver
+          ? const Text(
+              'BATTLE OVER',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'ROUND $roundNumber',
+                  style: const TextStyle(
+                    color: Palette.accent,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Text(
+                  '⟡ Trion $teamATrion',
+                  style: const TextStyle(
+                    color: Palette.gold,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
@@ -1074,15 +1117,14 @@ class _ActionCardState extends State<_ActionCard> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      for (final action in widget.actions)
-                        _abilityButton(action),
+                      for (final action in widget.actions) _abilitySlot(action),
                     ],
                   ),
                 ),
-              if (_selected != null) _targetPicker(names),
+              if (_selected != null) _selectionPanel(names),
             ],
           ),
         ),
@@ -1090,62 +1132,28 @@ class _ActionCardState extends State<_ActionCard> {
     );
   }
 
-  Widget _abilityButton(LegalAction action) {
+  Widget _abilitySlot(LegalAction action) {
     final t = action.trigger;
     final isSelected = _selected?.trigger.id == t.id;
     final highlight =
         widget.tutorialStep?.triggerId == t.id &&
         widget.tutorialStep?.characterId == widget.fighter.id;
-    return Tooltip(
-      message: action.affordable
-          ? describeActiveTrigger(t)
-          : 'Not enough Trion this turn.',
-      triggerMode: TooltipTriggerMode.longPress,
-      child: OutlinedButton(
-        onPressed: _abilityEnabled(action) ? () => _selectAction(action) : null,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(
-            color: isSelected
-                ? Palette.accent
-                : highlight
-                ? Palette.warn
-                : Colors.white24,
-          ),
-          backgroundColor: isSelected
-              ? Palette.accent.withValues(alpha: 0.12)
-              : null,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(GameIcons.forTrigger(t), size: 13, color: Palette.accent),
-                const SizedBox(width: 5),
-                Text(
-                  t.name,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '${action.actualTrionCost} Trion',
-                  style: const TextStyle(color: Palette.warn, fontSize: 10),
-                ),
-              ],
-            ),
-            Text(
-              triggerSummaryLine(t),
-              style: const TextStyle(color: Colors.white38, fontSize: 10),
-            ),
-          ],
-        ),
-      ),
+    return AbilitySlot(
+      icon: GameIcons.forTrigger(t),
+      selected: isSelected,
+      highlighted: !isSelected && highlight,
+      enabled: _abilityEnabled(action),
+      tooltip: action.affordable
+          ? '${t.name} (${action.actualTrionCost} Trion) - ${triggerSummaryLine(t)}'
+          : '${t.name}: not enough Trion this turn.',
+      onTap: () => _selectAction(action),
     );
   }
 
-  Widget _targetPicker(Map<String, String> names) {
+  /// Bottom detail bar for the selected ability: icon, name, description,
+  /// tags, target picker, and the Use button. Mirrors the approved mockup's
+  /// bottom-bar language, scoped to this character's action card.
+  Widget _selectionPanel(Map<String, String> names) {
     final action = _selected!;
     final t = action.trigger;
     Widget targets;
@@ -1197,16 +1205,77 @@ class _ActionCardState extends State<_ActionCard> {
         ],
       );
     }
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(10),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Palette.accent)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  border: Border.all(color: Palette.accent),
+                ),
+                child: Icon(
+                  GameIcons.forTrigger(t),
+                  size: 18,
+                  color: Palette.accent,
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.name.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      describeActiveTrigger(t),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 4,
+                      children: [
+                        for (final tag in triggerSummaryLine(t).split(' - '))
+                          _tagChip(tag),
+                        _tagChip('${action.actualTrionCost} Trion'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           if (t.targetAffiliation != TargetAffiliation.self &&
               action.maxTargets > 1)
-            Text(
-              'Pick up to ${action.maxTargets} target(s):',
-              style: const TextStyle(color: Colors.white54, fontSize: 11),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                'Pick up to ${action.maxTargets} target(s):',
+                style: const TextStyle(color: Colors.white54, fontSize: 11),
+              ),
             ),
           targets,
           const SizedBox(height: 8),
@@ -1225,6 +1294,21 @@ class _ActionCardState extends State<_ActionCard> {
             child: Text('USE ${action.trigger.name.toUpperCase()}'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _tagChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(border: Border.all(color: Palette.accent)),
+      child: Text(
+        label.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 9,
+          letterSpacing: 0.3,
+        ),
       ),
     );
   }

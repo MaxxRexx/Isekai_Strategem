@@ -63,6 +63,7 @@ class LogRound {
 class FighterSnapshot {
   final String id;
   final String name;
+  final CharacterType type;
   final int currentHealth;
   final int maxHealth;
   final bool alive;
@@ -72,6 +73,7 @@ class FighterSnapshot {
   const FighterSnapshot({
     required this.id,
     required this.name,
+    required this.type,
     required this.currentHealth,
     required this.maxHealth,
     required this.alive,
