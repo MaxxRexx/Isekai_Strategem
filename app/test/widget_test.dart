@@ -110,10 +110,14 @@ void main() {
     expect(find.text('GUIDED TUTORIAL'), findsWidgets);
     expect(find.textContaining('Ren Kobayashi'), findsWidgets);
 
-    // Slot 0 (Agent I) is the only enabled/empty slot at this step.
+    // Slot 0 (Agent I) is the only enabled/empty slot at this step. The
+    // picker sheet is a tap-to-preview roster grid: tap the tile to focus
+    // it, then Draft to actually commit the pick and close the sheet.
     await tester.tap(find.text('Choose a character...').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Ren Kobayashi').last);
+    await tester.tap(find.text('Ren Kobayashi').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Draft'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Ilona Vance'), findsWidgets);
@@ -122,30 +126,26 @@ void main() {
   testWidgets('How to Play guide renders the rules reference', (
     WidgetTester tester,
   ) async {
+    _useTallSurface(tester);
     await tester.pumpWidget(const IsekaiStrategemApp());
 
     await tester.tap(find.text('HOW TO PLAY'));
     await tester.pumpAndSettle();
 
-    // The guide is a very long single scroll (150+ entries); the sliver
-    // list only builds children near the viewport, so each section needs
-    // to actually be scrolled into view before it exists at all.
-    final scrollable = find.byType(Scrollable).first;
-    for (final text in const [
+    // The Rules tab is shown by default.
+    expect(find.text('Character Stats'), findsOneWidget);
+
+    // Each catalog now sits behind its own instant sub-tab switcher rather
+    // than one long scroll, so switch tabs to reach each one.
+    for (final tabLabel in const [
       'Character Perks',
       'Status Effects',
       'Triggers',
       'Black Triggers',
     ]) {
-      await tester.scrollUntilVisible(
-        find.text(text),
-        400,
-        scrollable: scrollable,
-      );
-      expect(find.text(text), findsOneWidget);
-      if (text == 'Status Effects') {
-        // Check while this section is actually in view - the sliver
-        // list disposes far-off children once scrolled well past them.
+      await tester.tap(find.text(tabLabel));
+      await tester.pumpAndSettle();
+      if (tabLabel == 'Status Effects') {
         expect(find.textContaining('Poisoned'), findsWidgets);
       }
     }
