@@ -24,6 +24,7 @@ class FighterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final portrait = PortraitHealthBar(
+      characterId: fighter.id,
       name: fighter.name,
       type: fighter.type,
       currentHealth: fighter.currentHealth,

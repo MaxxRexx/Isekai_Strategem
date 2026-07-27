@@ -75,6 +75,7 @@ class CharacterSlot extends StatelessWidget {
                 : Row(
                     children: [
                       PortraitTile(
+                        characterId: character.id,
                         name: character.name,
                         type: character.type,
                         size: 48,
@@ -238,7 +239,12 @@ class _CharacterPickerSheetState extends State<_CharacterPickerSheet> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PortraitTile(name: character.name, type: character.type, size: 64),
+          PortraitTile(
+            characterId: character.id,
+            name: character.name,
+            type: character.type,
+            size: 64,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -354,7 +360,11 @@ class _RosterTile extends StatelessWidget {
           ),
           child: Column(
             children: [
-              PortraitTile(name: character.name, type: character.type),
+              PortraitTile(
+                characterId: character.id,
+                name: character.name,
+                type: character.type,
+              ),
               const SizedBox(height: 6),
               Text(
                 character.name,

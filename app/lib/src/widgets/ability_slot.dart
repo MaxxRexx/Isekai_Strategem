@@ -5,7 +5,7 @@ import '../ui/palette.dart';
 /// A square ability icon button (the ability-row slot from the approved
 /// mockup), used in place of a text pill so the icon reads at a glance.
 class AbilitySlot extends StatelessWidget {
-  final IconData icon;
+  final Widget icon;
   final bool selected;
   final bool highlighted;
   final bool enabled;
@@ -46,7 +46,7 @@ class AbilitySlot extends StatelessWidget {
               width: selected || highlighted ? 2 : 1,
             ),
           ),
-          child: Icon(icon, size: size * 0.46, color: Palette.accent),
+          child: icon,
         ),
       ),
     );

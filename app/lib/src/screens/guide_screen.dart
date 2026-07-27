@@ -6,6 +6,7 @@ import '../data/flavor_text.dart';
 import '../game/draft.dart';
 import '../ui/palette.dart';
 import '../widgets/game_icons.dart';
+import '../widgets/trigger_icons.dart';
 
 /// A condensed reference for the rules: Loadout drafting, Resonance, turn
 /// structure, Trion, FAT, Team Spirit, combat resolution, stats, perks,
@@ -261,7 +262,11 @@ class _GuideScreenState extends State<GuideScreen>
         ),
         for (final c in roster.all)
           _GuideEntry(
-            icon: GameIcons.forCharacterType(c.type),
+            icon: Icon(
+              GameIcons.forCharacterType(c.type),
+              size: 14,
+              color: Palette.accent,
+            ),
             title: c.name,
             meta: typeLabel[c.type]!,
             body: '${c.perk?.name ?? 'No perk'}. ${c.perk?.description ?? ''}',
@@ -286,7 +291,7 @@ class _GuideScreenState extends State<GuideScreen>
         ),
         for (final entry in statusInfo.entries)
           _GuideEntry(
-            icon: GameIcons.status,
+            icon: const Icon(GameIcons.status, size: 14, color: Palette.accent),
             title: entry.key,
             meta:
                 '${entry.value.duration} turn${entry.value.duration == 1 ? '' : 's'}',
@@ -313,7 +318,7 @@ class _GuideScreenState extends State<GuideScreen>
         ),
         for (final t in triggerCatalog.all)
           _GuideEntry(
-            icon: GameIcons.forTrigger(t),
+            icon: TriggerIcon(trigger: t, size: 14),
             title: t.name,
             meta: t is ActiveTrigger
                 ? '${t.category.name} - ${t.rangeTag.name} - ${t.attackSubtype.name}'
@@ -340,7 +345,7 @@ class _GuideScreenState extends State<GuideScreen>
         ),
         for (final bt in blackTriggerCatalog.all)
           _GuideEntry(
-            icon: GameIcons.blackTrigger,
+            icon: BlackTriggerIcon(blackTrigger: bt, size: 14),
             title: bt.name,
             meta:
                 '${blackTriggerTypeLabel[bt.type]} type - equip ${bt.equipCost}',
@@ -433,7 +438,7 @@ class _Plain extends StatelessWidget {
 }
 
 class _GuideEntry extends StatelessWidget {
-  final IconData icon;
+  final Widget icon;
   final String title;
   final String meta;
   final String body;
@@ -451,7 +456,7 @@ class _GuideEntry extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: Palette.accent),
+          icon,
           const SizedBox(width: 8),
           Expanded(
             child: Column(

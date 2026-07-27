@@ -14,10 +14,11 @@ import '../ui/palette.dart';
 import '../widgets/ability_slot.dart';
 import '../widgets/badges.dart';
 import '../widgets/fighter_row.dart';
-import '../widgets/game_icons.dart';
 import '../widgets/log_view.dart';
 import '../widgets/outcome_banner.dart';
 import '../widgets/pickers.dart';
+import '../widgets/portrait_tile.dart';
+import '../widgets/trigger_icons.dart';
 
 enum _PlayStep { setup, loadout, battle }
 
@@ -61,6 +62,13 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
 
   PlaySession? _session;
   final List<LogRound> _roundsLog = [];
+
+  // One shared selection for the whole battle step: whichever ability icon
+  // was last tapped across the squad drives the single bottom action bar,
+  // matching the approved reference (not a stacked card per character).
+  String? _selectedCharacterId;
+  LegalAction? _selectedAction;
+  final Set<String> _selectedTargets = {};
 
   TutorialState? _tutorial;
 
@@ -173,6 +181,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       return;
     }
     _roundsLog.clear();
+    _clearSelection();
     if (_session!.openingAiRound != null) {
       _roundsLog.add(_session!.openingAiRound!);
     }
@@ -241,12 +250,30 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       }
       _pushPlayerAction(outcome.action!);
       _tutorial?.onAbilityUsed(characterId, action.trigger.id);
+      _clearSelection();
       _afterBattleStateChange();
+    });
+  }
+
+  void _clearSelection() {
+    _selectedCharacterId = null;
+    _selectedAction = null;
+    _selectedTargets.clear();
+  }
+
+  void _selectAbility(String characterId, LegalAction action) {
+    setState(() {
+      _selectedCharacterId = characterId;
+      _selectedAction = action;
+      _selectedTargets
+        ..clear()
+        ..addAll(action.legalTargetIds.take(action.maxTargets));
     });
   }
 
   void _endTurn() {
     setState(() {
+      _clearSelection();
       _tutorial?.onEndTurn();
       final aiRound = _session!.endTurn();
       _roundsLog.add(aiRound);
@@ -683,11 +710,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                         }),
                   title: Row(
                     children: [
-                      Icon(
-                        GameIcons.forTrigger(t),
-                        size: 14,
-                        color: Palette.accent,
-                      ),
+                      TriggerIcon(trigger: t, size: 14),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -767,11 +790,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                       : (v) => setState(() => selection.blackTriggerId = v),
                   title: Row(
                     children: [
-                      const Icon(
-                        GameIcons.blackTrigger,
-                        size: 14,
-                        color: Palette.accent,
-                      ),
+                      BlackTriggerIcon(blackTrigger: bt, size: 14),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -842,6 +861,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         (!_tutorialActive ||
             _tutorial!.phase != TutorialPhase.battle ||
             _tutorial!.awaitingEndTurn);
+    final opponentProfile = profileById(_profileBId!);
+    final names = {
+      for (final f in [...session.teamA, ...session.teamB]) f.id: f.name,
+    };
 
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -850,6 +873,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           isOver: session.isOver,
           roundNumber: session.roundNumber,
           teamATrion: session.teamATrion,
+          opponentName: opponentProfile.name,
+          opponentSkillLabel: skillClassLabel[opponentProfile.skillClass]!,
         ),
         const SizedBox(height: 12),
         Row(
@@ -857,10 +882,31 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           children: [
             Expanded(
               flex: 78,
-              child: TeamPanel(
-                label: 'Your Squad',
-                color: Palette.teamA,
-                fighters: session.teamA,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  border: Border(
+                    top: BorderSide(color: Palette.teamA, width: 3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'YOUR SQUAD',
+                      style: TextStyle(
+                        color: Palette.teamA,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    for (final fighter in session.teamA)
+                      _playerFighterRow(fighter, session, tutorialStep),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -892,27 +938,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             onPressed: _copyReport,
             child: const Text('COPY FULL REPORT'),
           ),
-        ] else ...[
-          for (final fighter in session.teamA.where((f) => f.alive))
-            _ActionCard(
-              key: ValueKey(
-                '${fighter.id}-${session.roundNumber}-${_roundsLog.length}-${session.teamATrion}-${fighter.fatTriggered}',
-              ),
-              fighter: fighter,
-              actions: session.legalActionsFor(fighter.id),
-              session: session,
-              tutorialStep: tutorialStep,
-              onUse: _useAbility,
-            ),
-          if (endTurnVisible)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: ElevatedButton(
-                onPressed: _endTurn,
-                child: const Text('END TURN'),
-              ),
-            ),
-        ],
+        ] else
+          _bottomActionBar(names, tutorialStep, endTurnVisible),
         const SizedBox(height: 12),
         SizedBox(
           height: 280,
@@ -927,244 +954,177 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
-  Widget _panel({required Color borderColor, required List<Widget> children}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: Border(top: BorderSide(color: borderColor, width: 3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
-      ),
-    );
-  }
-}
+  /// One living player fighter's row: portrait/HP/status on the left, and
+  /// (unlike the opponent's compact panel) its legal ability icons inline
+  /// on the right, feeding the single shared bottom action bar below.
+  Widget _playerFighterRow(
+    FighterSnapshot fighter,
+    PlaySession session,
+    TutorialBattleStep? tutorialStep,
+  ) {
+    final actions = fighter.alive
+        ? session.legalActionsFor(fighter.id)
+        : const <LegalAction>[];
+    final lockedRow =
+        tutorialStep != null && tutorialStep.characterId != fighter.id;
 
-/// Round + team Trion readout above the squads, matching the approved
-/// battle-screen mockup's top bar.
-class _BattleTopBar extends StatelessWidget {
-  final bool isOver;
-  final int roundNumber;
-  final int teamATrion;
-
-  const _BattleTopBar({
-    required this.isOver,
-    required this.roundNumber,
-    required this.teamATrion,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
-        border: Border.all(color: isOver ? Colors.white24 : Palette.accent),
-      ),
-      child: isOver
-          ? const Text(
-              'BATTLE OVER',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'ROUND $roundNumber',
-                  style: const TextStyle(
-                    color: Palette.accent,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Text(
-                  '⟡ Trion $teamATrion',
-                  style: const TextStyle(
-                    color: Palette.gold,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-}
-
-/// One player character's action panel during their turn: the list of
-/// currently legal abilities, and (once one is selected) a target picker.
-class _ActionCard extends StatefulWidget {
-  final FighterSnapshot fighter;
-  final List<LegalAction> actions;
-  final PlaySession session;
-  final TutorialBattleStep? tutorialStep;
-  final void Function(
-    String characterId,
-    LegalAction action,
-    List<String> targetIds,
-  )
-  onUse;
-
-  const _ActionCard({
-    super.key,
-    required this.fighter,
-    required this.actions,
-    required this.session,
-    required this.tutorialStep,
-    required this.onUse,
-  });
-
-  @override
-  State<_ActionCard> createState() => _ActionCardState();
-}
-
-class _ActionCardState extends State<_ActionCard> {
-  LegalAction? _selected;
-  final Set<String> _targets = {};
-
-  bool get _lockedByTutorial =>
-      widget.tutorialStep != null &&
-      widget.tutorialStep!.characterId != widget.fighter.id;
-
-  bool _abilityEnabled(LegalAction action) {
-    if (!action.affordable) return false;
-    final step = widget.tutorialStep;
-    if (step == null || step.characterId != widget.fighter.id) return true;
-    return step.isFatStep || step.triggerId == action.trigger.id;
-  }
-
-  void _selectAction(LegalAction action) {
-    setState(() {
-      _selected = action;
-      _targets
-        ..clear()
-        ..addAll(action.legalTargetIds.take(action.maxTargets));
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final names = {
-      for (final f in [...widget.session.teamA, ...widget.session.teamB])
-        f.id: f.name,
-    };
     return Opacity(
-      opacity: _lockedByTutorial ? 0.4 : 1,
-      child: IgnorePointer(
-        ignoring: _lockedByTutorial,
-        child: Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            border: Border.all(color: Colors.white12),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      opacity: !fighter.alive
+          ? 0.4
+          : lockedRow
+          ? 0.4
+          : 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            PortraitHealthBar(
+              characterId: fighter.id,
+              name: fighter.name,
+              type: fighter.type,
+              currentHealth: fighter.currentHealth,
+              maxHealth: fighter.maxHealth,
+              alive: fighter.alive,
+              size: 64,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            widget.fighter.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          fighter.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: fighter.alive
+                                ? Colors.white
+                                : Colors.white38,
+                            decoration: fighter.alive
+                                ? null
+                                : TextDecoration.lineThrough,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
                           ),
                         ),
-                        if (widget.fighter.fatTriggered) ...const [
-                          SizedBox(width: 6),
-                          FatBadge(),
-                        ],
+                      ),
+                      if (fighter.fatTriggered) ...const [
+                        SizedBox(width: 6),
+                        FatBadge(),
                       ],
-                    ),
-                  ),
-                  Text(
-                    widget.actions.isEmpty
-                        ? 'no actions available this turn'
-                        : '${widget.actions.length} action(s) available',
-                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                  ),
-                ],
-              ),
-              if (widget.actions.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 6),
-                  child: Text(
-                    'On cooldown, action-prevented, or no further actions this turn.',
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 11,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              if (widget.actions.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final action in widget.actions) _abilitySlot(action),
                     ],
                   ),
-                ),
-              if (_selected != null) _selectionPanel(names),
-            ],
-          ),
+                  if (fighter.statusEffects.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Wrap(
+                        spacing: 3,
+                        runSpacing: 3,
+                        children: [
+                          for (final s in fighter.statusEffects)
+                            StatusBadge(
+                              name: s.name,
+                              remainingTurns: s.remainingTurns,
+                            ),
+                        ],
+                      ),
+                    ),
+                  if (fighter.alive)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: actions.isEmpty
+                          ? const Text(
+                              'No actions available this turn.',
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 11,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            )
+                          : Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final action in actions)
+                                  _abilitySlot(action, fighter, tutorialStep),
+                              ],
+                            ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _abilitySlot(LegalAction action) {
+  bool _abilityEnabled(
+    TutorialBattleStep? step,
+    String fighterId,
+    LegalAction action,
+  ) {
+    if (!action.affordable) return false;
+    if (step == null || step.characterId != fighterId) return true;
+    return step.isFatStep || step.triggerId == action.trigger.id;
+  }
+
+  Widget _abilitySlot(
+    LegalAction action,
+    FighterSnapshot fighter,
+    TutorialBattleStep? tutorialStep,
+  ) {
     final t = action.trigger;
-    final isSelected = _selected?.trigger.id == t.id;
+    final isSelected =
+        _selectedCharacterId == fighter.id &&
+        _selectedAction?.trigger.id == t.id;
     final highlight =
-        widget.tutorialStep?.triggerId == t.id &&
-        widget.tutorialStep?.characterId == widget.fighter.id;
+        tutorialStep?.triggerId == t.id &&
+        tutorialStep?.characterId == fighter.id;
     return AbilitySlot(
-      icon: GameIcons.forTrigger(t),
+      icon: TriggerIcon(trigger: t, size: 20),
       selected: isSelected,
       highlighted: !isSelected && highlight,
-      enabled: _abilityEnabled(action),
+      enabled: _abilityEnabled(tutorialStep, fighter.id, action),
       tooltip: action.affordable
           ? '${t.name} (${action.actualTrionCost} Trion) - ${triggerSummaryLine(t)}'
           : '${t.name}: not enough Trion this turn.',
-      onTap: () => _selectAction(action),
+      onTap: () => _selectAbility(fighter.id, action),
     );
   }
 
-  /// Bottom detail bar for the selected ability: icon, name, description,
-  /// tags, target picker, and the Use button. Mirrors the approved mockup's
-  /// bottom-bar language, scoped to this character's action card.
-  Widget _selectionPanel(Map<String, String> names) {
-    final action = _selected!;
+  /// The single shared bottom bar: whichever ability was last tapped
+  /// anywhere in the squad list drives this one panel, matching the
+  /// approved reference (not a stacked card per character).
+  Widget _bottomActionBar(
+    Map<String, String> names,
+    TutorialBattleStep? tutorialStep,
+    bool endTurnVisible,
+  ) {
+    final action = _selectedAction;
+    final charId = _selectedCharacterId;
+    if (action == null || charId == null) {
+      if (!endTurnVisible) return const SizedBox.shrink();
+      return Align(
+        alignment: Alignment.centerRight,
+        child: ElevatedButton(
+          onPressed: _endTurn,
+          child: const Text('END TURN'),
+        ),
+      );
+    }
+
     final t = action.trigger;
     Widget targets;
     if (t.targetAffiliation == TargetAffiliation.self) {
       targets = Text(
-        'Target: ${widget.fighter.name} (self)',
+        'Target: ${names[charId]} (self)',
         style: const TextStyle(color: Colors.white70, fontSize: 12),
       );
     } else if (action.maxTargets == 1) {
-      // A single-target ability should only ever let you pick one target,
-      // not tick several boxes and have the extras silently discarded.
       targets = Wrap(
         spacing: 6,
         children: [
@@ -1174,9 +1134,9 @@ class _ActionCardState extends State<_ActionCard> {
                 names[id] ?? id,
                 style: const TextStyle(fontSize: 11),
               ),
-              selected: _targets.contains(id),
+              selected: _selectedTargets.contains(id),
               onSelected: (_) => setState(
-                () => _targets
+                () => _selectedTargets
                   ..clear()
                   ..add(id),
               ),
@@ -1193,21 +1153,27 @@ class _ActionCardState extends State<_ActionCard> {
                 names[id] ?? id,
                 style: const TextStyle(fontSize: 11),
               ),
-              selected: _targets.contains(id),
+              selected: _selectedTargets.contains(id),
               onSelected: (selected) => setState(() {
                 if (selected) {
-                  if (_targets.length < action.maxTargets) _targets.add(id);
+                  if (_selectedTargets.length < action.maxTargets)
+                    _selectedTargets.add(id);
                 } else {
-                  _targets.remove(id);
+                  _selectedTargets.remove(id);
                 }
               }),
             ),
         ],
       );
     }
+
+    final canUse =
+        _selectedTargets.isNotEmpty ||
+        t.targetAffiliation == TargetAffiliation.self;
+
     return Container(
-      margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(10),
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: Palette.accent)),
       ),
@@ -1226,11 +1192,7 @@ class _ActionCardState extends State<_ActionCard> {
                   color: Colors.white.withValues(alpha: 0.06),
                   border: Border.all(color: Palette.accent),
                 ),
-                child: Icon(
-                  GameIcons.forTrigger(t),
-                  size: 18,
-                  color: Palette.accent,
-                ),
+                child: TriggerIcon(trigger: t, size: 18),
               ),
               Expanded(
                 child: Column(
@@ -1278,24 +1240,45 @@ class _ActionCardState extends State<_ActionCard> {
               ),
             ),
           targets,
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed:
-                _targets.isEmpty &&
-                    t.targetAffiliation != TargetAffiliation.self
-                ? null
-                : () => widget.onUse(
-                    widget.fighter.id,
-                    action,
-                    t.targetAffiliation == TargetAffiliation.self
-                        ? [widget.fighter.id]
-                        : _targets.take(action.maxTargets).toList(),
-                  ),
-            child: Text('USE ${action.trigger.name.toUpperCase()}'),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (endTurnVisible)
+                OutlinedButton(
+                  onPressed: _endTurn,
+                  child: const Text('END TURN'),
+                )
+              else
+                const SizedBox.shrink(),
+              ElevatedButton(
+                onPressed: canUse
+                    ? () => _useAbility(
+                        charId,
+                        action,
+                        t.targetAffiliation == TargetAffiliation.self
+                            ? [charId]
+                            : _selectedTargets.take(action.maxTargets).toList(),
+                      )
+                    : null,
+                child: Text(_useButtonLabel(t, names)),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  String _useButtonLabel(ActiveTrigger t, Map<String, String> names) {
+    if (t.targetAffiliation == TargetAffiliation.self) return 'USE (SELF)';
+    if (_selectedTargets.length > 1) {
+      return 'USE (${_selectedTargets.length} TARGETS)';
+    }
+    final only = _selectedTargets.firstOrNull;
+    return only == null
+        ? 'USE'
+        : 'USE ON ${(names[only] ?? only).toUpperCase()}';
   }
 
   Widget _tagChip(String label) {
@@ -1310,6 +1293,110 @@ class _ActionCardState extends State<_ActionCard> {
           letterSpacing: 0.3,
         ),
       ),
+    );
+  }
+
+  Widget _panel({required Color borderColor, required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border(top: BorderSide(color: borderColor, width: 3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+}
+
+/// Team readout above the squads: your label on the left, the opponent's
+/// AI profile name/skill class on the right, round/Trion centered between
+/// them - matching the approved battle-screen mockup's top bar.
+class _BattleTopBar extends StatelessWidget {
+  final bool isOver;
+  final int roundNumber;
+  final int teamATrion;
+  final String opponentName;
+  final String opponentSkillLabel;
+
+  const _BattleTopBar({
+    required this.isOver,
+    required this.roundNumber,
+    required this.teamATrion,
+    required this.opponentName,
+    required this.opponentSkillLabel,
+  });
+
+  Widget _label(String name, String? subtitle, {required bool alignEnd}) {
+    return Column(
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        Text(
+          name,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+        if (subtitle != null)
+          Text(
+            subtitle,
+            style: const TextStyle(color: Colors.white54, fontSize: 10.5),
+          ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        border: Border.all(color: isOver ? Colors.white24 : Palette.accent),
+      ),
+      child: isOver
+          ? const Text(
+              'BATTLE OVER',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _label('YOU', null, alignEnd: false),
+                Row(
+                  children: [
+                    Text(
+                      'ROUND $roundNumber',
+                      style: const TextStyle(
+                        color: Palette.accent,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Text(
+                      '⟡ Trion $teamATrion',
+                      style: const TextStyle(
+                        color: Palette.gold,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                _label(opponentName, opponentSkillLabel, alignEnd: true),
+              ],
+            ),
     );
   }
 }
