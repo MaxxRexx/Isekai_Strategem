@@ -24,11 +24,11 @@ void main() {
     await tester.pumpWidget(const IsekaiStrategemApp());
 
     expect(find.text('ISEKAI STRATEGEM'), findsOneWidget);
-    expect(find.text('PLAY (DRAFT YOUR SQUAD)'), findsOneWidget);
+    expect(find.text('PLAY'), findsOneWidget);
     expect(find.text('GUIDED TUTORIAL'), findsOneWidget);
-    expect(find.text('SIMULATE (AI VS AI)'), findsOneWidget);
-    expect(find.text('QUICK BATTLE (ONE-SHOT)'), findsOneWidget);
-    expect(find.text('HOW TO PLAY'), findsOneWidget);
+    expect(find.text('SIMULATE'), findsOneWidget);
+    expect(find.text('Quick Battle'), findsOneWidget);
+    expect(find.text('How to Play'), findsOneWidget);
   });
 
   testWidgets(
@@ -36,7 +36,7 @@ void main() {
     (WidgetTester tester) async {
       await tester.pumpWidget(const IsekaiStrategemApp());
 
-      await tester.tap(find.text('QUICK BATTLE (ONE-SHOT)'));
+      await tester.tap(find.text('Quick Battle'));
       await tester.pumpAndSettle();
 
       expect(find.text('Quick Battle'), findsOneWidget);
@@ -55,7 +55,7 @@ void main() {
     _useTallSurface(tester);
     await tester.pumpWidget(const IsekaiStrategemApp());
 
-    await tester.tap(find.text('SIMULATE (AI VS AI)'));
+    await tester.tap(find.text('SIMULATE'));
     await tester.pumpAndSettle();
 
     expect(find.text('SQUAD A'), findsOneWidget);
@@ -74,7 +74,7 @@ void main() {
       _useTallSurface(tester);
       await tester.pumpWidget(const IsekaiStrategemApp());
 
-      await tester.tap(find.text('PLAY (DRAFT YOUR SQUAD)'));
+      await tester.tap(find.text('PLAY'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('NEXT: BUILD LOADOUTS'));
@@ -127,7 +127,7 @@ void main() {
     _useTallSurface(tester);
     await tester.pumpWidget(const IsekaiStrategemApp());
 
-    await tester.tap(find.text('HOW TO PLAY'));
+    await tester.tap(find.text('How to Play'));
     await tester.pumpAndSettle();
 
     // The Rules tab is shown by default.
