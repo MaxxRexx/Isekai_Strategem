@@ -338,7 +338,7 @@ class CharacterDetailPanel extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: 6),
-                _statRow(character.baseStats),
+                CharacterStatRow(stats: character.baseStats),
               ],
             ),
           ),
@@ -351,8 +351,17 @@ class CharacterDetailPanel extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _statRow(Stats stats) {
+/// A character's key battle stats as a compact label/value wrap: Attack,
+/// Defense, Critical Chance, FAT Chance, Trion Capacity. Shared by
+/// [CharacterDetailPanel] and the Home screen's featured character card.
+class CharacterStatRow extends StatelessWidget {
+  final Stats stats;
+  const CharacterStatRow({super.key, required this.stats});
+
+  @override
+  Widget build(BuildContext context) {
     final pairs = <(String, String)>[
       ('ATK', '${stats.attack}'),
       ('DEF', '${stats.defense}'),

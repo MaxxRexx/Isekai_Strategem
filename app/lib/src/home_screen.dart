@@ -1,16 +1,21 @@
+import 'dart:math';
+
 import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
 import 'data/flavor_text.dart';
 import 'game/draft.dart';
+import 'game/loadout_selection.dart';
 import 'quick_battle/quick_battle_screen.dart';
 import 'screens/guide_screen.dart';
 import 'screens/play_flow_screen.dart';
 import 'screens/simulate_screen.dart';
 import 'ui/palette.dart';
+import 'widgets/loadout_builder_panel.dart';
+import 'widgets/loadout_budget_panel.dart';
+import 'widgets/pickers.dart';
 import 'widgets/player_panel.dart';
 import 'widgets/portrait_tile.dart';
-import 'widgets/trigger_icons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,12 +25,27 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late String _featuredId = roster.all.first.id;
+  late String _selectedId = roster.all.first.id;
   final List<String> _squadIds = [];
+  final Map<String, LoadoutSelection> _selections = {};
 
-  void _tapRosterTile(String id) {
+  LoadoutSelection _selectionFor(String charId) =>
+      _selections.putIfAbsent(charId, LoadoutSelection.new);
+
+  bool _isSquadValid(String charId) {
+    final loadout = _selectionFor(charId).toLoadout(charId);
+    return loadout.validateFor(roster[charId]).isValid;
+  }
+
+  bool get _squadReady =>
+      _squadIds.length == 3 && _squadIds.every(_isSquadValid);
+
+  void _selectCharacter(String id) {
+    setState(() => _selectedId = id);
+  }
+
+  void _toggleSquad(String id) {
     setState(() {
-      _featuredId = id;
       if (_squadIds.contains(id)) {
         _squadIds.remove(id);
       } else if (_squadIds.length < 3) {
@@ -34,9 +54,43 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _autoFillSelected() {
+    final profile = AiProfile.all[Random().nextInt(AiProfile.all.length)];
+    final loadout = loadoutBuilder.build(
+      roster[_selectedId],
+      activeTriggerPool: triggerCatalog.activeTriggers,
+      passiveTriggerPool: triggerCatalog.passiveTriggers,
+      blackTriggerPool: blackTriggerCatalog.all,
+      profile: profile,
+    );
+    setState(() {
+      final selection = _selectionFor(_selectedId)
+        ..triggerIds.clear()
+        ..blackTriggerId = loadout.blackTrigger?.id;
+      selection.triggerIds.addAll(loadout.triggers.map((t) => t.id));
+    });
+  }
+
+  void _play() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlayFlowScreen(
+          initialTeamAIds: List.of(_squadIds),
+          initialSelections: {
+            for (final id in _squadIds) id: _selectionFor(id),
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final featured = roster[_featuredId];
+    final selected = roster[_selectedId];
+    final selection = _selectionFor(_selectedId);
+    final loadout = selection.toLoadout(_selectedId);
+    final validation = loadout.validateFor(selected);
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -54,12 +108,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _FeaturedCharacterCard(character: featured),
+                _FeaturedCharacterCard(character: selected),
                 const SizedBox(height: 16),
                 _ModeTabsRow(
-                  onPlay: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PlayFlowScreen()),
-                  ),
+                  onPlay: _squadReady ? _play : null,
                   onSimulate: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SimulateScreen()),
                   ),
@@ -92,14 +144,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
                 _RosterPreviewGrid(
-                  featuredId: _featuredId,
+                  selectedId: _selectedId,
                   squadIds: _squadIds,
-                  onTap: _tapRosterTile,
+                  onTap: _selectCharacter,
                 ),
                 const SizedBox(height: 16),
-                _YourSquadPreview(squadIds: _squadIds),
+                LoadoutBudgetPanel(
+                  character: selected,
+                  loadout: loadout,
+                  errors: validation.errors,
+                  onAutoFill: _autoFillSelected,
+                ),
                 const SizedBox(height: 12),
-                const PlayerPanel(),
+                LoadoutBuilderPanel(
+                  character: selected,
+                  selection: selection,
+                  onSelectionChanged: () => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+                _SquadMembershipButton(
+                  inSquad: _squadIds.contains(_selectedId),
+                  squadFull: _squadIds.length >= 3,
+                  loadoutValid: validation.isValid,
+                  onPressed: () => _toggleSquad(_selectedId),
+                ),
+                const SizedBox(height: 16),
+                PlayerPanel(squadIds: _squadIds),
               ],
             ),
           ),
@@ -109,26 +179,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// The "spotlight" card for whichever character is currently featured:
-/// portrait, name, a sample 4-ability loadout, and perk copy. The ability
-/// tiles are a representative example build (via the same LoadoutBuilder
-/// used everywhere else), not a saved/equipped Loadout - nothing persists
-/// a per-character default yet.
+/// The "spotlight" card for whichever character is currently selected in
+/// the roster grid below: portrait, name, perk, and battle stats. No
+/// Trigger/ability icons here - those live in the Loadout builder further
+/// down the page, since a character's stats are fixed while its Triggers
+/// are the player's choice.
 class _FeaturedCharacterCard extends StatelessWidget {
   final Character character;
   const _FeaturedCharacterCard({required this.character});
 
   @override
   Widget build(BuildContext context) {
-    final sample = loadoutBuilder.build(
-      character,
-      activeTriggerPool: triggerCatalog.activeTriggers,
-      passiveTriggerPool: triggerCatalog.passiveTriggers,
-      blackTriggerPool: blackTriggerCatalog.all,
-      profile: AiProfile.all.first,
-    );
-    final sampleActives = sample.triggers.whereType<ActiveTrigger>().toList();
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -148,7 +209,6 @@ class _FeaturedCharacterCard extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           Expanded(
-            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -160,37 +220,9 @@ class _FeaturedCharacterCard extends StatelessWidget {
                     fontSize: 18,
                   ),
                 ),
+                const SizedBox(height: 4),
+                CharacterStatRow(stats: character.baseStats),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final t in sampleActives)
-                      Container(
-                        width: 44,
-                        height: 44,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE4D6B0),
-                          border: Border.all(color: const Color(0xFFC9B37E)),
-                        ),
-                        child: TriggerIcon(
-                          trigger: t,
-                          size: 22,
-                          color: const Color(0xFF6B4F1D),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            flex: 4,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
                 if (characterFlavor[character.id] != null)
                   Text(
                     characterFlavor[character.id]!,
@@ -233,7 +265,7 @@ class _FeaturedCharacterCard extends StatelessWidget {
 }
 
 class _ModeTabsRow extends StatelessWidget {
-  final VoidCallback onPlay;
+  final VoidCallback? onPlay;
   final VoidCallback onSimulate;
   final VoidCallback onTutorial;
 
@@ -276,7 +308,7 @@ class _ModeTab extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color iconColor;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ModeTab({
     required this.icon,
@@ -287,48 +319,54 @@ class _ModeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Palette.panel,
-          border: Border.all(color: Palette.hairline),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: iconColor),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label.toUpperCase(),
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  letterSpacing: 0.4,
+    final enabled = onTap != null;
+    return Opacity(
+      opacity: enabled ? 1 : 0.35,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: Palette.panel,
+            border: Border.all(color: Palette.hairline),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: iconColor),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label.toUpperCase(),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    letterSpacing: 0.4,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// A browsable preview of the full roster: tap a tile to feature it above
-/// and toggle it into the 3-slot squad preview below. Purely a showcase -
-/// it doesn't feed into Play mode's own squad drafting (yet).
+/// A browsable preview of the full roster: tap a tile to select it, showing
+/// its stats above and its Loadout builder below. Squad membership is a
+/// separate choice made via [_SquadMembershipButton], since previewing (or
+/// still tweaking a squad member's Triggers) shouldn't itself change the
+/// squad.
 class _RosterPreviewGrid extends StatelessWidget {
-  final String featuredId;
+  final String selectedId;
   final List<String> squadIds;
   final ValueChanged<String> onTap;
 
   const _RosterPreviewGrid({
-    required this.featuredId,
+    required this.selectedId,
     required this.squadIds,
     required this.onTap,
   });
@@ -341,12 +379,15 @@ class _RosterPreviewGrid extends StatelessWidget {
       children: [
         for (final c in roster.all)
           InkWell(
+            key: ValueKey('roster-${c.id}'),
             onTap: () => onTap(c.id),
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: squadIds.contains(c.id) || c.id == featuredId
+                  color: c.id == selectedId
                       ? Palette.accent
+                      : squadIds.contains(c.id)
+                      ? Palette.gold
                       : Colors.transparent,
                   width: 2,
                 ),
@@ -366,56 +407,37 @@ class _RosterPreviewGrid extends StatelessWidget {
   }
 }
 
-class _YourSquadPreview extends StatelessWidget {
-  final List<String> squadIds;
-  const _YourSquadPreview({required this.squadIds});
+/// Adds or removes the currently-selected character from the squad. Adding
+/// requires a complete, valid Loadout (mirrors the Guided Tutorial's
+/// wizard, which also gates its "confirm" step on validation); removing
+/// never has that restriction.
+class _SquadMembershipButton extends StatelessWidget {
+  final bool inSquad;
+  final bool squadFull;
+  final bool loadoutValid;
+  final VoidCallback onPressed;
+
+  const _SquadMembershipButton({
+    required this.inSquad,
+    required this.squadFull,
+    required this.loadoutValid,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'YOUR SQUAD',
-          style: TextStyle(
-            color: Colors.white38,
-            fontSize: 10.5,
-            letterSpacing: 0.6,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Row(
-          children: [
-            for (var i = 0; i < 3; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
-              i < squadIds.length
-                  ? PortraitTile(
-                      characterId: squadIds[i],
-                      name: roster[squadIds[i]].name,
-                      type: roster[squadIds[i]].type,
-                      size: 56,
-                      showRank: false,
-                    )
-                  : Container(
-                      width: 56,
-                      height: 56,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.white24,
-                          style: BorderStyle.solid,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.add,
-                        color: Colors.white24,
-                        size: 20,
-                      ),
-                    ),
-            ],
-          ],
-        ),
-      ],
+    final canAdd = loadoutValid && !squadFull;
+    return Align(
+      alignment: Alignment.centerRight,
+      child: inSquad
+          ? OutlinedButton(
+              onPressed: onPressed,
+              child: const Text('REMOVE FROM SQUAD'),
+            )
+          : ElevatedButton(
+              onPressed: canAdd ? onPressed : null,
+              child: const Text('ADD TO SQUAD'),
+            ),
     );
   }
 }

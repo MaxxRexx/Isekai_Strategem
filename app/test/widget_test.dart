@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:isekai_strategem/src/app.dart';
+import 'package:isekai_strategem/src/game/draft.dart';
 
 const _outcomePattern =
     r'SQUAD [AB] WINS|MUTUAL DEFEAT|NO CONCLUSION REACHED|VICTORY|DEFEAT';
@@ -69,29 +70,25 @@ void main() {
   });
 
   testWidgets(
-    'Play mode drafts a squad, auto-fills Loadouts, and reaches the battle',
+    'Play mode: Home screen squad builder assembles a squad and reaches '
+    'the battle',
     (WidgetTester tester) async {
       _useTallSurface(tester);
       await tester.pumpWidget(const IsekaiStrategemApp());
 
-      await tester.tap(find.text('PLAY'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('NEXT: BUILD LOADOUTS'));
-      await tester.pumpAndSettle();
-
-      // 3 characters, each needs its Loadout auto-filled and confirmed.
-      for (var i = 0; i < 3; i++) {
+      // Select each of the first 3 roster characters, auto-fill a Loadout
+      // for each, and add it to the squad.
+      for (final character in roster.all.take(3)) {
+        await tester.tap(find.byKey(ValueKey('roster-${character.id}')));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Auto-fill'));
         await tester.pumpAndSettle();
-
-        final confirmButton = i < 2
-            ? find.text('CONFIRM LOADOUT')
-            : find.text('CONFIRM LOADOUT & ENGAGE');
-        expect(confirmButton, findsOneWidget);
-        await tester.tap(confirmButton);
+        await tester.tap(find.text('ADD TO SQUAD'));
         await tester.pumpAndSettle();
       }
+
+      await tester.tap(find.text('PLAY'));
+      await tester.pumpAndSettle();
 
       expect(find.text('YOUR SQUAD'), findsOneWidget);
       expect(find.text('OPPONENT SQUAD'), findsOneWidget);

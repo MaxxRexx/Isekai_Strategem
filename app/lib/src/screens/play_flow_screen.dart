@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../data/describe.dart';
 import '../game/battle_models.dart';
 import '../game/draft.dart';
+import '../game/loadout_selection.dart';
 import '../game/play_session.dart';
 import '../game/report.dart';
 import '../game/tutorial.dart';
@@ -14,35 +15,35 @@ import '../ui/palette.dart';
 import '../widgets/ability_slot.dart';
 import '../widgets/badges.dart';
 import '../widgets/fighter_row.dart';
+import '../widgets/loadout_builder_panel.dart';
+import '../widgets/loadout_budget_panel.dart';
 import '../widgets/log_view.dart';
 import '../widgets/outcome_banner.dart';
 import '../widgets/pickers.dart';
 import '../widgets/player_panel.dart';
 import '../widgets/portrait_tile.dart';
+import '../widgets/tag_chip.dart';
 import '../widgets/trigger_icons.dart';
 
 enum _PlayStep { setup, loadout, battle }
 
-/// A player's in-progress Loadout choices for one character.
-class LoadoutSelection {
-  final Set<String> triggerIds = {};
-  String? blackTriggerId;
-
-  Loadout toLoadout(String characterId) => Loadout(
-    characterId: characterId,
-    triggers: [for (final id in triggerIds) triggerCatalog[id]],
-    blackTrigger: blackTriggerId == null
-        ? null
-        : blackTriggerCatalog[blackTriggerId!],
-  );
-}
-
 /// Play mode: draft your own squad and Loadouts, then play turn by turn
 /// against an AI opponent. With [tutorial] set, the Guided Tutorial's
-/// script locks each step to a single scripted action.
+/// script locks each step to a single scripted action. With
+/// [initialTeamAIds]/[initialSelections] set (the Home screen's inline
+/// squad builder path), the squad is already fully built - skip straight
+/// to the battle step instead of the setup/loadout wizard.
 class PlayFlowScreen extends StatefulWidget {
   final bool tutorial;
-  const PlayFlowScreen({super.key, this.tutorial = false});
+  final List<String>? initialTeamAIds;
+  final Map<String, LoadoutSelection>? initialSelections;
+
+  const PlayFlowScreen({
+    super.key,
+    this.tutorial = false,
+    this.initialTeamAIds,
+    this.initialSelections,
+  });
 
   @override
   State<PlayFlowScreen> createState() => _PlayFlowScreenState();
@@ -69,10 +70,6 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   int _maxVisitedLoadoutIndex = 0;
   String? _loadoutError;
 
-  // Whichever Trigger/Black Trigger tile was last tapped in the Loadout
-  // step's grids; the shared info panel above them previews this one.
-  String? _previewTriggerId;
-
   PlaySession? _session;
   final List<LogRound> _roundsLog = [];
 
@@ -96,6 +93,16 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         _teamBIds[i] = tutorialOpponentIds[i];
       }
       _profileBId = tutorialOpponentProfileId;
+    } else if (widget.initialTeamAIds != null) {
+      // The Home screen's inline squad builder already assembled a full,
+      // validated squad and its Loadouts - skip the setup/loadout wizard
+      // entirely and drop straight into battle.
+      for (var i = 0; i < 3; i++) {
+        _teamAIds[i] = widget.initialTeamAIds![i];
+      }
+      _selections.addAll(widget.initialSelections!);
+      _randomizeTeam(_teamBIds, withProfile: true);
+      _startBattle();
     } else {
       _randomizeTeam(_teamAIds, withProfile: false);
       _randomizeTeam(_teamBIds, withProfile: true);
@@ -169,7 +176,6 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         _maxVisitedLoadoutIndex,
         _currentLoadoutIndex + 1,
       );
-      _previewTriggerId = null;
       if (_currentLoadoutIndex < 2) {
         _currentLoadoutIndex++;
       } else {
@@ -666,10 +672,6 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         tutorialScript?.blackTriggerId == null ||
         selection.blackTriggerId == tutorialScript!.blackTriggerId;
 
-    final budget = character.baseStats.trionCapacity;
-    final totalCost = loadout.totalEquipCost;
-    const rules = LoadoutRulesConfig.defaults;
-
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
@@ -687,121 +689,23 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             for (var i = 0; i < 3; i++) _loadoutNavChip(i),
           ],
         ),
-        _panel(
-          borderColor: Palette.teamA,
-          children: [
-            Text(
-              '${character.name} - Trion Capacity $budget',
-              style: const TextStyle(
-                color: Palette.teamA,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Text(
-                  'Trion Cost',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      value: budget > 0 ? (totalCost / budget).clamp(0, 1) : 0,
-                      minHeight: 8,
-                      backgroundColor: Colors.white12,
-                      valueColor: AlwaysStoppedAnimation(
-                        totalCost > budget ? Palette.danger : Palette.accent,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '$totalCost / $budget',
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Text(
-                  'Active Abilities',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '${loadout.totalActiveAbilityCount} / ${rules.requiredActiveAbilityCount}',
-                  style: TextStyle(
-                    color:
-                        loadout.totalActiveAbilityCount ==
-                            rules.requiredActiveAbilityCount
-                        ? Palette.good
-                        : Palette.warn,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                if (!_tutorialActive)
-                  TextButton(
-                    onPressed: _autoFillCurrentLoadout,
-                    child: const Text('Auto-fill'),
-                  ),
-              ],
-            ),
-            if (validation.errors.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  validation.errors.join(' '),
-                  style: const TextStyle(color: Palette.danger, fontSize: 11),
-                ),
-              ),
-            if (_loadoutError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  _loadoutError!,
-                  style: const TextStyle(color: Palette.danger, fontSize: 11),
-                ),
-              ),
-          ],
+        LoadoutBudgetPanel(
+          character: character,
+          loadout: loadout,
+          errors: validation.errors,
+          startError: _loadoutError,
+          onAutoFill: _tutorialActive ? null : _autoFillCurrentLoadout,
         ),
         const SizedBox(height: 12),
         _yourPicksAndPlayerPanel(loadout, selection),
         const SizedBox(height: 12),
-        _triggerInfoPanel(
+        LoadoutBuilderPanel(
           character: character,
           selection: selection,
           allowedActiveIds: tutorialScript?.triggerIds.toSet(),
           allowedBlackId: tutorialScript?.blackTriggerId,
           tutorialLocked: tutorialScript != null,
-        ),
-        const SizedBox(height: 12),
-        _triggerPortraitGrid(
-          heading: 'Active Triggers',
-          triggers: triggerCatalog.activeTriggers.toList(),
-          selection: selection,
-          allowedIds: tutorialScript?.triggerIds.toSet(),
-        ),
-        const SizedBox(height: 12),
-        _triggerPortraitGrid(
-          heading: 'Passive Triggers',
-          triggers: triggerCatalog.passiveTriggers.toList(),
-          selection: selection,
-          allowedIds: tutorialScript?.triggerIds.toSet(),
-        ),
-        const SizedBox(height: 12),
-        _blackTriggerPortraitGrid(
-          character,
-          selection,
-          allowedId: tutorialScript?.blackTriggerId,
-          tutorialLocked: tutorialScript != null,
+          onSelectionChanged: () => setState(() {}),
         ),
         const SizedBox(height: 16),
         ElevatedButton(
@@ -833,10 +737,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       ),
       backgroundColor: isCurrent ? Palette.accent : Colors.white10,
       onPressed: reachable && !isCurrent
-          ? () => setState(() {
-              _currentLoadoutIndex = index;
-              _previewTriggerId = null;
-            })
+          ? () => setState(() => _currentLoadoutIndex = index)
           : null,
     );
   }
@@ -902,7 +803,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        const PlayerPanel(),
+        PlayerPanel(squadIds: _teamAIds.whereType<String>().toList()),
       ],
     );
   }
@@ -924,265 +825,6 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             style: const TextStyle(color: Colors.white, fontSize: 11),
           ),
         ],
-      ),
-    );
-  }
-
-  /// The shared info panel above every trigger grid: whichever Trigger or
-  /// Black Trigger was last tapped shows its full details here, with an
-  /// Equip/Unequip (or Select/Remove) button that actually mutates the
-  /// Loadout - the grid tiles themselves only preview.
-  Widget _triggerInfoPanel({
-    required Character character,
-    required LoadoutSelection selection,
-    Set<String>? allowedActiveIds,
-    String? allowedBlackId,
-    required bool tutorialLocked,
-  }) {
-    final id = _previewTriggerId;
-    final active = id == null
-        ? null
-        : triggerCatalog.all.where((t) => t.id == id).firstOrNull;
-    final black = id == null || active != null
-        ? null
-        : blackTriggerCatalog.all.where((bt) => bt.id == id).firstOrNull;
-
-    if (active == null && black == null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Colors.white12)),
-        ),
-        child: const Text(
-          'Tap a Trigger below to see its details.',
-          style: TextStyle(color: Colors.white38, fontSize: 12),
-        ),
-      );
-    }
-
-    if (active != null) {
-      final equipped = selection.triggerIds.contains(active.id);
-      final locked =
-          allowedActiveIds != null && !allowedActiveIds.contains(active.id);
-      return _infoPanelShell(
-        icon: TriggerIcon(trigger: active, size: 18),
-        name: active.name,
-        description: describeTrigger(active),
-        tags: ['${active.equipCost} TRION'],
-        buttonLabel: equipped ? 'UNEQUIP' : 'EQUIP',
-        onPressed: locked
-            ? null
-            : () => setState(() {
-                if (equipped) {
-                  selection.triggerIds.remove(active.id);
-                } else {
-                  selection.triggerIds.add(active.id);
-                }
-              }),
-      );
-    }
-
-    final bt = black!;
-    final selected = selection.blackTriggerId == bt.id;
-    final locked = tutorialLocked && allowedBlackId != bt.id;
-    final grade = ResonanceGrid.defaultGrid.lookup(character.type, bt.type);
-    return _infoPanelShell(
-      icon: BlackTriggerIcon(blackTrigger: bt, size: 18),
-      name: bt.name,
-      description:
-          '${bt.description}\n${blackTriggerAbilityLines(bt).join('\n')}',
-      tags: ['${bt.equipCost} TRION'],
-      extraTags: [_gradeTag(grade)],
-      buttonLabel: selected ? 'REMOVE' : 'SELECT',
-      onPressed: locked
-          ? null
-          : () => setState(
-              () => selection.blackTriggerId = selected ? null : bt.id,
-            ),
-    );
-  }
-
-  Widget _infoPanelShell({
-    required Widget icon,
-    required String name,
-    required String description,
-    required List<String> tags,
-    List<Widget> extraTags = const [],
-    required String buttonLabel,
-    required VoidCallback? onPressed,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Palette.accent)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            margin: const EdgeInsets.only(right: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
-              border: Border.all(color: Palette.accent),
-            ),
-            child: icon,
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
-                ),
-                const SizedBox(height: 5),
-                Wrap(
-                  spacing: 5,
-                  runSpacing: 4,
-                  children: [
-                    for (final tag in tags) _tagChip(tag),
-                    ...extraTags,
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(onPressed: onPressed, child: Text(buttonLabel)),
-        ],
-      ),
-    );
-  }
-
-  Widget _triggerPortraitGrid({
-    required String heading,
-    required List<Trigger> triggers,
-    required LoadoutSelection selection,
-    Set<String>? allowedIds,
-  }) {
-    return _panel(
-      borderColor: Colors.white12,
-      children: [
-        Text(
-          heading.toUpperCase(),
-          style: const TextStyle(
-            color: Colors.white54,
-            fontSize: 11,
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final t in triggers)
-              AbilitySlot(
-                icon: TriggerIcon(trigger: t, size: 20),
-                selected: selection.triggerIds.contains(t.id),
-                highlighted:
-                    !selection.triggerIds.contains(t.id) &&
-                    _previewTriggerId == t.id,
-                enabled: allowedIds == null || allowedIds.contains(t.id),
-                tooltip: t.name,
-                onTap: () => setState(() => _previewTriggerId = t.id),
-                size: 44,
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _blackTriggerPortraitGrid(
-    Character character,
-    LoadoutSelection selection, {
-    String? allowedId,
-    bool tutorialLocked = false,
-  }) {
-    return _panel(
-      borderColor: Colors.white12,
-      children: [
-        const Text(
-          'BLACK TRIGGER (OPTIONAL, MAX 1)',
-          style: TextStyle(
-            color: Colors.white54,
-            fontSize: 11,
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            AbilitySlot(
-              icon: const Icon(
-                Icons.not_interested,
-                size: 18,
-                color: Palette.accent,
-              ),
-              selected: selection.blackTriggerId == null,
-              enabled: !(tutorialLocked && allowedId != null),
-              tooltip: 'None',
-              onTap: () => setState(() {
-                selection.blackTriggerId = null;
-                _previewTriggerId = null;
-              }),
-              size: 44,
-            ),
-            for (final bt in blackTriggerCatalog.all)
-              AbilitySlot(
-                icon: BlackTriggerIcon(blackTrigger: bt, size: 20),
-                selected: selection.blackTriggerId == bt.id,
-                highlighted:
-                    selection.blackTriggerId != bt.id &&
-                    _previewTriggerId == bt.id,
-                enabled: !tutorialLocked || allowedId == bt.id,
-                tooltip: bt.name,
-                onTap: () => setState(() => _previewTriggerId = bt.id),
-                size: 44,
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _gradeTag(ResonanceGrade grade) {
-    final color = switch (grade) {
-      ResonanceGrade.a => Palette.good,
-      ResonanceGrade.b => Palette.accent,
-      ResonanceGrade.c => Colors.white54,
-      ResonanceGrade.d => Palette.danger,
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: BoxDecoration(
-        border: Border.all(color: color),
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Text(
-        grade.name.toUpperCase(),
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
       ),
     );
   }
@@ -1559,8 +1201,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                       runSpacing: 4,
                       children: [
                         for (final tag in triggerSummaryLine(t).split(' - '))
-                          _tagChip(tag),
-                        _tagChip('${action.actualTrionCost} Trion'),
+                          TagChip(tag),
+                        TagChip('${action.actualTrionCost} Trion'),
                       ],
                     ),
                   ],
@@ -1618,21 +1260,6 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     return only == null
         ? 'USE'
         : 'USE ON ${(names[only] ?? only).toUpperCase()}';
-  }
-
-  Widget _tagChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(border: Border.all(color: Palette.accent)),
-      child: Text(
-        label.toUpperCase(),
-        style: const TextStyle(
-          color: Colors.white70,
-          fontSize: 9,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
   }
 
   Widget _panel({required Color borderColor, required List<Widget> children}) {
