@@ -22,8 +22,10 @@ extension CharacterRankStyle on CharacterRank {
   };
 }
 
-/// The small rotated rank-plate badge worn on the top-left corner of a
-/// portrait tile, matching the approved reference mockup.
+/// The small rotated rank-flag badge worn on the top-left corner of a
+/// portrait tile: a squared-off tag with one angled-notch corner (the
+/// "Rift Cyan" panel-corner treatment applied to a small tag), matching
+/// the approved reference mockup.
 class RankBadge extends StatelessWidget {
   final CharacterRank rank;
   final double size;
@@ -34,13 +36,13 @@ class RankBadge extends StatelessWidget {
     return Transform.rotate(
       angle: -0.24,
       child: CustomPaint(
-        size: Size(size, size * 0.83),
-        painter: _RankPlatePainter(rank.color),
+        size: Size(size, size * 0.9),
+        painter: _RankFlagPainter(rank.color),
         child: SizedBox(
           width: size,
-          height: size * 0.83,
+          height: size * 0.9,
           child: Align(
-            alignment: const Alignment(0, -0.35),
+            alignment: const Alignment(0, 0.55),
             child: Text(
               rank.label,
               style: TextStyle(
@@ -57,42 +59,39 @@ class RankBadge extends StatelessWidget {
   }
 }
 
-class _RankPlatePainter extends CustomPainter {
+class _RankFlagPainter extends CustomPainter {
   final Color color;
-  const _RankPlatePainter(this.color);
+  const _RankFlagPainter(this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
     final fill = Paint()..color = color;
-    final tailFill = Paint()..color = color.withValues(alpha: 0.6);
-    final plateHeight = size.height * 0.78;
+    final notch = size.width * 0.32;
 
-    final tail = Path()
-      ..moveTo(size.width * 0.08, plateHeight)
-      ..lineTo(size.width * 0.28, size.height)
-      ..lineTo(size.width * 0.42, plateHeight)
+    // A squared-off tag with its bottom-left corner cut at an angle,
+    // rather than a rounded plate with a separate hanging tail.
+    final flag = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(notch, size.height)
+      ..lineTo(0, size.height - notch)
       ..close();
-    canvas.drawPath(tail, tailFill);
+    canvas.drawPath(flag, fill);
 
-    final plate = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, plateHeight),
-      const Radius.circular(3),
-    );
-    canvas.drawRRect(plate, fill);
-
-    final shade = Paint()..color = Colors.black.withValues(alpha: 0.16);
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width * 0.12,
-        plateHeight * 0.45,
-        size.width * 0.76,
-        plateHeight * 0.12,
-      ),
-      shade,
+    // A thin fold/header line near the top, echoing the reference tag.
+    final linePaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.24)
+      ..strokeWidth = size.height * 0.06;
+    final lineY = size.height * 0.32;
+    canvas.drawLine(
+      Offset(size.width * 0.14, lineY),
+      Offset(size.width * 0.86, lineY),
+      linePaint,
     );
   }
 
   @override
-  bool shouldRepaint(covariant _RankPlatePainter oldDelegate) =>
+  bool shouldRepaint(covariant _RankFlagPainter oldDelegate) =>
       oldDelegate.color != color;
 }

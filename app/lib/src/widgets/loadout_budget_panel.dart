@@ -1,14 +1,17 @@
 import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
+import '../data/flavor_text.dart';
 import '../ui/palette.dart';
+import 'pickers.dart' show CharacterStatRow;
+import 'portrait_tile.dart';
 
-/// The Trion budget/active-ability-count readout shown above a
-/// [LoadoutBuilderPanel]: how much of the character's Trion Capacity is
-/// spent, whether the required Active ability count is met, any
-/// validation errors, and an optional Auto-fill shortcut. Shared by the
-/// Guided Tutorial's Loadout step and the Home screen's inline squad
-/// builder.
+/// The character-info + Trion budget/active-ability-count readout shown
+/// above a [LoadoutBuilderPanel]: portrait, perk, flavor, and full battle
+/// stats, then how much of the character's Trion Capacity is spent,
+/// whether the required Active ability count is met, any validation
+/// errors, and an optional Auto-fill shortcut. Shared by the Guided
+/// Tutorial's Loadout step and the Home screen's inline squad builder.
 class LoadoutBudgetPanel extends StatelessWidget {
   final Character character;
   final Loadout loadout;
@@ -41,8 +44,59 @@ class LoadoutBudgetPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PortraitTile(
+                characterId: character.id,
+                name: character.name,
+                type: character.type,
+                size: 64,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      character.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (character.perk != null)
+                      Text(
+                        character.perk!.name,
+                        style: const TextStyle(
+                          color: Palette.gold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    if (characterFlavor[character.id] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          characterFlavor[character.id]!,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 11,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 6),
+                    CharacterStatRow(stats: character.baseStats),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           Text(
-            '${character.name} - Trion Capacity $budget',
+            'Trion Capacity $budget',
             style: const TextStyle(
               color: Palette.teamA,
               fontWeight: FontWeight.bold,
