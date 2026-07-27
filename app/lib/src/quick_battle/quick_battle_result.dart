@@ -1,5 +1,7 @@
 import 'package:battle_engine/battle_engine.dart';
 
+import '../game/battle_models.dart' show LogRollBreakdown;
+
 /// One target hit within a single [QuickBattleAction], rendering-ready.
 class QuickBattleTargetResult {
   final String targetName;
@@ -12,6 +14,9 @@ class QuickBattleTargetResult {
   final int maxHealth;
   final bool died;
 
+  /// The full per-roll breakdown behind [hits]/[crits]/[misses]/[damage].
+  final List<LogRollBreakdown> rolls;
+
   const QuickBattleTargetResult({
     required this.targetName,
     required this.hits,
@@ -22,6 +27,7 @@ class QuickBattleTargetResult {
     required this.healthAfter,
     required this.maxHealth,
     required this.died,
+    this.rolls = const [],
   });
 }
 

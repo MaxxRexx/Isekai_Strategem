@@ -861,7 +861,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 78,
+              flex: 48,
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -891,12 +891,17 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              flex: 22,
+              flex: 26,
+              child: _characterSpotlight(_spotlightFighter(session)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 26,
               child: TeamPanel(
                 label: 'Opponent Squad',
                 color: Palette.teamB,
                 fighters: session.teamB,
-                portraitSize: 48,
+                portraitSize: 64,
                 compact: true,
               ),
             ),
@@ -934,6 +939,102 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
+  /// Whichever fighter the spotlight column shows: whoever's ability row
+  /// was last tapped (so picking an ability spotlights its user), falling
+  /// back to the first living squad member.
+  FighterSnapshot? _spotlightFighter(PlaySession session) {
+    for (final f in session.teamA) {
+      if (f.id == _selectedCharacterId) return f;
+    }
+    for (final f in session.teamA) {
+      if (f.alive) return f;
+    }
+    return session.teamA.isEmpty ? null : session.teamA.first;
+  }
+
+  /// A large "spotlight" panel for one character, reserving the screen
+  /// real estate the approved reference gives to full character art - for
+  /// now this is just the shared portrait tile scaled up as a stand-in
+  /// until real generated art lands.
+  Widget _characterSpotlight(FighterSnapshot? fighter) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border(
+          top: BorderSide(
+            color: fighter == null ? Colors.white12 : Palette.gold,
+            width: 3,
+          ),
+        ),
+      ),
+      child: fighter == null
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                'No living character to spotlight.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+            )
+          : Column(
+              children: [
+                const Text(
+                  'SPOTLIGHT',
+                  style: TextStyle(
+                    color: Palette.gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                LayoutBuilder(
+                  builder: (context, constraints) => PortraitHealthBar(
+                    characterId: fighter.id,
+                    name: fighter.name,
+                    type: fighter.type,
+                    currentHealth: fighter.currentHealth,
+                    maxHealth: fighter.maxHealth,
+                    alive: fighter.alive,
+                    size: constraints.maxWidth.clamp(0, 220),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  fighter.name,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: fighter.alive ? Colors.white : Colors.white38,
+                    decoration: fighter.alive
+                        ? null
+                        : TextDecoration.lineThrough,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                if (fighter.statusEffects.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Wrap(
+                      spacing: 3,
+                      runSpacing: 3,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        for (final s in fighter.statusEffects)
+                          StatusBadge(
+                            name: s.name,
+                            remainingTurns: s.remainingTurns,
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+    );
+  }
+
   /// One living player fighter's row: portrait/HP/status on the left, and
   /// (unlike the opponent's compact panel) its legal ability icons inline
   /// on the right, feeding the single shared bottom action bar below.
@@ -942,9 +1043,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     PlaySession session,
     TutorialBattleStep? tutorialStep,
   ) {
-    final actions = fighter.alive
-        ? session.legalActionsFor(fighter.id)
-        : const <LegalAction>[];
+    final displays = fighter.alive
+        ? session.abilityDisplaysFor(fighter.id)
+        : const <AbilityDisplay>[];
     final lockedRow =
         tutorialStep != null && tutorialStep.characterId != fighter.id;
 
@@ -966,7 +1067,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               currentHealth: fighter.currentHealth,
               maxHealth: fighter.maxHealth,
               alive: fighter.alive,
-              size: 64,
+              size: 96,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1015,9 +1116,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                   if (fighter.alive)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: actions.isEmpty
+                      child: displays.isEmpty
                           ? const Text(
-                              'No actions available this turn.',
+                              'No abilities equipped.',
                               style: TextStyle(
                                 color: Colors.white38,
                                 fontSize: 11,
@@ -1028,8 +1129,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
-                                for (final action in actions)
-                                  _abilitySlot(action, fighter, tutorialStep),
+                                for (final display in displays)
+                                  _abilitySlot(display, fighter, tutorialStep),
                               ],
                             ),
                     ),
@@ -1045,34 +1146,49 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   bool _abilityEnabled(
     TutorialBattleStep? step,
     String fighterId,
-    LegalAction action,
+    AbilityDisplay display,
   ) {
-    if (!action.affordable) return false;
+    if (!display.usable) return false;
     if (step == null || step.characterId != fighterId) return true;
-    return step.isFatStep || step.triggerId == action.trigger.id;
+    return step.isFatStep || step.triggerId == display.trigger.id;
   }
 
   Widget _abilitySlot(
-    LegalAction action,
+    AbilityDisplay display,
     FighterSnapshot fighter,
     TutorialBattleStep? tutorialStep,
   ) {
-    final t = action.trigger;
+    final t = display.trigger;
+    final action = display.legalAction;
     final isSelected =
         _selectedCharacterId == fighter.id &&
         _selectedAction?.trigger.id == t.id;
     final highlight =
         tutorialStep?.triggerId == t.id &&
         tutorialStep?.characterId == fighter.id;
+    final String tooltip;
+    if (display.cooldownRemaining > 0) {
+      tooltip =
+          '${t.name}: on cooldown for ${display.cooldownRemaining} '
+          'more turn(s).';
+    } else if (action == null) {
+      tooltip = '${t.name}: not usable right now.';
+    } else if (!action.affordable) {
+      tooltip = '${t.name}: not enough Trion this turn.';
+    } else {
+      tooltip =
+          '${t.name} (${action.actualTrionCost} Trion) - '
+          '${triggerSummaryLine(t)}';
+    }
     return AbilitySlot(
-      icon: TriggerIcon(trigger: t, size: 20),
+      icon: TriggerIcon(trigger: t, size: 28),
       selected: isSelected,
       highlighted: !isSelected && highlight,
-      enabled: _abilityEnabled(tutorialStep, fighter.id, action),
-      tooltip: action.affordable
-          ? '${t.name} (${action.actualTrionCost} Trion) - ${triggerSummaryLine(t)}'
-          : '${t.name}: not enough Trion this turn.',
-      onTap: () => _selectAbility(fighter.id, action),
+      enabled: _abilityEnabled(tutorialStep, fighter.id, display),
+      cooldownRemaining: display.cooldownRemaining,
+      tooltip: tooltip,
+      onTap: action == null ? null : () => _selectAbility(fighter.id, action),
+      size: 60,
     );
   }
 

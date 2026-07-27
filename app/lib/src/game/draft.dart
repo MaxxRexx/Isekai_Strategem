@@ -123,6 +123,21 @@ FighterSnapshot fighterSnapshot(CharacterBattleState s) => FighterSnapshot(
   ],
 );
 
+/// The full roll-by-roll breakdown backing one [LogTargetResult] (or
+/// Quick Battle's equivalent), zipping each attack roll with the damage
+/// it specifically dealt.
+List<LogRollBreakdown> rollBreakdownsFor(TargetHitResult t) => [
+  for (var i = 0; i < t.attackRolls.length; i++)
+    LogRollBreakdown(
+      attackerRoll: LogDiceRoll.from(t.attackRolls[i].attackerRoll),
+      defenderRoll: LogDiceRoll.from(t.attackRolls[i].defenderRoll),
+      isHit: t.attackRolls[i].isHit,
+      isCriticalHit: t.attackRolls[i].isCriticalHit,
+      isCriticalMiss: t.attackRolls[i].isCriticalMiss,
+      damage: t.damagePerHit[i],
+    ),
+];
+
 /// The per-target log entries for one resolved ability use.
 List<LogTargetResult> logTargets(Battle battle, AbilityUseResult useResult) => [
   for (final t in useResult.targetResults)
@@ -136,6 +151,7 @@ List<LogTargetResult> logTargets(Battle battle, AbilityUseResult useResult) => [
       statusEffectsApplied: statusEffectNames(t.statusEffectsApplied),
       healthAfter: battle.states[t.targetCharacterId]!.currentHealth,
       died: !battle.states[t.targetCharacterId]!.isAlive,
+      rolls: rollBreakdownsFor(t),
     ),
 ];
 

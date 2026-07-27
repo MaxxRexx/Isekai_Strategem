@@ -1,6 +1,7 @@
 import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
+import '../widgets/log_view.dart' show RollBreakdownView;
 import 'quick_battle_controller.dart';
 import 'quick_battle_result.dart';
 
@@ -278,54 +279,113 @@ class _RoundEntry extends StatelessWidget {
             for (final t in action.targets)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: RichText(
-                  text: TextSpan(
-                    style: const TextStyle(fontSize: 12, color: Colors.white70),
-                    children: [
-                      TextSpan(
-                        text: action.characterName,
-                        style: TextStyle(
-                          color: actorColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (action.fatTriggered)
-                        const TextSpan(
-                          text: ' [FAT]',
-                          style: TextStyle(
-                            color: Color(0xFFFFAB4D),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      TextSpan(
-                        text: ' uses ${action.triggerName} on ${t.targetName}',
-                      ),
-                      if (t.crits > 0)
-                        TextSpan(
-                          text: ' ${t.crits} crit',
-                          style: const TextStyle(color: Color(0xFFFFAB4D)),
-                        ),
-                      if (t.damage > 0) TextSpan(text: ' ${t.damage} dmg'),
-                      if (t.statusEffectsApplied.isNotEmpty)
-                        TextSpan(
-                          text: ' [${t.statusEffectsApplied.join(', ')}]',
-                          style: const TextStyle(color: Color(0xFF34D1C8)),
-                        ),
-                      TextSpan(text: ' -> HP ${t.healthAfter}'),
-                      if (t.died)
-                        const TextSpan(
-                          text: ' DEFEATED',
-                          style: TextStyle(
-                            color: Color(0xFFFF5468),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                    ],
-                  ),
+                child: _QuickLogLine(
+                  action: action,
+                  target: t,
+                  color: actorColor,
                 ),
               ),
         ],
       ),
+    );
+  }
+}
+
+/// One (action, target) line, expandable to reveal the exact roll-by-roll
+/// breakdown behind its hit/crit/miss/damage summary.
+class _QuickLogLine extends StatefulWidget {
+  final QuickBattleAction action;
+  final QuickBattleTargetResult target;
+  final Color color;
+
+  const _QuickLogLine({
+    required this.action,
+    required this.target,
+    required this.color,
+  });
+
+  @override
+  State<_QuickLogLine> createState() => _QuickLogLineState();
+}
+
+class _QuickLogLineState extends State<_QuickLogLine> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final action = widget.action;
+    final t = widget.target;
+    final hasBreakdown = t.rolls.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  children: [
+                    TextSpan(
+                      text: action.characterName,
+                      style: TextStyle(
+                        color: widget.color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (action.fatTriggered)
+                      const TextSpan(
+                        text: ' [FAT]',
+                        style: TextStyle(
+                          color: Color(0xFFFFAB4D),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    TextSpan(
+                      text: ' uses ${action.triggerName} on ${t.targetName}',
+                    ),
+                    if (t.crits > 0)
+                      TextSpan(
+                        text: ' ${t.crits} crit',
+                        style: const TextStyle(color: Color(0xFFFFAB4D)),
+                      ),
+                    if (t.damage > 0) TextSpan(text: ' ${t.damage} dmg'),
+                    if (t.statusEffectsApplied.isNotEmpty)
+                      TextSpan(
+                        text: ' [${t.statusEffectsApplied.join(', ')}]',
+                        style: const TextStyle(color: Color(0xFF34D1C8)),
+                      ),
+                    TextSpan(text: ' -> HP ${t.healthAfter}'),
+                    if (t.died)
+                      const TextSpan(
+                        text: ' DEFEATED',
+                        style: TextStyle(
+                          color: Color(0xFFFF5468),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (hasBreakdown)
+              InkWell(
+                onTap: () => setState(() => _expanded = !_expanded),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 16,
+                    color: Colors.white38,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        if (_expanded && hasBreakdown) RollBreakdownView(rolls: t.rolls),
+      ],
     );
   }
 }

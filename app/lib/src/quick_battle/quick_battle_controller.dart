@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:battle_engine/battle_engine.dart';
 
+import '../game/draft.dart' show rollBreakdownsFor;
 import 'quick_battle_result.dart';
 
 const _builder = LoadoutBuilder();
@@ -195,6 +196,7 @@ QuickBattleResult runQuickBattle({int maxRounds = 60}) {
                     .effectiveStats()
                     .maxHealth,
                 died: !battle.states[t.targetCharacterId]!.isAlive,
+                rolls: rollBreakdownsFor(t),
               ),
           ],
         ),

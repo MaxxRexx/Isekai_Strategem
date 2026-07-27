@@ -24,12 +24,19 @@ import 'trion_gain_engine.dart';
 class TargetHitResult {
   final String targetCharacterId;
   final List<AttackRollOutcome> attackRolls;
+
+  /// The damage dealt by each roll in [attackRolls], in the same order -
+  /// exposed alongside the aggregated [totalDamageDealt] so a UI can show
+  /// a full per-roll breakdown (which specific roll crit, which missed,
+  /// how much each one actually dealt) rather than just the sum.
+  final List<int> damagePerHit;
   final int totalDamageDealt;
   final List<String> statusEffectsApplied;
 
   const TargetHitResult({
     required this.targetCharacterId,
     required this.attackRolls,
+    required this.damagePerHit,
     required this.totalDamageDealt,
     required this.statusEffectsApplied,
   });
@@ -682,6 +689,7 @@ class TurnEngine {
       targetResults.add(TargetHitResult(
         targetCharacterId: target.character.id,
         attackRolls: hits.map((h) => h.outcome).toList(),
+        damagePerHit: hits.map((h) => h.damage).toList(),
         totalDamageDealt: hits.fold(0, (sum, h) => sum + h.damage),
         statusEffectsApplied:
             hits.expand((h) => h.appliedStatusEffectIds).toList(),

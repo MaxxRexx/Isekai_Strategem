@@ -1,5 +1,64 @@
 import 'package:battle_engine/battle_engine.dart';
 
+/// One d20 roll's full detail (raw dice, advantage/disadvantage mode,
+/// modifier, total) - the Battle Log's "show exact rolls" breakdown reads
+/// straight off this instead of just a hit/miss summary.
+class LogDiceRoll {
+  final List<int> rawRolls;
+  final int kept;
+  final RollMode mode;
+  final int modifier;
+  final int total;
+
+  const LogDiceRoll({
+    required this.rawRolls,
+    required this.kept,
+    required this.mode,
+    required this.modifier,
+    required this.total,
+  });
+
+  factory LogDiceRoll.from(D20RollResult roll) => LogDiceRoll(
+    rawRolls: roll.rawRolls,
+    kept: roll.kept,
+    mode: roll.mode,
+    modifier: roll.modifier,
+    total: roll.total,
+  );
+
+  /// Dice notation for display, e.g. "14+27=41" for a normal roll or
+  /// "14/9→14+27=41" when advantage/disadvantage rolled more than one die.
+  String get describe {
+    final dice = mode == RollMode.normal
+        ? '${rawRolls.single}'
+        : '${rawRolls.join('/')}→$kept';
+    final sign = modifier >= 0 ? '+' : '';
+    return '$dice$sign$modifier=$total';
+  }
+}
+
+/// One resolved attack roll within a [LogTargetResult]: the attacker's and
+/// defender's dice, the outcome, and the damage that specific roll dealt.
+/// A Burst ability produces one of these per hit; everything else
+/// produces exactly one.
+class LogRollBreakdown {
+  final LogDiceRoll attackerRoll;
+  final LogDiceRoll defenderRoll;
+  final bool isHit;
+  final bool isCriticalHit;
+  final bool isCriticalMiss;
+  final int damage;
+
+  const LogRollBreakdown({
+    required this.attackerRoll,
+    required this.defenderRoll,
+    required this.isHit,
+    required this.isCriticalHit,
+    required this.isCriticalMiss,
+    required this.damage,
+  });
+}
+
 /// UI-facing result of one ability use against one target, mirroring the
 /// per-target log entries the engine's [TargetHitResult] describes but
 /// flattened to plain display values.
@@ -14,6 +73,10 @@ class LogTargetResult {
   final int healthAfter;
   final bool died;
 
+  /// The full per-roll breakdown behind [hits]/[crits]/[misses]/[damage] -
+  /// what the Battle Log's expand button reveals.
+  final List<LogRollBreakdown> rolls;
+
   const LogTargetResult({
     required this.targetId,
     required this.targetName,
@@ -24,6 +87,7 @@ class LogTargetResult {
     required this.statusEffectsApplied,
     required this.healthAfter,
     required this.died,
+    this.rolls = const [],
   });
 }
 

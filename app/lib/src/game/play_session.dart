@@ -23,6 +23,32 @@ class LegalAction {
   });
 }
 
+/// One of a character's equipped Active Triggers, shown in the battle UI
+/// regardless of whether it's usable right now - unlike [LegalAction],
+/// which only lists what's currently legal, this also covers abilities on
+/// cooldown (or otherwise blocked) so the UI can show them grayed out
+/// with a cooldown-turns overlay instead of omitting them entirely.
+class AbilityDisplay {
+  final ActiveTrigger trigger;
+
+  /// Non-null iff this ability could legally be used right now (subject
+  /// to [LegalAction.affordable] on top of that).
+  final LegalAction? legalAction;
+
+  /// Turns remaining before this ability comes off cooldown (0 if it
+  /// isn't on cooldown - it may still be unusable for another reason,
+  /// e.g. insufficient Trion or an action-preventing status effect).
+  final int cooldownRemaining;
+
+  const AbilityDisplay({
+    required this.trigger,
+    required this.legalAction,
+    required this.cooldownRemaining,
+  });
+
+  bool get usable => legalAction != null && legalAction!.affordable;
+}
+
 class UseAbilityOutcome {
   final bool success;
   final String? error;
@@ -189,6 +215,27 @@ class PlaySession {
       );
     }
     return actions;
+  }
+
+  /// Every equipped Active Trigger for [characterId], each paired with its
+  /// current legality (if any) and cooldown - unlike [legalActionsFor],
+  /// this never omits an ability just because it's on cooldown or
+  /// otherwise blocked right now, so the battle UI can render it grayed
+  /// out (with a cooldown overlay) instead of making it disappear.
+  List<AbilityDisplay> abilityDisplaysFor(String characterId) {
+    final state = battle.states[characterId]!;
+    final legalById = {
+      for (final action in legalActionsFor(characterId))
+        action.trigger.id: action,
+    };
+    return [
+      for (final trigger in equippedA[characterId] ?? const <ActiveTrigger>[])
+        AbilityDisplay(
+          trigger: trigger,
+          legalAction: legalById[trigger.id],
+          cooldownRemaining: state.cooldowns[trigger.id] ?? 0,
+        ),
+    ];
   }
 
   UseAbilityOutcome useAbility(

@@ -13,6 +13,12 @@ class AbilitySlot extends StatelessWidget {
   final VoidCallback? onTap;
   final double size;
 
+  /// Turns remaining before this ability is usable again. When positive,
+  /// the icon underneath is dimmed and this count is overlaid on top -
+  /// matching the reference's cooldown treatment - instead of the ability
+  /// disappearing from the row entirely.
+  final int cooldownRemaining;
+
   const AbilitySlot({
     super.key,
     required this.icon,
@@ -22,10 +28,12 @@ class AbilitySlot extends StatelessWidget {
     this.tooltip,
     this.onTap,
     this.size = 48,
+    this.cooldownRemaining = 0,
   });
 
   @override
   Widget build(BuildContext context) {
+    final onCooldown = cooldownRemaining > 0;
     final borderColor = selected
         ? Palette.gold
         : highlighted
@@ -46,7 +54,28 @@ class AbilitySlot extends StatelessWidget {
               width: selected || highlighted ? 2 : 1,
             ),
           ),
-          child: icon,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Opacity(opacity: onCooldown ? 0.35 : 1, child: icon),
+              if (onCooldown)
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    child: Center(
+                      child: Text(
+                        '$cooldownRemaining',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: size * 0.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
