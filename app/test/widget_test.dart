@@ -111,13 +111,11 @@ void main() {
     expect(find.textContaining('Ren Kobayashi'), findsWidgets);
 
     // Slot 0 (Agent I) is the only enabled/empty slot at this step. The
-    // picker sheet is a tap-to-preview roster grid: tap the tile to focus
-    // it, then Draft to actually commit the pick and close the sheet.
-    await tester.tap(find.text('Choose a character...').first);
-    await tester.pumpAndSettle();
+    // roster grid is inline on the page (no modal): tap the tile to
+    // preview it, then Draft to commit the pick to the active slot.
     await tester.tap(find.text('Ren Kobayashi').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Draft'));
+    await tester.tap(find.text('DRAFT AGENT I').first);
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Ilona Vance'), findsWidgets);

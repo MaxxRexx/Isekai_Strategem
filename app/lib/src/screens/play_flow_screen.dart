@@ -55,6 +55,14 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   String? _profileBId;
   String? _setupError;
 
+  // Which squad slot the inline roster grid is currently drafting into,
+  // and which roster card is currently previewed in the detail panel below
+  // it - matches the approved Squad Select mockup (one page, no modal).
+  int _activeSlotA = 0;
+  String? _previewIdA;
+  int _activeSlotB = 0;
+  String? _previewIdB;
+
   final Map<String, LoadoutSelection> _selections = {};
   int _currentLoadoutIndex = 0;
   int _maxVisitedLoadoutIndex = 0;
@@ -374,6 +382,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
+  /// Squad Select: the roster grid and detail panel are always visible on
+  /// the page itself (matching the approved mockup), not hidden behind a
+  /// modal - tapping a slot just marks it "active" for the grid below.
   Widget _buildSetupStep() {
     final setupStep = _tutorialActive ? _tutorial!.currentSetupStep : null;
     final lockedByTutorial = _tutorialActive;
@@ -383,98 +394,80 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         if (i != slot && slots[i] != null) slots[i]!,
     };
 
+    final activeSlotA = lockedByTutorial
+        ? (setupStep?.slot ?? 0)
+        : _activeSlotA;
+
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        _panel(
-          borderColor: Palette.teamA,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'YOUR SQUAD',
-                  style: TextStyle(
-                    color: Palette.teamA,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                TextButton(
-                  onPressed: lockedByTutorial
-                      ? null
-                      : () => setState(
-                          () => _randomizeTeam(_teamAIds, withProfile: false),
-                        ),
-                  child: const Text('Randomize'),
-                ),
-              ],
-            ),
-            for (var slot = 0; slot < 3; slot++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: CharacterSlot(
-                  label: 'Agent ${['I', 'II', 'III'][slot]}',
-                  selectedId: _teamAIds[slot],
-                  disabledIds: takenExcept(_teamAIds, slot),
-                  enabled:
-                      !lockedByTutorial ||
-                      (setupStep != null && setupStep.slot == slot),
-                  lockToCharacterId: lockedByTutorial
-                      ? setupStep?.charId
-                      : null,
-                  onChanged: (id) => setState(() {
-                    _teamAIds[slot] = id;
-                    _tutorial?.onSetupPick(slot, id);
-                  }),
-                ),
-              ),
-          ],
+        _draftSection(
+          teamLabel: 'YOUR SQUAD',
+          color: Palette.teamA,
+          ids: _teamAIds,
+          activeSlot: activeSlotA,
+          onSlotTap: lockedByTutorial
+              ? null
+              : (i) => setState(() {
+                  _activeSlotA = i;
+                  _previewIdA = _teamAIds[i];
+                }),
+          onRandomize: lockedByTutorial
+              ? null
+              : () => setState(() {
+                  _randomizeTeam(_teamAIds, withProfile: false);
+                  _activeSlotA = 0;
+                  _previewIdA = null;
+                }),
+          lockToCharacterId: lockedByTutorial ? setupStep?.charId : null,
+          rosterDisabled: takenExcept(_teamAIds, activeSlotA),
+          previewId: _previewIdA,
+          onPreview: (id) => setState(() => _previewIdA = id),
+          onDraft: (id) => setState(() {
+            _teamAIds[activeSlotA] = id;
+            _tutorial?.onSetupPick(activeSlotA, id);
+            _previewIdA = null;
+            _activeSlotA = _nextEmptySlot(_teamAIds, activeSlotA);
+          }),
         ),
-        const SizedBox(height: 12),
-        _panel(
-          borderColor: Palette.teamB,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'OPPONENT SQUAD',
-                  style: TextStyle(
-                    color: Palette.teamB,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                TextButton(
-                  onPressed: lockedByTutorial
-                      ? null
-                      : () => setState(
-                          () => _randomizeTeam(_teamBIds, withProfile: true),
-                        ),
-                  child: const Text('Randomize'),
-                ),
-              ],
-            ),
-            ProfileSlot(
-              label: 'AI Profile',
-              selectedId: _profileBId,
-              enabled: !lockedByTutorial,
-              onChanged: (id) => setState(() => _profileBId = id),
-            ),
-            const SizedBox(height: 8),
-            for (var slot = 0; slot < 3; slot++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: CharacterSlot(
-                  label: 'Agent ${['I', 'II', 'III'][slot]}',
-                  selectedId: _teamBIds[slot],
-                  disabledIds: takenExcept(_teamBIds, slot),
-                  enabled: !lockedByTutorial,
-                  onChanged: (id) => setState(() => _teamBIds[slot] = id),
-                ),
-              ),
-          ],
+        const SizedBox(height: 20),
+        _draftSection(
+          teamLabel: 'OPPONENT SQUAD',
+          color: Palette.teamB,
+          ids: _teamBIds,
+          activeSlot: _activeSlotB,
+          onSlotTap: lockedByTutorial
+              ? null
+              : (i) => setState(() {
+                  _activeSlotB = i;
+                  _previewIdB = _teamBIds[i];
+                }),
+          onRandomize: lockedByTutorial
+              ? null
+              : () => setState(() {
+                  _randomizeTeam(_teamBIds, withProfile: true);
+                  _activeSlotB = 0;
+                  _previewIdB = null;
+                }),
+          lockToCharacterId: null,
+          rosterDisabled: takenExcept(_teamBIds, _activeSlotB),
+          previewId: _previewIdB,
+          onPreview: lockedByTutorial
+              ? null
+              : (id) => setState(() => _previewIdB = id),
+          onDraft: lockedByTutorial
+              ? null
+              : (id) => setState(() {
+                  _teamBIds[_activeSlotB] = id;
+                  _previewIdB = null;
+                  _activeSlotB = _nextEmptySlot(_teamBIds, _activeSlotB);
+                }),
+          profileSlot: ProfileSlot(
+            label: 'AI Profile',
+            selectedId: _profileBId,
+            enabled: !lockedByTutorial,
+            onChanged: (id) => setState(() => _profileBId = id),
+          ),
         ),
         const SizedBox(height: 16),
         if (_setupError != null)
@@ -492,6 +485,167 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           child: const Text('NEXT: BUILD LOADOUTS'),
         ),
       ],
+    );
+  }
+
+  int _nextEmptySlot(List<String?> ids, int justFilled) {
+    for (var i = 0; i < ids.length; i++) {
+      final idx = (justFilled + 1 + i) % ids.length;
+      if (ids[idx] == null) return idx;
+    }
+    return justFilled;
+  }
+
+  Widget _draftSection({
+    required String teamLabel,
+    required Color color,
+    required List<String?> ids,
+    required int activeSlot,
+    required void Function(int)? onSlotTap,
+    required VoidCallback? onRandomize,
+    required String? lockToCharacterId,
+    required Set<String> rosterDisabled,
+    required String? previewId,
+    required void Function(String)? onPreview,
+    required void Function(String)? onDraft,
+    Widget? profileSlot,
+  }) {
+    final effectivePreviewId = previewId ?? ids[activeSlot];
+    final preview = effectivePreviewId == null
+        ? null
+        : roster[effectivePreviewId];
+    final ctaEnabled =
+        effectivePreviewId != null &&
+        !rosterDisabled.contains(effectivePreviewId) &&
+        (lockToCharacterId == null ||
+            effectivePreviewId == lockToCharacterId) &&
+        onDraft != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _panel(
+          borderColor: color,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  teamLabel,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+                TextButton(
+                  onPressed: onRandomize,
+                  child: const Text('Randomize'),
+                ),
+              ],
+            ),
+            if (profileSlot != null) ...[
+              const SizedBox(height: 8),
+              profileSlot,
+            ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                for (var i = 0; i < 3; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: _slotChip(ids[i], i, activeSlot == i, onSlotTap),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        RosterGrid(
+          selectedId: effectivePreviewId,
+          disabledIds: rosterDisabled,
+          lockToCharacterId: lockToCharacterId,
+          onTap: onPreview ?? (_) {},
+        ),
+        CharacterDetailPanel(
+          character: preview,
+          enabled: ctaEnabled,
+          ctaLabel: 'DRAFT AGENT ${['I', 'II', 'III'][activeSlot]}',
+          onCta: effectivePreviewId == null
+              ? null
+              : () => onDraft?.call(effectivePreviewId),
+        ),
+      ],
+    );
+  }
+
+  Widget _slotChip(
+    String? id,
+    int index,
+    bool active,
+    void Function(int)? onTap,
+  ) {
+    final character = id == null ? null : roster[id];
+    return InkWell(
+      onTap: onTap == null ? null : () => onTap(index),
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: active
+              ? Palette.gold.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.03),
+          border: Border.all(
+            color: active ? Palette.gold : Colors.white24,
+            width: active ? 1.5 : 1,
+          ),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: character == null
+            ? Center(
+                child: Text(
+                  'Agent ${['I', 'II', 'III'][index]}',
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              )
+            : Row(
+                children: [
+                  PortraitTile(
+                    characterId: character.id,
+                    name: character.name,
+                    type: character.type,
+                    size: 44,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          character.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                        Text(
+                          typeLabel[character.type]!,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 

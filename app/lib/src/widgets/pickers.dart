@@ -168,54 +168,114 @@ class _CharacterPickerSheetState extends State<_CharacterPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final byType = <CharacterType, List<Character>>{};
-    for (final c in roster.all) {
-      byType.putIfAbsent(c.type, () => []).add(c);
-    }
     final focused = _focusedId == null ? null : roster[_focusedId!];
 
     return Column(
       children: [
         Expanded(
-          child: ListView(
+          child: SingleChildScrollView(
             controller: widget.scrollController,
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            children: [
-              for (final type in CharacterType.values) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(
-                    typeLabel[type]!,
-                    style: const TextStyle(
-                      color: Palette.accent,
-                      fontSize: 11,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final c in byType[type] ?? const <Character>[])
-                      _RosterTile(
-                        character: c,
-                        selected: c.id == _focusedId,
-                        enabled: _enabledFor(c.id),
-                        onTap: () => setState(() => _focusedId = c.id),
-                      ),
-                  ],
-                ),
-              ],
-            ],
+            child: RosterGrid(
+              selectedId: _focusedId,
+              disabledIds: widget.disabledIds,
+              lockToCharacterId: widget.lockToCharacterId,
+              onTap: (id) => setState(() => _focusedId = id),
+            ),
           ),
         ),
-        _detailPanel(focused),
+        CharacterDetailPanel(
+          character: focused,
+          enabled: focused != null && _enabledFor(focused.id),
+          ctaLabel: 'Draft',
+          onCta: focused == null ? null : () => widget.onPick(focused.id),
+        ),
       ],
     );
   }
+}
 
-  Widget _detailPanel(Character? character) {
+/// A roster grid of portrait tiles grouped by Character Type, the mockup's
+/// `.roster-card` layout. Shared by the modal character picker and the
+/// inline Squad Select page.
+class RosterGrid extends StatelessWidget {
+  final String? selectedId;
+  final Set<String> disabledIds;
+  final String? lockToCharacterId;
+  final ValueChanged<String> onTap;
+
+  const RosterGrid({
+    super.key,
+    required this.selectedId,
+    required this.disabledIds,
+    required this.lockToCharacterId,
+    required this.onTap,
+  });
+
+  bool _enabledFor(String id) =>
+      !disabledIds.contains(id) &&
+      (lockToCharacterId == null || id == lockToCharacterId);
+
+  @override
+  Widget build(BuildContext context) {
+    final byType = <CharacterType, List<Character>>{};
+    for (final c in roster.all) {
+      byType.putIfAbsent(c.type, () => []).add(c);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final type in CharacterType.values) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Text(
+              typeLabel[type]!,
+              style: const TextStyle(
+                color: Palette.accent,
+                fontSize: 11,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final c in byType[type] ?? const <Character>[])
+                _RosterTile(
+                  character: c,
+                  selected: c.id == selectedId,
+                  enabled: _enabledFor(c.id),
+                  onTap: () => onTap(c.id),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The always-visible bottom panel showing a previewed character's full
+/// stats/perk/flavor, with a CTA button to commit the pick. Shared by the
+/// modal character picker and the inline Squad Select page.
+class CharacterDetailPanel extends StatelessWidget {
+  final Character? character;
+  final bool enabled;
+  final String ctaLabel;
+  final VoidCallback? onCta;
+
+  const CharacterDetailPanel({
+    super.key,
+    required this.character,
+    required this.enabled,
+    required this.ctaLabel,
+    required this.onCta,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final character = this.character;
     if (character == null) {
       return Container(
         width: double.infinity,
@@ -229,7 +289,6 @@ class _CharacterPickerSheetState extends State<_CharacterPickerSheet> {
         ),
       );
     }
-    final enabled = _enabledFor(character.id);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -285,8 +344,8 @@ class _CharacterPickerSheetState extends State<_CharacterPickerSheet> {
           ),
           const SizedBox(width: 8),
           ElevatedButton(
-            onPressed: enabled ? () => widget.onPick(character.id) : null,
-            child: const Text('Draft'),
+            onPressed: enabled ? onCta : null,
+            child: Text(ctaLabel),
           ),
         ],
       ),
