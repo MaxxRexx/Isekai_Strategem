@@ -17,6 +17,7 @@ import '../widgets/fighter_row.dart';
 import '../widgets/log_view.dart';
 import '../widgets/outcome_banner.dart';
 import '../widgets/pickers.dart';
+import '../widgets/player_panel.dart';
 import '../widgets/portrait_tile.dart';
 import '../widgets/trigger_icons.dart';
 
@@ -67,6 +68,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   int _currentLoadoutIndex = 0;
   int _maxVisitedLoadoutIndex = 0;
   String? _loadoutError;
+
+  // Whichever Trigger/Black Trigger tile was last tapped in the Loadout
+  // step's grids; the shared info panel above them previews this one.
+  String? _previewTriggerId;
 
   PlaySession? _session;
   final List<LogRound> _roundsLog = [];
@@ -164,6 +169,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         _maxVisitedLoadoutIndex,
         _currentLoadoutIndex + 1,
       );
+      _previewTriggerId = null;
       if (_currentLoadoutIndex < 2) {
         _currentLoadoutIndex++;
       } else {
@@ -767,21 +773,31 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        _triggerChecklist(
+        _yourPicksAndPlayerPanel(loadout, selection),
+        const SizedBox(height: 12),
+        _triggerInfoPanel(
+          character: character,
+          selection: selection,
+          allowedActiveIds: tutorialScript?.triggerIds.toSet(),
+          allowedBlackId: tutorialScript?.blackTriggerId,
+          tutorialLocked: tutorialScript != null,
+        ),
+        const SizedBox(height: 12),
+        _triggerPortraitGrid(
           heading: 'Active Triggers',
           triggers: triggerCatalog.activeTriggers.toList(),
           selection: selection,
           allowedIds: tutorialScript?.triggerIds.toSet(),
         ),
         const SizedBox(height: 12),
-        _triggerChecklist(
+        _triggerPortraitGrid(
           heading: 'Passive Triggers',
           triggers: triggerCatalog.passiveTriggers.toList(),
           selection: selection,
           allowedIds: tutorialScript?.triggerIds.toSet(),
         ),
         const SizedBox(height: 12),
-        _blackTriggerList(
+        _blackTriggerPortraitGrid(
           character,
           selection,
           allowedId: tutorialScript?.blackTriggerId,
@@ -817,12 +833,242 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       ),
       backgroundColor: isCurrent ? Palette.accent : Colors.white10,
       onPressed: reachable && !isCurrent
-          ? () => setState(() => _currentLoadoutIndex = index)
+          ? () => setState(() {
+              _currentLoadoutIndex = index;
+              _previewTriggerId = null;
+            })
           : null,
     );
   }
 
-  Widget _triggerChecklist({
+  /// A compact summary of this character's current picks, plus the
+  /// player's account panel - the mockup's "panel to the right," adapted
+  /// to sit above the trigger grids on our single-column mobile layout.
+  Widget _yourPicksAndPlayerPanel(Loadout loadout, LoadoutSelection selection) {
+    final picks = [
+      for (final t in triggerCatalog.all)
+        if (selection.triggerIds.contains(t.id)) t,
+    ];
+    final blackTrigger = selection.blackTriggerId == null
+        ? null
+        : blackTriggerCatalog[selection.blackTriggerId!];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Palette.panel,
+            border: Border.all(color: Palette.hairline),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'YOUR PICKS',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10.5,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (picks.isEmpty && blackTrigger == null)
+                const Text(
+                  'Nothing equipped yet - tap a Trigger below.',
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final t in picks)
+                      _pickChip(t.name, TriggerIcon(trigger: t, size: 12)),
+                    if (blackTrigger != null)
+                      _pickChip(
+                        blackTrigger.name,
+                        BlackTriggerIcon(blackTrigger: blackTrigger, size: 12),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        const PlayerPanel(),
+      ],
+    );
+  }
+
+  Widget _pickChip(String label, Widget icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: Palette.gold.withValues(alpha: 0.1),
+        border: Border.all(color: Palette.gold),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icon,
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The shared info panel above every trigger grid: whichever Trigger or
+  /// Black Trigger was last tapped shows its full details here, with an
+  /// Equip/Unequip (or Select/Remove) button that actually mutates the
+  /// Loadout - the grid tiles themselves only preview.
+  Widget _triggerInfoPanel({
+    required Character character,
+    required LoadoutSelection selection,
+    Set<String>? allowedActiveIds,
+    String? allowedBlackId,
+    required bool tutorialLocked,
+  }) {
+    final id = _previewTriggerId;
+    final active = id == null
+        ? null
+        : triggerCatalog.all.where((t) => t.id == id).firstOrNull;
+    final black = id == null || active != null
+        ? null
+        : blackTriggerCatalog.all.where((bt) => bt.id == id).firstOrNull;
+
+    if (active == null && black == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Colors.white12)),
+        ),
+        child: const Text(
+          'Tap a Trigger below to see its details.',
+          style: TextStyle(color: Colors.white38, fontSize: 12),
+        ),
+      );
+    }
+
+    if (active != null) {
+      final equipped = selection.triggerIds.contains(active.id);
+      final locked =
+          allowedActiveIds != null && !allowedActiveIds.contains(active.id);
+      return _infoPanelShell(
+        icon: TriggerIcon(trigger: active, size: 18),
+        name: active.name,
+        description: describeTrigger(active),
+        tags: ['${active.equipCost} TRION'],
+        buttonLabel: equipped ? 'UNEQUIP' : 'EQUIP',
+        onPressed: locked
+            ? null
+            : () => setState(() {
+                if (equipped) {
+                  selection.triggerIds.remove(active.id);
+                } else {
+                  selection.triggerIds.add(active.id);
+                }
+              }),
+      );
+    }
+
+    final bt = black!;
+    final selected = selection.blackTriggerId == bt.id;
+    final locked = tutorialLocked && allowedBlackId != bt.id;
+    final grade = ResonanceGrid.defaultGrid.lookup(character.type, bt.type);
+    return _infoPanelShell(
+      icon: BlackTriggerIcon(blackTrigger: bt, size: 18),
+      name: bt.name,
+      description:
+          '${bt.description}\n${blackTriggerAbilityLines(bt).join('\n')}',
+      tags: ['${bt.equipCost} TRION'],
+      extraTags: [_gradeTag(grade)],
+      buttonLabel: selected ? 'REMOVE' : 'SELECT',
+      onPressed: locked
+          ? null
+          : () => setState(
+              () => selection.blackTriggerId = selected ? null : bt.id,
+            ),
+    );
+  }
+
+  Widget _infoPanelShell({
+    required Widget icon,
+    required String name,
+    required String description,
+    required List<String> tags,
+    List<Widget> extraTags = const [],
+    required String buttonLabel,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Palette.accent)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              border: Border.all(color: Palette.accent),
+            ),
+            child: icon,
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                ),
+                const SizedBox(height: 5),
+                Wrap(
+                  spacing: 5,
+                  runSpacing: 4,
+                  children: [
+                    for (final tag in tags) _tagChip(tag),
+                    ...extraTags,
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(onPressed: onPressed, child: Text(buttonLabel)),
+        ],
+      ),
+    );
+  }
+
+  Widget _triggerPortraitGrid({
     required String heading,
     required List<Trigger> triggers,
     required LoadoutSelection selection,
@@ -839,71 +1085,35 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             letterSpacing: 1,
           ),
         ),
-        const SizedBox(height: 6),
-        // ListTile paints its background/ink on the nearest Material
-        // ancestor; without this, the colored panel Container behind it
-        // would block those effects.
-        Material(
-          type: MaterialType.transparency,
-          child: Column(
-            children: [
-              for (final t in triggers)
-                CheckboxListTile(
-                  dense: true,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  value: selection.triggerIds.contains(t.id),
-                  onChanged: allowedIds != null && !allowedIds.contains(t.id)
-                      ? null
-                      : (checked) => setState(() {
-                          if (checked == true) {
-                            selection.triggerIds.add(t.id);
-                          } else {
-                            selection.triggerIds.remove(t.id);
-                          }
-                        }),
-                  title: Row(
-                    children: [
-                      TriggerIcon(trigger: t, size: 14),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          t.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '${t.equipCost}',
-                        style: const TextStyle(
-                          color: Palette.warn,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  subtitle: Text(
-                    describeTrigger(t),
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
-                  ),
-                ),
-            ],
-          ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final t in triggers)
+              AbilitySlot(
+                icon: TriggerIcon(trigger: t, size: 20),
+                selected: selection.triggerIds.contains(t.id),
+                highlighted:
+                    !selection.triggerIds.contains(t.id) &&
+                    _previewTriggerId == t.id,
+                enabled: allowedIds == null || allowedIds.contains(t.id),
+                tooltip: t.name,
+                onTap: () => setState(() => _previewTriggerId = t.id),
+                size: 44,
+              ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _blackTriggerList(
+  Widget _blackTriggerPortraitGrid(
     Character character,
     LoadoutSelection selection, {
     String? allowedId,
     bool tutorialLocked = false,
   }) {
-    const grid = ResonanceGrid.defaultGrid;
     return _panel(
       borderColor: Colors.white12,
       children: [
@@ -915,65 +1125,39 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             letterSpacing: 1,
           ),
         ),
-        const SizedBox(height: 6),
-        Material(
-          type: MaterialType.transparency,
-          child: Column(
-            children: [
-              RadioListTile<String?>(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                value: null,
-                groupValue: selection.blackTriggerId,
-                onChanged: tutorialLocked && allowedId != null
-                    ? null
-                    : (v) => setState(() => selection.blackTriggerId = null),
-                title: const Text(
-                  'None',
-                  style: TextStyle(color: Colors.white, fontSize: 13),
-                ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            AbilitySlot(
+              icon: const Icon(
+                Icons.not_interested,
+                size: 18,
+                color: Palette.accent,
               ),
-              for (final bt in blackTriggerCatalog.all)
-                RadioListTile<String?>(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  value: bt.id,
-                  groupValue: selection.blackTriggerId,
-                  onChanged: tutorialLocked && allowedId != bt.id
-                      ? null
-                      : (v) => setState(() => selection.blackTriggerId = v),
-                  title: Row(
-                    children: [
-                      BlackTriggerIcon(blackTrigger: bt, size: 14),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          bt.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      _gradeTag(grid.lookup(character.type, bt.type)),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${bt.equipCost}',
-                        style: const TextStyle(
-                          color: Palette.warn,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  subtitle: Text(
-                    '${bt.description}\n${blackTriggerAbilityLines(bt).join('\n')}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
-                  ),
-                ),
-            ],
-          ),
+              selected: selection.blackTriggerId == null,
+              enabled: !(tutorialLocked && allowedId != null),
+              tooltip: 'None',
+              onTap: () => setState(() {
+                selection.blackTriggerId = null;
+                _previewTriggerId = null;
+              }),
+              size: 44,
+            ),
+            for (final bt in blackTriggerCatalog.all)
+              AbilitySlot(
+                icon: BlackTriggerIcon(blackTrigger: bt, size: 20),
+                selected: selection.blackTriggerId == bt.id,
+                highlighted:
+                    selection.blackTriggerId != bt.id &&
+                    _previewTriggerId == bt.id,
+                enabled: !tutorialLocked || allowedId == bt.id,
+                tooltip: bt.name,
+                onTap: () => setState(() => _previewTriggerId = bt.id),
+                size: 44,
+              ),
+          ],
         ),
       ],
     );
@@ -1310,8 +1494,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               selected: _selectedTargets.contains(id),
               onSelected: (selected) => setState(() {
                 if (selected) {
-                  if (_selectedTargets.length < action.maxTargets)
+                  if (_selectedTargets.length < action.maxTargets) {
                     _selectedTargets.add(id);
+                  }
                 } else {
                   _selectedTargets.remove(id);
                 }
