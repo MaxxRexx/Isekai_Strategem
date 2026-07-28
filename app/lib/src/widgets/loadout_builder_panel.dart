@@ -6,6 +6,7 @@ import '../game/draft.dart';
 import '../game/loadout_selection.dart';
 import '../ui/palette.dart';
 import 'ability_slot.dart';
+import 'black_trigger_ability_list.dart';
 import 'tag_chip.dart';
 import 'trigger_icons.dart';
 
@@ -212,8 +213,8 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
     return _infoPanelShell(
       icon: BlackTriggerIcon(blackTrigger: bt, size: 18),
       name: bt.name,
-      description:
-          '${bt.description}\n${blackTriggerAbilityLines(bt).join('\n')}',
+      description: null,
+      descriptionWidget: BlackTriggerAbilityList(blackTrigger: bt),
       tags: ['${bt.equipCost} TRION'],
       extraTags: [_gradeTag(grade)],
       buttonLabel: selected ? 'REMOVE' : 'SELECT',
@@ -228,7 +229,8 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
   Widget _infoPanelShell({
     required Widget icon,
     required String name,
-    required String description,
+    required String? description,
+    Widget? descriptionWidget,
     required List<String> tags,
     List<Widget> extraTags = const [],
     required String buttonLabel,
@@ -267,10 +269,14 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
-                ),
+                descriptionWidget ??
+                    Text(
+                      description ?? '',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
                 const SizedBox(height: 5),
                 Wrap(
                   spacing: 5,

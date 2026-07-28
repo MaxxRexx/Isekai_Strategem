@@ -5,6 +5,7 @@ import '../data/describe.dart';
 import '../data/flavor_text.dart';
 import '../game/draft.dart';
 import '../ui/palette.dart';
+import '../widgets/black_trigger_ability_list.dart';
 import '../widgets/game_icons.dart';
 import '../widgets/trigger_icons.dart';
 
@@ -349,8 +350,11 @@ class _GuideScreenState extends State<GuideScreen>
             title: bt.name,
             meta:
                 '${blackTriggerTypeLabel[bt.type]} type - equip ${bt.equipCost}',
-            body:
-                '${bt.description}\n${blackTriggerAbilityLines(bt).join('\n')}',
+            body: null,
+            bodyWidget: BlackTriggerAbilityList(
+              blackTrigger: bt,
+              style: const TextStyle(color: Colors.white60, fontSize: 11),
+            ),
           ),
       ],
     );
@@ -441,12 +445,14 @@ class _GuideEntry extends StatelessWidget {
   final Widget icon;
   final String title;
   final String meta;
-  final String body;
+  final String? body;
+  final Widget? bodyWidget;
   const _GuideEntry({
     required this.icon,
     required this.title,
     required this.meta,
     required this.body,
+    this.bodyWidget,
   });
 
   @override
@@ -482,10 +488,14 @@ class _GuideEntry extends StatelessWidget {
                     ),
                   ],
                 ),
-                Text(
-                  body,
-                  style: const TextStyle(color: Colors.white60, fontSize: 11),
-                ),
+                bodyWidget ??
+                    Text(
+                      body ?? '',
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 11,
+                      ),
+                    ),
               ],
             ),
           ),

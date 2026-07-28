@@ -140,11 +140,3 @@ String triggerSummaryLine(ActiveTrigger t) {
   }
   return bits.isEmpty ? 'no direct effect' : bits.join(' - ');
 }
-
-/// The ability/passive/World lines shown under a Black Trigger.
-List<String> blackTriggerAbilityLines(BlackTrigger bt) => [
-  for (final a in bt.activeAbilities) '${a.name}: ${describeActiveTrigger(a)}',
-  for (final p in bt.passiveAbilities)
-    '${p.name}: ${describePassiveEffect(p.effect)}',
-  if (bt.worldAbility != null) 'World ability: ${bt.description}',
-];
