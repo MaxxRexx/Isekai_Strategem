@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
-import 'data/flavor_text.dart';
 import 'game/draft.dart';
 import 'game/loadout_selection.dart';
 import 'quick_battle/quick_battle_screen.dart';
@@ -13,7 +12,6 @@ import 'screens/simulate_screen.dart';
 import 'ui/palette.dart';
 import 'widgets/loadout_builder_panel.dart';
 import 'widgets/loadout_budget_panel.dart';
-import 'widgets/pickers.dart';
 import 'widgets/player_panel.dart';
 import 'widgets/portrait_tile.dart';
 
@@ -25,7 +23,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late String _selectedId = roster.all.first.id;
+  String? _selectedId;
   final List<String> _squadIds = [];
   final Map<String, LoadoutSelection> _selections = {};
 
@@ -55,16 +53,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _autoFillSelected() {
+    final selectedId = _selectedId;
+    if (selectedId == null) return;
     final profile = AiProfile.all[Random().nextInt(AiProfile.all.length)];
     final loadout = loadoutBuilder.build(
-      roster[_selectedId],
+      roster[selectedId],
       activeTriggerPool: triggerCatalog.activeTriggers,
       passiveTriggerPool: triggerCatalog.passiveTriggers,
       blackTriggerPool: blackTriggerCatalog.all,
       profile: profile,
     );
     setState(() {
-      final selection = _selectionFor(_selectedId)
+      final selection = _selectionFor(selectedId)
         ..triggerIds.clear()
         ..blackTriggerId = loadout.blackTrigger?.id;
       selection.triggerIds.addAll(loadout.triggers.map((t) => t.id));
@@ -86,16 +86,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selected = roster[_selectedId];
-    final selection = _selectionFor(_selectedId);
-    final loadout = selection.toLoadout(_selectedId);
-    final validation = loadout.validateFor(selected);
+    final selectedId = _selectedId;
+    final selected = selectedId == null ? null : roster[selectedId];
+    final selection = selectedId == null ? null : _selectionFor(selectedId);
+    final loadout = selection?.toLoadout(selectedId!);
+    final validation = selected == null ? null : loadout!.validateFor(selected);
 
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
+            constraints: const BoxConstraints(maxWidth: 1280),
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -108,7 +109,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _FeaturedCharacterCard(character: selected),
+                selected == null
+                    ? const _EmptySelectionPanel()
+                    : LoadoutBudgetPanel(
+                        character: selected,
+                        loadout: loadout!,
+                        errors: validation!.errors,
+                        onAutoFill: _autoFillSelected,
+                      ),
                 const SizedBox(height: 16),
                 _ModeTabsRow(
                   onPlay: _squadReady ? _play : null,
@@ -143,33 +151,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _RosterPreviewGrid(
-                  selectedId: _selectedId,
+                _RosterAndPlayerPanel(
+                  selectedId: selectedId,
                   squadIds: _squadIds,
                   onTap: _selectCharacter,
                 ),
-                const SizedBox(height: 16),
-                LoadoutBudgetPanel(
-                  character: selected,
-                  loadout: loadout,
-                  errors: validation.errors,
-                  onAutoFill: _autoFillSelected,
-                ),
-                const SizedBox(height: 12),
-                LoadoutBuilderPanel(
-                  character: selected,
-                  selection: selection,
-                  onSelectionChanged: () => setState(() {}),
-                ),
-                const SizedBox(height: 12),
-                _SquadMembershipButton(
-                  inSquad: _squadIds.contains(_selectedId),
-                  squadFull: _squadIds.length >= 3,
-                  loadoutValid: validation.isValid,
-                  onPressed: () => _toggleSquad(_selectedId),
-                ),
-                const SizedBox(height: 16),
-                PlayerPanel(squadIds: _squadIds),
+                if (selected != null) ...[
+                  const SizedBox(height: 16),
+                  LoadoutBuilderPanel(
+                    key: ValueKey(selectedId),
+                    character: selected,
+                    selection: selection!,
+                    onSelectionChanged: () => setState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  _SquadMembershipButton(
+                    inSquad: _squadIds.contains(selectedId),
+                    squadFull: _squadIds.length >= 3,
+                    loadoutValid: validation!.isValid,
+                    onPressed: () => _toggleSquad(selectedId!),
+                  ),
+                ],
               ],
             ),
           ),
@@ -179,86 +181,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// The "spotlight" card for whichever character is currently selected in
-/// the roster grid below: portrait, name, perk, and battle stats. No
-/// Trigger/ability icons here - those live in the Loadout builder further
-/// down the page, since a character's stats are fixed while its Triggers
-/// are the player's choice.
-class _FeaturedCharacterCard extends StatelessWidget {
-  final Character character;
-  const _FeaturedCharacterCard({required this.character});
+/// Shown at the top in place of a character's info until one is picked
+/// from the roster grid below.
+class _EmptySelectionPanel extends StatelessWidget {
+  const _EmptySelectionPanel();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3EAD3),
-        border: Border.all(color: Palette.gold, width: 2),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.white12, width: 3)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PortraitTile(
-            characterId: character.id,
-            name: character.name,
-            type: character.type,
-            size: 84,
-            showRank: false,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  character.name.toUpperCase(),
-                  style: const TextStyle(
-                    color: Color(0xFF241C10),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                CharacterStatRow(stats: character.baseStats),
-                const SizedBox(height: 8),
-                if (characterFlavor[character.id] != null)
-                  Text(
-                    characterFlavor[character.id]!,
-                    style: const TextStyle(
-                      color: Color(0xFF4A3D26),
-                      fontSize: 12.5,
-                    ),
-                  ),
-                if (character.perk != null) ...[
-                  const SizedBox(height: 6),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '${character.perk!.name}: ',
-                          style: const TextStyle(
-                            color: Color(0xFF241C10),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                        TextSpan(
-                          text: character.perk!.description,
-                          style: const TextStyle(
-                            color: Color(0xFF4A3D26),
-                            fontSize: 12.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
+      child: const Text(
+        'Tap a character below to view their stats and build a Loadout.',
+        style: TextStyle(color: Colors.white38, fontSize: 12),
       ),
     );
   }
@@ -355,13 +293,64 @@ class _ModeTab extends StatelessWidget {
   }
 }
 
+/// The character-select roster grid and the Player panel sharing a single
+/// bordered panel side by side (roster wide on the left, Player compact on
+/// the right), matching the Naruto-Arena-style reference instead of two
+/// separately-boxed sections stacked on top of each other.
+class _RosterAndPlayerPanel extends StatelessWidget {
+  final String? selectedId;
+  final List<String> squadIds;
+  final ValueChanged<String> onTap;
+
+  const _RosterAndPlayerPanel({
+    required this.selectedId,
+    required this.squadIds,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: const Border(top: BorderSide(color: Palette.teamA, width: 3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 7,
+            child: _RosterPreviewGrid(
+              selectedId: selectedId,
+              squadIds: squadIds,
+              onTap: onTap,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Container(width: 1, height: 220, color: Palette.hairline),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 3,
+            child: PlayerPanel(
+              squadIds: squadIds,
+              bordered: false,
+              compact: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// A browsable preview of the full roster: tap a tile to select it, showing
 /// its stats above and its Loadout builder below. Squad membership is a
 /// separate choice made via [_SquadMembershipButton], since previewing (or
 /// still tweaking a squad member's Triggers) shouldn't itself change the
 /// squad.
 class _RosterPreviewGrid extends StatelessWidget {
-  final String selectedId;
+  final String? selectedId;
   final List<String> squadIds;
   final ValueChanged<String> onTap;
 

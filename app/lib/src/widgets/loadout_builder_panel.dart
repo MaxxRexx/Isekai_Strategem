@@ -9,12 +9,16 @@ import 'ability_slot.dart';
 import 'tag_chip.dart';
 import 'trigger_icons.dart';
 
-/// The approved Loadout-builder UI: a shared info panel above portrait-tile
-/// grids for Active Triggers, Passive Triggers, and the Black Trigger.
-/// Tapping any tile previews it in the info panel, which carries the
-/// Equip/Unequip (or Select/Remove) action that actually mutates
-/// [selection]. Shared by the Guided Tutorial's Loadout step and the Home
-/// screen's inline per-character squad builder.
+enum _TriggerTab { active, passive, black }
+
+/// The approved Loadout-builder UI: a shared info panel above a single
+/// tabbed panel (Active / Passive / Black Trigger, switched instantly, no
+/// separate boxes) of portrait-tile grids. Tapping any tile previews it in
+/// the info panel, which carries the Equip/Unequip (or Select/Remove)
+/// action that actually mutates [selection]. The tabbed panel can be
+/// collapsed once trigger selection is done and reopened from its header.
+/// Shared by the Guided Tutorial's Loadout step and the Home screen's
+/// inline per-character squad builder.
 class LoadoutBuilderPanel extends StatefulWidget {
   final Character character;
   final LoadoutSelection selection;
@@ -47,6 +51,9 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
   // actual equip/unequip mutates widget.selection instead.
   String? _previewTriggerId;
 
+  _TriggerTab _tab = _TriggerTab.active;
+  bool _collapsed = false;
+
   void _mutate(VoidCallback fn) {
     setState(fn);
     widget.onSelectionChanged();
@@ -59,18 +66,92 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
       children: [
         _triggerInfoPanel(),
         const SizedBox(height: 12),
-        _triggerPortraitGrid(
-          heading: 'Active Triggers',
-          triggers: triggerCatalog.activeTriggers.toList(),
-        ),
-        const SizedBox(height: 12),
-        _triggerPortraitGrid(
-          heading: 'Passive Triggers',
-          triggers: triggerCatalog.passiveTriggers.toList(),
-        ),
-        const SizedBox(height: 12),
-        _blackTriggerPortraitGrid(),
+        _tabbedGridPanel(),
       ],
+    );
+  }
+
+  Widget _tabbedGridPanel() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: const Border(top: BorderSide(color: Colors.white12, width: 3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 6,
+                  children: [
+                    _tabButton('Active', _TriggerTab.active),
+                    _tabButton('Passive', _TriggerTab.passive),
+                    _tabButton('Black Trigger', _TriggerTab.black),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: () => setState(() => _collapsed = !_collapsed),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    _collapsed ? Icons.expand_more : Icons.expand_less,
+                    size: 18,
+                    color: Colors.white54,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (!_collapsed) ...[
+            const SizedBox(height: 10),
+            switch (_tab) {
+              _TriggerTab.active => _triggerGrid(
+                triggerCatalog.activeTriggers.toList(),
+              ),
+              _TriggerTab.passive => _triggerGrid(
+                triggerCatalog.passiveTriggers.toList(),
+              ),
+              _TriggerTab.black => _blackTriggerGrid(),
+            },
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _tabButton(String label, _TriggerTab tab) {
+    final active = _tab == tab;
+    return InkWell(
+      onTap: () => setState(() {
+        _tab = tab;
+        _collapsed = false;
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? Palette.accent.withValues(alpha: 0.12) : null,
+          border: Border(
+            bottom: BorderSide(
+              color: active ? Palette.accent : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            color: active ? Palette.accent : Colors.white54,
+            fontWeight: active ? FontWeight.bold : FontWeight.normal,
+            fontSize: 11,
+            letterSpacing: 0.6,
+          ),
+        ),
+      ),
     );
   }
 
@@ -209,58 +290,43 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
     );
   }
 
-  Widget _triggerPortraitGrid({
-    required String heading,
-    required List<Trigger> triggers,
-  }) {
+  Widget _triggerGrid(List<Trigger> triggers) {
     final selection = widget.selection;
-    return _panel(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: [
-        Text(
-          heading.toUpperCase(),
-          style: const TextStyle(
-            color: Colors.white54,
-            fontSize: 11,
-            letterSpacing: 1,
+        for (final t in triggers)
+          AbilitySlot(
+            icon: TriggerIcon(trigger: t, size: 20),
+            selected: selection.triggerIds.contains(t.id),
+            highlighted:
+                !selection.triggerIds.contains(t.id) &&
+                _previewTriggerId == t.id,
+            enabled:
+                widget.allowedActiveIds == null ||
+                widget.allowedActiveIds!.contains(t.id),
+            tooltip: t.name,
+            onTap: () => setState(() => _previewTriggerId = t.id),
+            size: 44,
           ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final t in triggers)
-              AbilitySlot(
-                icon: TriggerIcon(trigger: t, size: 20),
-                selected: selection.triggerIds.contains(t.id),
-                highlighted:
-                    !selection.triggerIds.contains(t.id) &&
-                    _previewTriggerId == t.id,
-                enabled:
-                    widget.allowedActiveIds == null ||
-                    widget.allowedActiveIds!.contains(t.id),
-                tooltip: t.name,
-                onTap: () => setState(() => _previewTriggerId = t.id),
-                size: 44,
-              ),
-          ],
-        ),
       ],
     );
   }
 
-  Widget _blackTriggerPortraitGrid() {
+  Widget _blackTriggerGrid() {
     final selection = widget.selection;
     final allowedId = widget.allowedBlackId;
     final tutorialLocked = widget.tutorialLocked;
-    return _panel(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'BLACK TRIGGER (OPTIONAL, MAX 1)',
+          'OPTIONAL, MAX 1',
           style: TextStyle(
-            color: Colors.white54,
-            fontSize: 11,
-            letterSpacing: 1,
+            color: Colors.white38,
+            fontSize: 10,
+            letterSpacing: 0.6,
           ),
         ),
         const SizedBox(height: 8),
@@ -321,21 +387,6 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
           fontSize: 11,
           fontWeight: FontWeight.bold,
         ),
-      ),
-    );
-  }
-
-  Widget _panel({required List<Widget> children}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: const Border(top: BorderSide(color: Colors.white12, width: 3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
       ),
     );
   }
