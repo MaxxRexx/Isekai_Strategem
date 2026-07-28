@@ -17,8 +17,9 @@ const defaultLoadoutProfileId = <String, String>{
   'ren_kobayashi': 'the_momentum_chaser',
   // "Feint" - baits the first hit, then punishes with a setup->burst.
   'airi_tanaka': 'the_silent_blade',
-  // "Bulwark" - the definitive tank, leans on passives to hold the line.
-  'marren_osei': 'the_wall',
+  // "Bulwark" - locks onto whatever threatens the team most and refuses
+  // to let up until it's gone.
+  'marren_osei': 'the_grudge_holder',
   // "Riposte" - a self-buffing counter-attacker.
   'ilona_vance': 'the_turtle',
   // "Absorb" - measured, shrugs off the first real hit and carries on.
@@ -31,8 +32,9 @@ const defaultLoadoutProfileId = <String, String>{
   'priya_nakamura': 'the_healers_crutch',
   // "Weaken Resolve" - layers status effects onto the same target.
   'soren_talvik': 'the_afflictor',
-  // "Devoted Aid" - healing-focused, draws in every kind of recovery.
-  'yuki_amaral': 'the_healers_crutch',
+  // "Devoted Aid" - so much recovery on tap that she just cycles through
+  // her kit in order, no triage needed.
+  'yuki_amaral': 'button_masher',
   // "Battery" - a resource/utility optimizer for the whole team.
   'haru_ellison': 'the_grandmaster',
   // "Warding Presence" - defensive buffs layered onto allies.
@@ -45,6 +47,7 @@ const defaultLoadoutProfileId = <String, String>{
   'rurik_voss': 'the_berserker',
   // "Decoy" - unpredictable; an attack against her can simply find nothing.
   'mireille_song': 'the_copycat',
-  // "Versatile" - adapts mid-fight, sharpening whatever it leaned on last.
-  'tobias_renner': 'the_prodigy',
+  // "Versatile" - reads the matchup and sets up a debuff before
+  // committing to a burst.
+  'tobias_renner': 'the_controller',
 };
