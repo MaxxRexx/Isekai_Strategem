@@ -96,9 +96,16 @@ class DraftedTeam {
     for (final character in characters) {
       final loadout = loadouts[character.id]!;
       states[character.id] = buildBattleState(character, loadout);
-      equipped[character.id] = loadout.triggers
-          .whereType<ActiveTrigger>()
-          .toList();
+      // A Black Trigger's own active abilities count toward the Loadout
+      // rule's required active-ability total (Loadout.totalActiveAbilityCount
+      // already includes them) and are just as usable in battle as a
+      // regular equipped ActiveTrigger - drop them here and a character
+      // whose Loadout satisfies the rule only via its Black Trigger ends up
+      // with fewer usable abilities in play than the rule requires.
+      equipped[character.id] = [
+        ...loadout.triggers.whereType<ActiveTrigger>(),
+        ...?loadout.blackTrigger?.activeAbilities,
+      ];
     }
 
     return DraftedTeam(team, states, equipped, loadouts);
