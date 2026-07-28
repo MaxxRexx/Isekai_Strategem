@@ -27,6 +27,53 @@ class AttackRollOutcome {
   });
 }
 
+/// The full step-by-step damage math behind one [CombatEngine.
+/// resolveDamage] call - what a UI needs to explain "how did an attack
+/// with this baseDamage end up dealing finalDamage" instead of only
+/// showing the final number.
+class DamageBreakdown {
+  /// True iff a World-ability damage-prevention charge fully negated this
+  /// hit - every other field is moot (0/unchanged) when this is true.
+  final bool prevented;
+
+  final int baseDamage;
+  final bool criticalHitApplied;
+  final double criticalHitMultiplier;
+
+  /// baseDamage, doubled by [criticalHitMultiplier] if [criticalHitApplied]
+  /// (rounded for display - armor is subtracted from the unrounded value
+  /// internally, so this may be off by a fraction of 1 from that
+  /// subtraction's actual input; shown for a human-readable "x2" step,
+  /// not bit-for-bit reproduction of the internal float math).
+  final int afterCriticalHit;
+
+  final int armor;
+
+  /// afterCriticalHit minus armor, floored at 0.
+  final int afterArmor;
+
+  /// Combined status-effect (e.g. Wet) damage-type multiplier - 1.0 if
+  /// none apply.
+  final double statusDamageTypeMultiplier;
+
+  final bool damageResistanceApplied;
+
+  final int finalDamage;
+
+  const DamageBreakdown({
+    required this.prevented,
+    required this.baseDamage,
+    required this.criticalHitApplied,
+    required this.criticalHitMultiplier,
+    required this.afterCriticalHit,
+    required this.armor,
+    required this.afterArmor,
+    required this.statusDamageTypeMultiplier,
+    required this.damageResistanceApplied,
+    required this.finalDamage,
+  });
+}
+
 /// Resolves d20-based attack rolls and the post-hit damage pipeline
 /// (crit doubling -> flat Armor reduction -> damage-type multipliers,
 /// combining status effect interactions like Wet with static Damage
@@ -168,25 +215,68 @@ class CombatEngine {
     required DamageType damageType,
     required bool isCriticalHit,
     required CharacterBattleState target,
+  }) =>
+      resolveDamageBreakdown(
+        baseDamage: baseDamage,
+        damageType: damageType,
+        isCriticalHit: isCriticalHit,
+        target: target,
+      ).finalDamage;
+
+  /// Same pipeline as [resolveDamage], returning every intermediate step
+  /// (see [DamageBreakdown]) instead of just the final number - what the
+  /// Battle Log's roll-breakdown view uses to actually explain a hit's
+  /// damage instead of presenting it as an unexplained number.
+  DamageBreakdown resolveDamageBreakdown({
+    required int baseDamage,
+    required DamageType damageType,
+    required bool isCriticalHit,
+    required CharacterBattleState target,
   }) {
     final remainingPrevention = target.remainingDamagePreventionInstances;
     if (remainingPrevention != null && remainingPrevention > 0) {
       target.remainingDamagePreventionInstances = remainingPrevention - 1;
-      return 0;
+      return DamageBreakdown(
+        prevented: true,
+        baseDamage: baseDamage,
+        criticalHitApplied: isCriticalHit,
+        criticalHitMultiplier: config.criticalHitDamageMultiplier,
+        afterCriticalHit: 0,
+        armor: 0,
+        afterArmor: 0,
+        statusDamageTypeMultiplier: 1,
+        damageResistanceApplied: false,
+        finalDamage: 0,
+      );
     }
 
     double damage = baseDamage.toDouble();
 
     if (isCriticalHit) damage *= config.criticalHitDamageMultiplier;
+    final afterCriticalHit = damage.round();
 
     final armor = target.effectiveStats().armor;
     damage = (damage - armor).clamp(0, double.infinity);
+    final afterArmor = damage.round();
 
-    damage *= target.statusDamageTypeMultiplier(damageType);
-    if (target.hasDamageResistance(damageType)) {
+    final statusMultiplier = target.statusDamageTypeMultiplier(damageType);
+    damage *= statusMultiplier;
+    final resistanceApplied = target.hasDamageResistance(damageType);
+    if (resistanceApplied) {
       damage *= 0.5;
     }
 
-    return damage.round();
+    return DamageBreakdown(
+      prevented: false,
+      baseDamage: baseDamage,
+      criticalHitApplied: isCriticalHit,
+      criticalHitMultiplier: config.criticalHitDamageMultiplier,
+      afterCriticalHit: afterCriticalHit,
+      armor: armor,
+      afterArmor: afterArmor,
+      statusDamageTypeMultiplier: statusMultiplier,
+      damageResistanceApplied: resistanceApplied,
+      finalDamage: damage.round(),
+    );
   }
 }

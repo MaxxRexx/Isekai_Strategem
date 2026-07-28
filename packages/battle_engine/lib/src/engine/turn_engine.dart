@@ -15,6 +15,30 @@ import 'status_effect_engine.dart';
 import 'team_spirit_curve.dart';
 import 'trion_gain_engine.dart';
 
+/// The full damage-formula trail behind one damaging hit: the trigger's
+/// own dice roll, the combined pre-critical multiplier applied to it
+/// (Team Spirit's damage bonus, any perk/status outgoing multiplier), and
+/// the resulting [DamageBreakdown] (crit doubling -> Armor -> damage-type
+/// multipliers). This is what actually answers "how did this attack deal
+/// this much damage" - the attack/defense roll shown alongside it only
+/// ever decided hit/miss/crit, never the damage amount itself.
+class HitDamageDetail {
+  final DiceExpressionRollResult diceRoll;
+
+  /// Combined multiplier applied to [diceRoll]'s total before critical
+  /// doubling/Armor (1.0 if nothing applies) - `breakdown.baseDamage` is
+  /// `(diceRoll.total * preCritMultiplier).round()`.
+  final double preCritMultiplier;
+
+  final DamageBreakdown breakdown;
+
+  const HitDamageDetail({
+    required this.diceRoll,
+    required this.preCritMultiplier,
+    required this.breakdown,
+  });
+}
+
 /// Every roll made against one target during a single ability use, the
 /// total damage it took, and which inflicted status effects actually
 /// landed. Burst's multiple hits on the same target collapse into one
@@ -30,6 +54,14 @@ class TargetHitResult {
   /// a full per-roll breakdown (which specific roll crit, which missed,
   /// how much each one actually dealt) rather than just the sum.
   final List<int> damagePerHit;
+
+  /// The damage-formula trail behind each entry in [damagePerHit], in the
+  /// same order - null for a roll that dealt no damage (a miss, a status-
+  /// only Trigger, or a fully-prevented hit already reflected in its
+  /// `DamageBreakdown.prevented`... except a miss never reaches damage
+  /// resolution at all, hence null rather than a zeroed breakdown there).
+  final List<HitDamageDetail?> damageDetails;
+
   final int totalDamageDealt;
   final List<String> statusEffectsApplied;
 
@@ -37,6 +69,7 @@ class TargetHitResult {
     required this.targetCharacterId,
     required this.attackRolls,
     required this.damagePerHit,
+    required this.damageDetails,
     required this.totalDamageDealt,
     required this.statusEffectsApplied,
   });
@@ -59,8 +92,14 @@ class AbilityUseResult {
 class _SingleHitResult {
   final AttackRollOutcome outcome;
   final int damage;
+  final HitDamageDetail? damageDetail;
   final List<String> appliedStatusEffectIds;
-  _SingleHitResult(this.outcome, this.damage, this.appliedStatusEffectIds);
+  _SingleHitResult(
+    this.outcome,
+    this.damage,
+    this.damageDetail,
+    this.appliedStatusEffectIds,
+  );
 }
 
 /// Orchestrates a single turn: team Trion gain, per-character status
@@ -189,18 +228,25 @@ class TurnEngine {
   /// this hit would reduce health to 0 while current health is above 1,
   /// and the charge is still available, health is clamped to 1 instead
   /// and the charge is consumed.
-  void _applyDamage({
+  ///
+  /// Returns the step-by-step breakdown behind the pre-perk/pre-clamp
+  /// damage number (see [DamageBreakdown]) - a UI showing "why was the
+  /// damage this number" reads this rather than just the health delta,
+  /// since Bastian's Absorb perk and the survive-lethal clamp below can
+  /// still adjust the actual health lost after this math runs.
+  DamageBreakdown _applyDamage({
     required CharacterBattleState target,
     required int baseDamage,
     required DamageType damageType,
     required bool isCriticalHit,
   }) {
-    var damage = combatEngine.resolveDamage(
+    final breakdown = combatEngine.resolveDamageBreakdown(
       baseDamage: baseDamage,
       damageType: damageType,
       isCriticalHit: isCriticalHit,
       target: target,
     );
+    var damage = breakdown.finalDamage;
 
     // Bastian-style "Absorb" perk: the first damage instance of the
     // battle is reduced further, on top of any other mitigation.
@@ -222,6 +268,7 @@ class TurnEngine {
       target.currentHealth =
           (target.currentHealth - damage).clamp(0, maxHealth);
     }
+    return breakdown;
   }
 
   /// Rolls whether Full Arms Trigger activates for [state] this turn,
@@ -533,15 +580,19 @@ class TurnEngine {
         attacker.consumePerkChargeIfAvailable();
       }
 
-      void record(int damage, List<String> appliedIds) {
+      void record(
+        int damage,
+        HitDamageDetail? damageDetail,
+        List<String> appliedIds,
+      ) {
         hitsByTargetId
             .putIfAbsent(target.character.id, () => [])
-            .add(_SingleHitResult(outcome, damage, appliedIds));
+            .add(_SingleHitResult(outcome, damage, damageDetail, appliedIds));
       }
 
       if (outcome.isCriticalMiss) {
         combatEngine.applyCriticalMissPenalty(attacker);
-        record(0, const []);
+        record(0, null, const []);
         return;
       }
       if (forcedMiss || !outcome.isHit) {
@@ -553,31 +604,39 @@ class TurnEngine {
           target.applyFlatBonus(
               ModifiableStat.attack, riposteBonus.toDouble(), 2);
         }
-        record(0, const []);
+        record(0, null, const []);
         return;
       }
 
       var damageDealt = 0;
+      HitDamageDetail? damageDetail;
       if (trigger.damageType != null) {
-        final baseDamage = trigger.damage?.roll(combatEngine.diceRoller) ?? 0;
+        final diceRoll = trigger.damage?.rollDetailed(combatEngine.diceRoller);
+        final baseDamage = diceRoll?.total ?? 0;
         final damageBonus = isBurst
             ? bonuses.burstDamageBonus
             : bonuses.singleTargetDamageBonus;
         final perkMultiplier =
             _perkOutgoingDamageMultiplier(attacker, target, trigger);
-        final adjustedBaseDamage = (baseDamage *
-                (1 + damageBonus) *
-                damageMultiplier *
-                attacker.outgoingDamageMultiplier() *
-                perkMultiplier)
-            .round();
+        final preCritMultiplier = (1 + damageBonus) *
+            damageMultiplier *
+            attacker.outgoingDamageMultiplier() *
+            perkMultiplier;
+        final adjustedBaseDamage = (baseDamage * preCritMultiplier).round();
         final healthBefore = target.currentHealth;
-        _applyDamage(
+        final breakdown = _applyDamage(
           target: target,
           baseDamage: adjustedBaseDamage,
           damageType: trigger.damageType!,
           isCriticalHit: outcome.isCriticalHit,
         );
+        if (diceRoll != null) {
+          damageDetail = HitDamageDetail(
+            diceRoll: diceRoll,
+            preCritMultiplier: preCritMultiplier,
+            breakdown: breakdown,
+          );
+        }
         damageDealt = healthBefore - target.currentHealth;
         if (damageDealt > 0) {
           attacker.cumulativeDamageDealt += damageDealt;
@@ -660,7 +719,7 @@ class TurnEngine {
         }
       }
 
-      record(damageDealt, appliedIds);
+      record(damageDealt, damageDetail, appliedIds);
     }
 
     switch (trigger.attackSubtype) {
@@ -690,6 +749,7 @@ class TurnEngine {
         targetCharacterId: target.character.id,
         attackRolls: hits.map((h) => h.outcome).toList(),
         damagePerHit: hits.map((h) => h.damage).toList(),
+        damageDetails: hits.map((h) => h.damageDetail).toList(),
         totalDamageDealt: hits.fold(0, (sum, h) => sum + h.damage),
         statusEffectsApplied:
             hits.expand((h) => h.appliedStatusEffectIds).toList(),
