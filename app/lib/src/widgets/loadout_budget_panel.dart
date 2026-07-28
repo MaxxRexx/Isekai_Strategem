@@ -2,6 +2,7 @@ import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
 import '../data/flavor_text.dart';
+import '../data/placeholder_ranks.dart';
 import '../ui/palette.dart';
 import 'pickers.dart' show CharacterStatRow;
 import 'portrait_tile.dart';
@@ -59,6 +60,7 @@ class LoadoutBudgetPanel extends StatelessWidget {
                 name: character.name,
                 type: character.type,
                 size: 64,
+                rank: playerAccountRank,
               ),
               const SizedBox(width: 12),
               Expanded(

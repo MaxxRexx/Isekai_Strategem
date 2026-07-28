@@ -96,9 +96,9 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
                 child: Wrap(
                   spacing: 6,
                   children: [
-                    _tabButton('Active', _TriggerTab.active),
-                    _tabButton('Passive', _TriggerTab.passive),
-                    _tabButton('Black Trigger', _TriggerTab.black),
+                    _tabButton('Active', _TriggerTab.active, _activeCount),
+                    _tabButton('Passive', _TriggerTab.passive, _passiveCount),
+                    _tabButton('Black Trigger', _TriggerTab.black, _blackCount),
                   ],
                 ),
               ),
@@ -132,7 +132,19 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
     );
   }
 
-  Widget _tabButton(String label, _TriggerTab tab) {
+  int get _activeCount {
+    final activeIds = triggerCatalog.activeTriggers.map((t) => t.id).toSet();
+    return widget.selection.triggerIds.where(activeIds.contains).length;
+  }
+
+  int get _passiveCount {
+    final passiveIds = triggerCatalog.passiveTriggers.map((t) => t.id).toSet();
+    return widget.selection.triggerIds.where(passiveIds.contains).length;
+  }
+
+  int get _blackCount => widget.selection.blackTriggerId == null ? 0 : 1;
+
+  Widget _tabButton(String label, _TriggerTab tab, int count) {
     final active = _tab == tab;
     return InkWell(
       onTap: () => setState(() {
@@ -150,13 +162,27 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
             ),
           ),
         ),
-        child: Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            color: active ? Palette.accent : Colors.white54,
-            fontWeight: active ? FontWeight.bold : FontWeight.normal,
-            fontSize: 11,
-            letterSpacing: 0.6,
+        child: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: label.toUpperCase(),
+                style: TextStyle(
+                  color: active ? Palette.accent : Colors.white54,
+                  fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 11,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              TextSpan(
+                text: ' ($count)',
+                style: const TextStyle(
+                  color: Palette.gold,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+              ),
+            ],
           ),
         ),
       ),

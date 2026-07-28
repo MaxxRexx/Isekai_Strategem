@@ -17,6 +17,12 @@ class PortraitTile extends StatelessWidget {
   final double size;
   final bool showRank;
 
+  /// Overrides the per-character placeholder rank lookup - pass the
+  /// player's own account rank ([playerAccountRank]) when this tile shows
+  /// one of the player's own squad members, so it doesn't vary per
+  /// character the way an AI opponent's or the roster browser's does.
+  final CharacterRank? rank;
+
   const PortraitTile({
     super.key,
     required this.characterId,
@@ -24,6 +30,7 @@ class PortraitTile extends StatelessWidget {
     required this.type,
     this.size = 64,
     this.showRank = true,
+    this.rank,
   });
 
   static String initialsFor(String name) {
@@ -35,7 +42,7 @@ class PortraitTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (top, bottom) = Palette.tileGradient[type]!;
-    final rank = placeholderRanks[characterId];
+    final effectiveRank = rank ?? placeholderRanks[characterId];
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -75,11 +82,11 @@ class PortraitTile extends StatelessWidget {
             ],
           ),
         ),
-        if (showRank && rank != null)
+        if (showRank && effectiveRank != null)
           Positioned(
             top: -size * 0.14,
             left: -size * 0.13,
-            child: RankBadge(rank: rank, size: size * 0.42),
+            child: RankBadge(rank: effectiveRank, size: size * 0.42),
           ),
       ],
     );
@@ -96,6 +103,7 @@ class PortraitHealthBar extends StatelessWidget {
   final int maxHealth;
   final bool alive;
   final double size;
+  final CharacterRank? rank;
 
   const PortraitHealthBar({
     super.key,
@@ -106,6 +114,7 @@ class PortraitHealthBar extends StatelessWidget {
     required this.maxHealth,
     required this.alive,
     this.size = 64,
+    this.rank,
   });
 
   @override
@@ -131,6 +140,7 @@ class PortraitHealthBar extends StatelessWidget {
               name: name,
               type: type,
               size: size,
+              rank: rank,
             ),
           ),
           const SizedBox(height: 4),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/describe.dart';
+import '../data/placeholder_ranks.dart';
 import '../game/battle_models.dart';
 import '../game/draft.dart';
 import '../game/loadout_selection.dart';
@@ -81,6 +82,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   final Set<String> _selectedTargets = {};
 
   TutorialState? _tutorial;
+
+  // Presentational only - there's no audio system to actually drive yet.
+  double _volume = 0.6;
 
   @override
   void initState() {
@@ -297,6 +301,35 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       _tutorial?.onEndTurn();
       final aiRound = _session!.endTurn();
       _roundsLog.add(aiRound);
+      _afterBattleStateChange();
+    });
+  }
+
+  Future<void> _confirmSurrender() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Surrender?'),
+        content: const Text(
+          'This immediately ends the battle as a defeat. This cannot be '
+          'undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('SURRENDER'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() {
+      _clearSelection();
+      _session!.surrender();
       _afterBattleStateChange();
     });
   }
@@ -922,7 +955,16 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             child: const Text('COPY FULL REPORT'),
           ),
         ] else
-          _bottomActionBar(names, tutorialStep, endTurnVisible),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sideControls(),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _bottomActionBar(names, tutorialStep, endTurnVisible),
+              ),
+            ],
+          ),
         const SizedBox(height: 12),
         SizedBox(
           height: 280,
@@ -945,9 +987,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     PlaySession session,
     TutorialBattleStep? tutorialStep,
   ) {
-    final displays = fighter.alive
-        ? session.abilityDisplaysFor(fighter.id)
-        : const <AbilityDisplay>[];
+    // Equipped abilities stay visible (grayed out via _abilityEnabled/the
+    // AbilitySlot's own disabled-opacity treatment) even once the fighter
+    // is dead, rather than disappearing from the row entirely.
+    final displays = session.abilityDisplaysFor(fighter.id);
     final lockedRow =
         tutorialStep != null && tutorialStep.characterId != fighter.id;
 
@@ -970,6 +1013,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               maxHealth: fighter.maxHealth,
               alive: fighter.alive,
               size: 96,
+              rank: playerAccountRank,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1015,27 +1059,26 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                         ],
                       ),
                     ),
-                  if (fighter.alive)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: displays.isEmpty
-                          ? const Text(
-                              'No abilities equipped.',
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 11,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            )
-                          : Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                for (final display in displays)
-                                  _abilitySlot(display, fighter, tutorialStep),
-                              ],
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: displays.isEmpty
+                        ? const Text(
+                            'No abilities equipped.',
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
                             ),
-                    ),
+                          )
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final display in displays)
+                                _abilitySlot(display, fighter, tutorialStep),
+                            ],
+                          ),
+                  ),
                 ],
               ),
             ),
@@ -1091,6 +1134,56 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       tooltip: tooltip,
       onTap: action == null ? null : () => _selectAbility(fighter.id, action),
       size: 60,
+    );
+  }
+
+  /// The Surrender / Chat / BGM volume strip that sits to the left of the
+  /// ability description panel, matching the reference's bottom-left
+  /// controls. Chat has no backend in this single-player-vs-AI mode, and
+  /// there's no audio system yet either, so both are presentational;
+  /// Surrender is fully functional (see [_confirmSurrender]).
+  Widget _sideControls() {
+    return SizedBox(
+      width: 150,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Palette.danger,
+              side: const BorderSide(color: Palette.danger),
+            ),
+            onPressed: _confirmSurrender,
+            child: const Text('SURRENDER'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Chat is not available in this mode.'),
+              ),
+            ),
+            icon: const Icon(Icons.chat_bubble_outline, size: 16),
+            label: const Text('CHAT'),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                _volume == 0 ? Icons.volume_off : Icons.volume_up,
+                color: Colors.white54,
+                size: 16,
+              ),
+              Expanded(
+                child: Slider(
+                  value: _volume,
+                  onChanged: (v) => setState(() => _volume = v),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1314,14 +1407,23 @@ class _BattleTopBar extends StatelessWidget {
     required this.opponentSkillLabel,
   });
 
-  Widget _label(String name, String? subtitle, {required bool alignEnd}) {
-    return Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
+  /// A name/subtitle block with its portrait, matching the Naruto-Arena
+  /// reference: the portrait sits toward the center of the bar (between
+  /// the name block and the round/Trion readout) on both sides, and the
+  /// name/subtitle text itself is centered rather than outer-aligned.
+  Widget _identity(
+    String name,
+    String? subtitle,
+    Color color, {
+    required bool portraitFirst,
+  }) {
+    final nameBlock = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           name,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -1331,9 +1433,17 @@ class _BattleTopBar extends StatelessWidget {
         if (subtitle != null)
           Text(
             subtitle,
+            textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white54, fontSize: 10.5),
           ),
       ],
+    );
+    final portrait = _TopBarPortrait(color: color);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: portraitFirst
+          ? [portrait, const SizedBox(width: 8), nameBlock]
+          : [nameBlock, const SizedBox(width: 8), portrait],
     );
   }
 
@@ -1357,7 +1467,12 @@ class _BattleTopBar extends StatelessWidget {
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _label('YOU', null, alignEnd: false),
+                _identity(
+                  playerDisplayName,
+                  null,
+                  Palette.gold,
+                  portraitFirst: false,
+                ),
                 Row(
                   children: [
                     Text(
@@ -1378,9 +1493,38 @@ class _BattleTopBar extends StatelessWidget {
                     ),
                   ],
                 ),
-                _label(opponentName, opponentSkillLabel, alignEnd: true),
+                _identity(
+                  opponentName,
+                  opponentSkillLabel,
+                  Palette.teamB,
+                  portraitFirst: true,
+                ),
               ],
             ),
+    );
+  }
+}
+
+/// A small generic profile portrait for the top bar - neither the player
+/// nor an AI opponent profile has real avatar art, so this borrows the
+/// same bordered-icon treatment used elsewhere (e.g. [PlayerPanel]'s own
+/// portrait) recolored per side.
+class _TopBarPortrait extends StatelessWidget {
+  final Color color;
+  const _TopBarPortrait({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 28.0;
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color, width: 1.5),
+      ),
+      child: Icon(Icons.person, color: color, size: size * 0.6),
     );
   }
 }

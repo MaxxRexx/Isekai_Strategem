@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/placeholder_ranks.dart';
 import '../game/draft.dart';
 import '../ui/palette.dart';
 import 'portrait_tile.dart';
@@ -33,6 +34,11 @@ const _playerWins = 12;
 const _playerLosses = 5;
 const _playerStreak = 5;
 
+/// The player's own display name - shown here and wherever else the
+/// player's identity appears (e.g. the battle screen's top bar), so both
+/// stay in sync until a real account/profile system exists.
+const playerDisplayName = 'Player';
+
 /// The player's account summary: portrait, title/skill-tier line, level,
 /// ladder rank, win-loss record, streak, equipped hat/unlocked ranks, and
 /// the current squad's 3 portraits. Shown on the Home screen, sharing a
@@ -52,11 +58,20 @@ class PlayerPanel extends StatelessWidget {
   /// layout instead of a full-width standalone section.
   final bool compact;
 
+  /// Called with a squad member's character id when its tile is tapped,
+  /// making "YOUR SQUAD" behave like the roster grid's character select
+  /// (preview/select that character) instead of being purely decorative.
+  /// Null (the default) keeps the tiles non-interactive, e.g. where
+  /// there's no roster-preview concept to select into (the Guided
+  /// Tutorial's locked squad).
+  final ValueChanged<String>? onSquadMemberTap;
+
   const PlayerPanel({
     super.key,
     this.squadIds = const [],
     this.bordered = true,
     this.compact = false,
+    this.onSquadMemberTap,
   });
 
   @override
@@ -82,7 +97,7 @@ class PlayerPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Player',
+                    playerDisplayName,
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -147,12 +162,10 @@ class PlayerPanel extends StatelessWidget {
           children: [
             for (var i = 0; i < 3; i++)
               i < squadIds.length
-                  ? PortraitTile(
+                  ? _SquadMemberTile(
                       characterId: squadIds[i],
-                      name: roster[squadIds[i]].name,
-                      type: roster[squadIds[i]].type,
                       size: squadSize,
-                      showRank: false,
+                      onTap: onSquadMemberTap,
                     )
                   : Container(
                       width: squadSize,
@@ -203,6 +216,37 @@ class PlayerPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// One "YOUR SQUAD" preview tile: the same portrait tile used everywhere
+/// else the player's own characters appear (showing the account rank, not
+/// a per-character one), made tappable like a roster/character-select
+/// tile when [onTap] is provided.
+class _SquadMemberTile extends StatelessWidget {
+  final String characterId;
+  final double size;
+  final ValueChanged<String>? onTap;
+
+  const _SquadMemberTile({
+    required this.characterId,
+    required this.size,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final character = roster[characterId];
+    final tile = PortraitTile(
+      characterId: characterId,
+      name: character.name,
+      type: character.type,
+      size: size,
+      rank: playerAccountRank,
+    );
+    final callback = onTap;
+    if (callback == null) return tile;
+    return InkWell(onTap: () => callback(characterId), child: tile);
   }
 }
 

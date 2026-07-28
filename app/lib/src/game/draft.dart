@@ -142,6 +142,9 @@ List<LogRollBreakdown> rollBreakdownsFor(TargetHitResult t) => [
       isCriticalHit: t.attackRolls[i].isCriticalHit,
       isCriticalMiss: t.attackRolls[i].isCriticalMiss,
       damage: t.damagePerHit[i],
+      damageDetail: t.damageDetails[i] == null
+          ? null
+          : LogDamageDetail.from(t.damageDetails[i]!),
     ),
 ];
 

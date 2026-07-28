@@ -253,6 +253,74 @@ class RollBreakdownView extends StatelessWidget {
     return b.isHit ? Palette.accent : Colors.white38;
   }
 
+  /// The damage-formula trail as its own line: the Trigger's own damage
+  /// dice roll (entirely separate from the ATK/DEF roll above, which only
+  /// ever decides hit/miss/crit) through Team Spirit/crit/Armor/
+  /// resistance to the final number - each step only shown if it actually
+  /// applied, so a plain hit reads as just "roll = total = X dmg".
+  List<InlineSpan> _damageFormulaSpans(LogDamageDetail d) {
+    const stepStyle = TextStyle(color: Colors.white54);
+    const arrow = TextSpan(text: '  ->  ', style: stepStyle);
+
+    if (d.prevented) {
+      return const [
+        TextSpan(text: 'Damage roll: '),
+        TextSpan(
+          text: 'PREVENTED',
+          style: TextStyle(color: Palette.accent, fontWeight: FontWeight.bold),
+        ),
+      ];
+    }
+
+    final spans = <InlineSpan>[
+      TextSpan(text: 'Damage roll: ${d.diceDescribe} = ${d.diceTotal}'),
+    ];
+
+    final afterMultiplier = (d.diceTotal * d.preCritMultiplier).round();
+    if (d.preCritMultiplier != 1.0) {
+      spans.add(arrow);
+      spans.add(
+        TextSpan(
+          text: '×${d.preCritMultiplier.toStringAsFixed(2)} = $afterMultiplier',
+        ),
+      );
+    }
+
+    if (d.criticalHitApplied) {
+      spans.add(arrow);
+      spans.add(
+        TextSpan(
+          text:
+              'CRIT ×${d.criticalHitMultiplier.toStringAsFixed(0)} = '
+              '${d.afterCriticalHit}',
+          style: const TextStyle(color: Palette.good),
+        ),
+      );
+    }
+
+    spans.add(arrow);
+    spans.add(TextSpan(text: 'Armor −${d.armor} = ${d.afterArmor}'));
+
+    if (d.statusDamageTypeMultiplier != 1.0 || d.damageResistanceApplied) {
+      final combined =
+          d.statusDamageTypeMultiplier * (d.damageResistanceApplied ? 0.5 : 1);
+      spans.add(arrow);
+      spans.add(TextSpan(text: '×${combined.toStringAsFixed(2)}'));
+    }
+
+    spans.add(arrow);
+    spans.add(
+      TextSpan(
+        text: '${d.finalDamage} dmg',
+        style: const TextStyle(
+          color: Palette.danger,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+    return spans;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -267,34 +335,48 @@ class RollBreakdownView extends StatelessWidget {
         children: [
           for (var i = 0; i < rolls.length; i++)
             Padding(
-              padding: EdgeInsets.only(top: i > 0 ? 3 : 0),
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.white54,
-                    fontFeatures: [FontFeature.tabularFigures()],
+              padding: EdgeInsets.only(top: i > 0 ? 6 : 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white54,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                      children: [
+                        if (rolls.length > 1) TextSpan(text: 'Roll ${i + 1}: '),
+                        TextSpan(text: 'ATK ${rolls[i].attackerRoll.describe}'),
+                        const TextSpan(text: '  vs  '),
+                        TextSpan(text: 'DEF ${rolls[i].defenderRoll.describe}'),
+                        const TextSpan(text: '  '),
+                        TextSpan(
+                          text: _outcomeLabel(rolls[i]),
+                          style: TextStyle(
+                            color: _outcomeColor(rolls[i]),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  children: [
-                    if (rolls.length > 1) TextSpan(text: 'Roll ${i + 1}: '),
-                    TextSpan(text: 'ATK ${rolls[i].attackerRoll.describe}'),
-                    const TextSpan(text: '  vs  '),
-                    TextSpan(text: 'DEF ${rolls[i].defenderRoll.describe}'),
-                    const TextSpan(text: '  '),
-                    TextSpan(
-                      text: _outcomeLabel(rolls[i]),
-                      style: TextStyle(
-                        color: _outcomeColor(rolls[i]),
-                        fontWeight: FontWeight.bold,
+                  if (rolls[i].damageDetail != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, left: 8),
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white54,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                          children: _damageFormulaSpans(rolls[i].damageDetail!),
+                        ),
                       ),
                     ),
-                    if (rolls[i].damage > 0)
-                      TextSpan(
-                        text: '  ${rolls[i].damage} dmg',
-                        style: const TextStyle(color: Palette.danger),
-                      ),
-                  ],
-                ),
+                ],
               ),
             ),
         ],

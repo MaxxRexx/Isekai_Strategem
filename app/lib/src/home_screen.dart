@@ -341,6 +341,7 @@ class _RosterAndPlayerPanel extends StatelessWidget {
               squadIds: squadIds,
               bordered: false,
               compact: true,
+              onSquadMemberTap: onTap,
             ),
           ),
         ],

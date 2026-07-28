@@ -152,6 +152,16 @@ class PlaySession {
     return session;
   }
 
+  /// Immediately ends the battle as a loss for the player: zeroes every
+  /// one of team A's characters' health so `outcome`/`isOver` resolve to
+  /// `teamBWins` through the same defeat-detection every other loss uses,
+  /// rather than needing a separate "surrendered" outcome variant.
+  void surrender() {
+    for (final c in battle.teamA.characters) {
+      battle.states[c.id]!.currentHealth = 0;
+    }
+  }
+
   bool get isOver => battle.isOver;
   BattleOutcome get outcome => battle.outcome;
   int get roundNumber => battle.roundNumber;

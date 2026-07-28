@@ -1,10 +1,17 @@
 import '../ui/rank.dart';
 
-/// Stand-in per-character ranks, shown on portrait tiles until the real
-/// account-wide mission/objective system (e.g. "win 5 in a row without a
-/// Black Trigger") exists to actually earn them. Values for the 10
-/// characters visible in the approved reference mockup are matched to it;
-/// the rest are reasonable placeholders.
+/// The player's own account-wide rank, earned through mission/objective
+/// progress (not yet implemented). It's a single value for the whole
+/// account, not per-character - every character in the player's own squad
+/// shows this same rank, unlike [placeholderRanks] below (which is for
+/// AI opponents/roster browsing, where a per-character value makes sense).
+const playerAccountRank = CharacterRank.c;
+
+/// Stand-in per-character ranks for AI opponents (and roster browsing
+/// before a squad is committed to), until the real system exists to
+/// actually earn them. Values for the 10 characters visible in the
+/// approved reference mockup are matched to it; the rest are reasonable
+/// placeholders.
 const placeholderRanks = <String, CharacterRank>{
   'ren_kobayashi': CharacterRank.a,
   'vela_ashworth': CharacterRank.c,

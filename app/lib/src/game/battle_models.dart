@@ -37,6 +37,76 @@ class LogDiceRoll {
   }
 }
 
+/// The damage-formula trail behind one damaging roll, mirroring the
+/// engine's [HitDamageDetail]/[DamageBreakdown] in plain display values -
+/// the attacker/defender roll shown alongside this only ever decided hit/
+/// miss/crit, never the damage number itself, which comes from an
+/// entirely separate dice roll on the Trigger's own damage expression.
+class LogDamageDetail {
+  final List<int> diceRawRolls;
+  final int diceFlatBonus;
+
+  /// The Trigger's own damage roll, before any multiplier - rawRolls
+  /// summed plus diceFlatBonus.
+  final int diceTotal;
+
+  /// Combined Team Spirit/perk/status outgoing-damage multiplier applied
+  /// to [diceTotal] before critical doubling (1.0 if nothing applies).
+  final double preCritMultiplier;
+
+  final bool prevented;
+  final bool criticalHitApplied;
+  final double criticalHitMultiplier;
+  final int afterCriticalHit;
+  final int armor;
+  final int afterArmor;
+  final double statusDamageTypeMultiplier;
+  final bool damageResistanceApplied;
+  final int finalDamage;
+
+  const LogDamageDetail({
+    required this.diceRawRolls,
+    required this.diceFlatBonus,
+    required this.diceTotal,
+    required this.preCritMultiplier,
+    required this.prevented,
+    required this.criticalHitApplied,
+    required this.criticalHitMultiplier,
+    required this.afterCriticalHit,
+    required this.armor,
+    required this.afterArmor,
+    required this.statusDamageTypeMultiplier,
+    required this.damageResistanceApplied,
+    required this.finalDamage,
+  });
+
+  factory LogDamageDetail.from(HitDamageDetail detail) => LogDamageDetail(
+    diceRawRolls: detail.diceRoll.rawRolls,
+    diceFlatBonus: detail.diceRoll.flatBonus,
+    diceTotal: detail.diceRoll.total,
+    preCritMultiplier: detail.preCritMultiplier,
+    prevented: detail.breakdown.prevented,
+    criticalHitApplied: detail.breakdown.criticalHitApplied,
+    criticalHitMultiplier: detail.breakdown.criticalHitMultiplier,
+    afterCriticalHit: detail.breakdown.afterCriticalHit,
+    armor: detail.breakdown.armor,
+    afterArmor: detail.breakdown.afterArmor,
+    statusDamageTypeMultiplier: detail.breakdown.statusDamageTypeMultiplier,
+    damageResistanceApplied: detail.breakdown.damageResistanceApplied,
+    finalDamage: detail.breakdown.finalDamage,
+  );
+
+  /// Dice notation for display, e.g. "14+27+3" for a 2d20+3 roll.
+  String get diceDescribe {
+    final sign = diceFlatBonus > 0
+        ? '+$diceFlatBonus'
+        : diceFlatBonus < 0
+        ? '$diceFlatBonus'
+        : '';
+    return '${diceRawRolls.join('+')}$sign';
+  }
+}
+
 /// One resolved attack roll within a [LogTargetResult]: the attacker's and
 /// defender's dice, the outcome, and the damage that specific roll dealt.
 /// A Burst ability produces one of these per hit; everything else
@@ -49,6 +119,10 @@ class LogRollBreakdown {
   final bool isCriticalMiss;
   final int damage;
 
+  /// The damage-formula trail behind [damage] - null when this roll dealt
+  /// no damage (a miss, or a status-only Trigger with no damageType).
+  final LogDamageDetail? damageDetail;
+
   const LogRollBreakdown({
     required this.attackerRoll,
     required this.defenderRoll,
@@ -56,6 +130,7 @@ class LogRollBreakdown {
     required this.isCriticalHit,
     required this.isCriticalMiss,
     required this.damage,
+    this.damageDetail,
   });
 }
 
