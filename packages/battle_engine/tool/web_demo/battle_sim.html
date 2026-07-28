@@ -1,0 +1,2958 @@
+<title>Engagement Simulator - Isekai Strategem</title>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --bg-panel: #121822;
+    --bg-recessed: #0d131b;
+    --ink: #e7edf3;
+    --ink-dim: #8793a1;
+    --ink-faint: #56626e;
+    --line: rgba(255,255,255,0.09);
+    --accent: #34d1c8;
+    --accent-ink: #06211f;
+    --warn: #ffab4d;
+    --danger: #ff5468;
+    --good: #57d98a;
+    --team-a: #34d1c8;
+    --team-b: #ff8a52;
+    --font-display: 'Bahnschrift', 'DIN Alternate', 'Arial Narrow', sans-serif;
+    --font-body: 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f3;
+    --bg-panel: #ffffff;
+    --bg-recessed: #f3f5f6;
+    --ink: #121822;
+    --ink-dim: #57646f;
+    --ink-faint: #8a95a0;
+    --line: rgba(10,20,30,0.10);
+    --accent: #0d8c87;
+    --accent-ink: #ffffff;
+    --warn: #b3620f;
+    --danger: #c92e42;
+    --good: #1c8a52;
+    --team-a: #0d8c87;
+    --team-b: #b3521f;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eef1f3;
+      --bg-panel: #ffffff;
+      --bg-recessed: #f3f5f6;
+      --ink: #121822;
+      --ink-dim: #57646f;
+      --ink-faint: #8a95a0;
+      --line: rgba(10,20,30,0.10);
+      --accent: #0d8c87;
+      --accent-ink: #ffffff;
+      --warn: #b3620f;
+      --danger: #c92e42;
+      --good: #1c8a52;
+      --team-a: #0d8c87;
+      --team-b: #b3521f;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+  }
+  body {
+    padding: clamp(16px, 3vw, 40px);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: clamp(26px, 4vw, 38px);
+    margin: 2px 0 0;
+    text-wrap: balance;
+  }
+  .subhead {
+    color: var(--ink-dim);
+    font-size: 14px;
+    max-width: 62ch;
+    line-height: 1.55;
+  }
+
+  .arena {
+    display: grid;
+    grid-template-columns: 1fr minmax(200px, 220px) 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .arena { grid-template-columns: 1fr; }
+    .engage-col { order: 3; }
+  }
+
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .team-panel { border-top: 3px solid var(--team-color); }
+  .team-a { --team-color: var(--team-a); }
+  .team-b { --team-color: var(--team-b); }
+
+  .team-label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 13px;
+    color: var(--team-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .team-label button {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    background: transparent;
+    color: var(--ink-dim);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .team-label button:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+  label.field-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  select {
+    width: 100%;
+    background: var(--bg-recessed);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 10px;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+  }
+  select:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .profile-hint {
+    font-size: 12px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+    min-height: 2.7em;
+  }
+  .profile-hint.char-pick-wrap { min-height: 0; }
+
+  .roster-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .char-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    padding: 2px 2px 4px;
+    min-height: 1.4em;
+  }
+  .char-card .icon { margin-top: 3px; color: var(--team-color); }
+
+  .char-card.char-pick-wrap { display: block; padding: 0; min-height: 0; }
+  .char-pick-btn {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    text-align: left;
+    background: var(--bg-recessed);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 26px 8px 10px;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 11.5px;
+    position: relative;
+  }
+  .char-pick-btn::after {
+    content: '\25BE';
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    color: var(--ink-faint);
+  }
+  .char-pick-btn:hover, .char-pick-btn.open { border-color: var(--accent); }
+  .char-pick-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .char-pick-btn .placeholder { color: var(--ink-faint); font-size: 12.5px; }
+  .char-pick-btn .icon { margin-top: 3px; color: var(--team-color); }
+
+  .char-pick-panel {
+    display: none;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-top: none;
+    background: var(--bg-recessed);
+  }
+  .char-pick-panel.open { display: block; }
+  .char-pick-group-label {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    padding: 6px 10px;
+    background: var(--bg-panel);
+    position: sticky;
+    top: 0;
+  }
+  .char-pick-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 11.5px;
+  }
+  .char-pick-row:last-child { border-bottom: none; }
+  .char-pick-row:hover:not(:disabled) { background: rgba(255,255,255,0.05); }
+  .char-pick-row.selected { background: rgba(52,209,200,0.12); }
+  .char-pick-row:disabled { opacity: 0.35; cursor: not-allowed; }
+  .char-pick-row .icon { margin-top: 3px; color: var(--team-color); }
+
+  .visually-hidden-select {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .char-card .type-tag {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--team-color);
+  }
+
+  .engage-col {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding-top: 8px;
+  }
+  .vs-mark {
+    font-family: var(--font-display);
+    text-align: center;
+    font-size: 22px;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+  }
+  .round-cap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+  .round-cap input {
+    width: 70px;
+    background: var(--bg-recessed);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 5px 7px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  button.engage {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 15px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    padding: 13px 10px;
+    cursor: pointer;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  button.engage:hover { filter: brightness(1.08); }
+  button.engage:disabled { opacity: 0.5; cursor: progress; }
+
+  .error-msg {
+    font-size: 12px;
+    color: var(--danger);
+    text-align: center;
+    min-height: 1.4em;
+  }
+
+  .results { display: none; flex-direction: column; gap: 20px; }
+  .results.visible { display: flex; }
+
+  .outcome-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .outcome-banner {
+    flex: 1 1 auto;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 18px;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+  }
+  button.copy-report {
+    flex: 0 0 auto;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 12px;
+    background: var(--bg-panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 0 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  button.copy-report:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-status {
+    font-family: var(--font-body);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 11px;
+    color: var(--good);
+    min-width: 62px;
+  }
+  details.report-details {
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    padding: 4px 16px;
+  }
+  details.report-details summary {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 12px;
+    color: var(--ink-dim);
+    cursor: pointer;
+    padding: 10px 0;
+  }
+  #report-text {
+    width: 100%;
+    height: 220px;
+    margin-bottom: 14px;
+    background: var(--bg-recessed);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.5;
+    padding: 10px;
+    resize: vertical;
+  }
+  .outcome-banner .rounds-note {
+    font-family: var(--font-body);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 12px;
+    color: var(--ink-dim);
+    display: block;
+    margin-top: 4px;
+  }
+  .outcome-a { border-left: 4px solid var(--team-a); color: var(--team-a); }
+  .outcome-b { border-left: 4px solid var(--team-b); color: var(--team-b); }
+  .outcome-draw { border-left: 4px solid var(--ink-faint); color: var(--ink-dim); }
+  .outcome-ongoing { border-left: 4px solid var(--warn); color: var(--warn); }
+
+  .roster-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 700px) { .roster-results { grid-template-columns: 1fr; } }
+
+  .fighter-row {
+    display: grid;
+    grid-template-columns: 108px 1fr 62px;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .fighter-row:last-child { border-bottom: none; }
+  .fighter-row.dead { color: var(--ink-faint); }
+  .fighter-row.dead .fighter-name { text-decoration: line-through; text-decoration-color: var(--ink-faint); }
+  .fighter-name { font-weight: 600; }
+  .hp-track {
+    height: 8px;
+    background: var(--bg-recessed);
+    border-radius: 2px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .hp-fill { height: 100%; background: var(--good); }
+  .hp-fill.low { background: var(--warn); }
+  .hp-fill.critical { background: var(--danger); }
+  .hp-fill.dead { background: var(--ink-faint); }
+  .hp-text {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: var(--ink-dim);
+    text-align: right;
+  }
+
+  details.loadout-details {
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    padding: 4px 16px;
+  }
+  details.loadout-details summary {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 12px;
+    color: var(--ink-dim);
+    cursor: pointer;
+    padding: 10px 0;
+  }
+  .loadout-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-bottom: 14px;
+  }
+  @media (max-width: 700px) { .loadout-grid { grid-template-columns: 1fr; } }
+  .loadout-entry { font-size: 12.5px; margin-bottom: 10px; }
+  .loadout-entry .name { font-weight: 600; }
+  .loadout-entry .bt { color: var(--warn); }
+  .loadout-entry ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink-dim); }
+
+  .log-wrap {
+    border: 1px solid var(--line);
+    background: var(--bg-recessed);
+  }
+  .log-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .log-head .label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+  .log-body {
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    padding: 12px 16px;
+  }
+  .log-round-head {
+    color: var(--ink-faint);
+    margin-top: 10px;
+    padding-top: 4px;
+    border-top: 1px solid var(--line);
+  }
+  .log-round-head:first-child { margin-top: 0; border-top: none; }
+  .log-line { white-space: pre-wrap; }
+  .log-line .actor-a { color: var(--team-a); }
+  .log-line .actor-b { color: var(--team-b); }
+  .log-line .crit { color: var(--warn); font-weight: 600; }
+  .log-line .dmg { color: var(--ink); }
+  .log-line .status-tag { color: var(--accent); }
+  .log-line .died { color: var(--danger); font-weight: 600; }
+  .log-line .no-action { color: var(--ink-faint); font-style: italic; }
+
+  footer {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-align: center;
+    padding-top: 4px;
+  }
+
+  .mode-tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid var(--line);
+  }
+  .mode-tab {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 13px;
+    background: transparent;
+    color: var(--ink-faint);
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 4px;
+    margin-right: 24px;
+    cursor: pointer;
+  }
+  .mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .mode-tab:hover:not(.active) { color: var(--ink); }
+
+  .wizard-step { display: none; flex-direction: column; gap: 20px; }
+  .wizard-step.visible { display: flex; }
+
+  .step-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .step-nav .step-label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+  button.secondary {
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    background: transparent;
+    color: var(--ink-dim);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  button.secondary:hover { color: var(--ink); border-color: var(--ink-faint); }
+  button.secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 13px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: 3px;
+    padding: 10px 20px;
+    cursor: pointer;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .loadout-budget {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
+    color: var(--ink-dim);
+  }
+  .loadout-budget .bar {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-recessed);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .loadout-budget .bar-fill { height: 100%; background: var(--accent); }
+  .loadout-budget .bar-fill.over { background: var(--danger); }
+  .loadout-active-count { font-weight: 600; }
+  .loadout-active-count.bad { color: var(--danger); }
+  .loadout-active-count.good { color: var(--good); }
+
+  .trigger-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    background: var(--bg-recessed);
+  }
+  .trigger-check-item {
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 10px;
+    font-size: 12.5px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .trigger-check-item:last-child { border-bottom: none; }
+  .trigger-check-item:hover { background: rgba(255,255,255,0.03); }
+  .trigger-check-item .t-name { font-weight: 600; }
+  .trigger-check-item .t-meta { color: var(--ink-faint); font-size: 11px; }
+  .trigger-check-item .t-cost {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-dim);
+    text-align: right;
+  }
+  .trigger-check-item input:disabled ~ .t-name { color: var(--ink-faint); }
+
+  .bt-option {
+    display: grid;
+    grid-template-columns: 20px 1fr auto auto;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 10px;
+    font-size: 12.5px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .bt-option:last-child { border-bottom: none; }
+  .bt-option:hover { background: rgba(255,255,255,0.03); }
+  .bt-grade {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+  }
+  .bt-grade.grade-a { color: var(--good); }
+  .bt-grade.grade-b { color: var(--accent); }
+  .bt-grade.grade-c { color: var(--ink-dim); }
+  .bt-grade.grade-d { color: var(--warn); }
+
+  .char-loadout-nav {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+  }
+  .char-loadout-nav button {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--bg-recessed);
+    color: var(--ink-faint);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .char-loadout-nav button.current { color: var(--accent); border-color: var(--accent); }
+  .char-loadout-nav button.done { color: var(--good); }
+
+  .battle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 700px) { .battle-grid { grid-template-columns: 1fr; } }
+
+  .turn-banner {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 15px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .turn-banner.your-turn { border-left: 4px solid var(--team-a); color: var(--team-a); }
+  .turn-banner.ai-turn { border-left: 4px solid var(--team-b); color: var(--ink-dim); }
+
+  .action-card {
+    border: 1px solid var(--line);
+    background: var(--bg-panel);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .action-card .char-heading {
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13.5px;
+  }
+  .ability-btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  button.ability-btn {
+    font-family: var(--font-body);
+    font-size: 12px;
+    background: var(--bg-recessed);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 7px 12px;
+    cursor: pointer;
+    text-align: left;
+  }
+  button.ability-btn:hover:not(:disabled) { border-color: var(--accent); }
+  button.ability-btn.selected { border-color: var(--accent); background: rgba(52,209,200,0.12); }
+  button.ability-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.ability-btn .btn-cost { color: var(--ink-faint); font-family: var(--font-mono); margin-left: 6px; }
+
+  .target-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    background: var(--bg-recessed);
+    border: 1px solid var(--line);
+  }
+  .target-picker label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; }
+
+  .inline-result {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    padding: 6px 0;
+  }
+
+  .tutorial-banner {
+    border: 1px solid var(--accent);
+    background: rgba(52,209,200,0.08);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .tutorial-banner-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tutorial-banner-text {
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .tutorial-locked {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .tutorial-highlight {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .icon {
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.15em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex: none;
+  }
+  .icon.filled { fill: currentColor; stroke: none; }
+  .icon.lg { width: 1.3em; height: 1.3em; }
+
+  .dmg-bludgeoning, .dmg-piercing, .dmg-slashing { color: #b8bfc7; }
+  .dmg-acid { color: #8fd14f; }
+  .dmg-cold { color: #6fd6e8; }
+  .dmg-fire { color: #ff7a45; }
+  .dmg-lightning { color: #f3d24a; }
+  .dmg-poison { color: #9a6bd6; }
+  .dmg-force { color: #9aa7ff; }
+  .dmg-radiant { color: #ffd76a; }
+  .dmg-necrotic { color: #b04fd1; }
+  .dmg-psychic { color: #ff6fa8; }
+
+  .flavor-text {
+    font-size: 11px;
+    font-style: italic;
+    color: var(--ink-faint);
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+  .perk-desc {
+    font-size: 11px;
+    color: var(--ink-dim);
+    line-height: 1.4;
+  }
+  .perk-name { color: var(--ink); font-weight: 600; }
+  .char-name { color: var(--ink); font-weight: 700; font-size: 13px; }
+
+  .char-stats-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 10.5px;
+    color: var(--ink-dim);
+    margin: 2px 0;
+  }
+  .char-stats-line .stat-label { color: var(--ink-faint); }
+
+  .char-card .card-body { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+
+  .t-desc {
+    display: block;
+    color: var(--ink-dim);
+    font-size: 11px;
+    line-height: 1.4;
+    margin-top: 2px;
+  }
+
+  button.ability-btn .btn-desc {
+    display: block;
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    font-weight: 400;
+    margin-top: 3px;
+    max-width: 220px;
+    white-space: normal;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border-bottom: 1px dotted var(--ink-faint);
+    cursor: help;
+  }
+
+  @keyframes fat-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 171, 77, 0.55); }
+    50% { box-shadow: 0 0 0 5px rgba(255, 171, 77, 0); }
+  }
+  .fat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: var(--warn);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1px 6px;
+    border-radius: 3px;
+    animation: fat-pulse 1.3s ease-in-out infinite;
+    vertical-align: middle;
+    cursor: help;
+  }
+  .fat-badge .icon { width: 0.8em; height: 0.8em; }
+
+  .guide-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 78ch;
+  }
+  .guide-section h2 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 16px;
+    color: var(--accent);
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .guide-section p, .guide-section li {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--ink-dim);
+  }
+  .guide-section strong { color: var(--ink); }
+  .guide-section ul { margin: 4px 0; padding-left: 20px; }
+  .guide-grade-table {
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin: 8px 0;
+  }
+  .guide-grade-table th, .guide-grade-table td {
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    text-align: center;
+  }
+  .guide-grade-table th { color: var(--ink-dim); font-weight: 600; }
+
+  .guide-section h3 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin: 16px 0 8px;
+  }
+  .guide-list {
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    background: var(--bg-recessed);
+    padding: 2px 14px;
+    margin: 8px 0;
+  }
+  .guide-entry {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-dim);
+  }
+  .guide-entry:last-child { border-bottom: none; }
+  .guide-entry strong { color: var(--ink); }
+  .guide-entry .icon { margin-right: 4px; color: var(--accent); }
+  .guide-entry .t-meta { color: var(--ink-faint); font-size: 11px; }
+  .guide-entry .t-desc { display: block; margin-top: 3px; }
+</style>
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="icon-attack" viewBox="0 0 24 24"><path d="M3 21l4.5-4.5m0 0L18 6l3-3-3 3-9.5 9.5m0 0L6 21l1.5-4.5M14 4l6 6-2 2-6-6 2-2z"/></symbol>
+  <symbol id="icon-defense" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.4 8.7-8 11-4.6-2.3-8-6-8-11V5l8-3z"/></symbol>
+  <symbol id="icon-support" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.3-9.1C1.4 8.8 2.9 5.6 6 5c2-.4 3.7.7 6 3 2.3-2.3 4-3.4 6-3 3.1.6 4.6 3.8 3.3 6.9C19 16.5 12 21 12 21z"/></symbol>
+  <symbol id="icon-unique" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.6 6.8L12 16.9 5.8 20.4l1.6-6.8-5.2-4.6 6.9-.7L12 2z"/></symbol>
+  <symbol id="icon-melee" viewBox="0 0 24 24"><path d="M3 21l3-3M6 18l9-9m0 0l3-3-2-2-3 3m2 2l-9 9M14 4l6 6"/></symbol>
+  <symbol id="icon-ranged" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></symbol>
+  <symbol id="icon-burst" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+  <symbol id="icon-heal" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.3-9.1C1.4 8.8 2.9 5.6 6 5c2-.4 3.7.7 6 3 2.3-2.3 4-3.4 6-3 3.1.6 4.6 3.8 3.3 6.9C19 16.5 12 21 12 21z"/><path d="M12 8v6M9 11h6" stroke-width="1.6"/></symbol>
+  <symbol id="icon-status" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v5l4-2"/></symbol>
+  <symbol id="icon-passive" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V19a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2A1.7 1.7 0 0 0 4.8 6.4a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9.3A1.7 1.7 0 0 0 10.3 1V0.8a2 2 0 1 1 4 0V1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"/></symbol>
+  <symbol id="icon-blacktrigger" viewBox="0 0 24 24"><path d="M12 2l6 4-1 8-5 8-5-8-1-8 6-4z"/></symbol>
+  <symbol id="icon-buff" viewBox="0 0 24 24"><path d="M12 4l7 7h-4v9h-6v-9H5l7-7z"/></symbol>
+  <symbol id="icon-debuff" viewBox="0 0 24 24"><path d="M12 20l-7-7h4V4h6v9h4l-7 7z"/></symbol>
+  <symbol id="icon-book" viewBox="0 0 24 24"><path d="M4 4h7a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H4V4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5H20V4z"/></symbol>
+</svg>
+
+<div class="eyebrow">Isekai Strategem - Combat Engine Preview</div>
+<h1>Engagement Simulator</h1>
+
+<div class="mode-tabs">
+  <button type="button" class="mode-tab active" id="tab-play">Play (You vs AI)</button>
+  <button type="button" class="mode-tab" id="tab-simulate">Simulate (AI vs AI)</button>
+  <button type="button" class="mode-tab" id="tab-tutorial">Guided Tutorial</button>
+  <button type="button" class="mode-tab" id="tab-guide">How to Play</button>
+</div>
+
+<div id="mode-simulate" style="display: none;">
+<p class="subhead">
+  Draft two 3-Agent squads from the full character roster, assign each side an AI Profile
+  (skill class, target/ability doctrine, Loadout bias), and run a full engagement on the real
+  Trion / Trigger / Black Trigger rules engine, the same one driving every automated match.
+</p>
+
+<div class="arena">
+  <section class="panel team-panel team-a" id="panel-a">
+    <div class="team-label">SQUAD A <button type="button" data-team="a" class="randomize">Randomize</button></div>
+
+    <div>
+      <label class="field-label" for="profile-a">AI Profile</label>
+      <select id="profile-a"></select>
+      <div class="profile-hint" id="profile-hint-a"></div>
+    </div>
+
+    <div class="roster-slots">
+      <div>
+        <label class="field-label" for="char-a-0">Agent I</label>
+        <select id="char-a-0" data-team="a" data-slot="0"></select>
+        <div class="char-card" id="card-a-0"></div>
+      </div>
+      <div>
+        <label class="field-label" for="char-a-1">Agent II</label>
+        <select id="char-a-1" data-team="a" data-slot="1"></select>
+        <div class="char-card" id="card-a-1"></div>
+      </div>
+      <div>
+        <label class="field-label" for="char-a-2">Agent III</label>
+        <select id="char-a-2" data-team="a" data-slot="2"></select>
+        <div class="char-card" id="card-a-2"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="engage-col">
+    <div class="vs-mark">VS</div>
+    <div class="round-cap">
+      <label for="round-cap-input">Round cap</label>
+      <input type="number" id="round-cap-input" value="40" min="10" max="200" step="5">
+    </div>
+    <button type="button" class="engage" id="engage-btn">Engage</button>
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+
+  <section class="panel team-panel team-b" id="panel-b">
+    <div class="team-label">SQUAD B <button type="button" data-team="b" class="randomize">Randomize</button></div>
+
+    <div>
+      <label class="field-label" for="profile-b">AI Profile</label>
+      <select id="profile-b"></select>
+      <div class="profile-hint" id="profile-hint-b"></div>
+    </div>
+
+    <div class="roster-slots">
+      <div>
+        <label class="field-label" for="char-b-0">Agent I</label>
+        <select id="char-b-0" data-team="b" data-slot="0"></select>
+        <div class="char-card" id="card-b-0"></div>
+      </div>
+      <div>
+        <label class="field-label" for="char-b-1">Agent II</label>
+        <select id="char-b-1" data-team="b" data-slot="1"></select>
+        <div class="char-card" id="card-b-1"></div>
+      </div>
+      <div>
+        <label class="field-label" for="char-b-2">Agent III</label>
+        <select id="char-b-2" data-team="b" data-slot="2"></select>
+        <div class="char-card" id="card-b-2"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="results" id="results">
+  <div class="outcome-row">
+    <div class="outcome-banner" id="outcome-banner"></div>
+    <button type="button" class="copy-report" id="copy-report-btn">
+      Copy Full Report <span class="copy-status" id="copy-status"></span>
+    </button>
+  </div>
+
+  <details class="report-details">
+    <summary>Raw Report (for pasting to Claude)</summary>
+    <textarea id="report-text" readonly spellcheck="false"></textarea>
+  </details>
+
+  <div class="roster-results">
+    <div class="panel" style="border-top: 3px solid var(--team-a);">
+      <div class="team-label" style="color: var(--team-a);">Squad A - Final State</div>
+      <div id="final-a"></div>
+    </div>
+    <div class="panel" style="border-top: 3px solid var(--team-b);">
+      <div class="team-label" style="color: var(--team-b);">Squad B - Final State</div>
+      <div id="final-b"></div>
+    </div>
+  </div>
+
+  <details class="loadout-details">
+    <summary>Drafted Loadouts</summary>
+    <div class="loadout-grid" id="loadout-grid"></div>
+  </details>
+
+  <div class="log-wrap">
+    <div class="log-head">
+      <div class="label">Engagement Log</div>
+      <div class="label" id="log-count"></div>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+</div>
+</div>
+
+<div id="mode-play">
+<p class="subhead">
+  Draft your own squad and Loadouts, then play it turn by turn against an AI
+  opponent. Whichever side acts first is random, with a first-move Trion
+  handicap for whoever that is.
+</p>
+
+<div class="tutorial-banner" id="tutorial-banner" style="display: none;">
+  <div class="tutorial-banner-head">
+    <span class="eyebrow">Guided Tutorial</span>
+    <button type="button" class="secondary" id="tutorial-exit-btn">Exit Tutorial</button>
+  </div>
+  <div class="tutorial-banner-text" id="tutorial-banner-text"></div>
+</div>
+
+<!-- Step 1: team setup -->
+<div class="wizard-step visible" id="play-step-setup">
+  <div class="arena">
+    <section class="panel team-panel team-a">
+      <div class="team-label">YOUR SQUAD <button type="button" id="play-randomize-a" class="randomize">Randomize</button></div>
+      <div class="roster-slots">
+        <div>
+          <label class="field-label" for="play-char-a-0">Agent I</label>
+          <select id="play-char-a-0" data-slot="0"></select>
+          <div class="char-card" id="play-card-a-0"></div>
+        </div>
+        <div>
+          <label class="field-label" for="play-char-a-1">Agent II</label>
+          <select id="play-char-a-1" data-slot="1"></select>
+          <div class="char-card" id="play-card-a-1"></div>
+        </div>
+        <div>
+          <label class="field-label" for="play-char-a-2">Agent III</label>
+          <select id="play-char-a-2" data-slot="2"></select>
+          <div class="char-card" id="play-card-a-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="engage-col">
+      <div class="vs-mark">VS</div>
+      <button type="button" class="engage" id="play-continue-loadout-btn">Next: Build Loadouts</button>
+      <div class="error-msg" id="play-setup-error"></div>
+    </div>
+
+    <section class="panel team-panel team-b">
+      <div class="team-label">OPPONENT SQUAD <button type="button" id="play-randomize-b" class="randomize">Randomize</button></div>
+      <div>
+        <label class="field-label" for="play-profile-b">AI Profile</label>
+        <select id="play-profile-b"></select>
+        <div class="profile-hint" id="play-profile-hint-b"></div>
+      </div>
+      <div class="roster-slots">
+        <div>
+          <label class="field-label" for="play-char-b-0">Agent I</label>
+          <select id="play-char-b-0" data-slot="0"></select>
+          <div class="char-card" id="play-card-b-0"></div>
+        </div>
+        <div>
+          <label class="field-label" for="play-char-b-1">Agent II</label>
+          <select id="play-char-b-1" data-slot="1"></select>
+          <div class="char-card" id="play-card-b-1"></div>
+        </div>
+        <div>
+          <label class="field-label" for="play-char-b-2">Agent III</label>
+          <select id="play-char-b-2" data-slot="2"></select>
+          <div class="char-card" id="play-card-b-2"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Step 2: loadout builder, one character at a time -->
+<div class="wizard-step" id="play-step-loadout">
+  <div class="step-nav">
+    <button type="button" class="secondary" id="play-back-to-setup">&larr; Back to Squad Setup</button>
+    <div class="char-loadout-nav" id="play-loadout-nav"></div>
+  </div>
+
+  <div class="panel" id="play-loadout-panel">
+    <div class="team-label" id="play-loadout-heading"></div>
+    <div class="loadout-budget">
+      <span>Trion Cost</span>
+      <div class="bar"><div class="bar-fill" id="play-budget-fill"></div></div>
+      <span id="play-budget-text"></span>
+    </div>
+    <div class="loadout-budget">
+      <span>Active Abilities</span>
+      <span class="loadout-active-count" id="play-active-count">0 / 4</span>
+    </div>
+    <div class="error-msg" id="play-loadout-errors"></div>
+
+    <label class="field-label">Active Triggers</label>
+    <div class="trigger-checklist" id="play-active-triggers"></div>
+
+    <label class="field-label">Passive Triggers</label>
+    <div class="trigger-checklist" id="play-passive-triggers"></div>
+
+    <label class="field-label">Black Trigger (optional, max 1)</label>
+    <div class="trigger-checklist" id="play-black-triggers"></div>
+
+    <button type="button" class="primary" id="play-confirm-loadout-btn" disabled>Confirm Loadout</button>
+  </div>
+</div>
+
+<!-- Step 3: the battle itself -->
+<div class="wizard-step" id="play-step-battle">
+  <div class="turn-banner your-turn" id="play-turn-banner"></div>
+
+  <div class="battle-grid">
+    <div class="panel" style="border-top: 3px solid var(--team-a);">
+      <div class="team-label" style="color: var(--team-a);">Your Squad</div>
+      <div id="play-final-a"></div>
+    </div>
+    <div class="panel" style="border-top: 3px solid var(--team-b);">
+      <div class="team-label" style="color: var(--team-b);">Opponent Squad</div>
+      <div id="play-final-b"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="play-action-area"></div>
+
+  <div style="display: flex; justify-content: center;">
+    <button type="button" class="primary" id="play-end-turn-btn">End Turn</button>
+  </div>
+
+  <div class="log-wrap">
+    <div class="log-head">
+      <div class="label">Battle Log</div>
+      <div class="label" id="play-log-count"></div>
+    </div>
+    <div class="log-body" id="play-log-body"></div>
+  </div>
+
+  <div class="results" id="play-results">
+    <div class="outcome-row">
+      <div class="outcome-banner" id="play-outcome-banner"></div>
+      <button type="button" class="copy-report" id="play-copy-report-btn">
+        Copy Full Report <span class="copy-status" id="play-copy-status"></span>
+      </button>
+    </div>
+    <details class="report-details">
+      <summary>Raw Report (for pasting to Claude)</summary>
+      <textarea id="play-report-text" readonly spellcheck="false"></textarea>
+    </details>
+  </div>
+</div>
+</div>
+
+<div id="mode-guide" style="display: none;">
+<p class="subhead">
+  A condensed reference for everything below. The full write-up (with the complete
+  roster, Trigger list, and status effect catalog) lives in the repo's
+  <code>packages/battle_engine/doc</code> folder.
+</p>
+<div class="guide-wrap">
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-book"/></svg>Before the Battle: Draft Your Loadout</h2>
+    <p>Each of your 3 characters needs a Loadout before the fight starts:</p>
+    <ul>
+      <li><strong>Trion Capacity budget.</strong> Every character has a Trion Capacity stat (100-130). Everything you equip, Triggers and your Black Trigger, has an equip cost, and the total can't exceed this budget.</li>
+      <li><strong>Exactly 4 active abilities.</strong> A valid Loadout provides exactly 4 active abilities total. A Black Trigger's own active abilities (0-2 of them) count toward this.</li>
+      <li><strong>8 equipped items, max.</strong> Triggers plus your Black Trigger (if any), counted together, can't exceed 8.</li>
+      <li><strong>One Black Trigger, optional.</strong> It can contribute active abilities, passive abilities, and/or a World ability, a battle-wide effect distinct from a stat bonus.</li>
+      <li><strong>Any character can equip anything.</strong> Your character's type never blocks equipping a Trigger of a different flavor. The only place type matters is Resonance, below.</li>
+    </ul>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-blacktrigger"/></svg>Resonance: How Well a Black Trigger Suits Your Character</h2>
+    <p>A Black Trigger has its own type. How well that matches your character's type sets a Resonance Grade, which multiplies that Black Trigger's damage/healing, divides its cooldowns, and scales its passive/World ability magnitudes.</p>
+    <table class="guide-grade-table" id="guide-resonance-table"></table>
+    <p>Grade multipliers: <strong>A</strong> = 1.5x, <strong>B</strong> = 1.15x, <strong>C</strong> = 1.0x, <strong>D</strong> = 0.85x. A mismatched Black Trigger isn't illegal, just weaker.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-burst"/></svg>Turn Structure</h2>
+    <ul>
+      <li>A turn belongs to a whole team, not one character. Any/all of your 3 living members may act.</li>
+      <li>A round is one turn for each team. Teams alternate; the round counter increments once both sides have gone.</li>
+      <li><strong>First-move handicap:</strong> whichever team acts first in the battle gets a reduced Trion gain roll on that single opening turn only, forced to the lowest tier.</li>
+    </ul>
+    <p>At the start of your team's turn: your team rolls for Trion gain, status effects tick for each living member, and Full Arms Trigger (FAT) is rolled per character. Normally each character gets 1 ability use per turn; if FAT triggers for them, they get up to 3 instead.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-passive"/></svg>Trion: Two Separate Resources</h2>
+    <ul>
+      <li><strong>Trion Capacity</strong> (per character): your Loadout budget, spent once during drafting. Doesn't change in battle.</li>
+      <li><strong>Trion Pool</strong> (per team, starts empty): the in-battle currency spent to use abilities, refilled each of your team's turns via the Trion gain roll. Shared by your whole team.</li>
+    </ul>
+    <p>Each turn you roll for a tier of Trion income: Low (10), Medium (20), or High (35), as two upgrade checks in sequence. Higher Trion Affinity raises your odds of a bigger income turn.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-status"/></svg>Full Arms Trigger (FAT)</h2>
+    <p>FAT is rolled per character at the start of your turn, using their FAT Chance stat plus a Team Spirit bonus. If it triggers, that character may use up to 3 abilities that turn instead of 1.</p>
+    <p>Chaining 2 or more abilities via FAT in the same turn carries a real cost for that character only: all cooldowns used that turn are doubled, their Trion Affinity is halved for their next turn, and FAT itself goes on a 3-turn cooldown before it can trigger for them again. Using only 1 ability in a FAT-triggered turn avoids this penalty entirely.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-buff"/></svg>Team Spirit: a Dual-Direction Stat</h2>
+    <p>Team Spirit runs 0-100 with 50 as a neutral midpoint, and pulls in two different directions depending which side of the midpoint you're on:</p>
+    <ul>
+      <li><strong>Below 50</strong> (aggressive end): bonus single-target damage, bonus Burst damage, and bonus Critical Chance, all scaling toward the extreme.</li>
+      <li><strong>Above 50</strong> (sustain end): bonus Health Regeneration amount when healed, and bonus FAT Chance.</li>
+    </ul>
+    <p>A character sitting exactly at 50 gets neither bonus. It's a build axis, not a stat to always maximize.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-melee"/></svg>Combat Resolution</h2>
+    <p>An attack is an opposed roll: the attacker rolls d20 + Attack, the target rolls d20 + Defense. The attacker wins ties. A natural 1 on the attacker's die is always a critical miss (automatic failure, and inflicts a 1-turn penalty on the attacker). A roll at or above a threshold set by the attacker's Critical Chance is always a critical hit (automatic success, double damage).</p>
+    <p>Damage resolution order once a hit lands: critical doubling, then flat Armor reduction (floored at 0), then damage-type multiplier (status effects like Wet, or a granted Damage Resistance). A World ability's damage-prevention charge, if any remain, fully negates the whole instance before any of this.</p>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-passive"/></svg>Character Stats</h2>
+    <p>Every character card shows the same 10 base stats, abbreviated to fit:</p>
+    <ul>
+      <li><strong>TC (Trion Capacity).</strong> Your Loadout budget (100-130), spent once during drafting. Doesn't change in battle.</li>
+      <li><strong>TA (Trion Affinity).</strong> Raises your team's chance of a higher Trion gain tier each turn.</li>
+      <li><strong>TS (Team Spirit).</strong> A dual-direction stat, see above: below 50 boosts damage and Critical Chance, above 50 boosts Health Regeneration and FAT Chance.</li>
+      <li><strong>ARM (Armor).</strong> Flat damage reduction, applied after critical doubling and before damage-type multipliers.</li>
+      <li><strong>ATK (Attack).</strong> Added to the attacker's d20 roll during combat resolution.</li>
+      <li><strong>DEF (Defense).</strong> Added to the defender's d20 roll during combat resolution.</li>
+      <li><strong>CRIT (Critical Chance).</strong> Raises the odds of a critical hit (automatic success, double damage). Higher values lower the natural roll needed to crit.</li>
+      <li><strong>FAT (FAT Chance).</strong> Odds of Full Arms Trigger activating on a character's turn, allowing up to 3 ability uses instead of 1.</li>
+      <li><strong>INFL (Status Effect Infliction).</strong> Compared against a target's Status Effect Resistance to determine whether a status effect you inflict actually lands.</li>
+      <li><strong>RES (Status Effect Resistance).</strong> Subtracted from an attacker's infliction roll when they try to inflict a status effect on you.</li>
+    </ul>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-unique"/></svg>Character Perks</h2>
+    <p>Every character has one innate perk, always active regardless of Loadout, that combines with whatever you equip. Nothing in the engine special-cases a perk by name, they're just data read by the same generic rules as everything else (stat modifiers, roll advantage/disadvantage, damage multipliers, action prevention, etc).</p>
+    <div class="guide-list" id="guide-perks-list"></div>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-debuff"/></svg>Status Effects</h2>
+    <p>50 status effects, all expressed as data against the same generic definition, nothing special-cases an effect by name. Duration is in turns, ticked down at the start of the affected character's team's turn, unless noted otherwise.</p>
+    <div class="guide-list" id="guide-status-list"></div>
+  </section>
+
+  <section class="panel guide-section">
+    <h2><svg class="icon lg"><use href="#icon-burst"/></svg>Triggers</h2>
+    <p>40 regular Triggers (active and passive) plus 10 Black Triggers form the shared draft pool, any character may equip any of them regardless of their own type (see Resonance, above, for how well a Black Trigger suits a given character). "Avg" damage/heal figures below are the expected value of the dice before Armor/resistances/Team Spirit/perk modifiers are applied.</p>
+    <div class="guide-list" id="guide-triggers-list"></div>
+
+    <h3>Black Triggers</h3>
+    <p>Each character may equip at most one. A Black Trigger can carry active abilities (count toward the Loadout's required 4), passive abilities (always on), and/or a World ability (a battle-wide effect, distinct from a passive stat bonus).</p>
+    <div class="guide-list" id="guide-black-triggers-list"></div>
+  </section>
+
+</div>
+</div>
+
+<footer>Battle logic runs entirely client-side, compiled from the project's Dart <code>battle_engine</code> package.</footer>
+
+<script>
+BATTLE_DEMO_JS_PLACEHOLDER
+</script>
+
+<script>
+(function () {
+  const characters = JSON.parse(battleDemoListCharacters());
+  const profiles = JSON.parse(battleDemoListProfiles());
+  const charById = Object.fromEntries(characters.map((c) => [c.id, c]));
+  const profileById = Object.fromEntries(profiles.map((p) => [p.id, p]));
+
+  const skillClassOrder = ['beginner', 'amateur', 'intermediate', 'professional', 'expert'];
+  const skillClassLabel = {
+    beginner: 'Beginner',
+    amateur: 'Amateur',
+    intermediate: 'Intermediate',
+    professional: 'Professional',
+    expert: 'Expert',
+  };
+  const typeLabel = { attack: 'ATK', defense: 'DEF', support: 'SUP', unique: 'UNQ' };
+
+  // ===================== Descriptive content: icons, flavor text, computed descriptions =====================
+  const CHARACTER_FLAVOR = {
+    kaito_reyes: 'A duelist who fights alone by choice, at his most dangerous with no one left to protect.',
+    vela_ashworth: 'Strikes before her target even registers the fight has started.',
+    dross: 'Reads the battlefield like a puzzle, and punishes anyone already bleeding.',
+    ren_kobayashi: 'Opens every engagement at full intensity and never eases off.',
+    airi_tanaka: 'Lets the first blow land wrong, then makes the enemy regret ever swinging.',
+    marren_osei: 'A wall that gets harder to break the more his team needs him to hold.',
+    ilona_vance: 'Turns every failed attack against her into the opening for her own.',
+    bastian_cole: 'Shrugs off the first real hit of any fight like it never happened.',
+    dorian_voss: 'Nothing narrows his aim. His shots always find as many targets as intended.',
+    sable_whitlock: 'Steps between his allies and danger without waiting to be asked, once.',
+    priya_nakamura: 'Finds the ally closest to falling and pours everything into keeping them up.',
+    soren_talvik: "Layers curse over curse until the target can barely remember what normal feels like.",
+    yuki_amaral: 'Draws in every kind of healing like a plant turning toward the sun.',
+    haru_ellison: "Her presence alone keeps her team's resources flowing a little faster.",
+    celestine_moreau: "Wraps her allies' buffs in a ward that shrugs off whatever follows.",
+    zheng_anders: "Sees the roll before it lands, and gets to try again if it doesn't.",
+    nadia_kessler: 'Chains one strike into the next, each one hitting harder than the last.',
+    rurik_voss: 'The closer he gets to zero, the more dangerous he becomes.',
+    mireille_song: 'Sometimes an attack against her simply finds nothing there.',
+    tobias_renner: 'Adapts mid-fight, sharpening whatever he leaned on last.',
+  };
+
+  const STATUS_INFO = {
+    'Acid': { duration: 3, effect: '-5 Armor' },
+    'Wet': { duration: 3, effect: 'Immune to Fire; vulnerable to Lightning and Cold' },
+    'Stunned': { duration: 1, effect: 'Prevents all actions; zeroes Team Spirit' },
+    'Threatened': { duration: 2, effect: 'Disadvantage on ranged attack rolls' },
+    'Sickened': { duration: 3, effect: 'Vulnerable to 4 random damage types' },
+    'Sapped': { duration: 3, effect: 'Drains 25% of Trion Capacity to whoever inflicted it' },
+    'Reeling': { duration: 3, effect: '-1 Attack per remaining turn (stronger early, fades out)' },
+    'Rallied': { duration: 3, effect: '+20 max health' },
+    'Prone': { duration: 1, effect: 'Locks a random equipped ability each turn' },
+    'Prepared': { duration: 3, effect: '+1 Attack per remaining turn (builds up)' },
+    'Poisoned': { duration: 3, effect: "Disadvantage on the poisoned character's own attack rolls" },
+    'Frozen': { duration: 1, effect: 'Prevents all actions; zeroes Trion Affinity' },
+    'Bleeding': { duration: 3, effect: '8 damage at turn start (Slashing); disadvantage on their own status-resistance rolls' },
+    'Blinded': { duration: 2, effect: 'Ranged target count reduced by 1; disadvantage on ranged attack rolls' },
+    'Braced': { duration: 3, effect: '+1 Defense per remaining turn' },
+    'Charmed': { duration: 3, effect: "Can't target the charmer; charmer has advantage on rolls against them" },
+    'Electrocuted': { duration: 2, effect: '1d4 damage at turn start (Lightning)' },
+    'Regenerating': { duration: 3, effect: 'Heals 3 at turn start' },
+    'Empowered': { duration: 2, effect: '+25% outgoing damage' },
+    'Weakened': { duration: 3, effect: '-25% outgoing damage' },
+    'Focused': { duration: 2, effect: 'Advantage on attack rolls' },
+    'Guarded': { duration: 2, effect: 'Takes 25% less damage from everything' },
+    'Exposed': { duration: 2, effect: 'Takes 25% more damage from everything' },
+    'Marked': { duration: 1, effect: 'Takes 50% more damage; marker has advantage on rolls against them' },
+    'Cursed': { duration: 3, effect: 'Prevents all healing' },
+    'Silenced': { duration: 1, effect: 'Prevents all actions' },
+    'Enraged': { duration: 2, effect: '+50% outgoing damage, -3 Defense' },
+    'Fatigued': { duration: 3, effect: '-2 Attack, -2 Defense' },
+    'Inspired': { duration: 2, effect: '+2 Attack, +2 Defense' },
+    'Shattered Guard': { duration: 2, effect: 'Zeroes Armor' },
+    'Overcharged': { duration: 2, effect: 'Trion costs halved' },
+    'Choked': { duration: 2, effect: 'Trion costs doubled' },
+    'Petrified': { duration: 2, effect: 'Prevents all actions; takes 50% less damage; zeroes Team Spirit' },
+    'Terrified': { duration: 2, effect: "Disadvantage on attack/ranged-attack rolls; can't target the source" },
+    'Slowed': { duration: 2, effect: '-1 Defense per remaining turn; disadvantage on attack rolls' },
+    'Hastened': { duration: 2, effect: 'Advantage on attack rolls; +1 Attack per remaining turn' },
+    'Scorched': { duration: 2, effect: 'Vulnerable to Fire; 12 damage at turn start (Fire)' },
+    'Chilled': { duration: 2, effect: 'Vulnerable to Cold; -1 Attack per remaining turn' },
+    'Corroded': { duration: 2, effect: '-3 Armor; vulnerable to Acid' },
+    'Shadow-Bound': { duration: 2, effect: 'Locks a random equipped ability each turn; disadvantage on attack rolls' },
+    'Genjutsu Trapped': { duration: 1, effect: 'Prevents all actions; drains 15% Trion Capacity to the causer' },
+    'Sealed': { duration: 2, effect: 'Zeroes Trion Affinity and FAT Chance' },
+    'Overwhelmed': { duration: 2, effect: 'Zeroes Critical Chance; disadvantage on attack rolls' },
+    'Adrenaline Rush': { duration: 2, effect: '+15 Critical Chance' },
+    'Battle Trance': { duration: 2, effect: '+20 FAT Chance' },
+    'Suppressed': { duration: 2, effect: '-5 Status Effect Infliction' },
+    'Warded': { duration: 2, effect: '+10 Status Effect Resistance' },
+    'Hexed': { duration: 2, effect: '-10 Status Effect Resistance' },
+    'Radiant Blessing': { duration: 3, effect: 'Heals 1 at turn start; +10 max health; takes 10% less damage' },
+    'Necrotic Wound': { duration: 3, effect: '12 damage at turn start (Necrotic); prevents all healing' },
+  };
+
+  const STAT_LABEL = {
+    attack: 'Attack', defense: 'Defense', armor: 'Armor', maxHealth: 'Max Health',
+    trionAffinity: 'Trion Affinity', teamSpirit: 'Team Spirit', criticalChance: 'Critical Chance',
+    fatChance: 'FAT Chance', statusEffectInfliction: 'Status Effect Infliction',
+    statusEffectResistance: 'Status Effect Resistance',
+  };
+
+  const typeIcon = { attack: 'icon-attack', defense: 'icon-defense', support: 'icon-support', unique: 'icon-unique' };
+
+  function icon(name, extraClass) {
+    return '<svg class="icon' + (extraClass ? ' ' + extraClass : '') + '"><use href="#' + name + '"/></svg>';
+  }
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  function statusBadge(name) {
+    const info = STATUS_INFO[name];
+    const title = info ? (capitalize(name) + ' (' + info.duration + ' turn' + (info.duration === 1 ? '' : 's') + '): ' + info.effect) : name;
+    return '<span class="status-badge" title="' + escapeHtml(title) + '">' + escapeHtml(name) + '</span>';
+  }
+
+  function fatBadgeHtml() {
+    return '<span class="fat-badge" title="Full Arms Trigger is active: up to 3 ability uses this turn instead of 1.">' +
+      icon('icon-burst') + 'FAT</span>';
+  }
+
+  function describeActiveTrigger(t) {
+    const parts = [];
+    const rangeWord = t.rangeTag === 'ranged' ? 'Ranged' : 'Melee';
+    if (t.attackSubtype === 'aoe') {
+      parts.push(rangeWord + ' attack, hits all ' + t.targetCount + ' targets at once.');
+    } else if (t.attackSubtype === 'burst') {
+      parts.push(rangeWord + ' attack: ' + t.hitsPerUse + ' hits split across up to ' + t.targetCount + ' target(s).');
+    } else if (t.targetAffiliation === 'self') {
+      parts.push('Affects the user only.');
+    } else if (t.targetAffiliation === 'ally') {
+      parts.push(rangeWord + ', targets one ally.');
+    } else {
+      parts.push(rangeWord + ' attack on a single target.');
+    }
+    if (t.damageType && t.damageAvg) {
+      parts.push(capitalize(t.damageType) + ' damage, avg ' + Math.round(t.damageAvg) + (t.attackSubtype === 'burst' ? ' per hit' : '') + '.');
+    }
+    if (t.healAvg) {
+      parts.push('Heals ' + (t.healsCasterInstead ? 'the user' : 'the target') + ' for avg ' + Math.round(t.healAvg) + '.');
+    }
+    if (t.inflictedStatusEffects && t.inflictedStatusEffects.length) {
+      parts.push('Inflicts ' + t.inflictedStatusEffects.map((s) => s.statusEffectName).join(' + ') + '.');
+    }
+    parts.push('Costs ' + t.trionCost + ' Trion, cooldown ' + t.cooldownTurns + ' turn' + (t.cooldownTurns === 1 ? '' : 's') + '.');
+    return parts.join(' ');
+  }
+
+  function describePassiveEffect(effect) {
+    const bits = [];
+    const mods = Object.entries(effect.flatStatModifiers || {});
+    if (mods.length) bits.push(mods.map(([k, v]) => (v > 0 ? '+' : '') + v + ' ' + (STAT_LABEL[k] || k)).join(', '));
+    if (effect.statusInvulnerabilitiesGranted && effect.statusInvulnerabilitiesGranted.length) {
+      bits.push('Immune to ' + effect.statusInvulnerabilitiesGranted.join(', '));
+    }
+    if (effect.damageResistancesGranted && effect.damageResistancesGranted.length) {
+      bits.push('Resists ' + effect.damageResistancesGranted.map(capitalize).join(', ') + ' damage');
+    }
+    return bits.length ? bits.join('. ') + '.' : 'No stat effect.';
+  }
+
+  function describeTriggerCatalogEntry(t) {
+    return t.isPassive ? describePassiveEffect(t.effect) : describeActiveTrigger(t);
+  }
+
+  function triggerIcon(t) {
+    if (t.isPassive) return icon('icon-passive');
+    if (t.attackSubtype === 'burst') return icon('icon-burst');
+    if (t.rangeTag === 'ranged') return icon('icon-ranged');
+    if (t.healAvg) return icon('icon-heal');
+    if (!t.damageType && t.inflictedStatusEffects && t.inflictedStatusEffects.length) return icon('icon-status');
+    return icon('icon-melee');
+  }
+
+  function populateProfileSelect(select) {
+    for (const cls of skillClassOrder) {
+      const group = document.createElement('optgroup');
+      group.label = skillClassLabel[cls];
+      for (const p of profiles.filter((p) => p.skillClass === cls)) {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        group.appendChild(opt);
+      }
+      select.appendChild(group);
+    }
+  }
+
+  function populateCharSelect(select) {
+    const byType = { attack: [], defense: [], support: [], unique: [] };
+    for (const c of characters) byType[c.type].push(c);
+    for (const type of ['attack', 'defense', 'support', 'unique']) {
+      const group = document.createElement('optgroup');
+      group.label = typeLabel[type];
+      for (const c of byType[type]) {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        group.appendChild(opt);
+      }
+      select.appendChild(group);
+    }
+  }
+
+  const profileSelects = { a: document.getElementById('profile-a'), b: document.getElementById('profile-b') };
+  const profileHints = { a: document.getElementById('profile-hint-a'), b: document.getElementById('profile-hint-b') };
+  const charSelects = {
+    a: [0, 1, 2].map((i) => document.getElementById('char-a-' + i)),
+    b: [0, 1, 2].map((i) => document.getElementById('char-b-' + i)),
+  };
+  const charCards = {
+    a: [0, 1, 2].map((i) => document.getElementById('card-a-' + i)),
+    b: [0, 1, 2].map((i) => document.getElementById('card-b-' + i)),
+  };
+
+  for (const team of ['a', 'b']) {
+    populateProfileSelect(profileSelects[team]);
+    initProfilePicker(profileSelects[team], profileHints[team]);
+    charSelects[team].forEach((select, slot) => {
+      populateCharSelect(select);
+      initCharPicker(select, charCards[team][slot]);
+    });
+  }
+
+  function updateProfileHint(team) {
+    const p = profileById[profileSelects[team].value];
+    const container = profileHints[team];
+    const btn = container.querySelector('.char-pick-btn');
+    btn.innerHTML = p ? profileCardHtml(p) : '<span class="placeholder">Choose an AI Profile...</span>';
+    container.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.classList.toggle('selected', !!p && row.dataset.id === p.id);
+    });
+  }
+
+  function charStatsLineHtml(c) {
+    const stats = [
+      ['TC', c.trionCapacity], ['TA', c.trionAffinity], ['TS', c.teamSpirit], ['ARM', c.armor],
+      ['ATK', c.attack], ['DEF', c.defense], ['CRIT', Math.round(c.criticalChance) + '%'],
+      ['FAT', Math.round(c.fatChance) + '%'], ['INFL', c.statusEffectInfliction], ['RES', c.statusEffectResistance],
+    ];
+    return '<div class="char-stats-line">' +
+      stats.map(([label, value]) => '<span><span class="stat-label">' + label + '</span> ' + value + '</span>').join('') +
+      '</div>';
+  }
+
+  function charCardHtml(c) {
+    return icon(typeIcon[c.type]) +
+      '<div class="card-body">' +
+        '<div><span class="char-name">' + escapeHtml(c.name) + '</span> ' +
+          '<span class="type-tag">' + typeLabel[c.type] + '</span></div>' +
+        charStatsLineHtml(c) +
+        '<div><span class="perk-name">' + (c.perkName ? c.perkName : 'No perk') + '</span></div>' +
+        (CHARACTER_FLAVOR[c.id] ? '<div class="flavor-text">' + escapeHtml(CHARACTER_FLAVOR[c.id]) + '</div>' : '') +
+        (c.perkDescription ? '<div class="perk-desc">' + escapeHtml(c.perkDescription) + '</div>' : '') +
+      '</div>';
+  }
+
+  // A native <select> hides its option list behind the OS's own picker on
+  // mobile (just names, no room for icons/flavor/perk text), so character
+  // slots use a custom rich list instead: the <select> stays in the DOM
+  // (hidden) as the single source of truth so all the existing value/
+  // change-event/option-disabling logic below keeps working unmodified,
+  // and this list is just a view over it.
+  let openCharPicker = null;
+
+  function closeCharPicker() {
+    if (openCharPicker) {
+      openCharPicker.panel.classList.remove('open');
+      openCharPicker.btn.classList.remove('open');
+      openCharPicker = null;
+    }
+  }
+  document.addEventListener('click', (e) => {
+    if (openCharPicker && !openCharPicker.btn.contains(e.target) && !openCharPicker.panel.contains(e.target)) {
+      closeCharPicker();
+    }
+  });
+
+  function charPickerPanelHtml() {
+    const byType = { attack: [], defense: [], support: [], unique: [] };
+    for (const c of characters) byType[c.type].push(c);
+    return ['attack', 'defense', 'support', 'unique'].map((type) =>
+      '<div class="char-pick-group-label">' + typeLabel[type] + '</div>' +
+      byType[type].map((c) =>
+        '<button type="button" class="char-pick-row" data-id="' + c.id + '">' + charCardHtml(c) + '</button>'
+      ).join('')
+    ).join('');
+  }
+
+  function initPickerFromHtml(select, container, panelHtml) {
+    select.classList.add('visually-hidden-select');
+    container.classList.add('char-pick-wrap');
+    container.innerHTML = '<button type="button" class="char-pick-btn"></button>' +
+      '<div class="char-pick-panel">' + panelHtml + '</div>';
+    const btn = container.querySelector('.char-pick-btn');
+    const panel = container.querySelector('.char-pick-panel');
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (openCharPicker && openCharPicker.panel === panel) { closeCharPicker(); return; }
+      closeCharPicker();
+      panel.classList.add('open');
+      btn.classList.add('open');
+      openCharPicker = { btn, panel };
+    });
+
+    panel.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        select.value = row.dataset.id;
+        select.dispatchEvent(new Event('change'));
+        closeCharPicker();
+      });
+    });
+  }
+
+  function initCharPicker(select, container) {
+    initPickerFromHtml(select, container, charPickerPanelHtml());
+  }
+
+  function profileCardHtml(p) {
+    return '<div><span class="char-name">' + escapeHtml(p.name) + '</span> ' +
+        '<span class="type-tag">' + skillClassLabel[p.skillClass] + '</span></div>' +
+      '<div class="perk-desc">' + escapeHtml(p.description) + '</div>';
+  }
+
+  function profilePickerPanelHtml() {
+    return skillClassOrder.map((cls) =>
+      '<div class="char-pick-group-label">' + skillClassLabel[cls] + '</div>' +
+      profiles.filter((p) => p.skillClass === cls).map((p) =>
+        '<button type="button" class="char-pick-row" data-id="' + p.id + '">' + profileCardHtml(p) + '</button>'
+      ).join('')
+    ).join('');
+  }
+
+  function initProfilePicker(select, container) {
+    initPickerFromHtml(select, container, profilePickerPanelHtml());
+  }
+
+  function updateCharCard(team, slot) {
+    const c = charById[charSelects[team][slot].value];
+    const container = charCards[team][slot];
+    const btn = container.querySelector('.char-pick-btn');
+    btn.innerHTML = c ? charCardHtml(c) : '<span class="placeholder">Choose a character...</span>';
+    container.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.classList.toggle('selected', !!c && row.dataset.id === c.id);
+    });
+  }
+
+  function enforceNoDuplicates(team) {
+    const chosen = charSelects[team].map((s) => s.value);
+    charSelects[team].forEach((select, slot) => {
+      for (const opt of select.querySelectorAll('option')) {
+        opt.disabled = opt.value !== select.value && chosen.includes(opt.value);
+      }
+      const container = charCards[team][slot];
+      container.querySelectorAll('.char-pick-row').forEach((row) => {
+        const opt = select.querySelector('option[value="' + row.dataset.id + '"]');
+        row.disabled = !!opt && opt.disabled;
+      });
+    });
+  }
+
+  function distinctRandom(n, pool) {
+    const copy = pool.slice();
+    const picked = [];
+    for (let i = 0; i < n && copy.length; i++) {
+      const idx = Math.floor(Math.random() * copy.length);
+      picked.push(copy.splice(idx, 1)[0]);
+    }
+    return picked;
+  }
+
+  function randomizeTeam(team) {
+    const ids = distinctRandom(3, characters.map((c) => c.id));
+    charSelects[team].forEach((select, slot) => { select.value = ids[slot]; });
+    profileSelects[team].value = profiles[Math.floor(Math.random() * profiles.length)].id;
+    for (let slot = 0; slot < 3; slot++) updateCharCard(team, slot);
+    enforceNoDuplicates(team);
+    updateProfileHint(team);
+  }
+
+  for (const team of ['a', 'b']) {
+    profileSelects[team].addEventListener('change', () => updateProfileHint(team));
+    charSelects[team].forEach((select, slot) => {
+      select.addEventListener('change', () => {
+        updateCharCard(team, slot);
+        enforceNoDuplicates(team);
+      });
+    });
+  }
+  document.querySelectorAll('#mode-simulate button.randomize').forEach((btn) => {
+    btn.addEventListener('click', () => randomizeTeam(btn.dataset.team));
+  });
+
+  randomizeTeam('a');
+  randomizeTeam('b');
+
+  function hpFillClass(current, max) {
+    const frac = max > 0 ? current / max : 0;
+    if (current <= 0) return 'dead';
+    if (frac <= 0.25) return 'critical';
+    if (frac <= 0.5) return 'low';
+    return '';
+  }
+
+  function renderFighterList(container, fighters) {
+    container.innerHTML = fighters.map((f) => {
+      const frac = f.maxHealth > 0 ? Math.max(0, f.currentHealth / f.maxHealth) : 0;
+      return (
+        '<div class="fighter-row' + (f.alive ? '' : ' dead') + '">' +
+          '<div class="fighter-name">' + f.name + '</div>' +
+          '<div class="hp-track"><div class="hp-fill ' + hpFillClass(f.currentHealth, f.maxHealth) +
+            '" style="width:' + (frac * 100).toFixed(1) + '%"></div></div>' +
+          '<div class="hp-text">' + f.currentHealth + ' / ' + f.maxHealth + '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function renderLoadouts(container, loadoutsByChar, team) {
+    container.innerHTML = Object.entries(loadoutsByChar).map(([charId, loadout]) => {
+      const c = charById[charId];
+      const btLine = loadout.blackTrigger
+        ? '<div class="bt">Black Trigger: ' + loadout.blackTrigger.name + '</div>'
+        : '<div class="bt" style="color:var(--ink-faint)">No Black Trigger equipped</div>';
+      return (
+        '<div class="loadout-entry">' +
+          '<div class="name">' + (c ? c.name : charId) + '</div>' +
+          btLine +
+          '<ul>' + loadout.triggers.map((t) => '<li>' + t.name + '</li>').join('') + '</ul>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+
+  function renderLog(container, rounds, countEl) {
+    let lineCount = 0;
+    const html = rounds.map((round) => {
+      const actorClass = round.team === 'A' ? 'actor-a' : 'actor-b';
+      let block = '<div class="log-round-head">- Round ' + round.roundNumber + ', Squad ' + round.team + ' -</div>';
+      if (round.actions.length === 0) {
+        block += '<div class="log-line no-action">(no legal action taken)</div>';
+        lineCount++;
+        return block;
+      }
+      for (const action of round.actions) {
+        for (const t of action.targets) {
+          lineCount++;
+          const parts = [];
+          parts.push('<span class="' + actorClass + '">' + escapeHtml(action.characterName) + '</span>');
+          if (action.fatTriggered) parts.push(fatBadgeHtml());
+          parts.push('uses <strong>' + escapeHtml(action.triggerName) + '</strong> on ' + escapeHtml(t.targetName));
+          const rollBits = [];
+          if (t.crits > 0) rollBits.push('<span class="crit">' + t.crits + ' crit</span>');
+          const normalHits = t.hits - t.crits - t.misses;
+          if (normalHits > 0) rollBits.push(normalHits + ' hit');
+          if (t.misses > 0) rollBits.push(t.misses + ' miss');
+          if (rollBits.length) parts.push('(' + rollBits.join(', ') + ')');
+          if (t.damage > 0) parts.push('<span class="dmg">' + t.damage + ' dmg</span>');
+          if (t.statusEffectsApplied.length) {
+            parts.push('<span class="status-tag">[' + t.statusEffectsApplied.map(statusBadge).join(', ') + ']</span>');
+          }
+          parts.push('&rarr; HP ' + t.healthAfter);
+          if (t.died) parts.push('<span class="died">DEFEATED</span>');
+          block += '<div class="log-line">' + parts.join(' ') + '</div>';
+        }
+      }
+      return block;
+    }).join('');
+    container.innerHTML = html;
+    (countEl || document.getElementById('log-count')).textContent = lineCount + ' events';
+  }
+
+  function buildReportText(config, result) {
+    const line = (s) => s + '\n';
+    const teamName = (t) => (t === 'A' ? 'Squad A' : 'Squad B');
+    let out = '';
+    out += line('=== Isekai Strategem Engagement Report ===');
+    out += line('');
+    out += line('Squad A: ' + config.teamA.characterIds.map((id) => charById[id].name).join(', ') +
+      '  [AI: ' + profileById[config.teamA.profileId].name + ']');
+    out += line('Squad B: ' + config.teamB.characterIds.map((id) => charById[id].name).join(', ') +
+      '  [AI: ' + profileById[config.teamB.profileId].name + ']');
+    out += line('Round cap: ' + config.maxRounds);
+    out += line('');
+    const outcomeText = (outcomeCopy[result.outcome] || outcomeCopy.ongoing).text;
+    out += line('OUTCOME: ' + outcomeText + (result.concluded
+      ? ' (concluded in ' + result.roundsPlayed + ' round(s))'
+      : ' (round cap reached after ' + result.roundsPlayed + ' round(s), not concluded)'));
+    out += line('');
+
+    out += line('--- Final State ---');
+    out += line('Squad A:');
+    for (const f of result.finalTeamA) {
+      out += line('  ' + f.name + ': ' + f.currentHealth + '/' + f.maxHealth + (f.alive ? '' : ' (defeated)'));
+    }
+    out += line('Squad B:');
+    for (const f of result.finalTeamB) {
+      out += line('  ' + f.name + ': ' + f.currentHealth + '/' + f.maxHealth + (f.alive ? '' : ' (defeated)'));
+    }
+    out += line('');
+
+    out += line('--- Drafted Loadouts ---');
+    const loadouts = { ...result.teamALoadouts, ...result.teamBLoadouts };
+    for (const [charId, loadout] of Object.entries(loadouts)) {
+      const c = charById[charId];
+      out += line((c ? c.name : charId) + ':');
+      out += line('  Black Trigger: ' + (loadout.blackTrigger ? loadout.blackTrigger.name : 'none'));
+      out += line('  Triggers: ' + loadout.triggers.map((t) => t.name).join(', '));
+    }
+    out += line('');
+
+    out += line('--- Engagement Log ---');
+    for (const round of result.rounds) {
+      out += line('Round ' + round.roundNumber + ', ' + teamName(round.team) + ':');
+      if (round.actions.length === 0) {
+        out += line('  (no legal action taken)');
+        continue;
+      }
+      for (const action of round.actions) {
+        for (const t of action.targets) {
+          const bits = [];
+          if (t.crits > 0) bits.push(t.crits + ' crit');
+          const normalHits = t.hits - t.crits - t.misses;
+          if (normalHits > 0) bits.push(normalHits + ' hit');
+          if (t.misses > 0) bits.push(t.misses + ' miss');
+          let entry = '  ' + action.characterName + (action.fatTriggered ? ' [FAT]' : '') + ' uses ' + action.triggerName +
+            ' on ' + t.targetName + ' (' + bits.join(', ') + ')';
+          if (t.damage > 0) entry += ' ' + t.damage + ' dmg';
+          if (t.statusEffectsApplied.length) entry += ' [' + t.statusEffectsApplied.join(', ') + ']';
+          entry += ' -> HP ' + t.healthAfter;
+          if (t.died) entry += ' DEFEATED';
+          out += line(entry);
+        }
+      }
+    }
+    return out;
+  }
+
+  const engageBtn = document.getElementById('engage-btn');
+  const errorMsg = document.getElementById('error-msg');
+  const resultsEl = document.getElementById('results');
+  const outcomeBanner = document.getElementById('outcome-banner');
+  const reportText = document.getElementById('report-text');
+  const copyReportBtn = document.getElementById('copy-report-btn');
+  const copyStatus = document.getElementById('copy-status');
+
+  copyReportBtn.addEventListener('click', async () => {
+    const text = reportText.value;
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      copyStatus.textContent = 'Copied!';
+    } catch (e) {
+      reportText.focus();
+      reportText.select();
+      try {
+        document.execCommand('copy');
+        copyStatus.textContent = 'Copied!';
+      } catch (e2) {
+        copyStatus.textContent = 'Select & copy below';
+      }
+    }
+    setTimeout(() => { copyStatus.textContent = ''; }, 2500);
+  });
+
+  const outcomeCopy = {
+    teamAWins: { text: 'SQUAD A WINS', cls: 'outcome-a' },
+    teamBWins: { text: 'SQUAD B WINS', cls: 'outcome-b' },
+    draw: { text: 'MUTUAL DEFEAT', cls: 'outcome-draw' },
+    ongoing: { text: 'NO CONCLUSION REACHED', cls: 'outcome-ongoing' },
+  };
+
+  engageBtn.addEventListener('click', () => {
+    errorMsg.textContent = '';
+    const teamAIds = charSelects.a.map((s) => s.value);
+    const teamBIds = charSelects.b.map((s) => s.value);
+    if (new Set(teamAIds).size !== 3 || new Set(teamBIds).size !== 3) {
+      errorMsg.textContent = 'Each squad needs 3 distinct Agents.';
+      return;
+    }
+
+    const roundCap = Math.max(10, Math.min(200, parseInt(document.getElementById('round-cap-input').value, 10) || 40));
+    const config = {
+      teamA: { characterIds: teamAIds, profileId: profileSelects.a.value },
+      teamB: { characterIds: teamBIds, profileId: profileSelects.b.value },
+      maxRounds: roundCap,
+    };
+
+    engageBtn.disabled = true;
+    engageBtn.textContent = 'Simulating…';
+
+    setTimeout(() => {
+      let result;
+      try {
+        result = JSON.parse(battleDemoSimulate(JSON.stringify(config)));
+      } catch (e) {
+        errorMsg.textContent = 'Simulation failed: ' + e;
+        engageBtn.disabled = false;
+        engageBtn.textContent = 'Engage';
+        return;
+      }
+
+      const copy = outcomeCopy[result.outcome] || outcomeCopy.ongoing;
+      outcomeBanner.className = 'outcome-banner ' + copy.cls;
+      outcomeBanner.innerHTML = copy.text +
+        (result.concluded
+          ? '<span class="rounds-note">Concluded in ' + result.roundsPlayed + ' round(s).</span>'
+          : '<span class="rounds-note">Still contesting after ' + result.roundsPlayed +
+            ' rounds (round cap reached), raise the round cap to let it play out further.</span>');
+
+      renderFighterList(document.getElementById('final-a'), result.finalTeamA);
+      renderFighterList(document.getElementById('final-b'), result.finalTeamB);
+      renderLoadouts(document.getElementById('loadout-grid'), { ...result.teamALoadouts, ...result.teamBLoadouts });
+      renderLog(document.getElementById('log-body'), result.rounds);
+      reportText.value = buildReportText(config, result);
+      copyStatus.textContent = '';
+
+      resultsEl.classList.add('visible');
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      engageBtn.disabled = false;
+      engageBtn.textContent = 'Engage';
+    }, 10);
+  });
+
+  // ===================== Mode switcher =====================
+  function switchMode(mode) {
+    document.getElementById('mode-simulate').style.display = mode === 'simulate' ? '' : 'none';
+    document.getElementById('mode-play').style.display = (mode === 'play' || mode === 'tutorial') ? '' : 'none';
+    document.getElementById('mode-guide').style.display = mode === 'guide' ? '' : 'none';
+    document.getElementById('tab-simulate').classList.toggle('active', mode === 'simulate');
+    document.getElementById('tab-play').classList.toggle('active', mode === 'play');
+    document.getElementById('tab-tutorial').classList.toggle('active', mode === 'tutorial');
+    document.getElementById('tab-guide').classList.toggle('active', mode === 'guide');
+  }
+  document.getElementById('tab-simulate').addEventListener('click', () => switchMode('simulate'));
+  document.getElementById('tab-play').addEventListener('click', () => switchMode('play'));
+  document.getElementById('tab-guide').addEventListener('click', () => switchMode('guide'));
+
+  // ===================== Play mode =====================
+  const triggerCatalog = JSON.parse(battleDemoListTriggers());
+  const blackTriggerCatalog = JSON.parse(battleDemoListBlackTriggers());
+  const resonanceGrid = JSON.parse(battleDemoResonanceGrid());
+
+  (function renderResonanceTable() {
+    const table = document.getElementById('guide-resonance-table');
+    const btTypes = ['attack', 'defense', 'support', 'unique'];
+    const charTypes = ['attack', 'defense', 'support', 'unique'];
+    let html = '<tr><th>Your Type \\ Black Trigger Type</th>' +
+      btTypes.map((t) => '<th>' + typeLabel[t] + '</th>').join('') + '</tr>';
+    for (const ct of charTypes) {
+      html += '<tr><th>' + typeLabel[ct] + '</th>' +
+        btTypes.map((bt) => '<td class="bt-grade grade-' + resonanceGrid[ct][bt].grade + '">' +
+          resonanceGrid[ct][bt].grade.toUpperCase() + '</td>').join('') + '</tr>';
+    }
+    table.innerHTML = html;
+  })();
+
+  (function renderGuidePerks() {
+    const el = document.getElementById('guide-perks-list');
+    el.innerHTML = characters.map((c) =>
+      '<div class="guide-entry">' + icon(typeIcon[c.type]) +
+        '<strong>' + escapeHtml(c.name) + '</strong> <span class="t-meta">' + typeLabel[c.type] + '</span>' +
+        '<div><strong>' + escapeHtml(c.perkName || 'No perk') + '.</strong> ' +
+        escapeHtml(c.perkDescription || '') + '</div>' +
+      '</div>'
+    ).join('');
+  })();
+
+  (function renderGuideStatusEffects() {
+    const el = document.getElementById('guide-status-list');
+    el.innerHTML = Object.entries(STATUS_INFO).map(([name, info]) =>
+      '<div class="guide-entry">' + icon('icon-status') +
+        '<strong>' + escapeHtml(name) + '</strong> <span class="t-meta">' +
+        info.duration + ' turn' + (info.duration === 1 ? '' : 's') + '</span>' +
+        '<div>' + escapeHtml(info.effect) + '</div>' +
+      '</div>'
+    ).join('');
+  })();
+
+  (function renderGuideTriggers() {
+    const el = document.getElementById('guide-triggers-list');
+    el.innerHTML = triggerCatalog.map((t) =>
+      '<div class="guide-entry">' + triggerIcon(t) +
+        '<strong>' + escapeHtml(t.name) + '</strong> <span class="t-meta">' +
+        (t.isPassive ? (t.category + ' - passive') : (t.category + ' - ' + t.rangeTag + ' - ' + t.attackSubtype)) +
+        '</span>' +
+        '<div class="t-desc">' + escapeHtml(describeTriggerCatalogEntry(t)) + '</div>' +
+      '</div>'
+    ).join('');
+
+    const btEl = document.getElementById('guide-black-triggers-list');
+    btEl.innerHTML = blackTriggerCatalog.map((bt) => {
+      const abilityLines = [
+        ...bt.activeAbilities.map((a) => a.name + ': ' + describeActiveTrigger(a)),
+        ...bt.passiveAbilities.map((p) => p.name + ': ' + describePassiveEffect(p.effect)),
+        ...(bt.worldAbility ? ['World ability: ' + bt.description] : []),
+      ];
+      return '<div class="guide-entry">' + icon('icon-blacktrigger') +
+        '<strong>' + escapeHtml(bt.name) + '</strong> <span class="t-meta">' + typeLabel[bt.type] + ' type - equip ' + bt.equipCost + '</span>' +
+        '<div>' + escapeHtml(bt.description) + '</div>' +
+        '<div class="t-desc">' + abilityLines.map(escapeHtml).join('<br>') + '</div>' +
+      '</div>';
+    }).join('');
+  })();
+
+  const playCharSelects = {
+    a: [0, 1, 2].map((i) => document.getElementById('play-char-a-' + i)),
+    b: [0, 1, 2].map((i) => document.getElementById('play-char-b-' + i)),
+  };
+  const playCharCards = {
+    a: [0, 1, 2].map((i) => document.getElementById('play-card-a-' + i)),
+    b: [0, 1, 2].map((i) => document.getElementById('play-card-b-' + i)),
+  };
+  const playProfileSelectB = document.getElementById('play-profile-b');
+  const playProfileHintB = document.getElementById('play-profile-hint-b');
+
+  playCharSelects.a.forEach((select, slot) => {
+    populateCharSelect(select);
+    initCharPicker(select, playCharCards.a[slot]);
+  });
+  playCharSelects.b.forEach((select, slot) => {
+    populateCharSelect(select);
+    initCharPicker(select, playCharCards.b[slot]);
+  });
+  populateProfileSelect(playProfileSelectB);
+  initProfilePicker(playProfileSelectB, playProfileHintB);
+
+  function playUpdateCharCard(team, slot) {
+    const c = charById[playCharSelects[team][slot].value];
+    const container = playCharCards[team][slot];
+    const btn = container.querySelector('.char-pick-btn');
+    btn.innerHTML = c ? charCardHtml(c) : '<span class="placeholder">Choose a character...</span>';
+    container.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.classList.toggle('selected', !!c && row.dataset.id === c.id);
+    });
+  }
+  function playEnforceNoDuplicates(team) {
+    const chosen = playCharSelects[team].map((s) => s.value);
+    playCharSelects[team].forEach((select, slot) => {
+      for (const opt of select.querySelectorAll('option')) {
+        opt.disabled = opt.value !== select.value && chosen.includes(opt.value);
+      }
+      const container = playCharCards[team][slot];
+      container.querySelectorAll('.char-pick-row').forEach((row) => {
+        const opt = select.querySelector('option[value="' + row.dataset.id + '"]');
+        row.disabled = !!opt && opt.disabled;
+      });
+    });
+  }
+  function playUpdateProfileHintB() {
+    const p = profileById[playProfileSelectB.value];
+    const btn = playProfileHintB.querySelector('.char-pick-btn');
+    btn.innerHTML = p ? profileCardHtml(p) : '<span class="placeholder">Choose an AI Profile...</span>';
+    playProfileHintB.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.classList.toggle('selected', !!p && row.dataset.id === p.id);
+    });
+  }
+  function playRandomizeTeam(team) {
+    const ids = distinctRandom(3, characters.map((c) => c.id));
+    playCharSelects[team].forEach((select, slot) => { select.value = ids[slot]; });
+    if (team === 'b') playProfileSelectB.value = profiles[Math.floor(Math.random() * profiles.length)].id;
+    for (let slot = 0; slot < 3; slot++) playUpdateCharCard(team, slot);
+    playEnforceNoDuplicates(team);
+    if (team === 'b') playUpdateProfileHintB();
+  }
+
+  playCharSelects.a.forEach((select, slot) => select.addEventListener('change', () => {
+    playUpdateCharCard('a', slot); playEnforceNoDuplicates('a');
+  }));
+  playCharSelects.b.forEach((select, slot) => select.addEventListener('change', () => {
+    playUpdateCharCard('b', slot); playEnforceNoDuplicates('b');
+  }));
+  playProfileSelectB.addEventListener('change', playUpdateProfileHintB);
+  document.getElementById('play-randomize-a').addEventListener('click', () => playRandomizeTeam('a'));
+  document.getElementById('play-randomize-b').addEventListener('click', () => playRandomizeTeam('b'));
+  playRandomizeTeam('a');
+  playRandomizeTeam('b');
+
+  function showWizardStep(stepId) {
+    document.querySelectorAll('#mode-play .wizard-step').forEach((el) => el.classList.remove('visible'));
+    document.getElementById(stepId).classList.add('visible');
+  }
+
+  const playState = {
+    teamAIds: [], teamBIds: [], teamBProfileId: null,
+    loadouts: {}, currentLoadoutIndex: 0, maxVisitedLoadoutIndex: 0,
+    sessionId: null, loadoutSummaries: {}, roundsLog: [], lastState: null,
+  };
+
+  document.getElementById('play-continue-loadout-btn').addEventListener('click', () => {
+    const ids = playCharSelects.a.map((s) => s.value);
+    const errorEl = document.getElementById('play-setup-error');
+    if (new Set(ids).size !== 3) { errorEl.textContent = 'Pick 3 distinct Agents for your squad.'; return; }
+    errorEl.textContent = '';
+    playState.teamAIds = ids;
+    playState.teamBIds = playCharSelects.b.map((s) => s.value);
+    playState.teamBProfileId = playProfileSelectB.value;
+    playState.loadouts = {};
+    playState.currentLoadoutIndex = 0;
+    playState.maxVisitedLoadoutIndex = 0;
+    showWizardStep('play-step-loadout');
+    renderLoadoutNav();
+    renderLoadoutBuilderForCurrent();
+  });
+
+  document.getElementById('play-back-to-setup').addEventListener('click', () => showWizardStep('play-step-setup'));
+
+  function renderLoadoutNav() {
+    const nav = document.getElementById('play-loadout-nav');
+    nav.innerHTML = '';
+    playState.teamAIds.forEach((id, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = (idx + 1) + '. ' + charById[id].name;
+      if (idx === playState.currentLoadoutIndex) btn.classList.add('current');
+      if (playState.loadouts[id]) btn.classList.add('done');
+      btn.addEventListener('click', () => {
+        if (idx <= playState.maxVisitedLoadoutIndex) {
+          playState.currentLoadoutIndex = idx;
+          renderLoadoutNav();
+          renderLoadoutBuilderForCurrent();
+        }
+      });
+      nav.appendChild(btn);
+    });
+  }
+
+  function getOrInitLoadout(charId) {
+    if (!playState.loadouts[charId]) playState.loadouts[charId] = { triggerIds: [], blackTriggerId: null };
+    return playState.loadouts[charId];
+  }
+
+  function triggerSummaryLine(t) {
+    const bits = [];
+    if (t.damageType) bits.push(t.damageType + ' ' + Math.round(t.damageAvg));
+    if (t.healAvg) bits.push('heal ' + Math.round(t.healAvg) + (t.healsCasterInstead ? ' (self)' : ''));
+    if (t.inflictedStatusEffects.length) bits.push(t.inflictedStatusEffects.map((s) => s.statusEffectName).join(', '));
+    return bits.length ? bits.join(' · ') : 'no direct effect';
+  }
+
+  function renderLoadoutBuilderForCurrent() {
+    const charId = playState.teamAIds[playState.currentLoadoutIndex];
+    const c = charById[charId];
+    const loadout = getOrInitLoadout(charId);
+    document.getElementById('play-loadout-heading').textContent =
+      c.name + ' - Trion Capacity ' + c.trionCapacity;
+
+    const activeList = document.getElementById('play-active-triggers');
+    const passiveList = document.getElementById('play-passive-triggers');
+    const btList = document.getElementById('play-black-triggers');
+
+    activeList.innerHTML = triggerCatalog.filter((t) => !t.isPassive).map((t) => {
+      const checked = loadout.triggerIds.includes(t.id);
+      return '<label class="trigger-check-item">' +
+        '<input type="checkbox" data-tid="' + t.id + '"' + (checked ? ' checked' : '') + '>' +
+        '<span>' + triggerIcon(t) + ' <span class="t-name">' + t.name + '</span><br><span class="t-meta">' +
+        t.category + ' · ' + t.rangeTag + ' · ' + t.attackSubtype +
+        '</span><span class="t-desc">' + escapeHtml(describeActiveTrigger(t)) + '</span></span>' +
+        '<span class="t-cost">' + t.equipCost + '</span></label>';
+    }).join('');
+
+    passiveList.innerHTML = triggerCatalog.filter((t) => t.isPassive).map((t) => {
+      const checked = loadout.triggerIds.includes(t.id);
+      return '<label class="trigger-check-item">' +
+        '<input type="checkbox" data-tid="' + t.id + '"' + (checked ? ' checked' : '') + '>' +
+        '<span>' + triggerIcon(t) + ' <span class="t-name">' + t.name + '</span>' +
+        '<span class="t-desc">' + escapeHtml(describePassiveEffect(t.effect)) + '</span></span>' +
+        '<span class="t-cost">' + t.equipCost + '</span></label>';
+    }).join('');
+
+    const noneChecked = loadout.blackTriggerId === null;
+    btList.innerHTML = '<label class="bt-option"><input type="radio" name="play-bt" value=""' +
+      (noneChecked ? ' checked' : '') + '><span>None</span><span></span><span></span></label>' +
+      blackTriggerCatalog.map((bt) => {
+        const grade = resonanceGrid[c.type][bt.type].grade;
+        const checked = loadout.blackTriggerId === bt.id;
+        const abilityLines = [
+          ...bt.activeAbilities.map((a) => a.name + ': ' + describeActiveTrigger(a)),
+          ...bt.passiveAbilities.map((p) => p.name + ': ' + describePassiveEffect(p.effect)),
+          ...(bt.worldAbility ? ['World ability: ' + bt.description] : []),
+        ];
+        return '<label class="bt-option"><input type="radio" name="play-bt" value="' + bt.id + '"' +
+          (checked ? ' checked' : '') + '><span>' + icon('icon-blacktrigger') + ' <span class="t-name">' + bt.name +
+          '</span><br><span class="t-meta">' + escapeHtml(bt.description) + '</span>' +
+          '<span class="t-desc">' + abilityLines.map(escapeHtml).join('<br>') + '</span></span>' +
+          '<span class="bt-grade grade-' + grade + '">' + grade.toUpperCase() + '</span>' +
+          '<span class="t-cost">' + bt.equipCost + '</span></label>';
+      }).join('');
+
+    function onLoadoutChange() {
+      const checked = [...document.querySelectorAll('#play-active-triggers input:checked, #play-passive-triggers input:checked')]
+        .map((el) => el.dataset.tid);
+      loadout.triggerIds = checked;
+      const btChecked = document.querySelector('#play-black-triggers input:checked');
+      loadout.blackTriggerId = btChecked && btChecked.value ? btChecked.value : null;
+      validateCurrentLoadout(charId);
+    }
+    activeList.querySelectorAll('input').forEach((el) => el.addEventListener('change', onLoadoutChange));
+    passiveList.querySelectorAll('input').forEach((el) => el.addEventListener('change', onLoadoutChange));
+    btList.querySelectorAll('input').forEach((el) => el.addEventListener('change', onLoadoutChange));
+
+    validateCurrentLoadout(charId);
+  }
+
+  function validateCurrentLoadout(charId) {
+    const loadout = getOrInitLoadout(charId);
+    const req = { characterId: charId, triggerIds: loadout.triggerIds, blackTriggerId: loadout.blackTriggerId };
+    const result = JSON.parse(battleDemoValidateLoadout(JSON.stringify(req)));
+
+    const fill = document.getElementById('play-budget-fill');
+    const pct = Math.min(100, (result.totalCost / result.budget) * 100);
+    fill.style.width = pct + '%';
+    fill.classList.toggle('over', result.totalCost > result.budget);
+    document.getElementById('play-budget-text').textContent = result.totalCost + ' / ' + result.budget;
+
+    const activeCountEl = document.getElementById('play-active-count');
+    activeCountEl.textContent = result.activeCount + ' / ' + result.requiredActiveCount;
+    activeCountEl.classList.toggle('good', result.activeCount === result.requiredActiveCount);
+    activeCountEl.classList.toggle('bad', result.activeCount !== result.requiredActiveCount);
+
+    document.getElementById('play-loadout-errors').textContent = result.errors.join(' ');
+    document.getElementById('play-confirm-loadout-btn').disabled = !result.isValid;
+    return result.isValid;
+  }
+
+  document.getElementById('play-confirm-loadout-btn').addEventListener('click', () => {
+    playState.maxVisitedLoadoutIndex = Math.max(playState.maxVisitedLoadoutIndex, playState.currentLoadoutIndex + 1);
+    if (playState.currentLoadoutIndex < 2) {
+      playState.currentLoadoutIndex++;
+      renderLoadoutNav();
+      renderLoadoutBuilderForCurrent();
+    } else {
+      startPlaySession();
+    }
+  });
+
+  function startPlaySession() {
+    const config = {
+      teamA: {
+        characterIds: playState.teamAIds,
+        loadouts: Object.fromEntries(playState.teamAIds.map((id) => [id, playState.loadouts[id]])),
+      },
+      teamB: { characterIds: playState.teamBIds, profileId: playState.teamBProfileId },
+    };
+    // Who goes first is random by default (matching the real rules), except
+    // the Guided Tutorial forces the player first so its script stays
+    // predictable.
+    if (tutorialActive) config.firstTurn = 'teamA';
+    const result = JSON.parse(battleDemoStartSession(JSON.stringify(config)));
+    if (result.error) {
+      document.getElementById('play-loadout-errors').textContent = result.error;
+      return;
+    }
+    playState.sessionId = result.sessionId;
+    playState.loadoutSummaries = { ...result.teamALoadouts, ...result.teamBLoadouts };
+    playState.roundsLog = [];
+    if (result.openingAiTurn) {
+      playState.roundsLog.push({ roundNumber: result.openingAiTurn.aiRoundNumber, team: 'B', actions: result.openingAiTurn.aiLog });
+    }
+    document.getElementById('play-results').classList.remove('visible');
+    document.getElementById('play-end-turn-btn').style.display = '';
+    showWizardStep('play-step-battle');
+    renderPlayLog();
+    renderBattleState(result.state);
+  }
+
+  function renderPlayFighterList(container, fighters) {
+    container.innerHTML = fighters.map((f) => {
+      const frac = f.maxHealth > 0 ? Math.max(0, f.currentHealth / f.maxHealth) : 0;
+      const statusText = (f.statusEffects || [])
+        .map((s) => statusBadge(s.name) + ' (' + s.remainingTurns + ')').join(', ');
+      return '<div class="fighter-row' + (f.alive ? '' : ' dead') + '">' +
+        '<div class="fighter-name">' + f.name + (f.fatTriggered ? ' ' + fatBadgeHtml() : '') +
+        (statusText ? '<br><span style="font-weight:400;font-size:10px;color:var(--accent)">' + statusText + '</span>' : '') +
+        '</div><div class="hp-track"><div class="hp-fill ' + hpFillClass(f.currentHealth, f.maxHealth) +
+        '" style="width:' + (frac * 100).toFixed(1) + '%"></div></div>' +
+        '<div class="hp-text">' + f.currentHealth + ' / ' + f.maxHealth + '</div></div>';
+    }).join('');
+  }
+
+  function renderBattleState(state) {
+    playState.lastState = state;
+    renderPlayFighterList(document.getElementById('play-final-a'), state.teamA);
+    renderPlayFighterList(document.getElementById('play-final-b'), state.teamB);
+
+    const banner = document.getElementById('play-turn-banner');
+    if (state.isOver) {
+      banner.className = 'turn-banner';
+      banner.textContent = 'Battle Over';
+    } else if (state.isPlayerTurn) {
+      banner.className = 'turn-banner your-turn';
+      banner.textContent = 'Your Turn - Round ' + state.roundNumber + ' (Team Trion: ' + state.teamATrion + ')';
+    } else {
+      banner.className = 'turn-banner ai-turn';
+      banner.textContent = "Opponent's Turn...";
+    }
+
+    if (state.isOver) {
+      finishPlayBattle(state);
+    } else {
+      renderActionArea(state);
+    }
+  }
+
+  function renderActionArea(state) {
+    const area = document.getElementById('play-action-area');
+    area.innerHTML = '';
+    const endTurnBtn = document.getElementById('play-end-turn-btn');
+    if (!state.isPlayerTurn) {
+      endTurnBtn.style.display = 'none';
+      area.innerHTML = '<div class="inline-result">Waiting for the opponent...</div>';
+      return;
+    }
+    endTurnBtn.style.display = '';
+
+    for (const c of state.teamA) {
+      if (!c.alive) continue;
+      const legal = JSON.parse(battleDemoLegalActions(JSON.stringify({ sessionId: playState.sessionId, characterId: c.id })));
+
+      const card = document.createElement('div');
+      card.className = 'action-card';
+      card.dataset.characterId = c.id;
+      const heading = document.createElement('div');
+      heading.className = 'char-heading';
+      heading.innerHTML = '<span>' + c.name + (c.fatTriggered ? ' ' + fatBadgeHtml() : '') + '</span><span style="color:var(--ink-faint);font-weight:400;">' +
+        (legal.length ? legal.length + ' action(s) available' : 'no actions available this turn') + '</span>';
+      card.appendChild(heading);
+
+      const btnRow = document.createElement('div');
+      btnRow.className = 'ability-btn-row';
+      for (const action of legal) {
+        const catalogEntry = triggerCatalog.find((t) => t.id === action.id);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ability-btn';
+        btn.dataset.triggerId = action.id;
+        btn.disabled = !action.affordable;
+        btn.innerHTML = (catalogEntry ? triggerIcon(catalogEntry) + ' ' : '') + escapeHtml(action.name) +
+          '<span class="btn-cost">' + action.actualTrionCost + ' Trion</span>' +
+          (catalogEntry ? '<span class="btn-desc">' + escapeHtml(describeActiveTrigger(catalogEntry)) + '</span>' : '');
+        btn.title = !action.affordable ? 'Not enough Trion this turn.' : (catalogEntry ? describeActiveTrigger(catalogEntry) : '');
+        btn.addEventListener('click', () => {
+          btnRow.querySelectorAll('button').forEach((b) => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          renderTargetPicker(card, c, action);
+        });
+        btnRow.appendChild(btn);
+      }
+      card.appendChild(btnRow);
+      if (legal.length === 0) {
+        const note = document.createElement('div');
+        note.className = 'inline-result';
+        note.textContent = 'On cooldown, action-prevented, or no further actions this turn.';
+        card.appendChild(note);
+      }
+      area.appendChild(card);
+    }
+  }
+
+  function renderTargetPicker(card, character, action) {
+    const existing = card.querySelector('.target-picker');
+    if (existing) existing.remove();
+
+    const picker = document.createElement('div');
+    picker.className = 'target-picker';
+
+    const namesById = Object.fromEntries([...playState.lastState.teamA, ...playState.lastState.teamB].map((f) => [f.id, f.name]));
+
+    if (action.targetAffiliation === 'self') {
+      picker.innerHTML = '<div>Target: ' + character.name + ' (self)</div>';
+    } else if (action.maxTargets === 1) {
+      // A single-target ability should only ever let you pick one target,
+      // not tick several boxes and have the extras silently discarded.
+      picker.innerHTML = action.legalTargetIds.map((tid, idx) =>
+        '<label><input type="radio" name="target-radio-' + character.id + '" value="' + tid + '"' + (idx === 0 ? ' checked' : '') + '>' +
+        (namesById[tid] || tid) + '</label>').join('');
+    } else {
+      picker.innerHTML = action.legalTargetIds.map((tid, idx) =>
+        '<label><input type="checkbox" value="' + tid + '"' + (idx < action.maxTargets ? ' checked' : '') + '>' +
+        (namesById[tid] || tid) + '</label>').join('');
+    }
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.className = 'primary';
+    confirmBtn.style.marginTop = '8px';
+    confirmBtn.textContent = 'Use ' + action.name;
+    confirmBtn.addEventListener('click', () => {
+      let targetIds;
+      if (action.targetAffiliation === 'self') {
+        targetIds = [character.id];
+      } else {
+        targetIds = [...picker.querySelectorAll('input:checked')].map((el) => el.value).slice(0, action.maxTargets);
+        if (targetIds.length === 0) return;
+      }
+      useAbility(character.id, character.name, action.id, action.name, targetIds);
+    });
+    picker.appendChild(confirmBtn);
+    card.appendChild(picker);
+  }
+
+  function pushLogAction(team, roundNumber, actionEntry) {
+    let round = playState.roundsLog.find((r) => r.roundNumber === roundNumber && r.team === team);
+    if (!round) {
+      round = { roundNumber, team, actions: [] };
+      playState.roundsLog.push(round);
+    }
+    round.actions.push(actionEntry);
+  }
+
+  function renderPlayLog() {
+    renderLog(document.getElementById('play-log-body'), playState.roundsLog, document.getElementById('play-log-count'));
+  }
+
+  function useAbility(characterId, characterName, triggerId, triggerName, targetIds) {
+    const result = JSON.parse(battleDemoUseAbility(JSON.stringify({
+      sessionId: playState.sessionId, characterId, triggerId, targetIds,
+    })));
+    if (!result.success) {
+      document.getElementById('play-action-area').insertAdjacentHTML('afterbegin',
+        '<div class="error-msg">' + escapeHtml(result.error) + '</div>');
+      return;
+    }
+    pushLogAction('A', result.state.roundNumber, {
+      characterId, characterName, triggerId, triggerName: result.triggerName, targets: result.targets,
+      fatTriggered: result.fatTriggered,
+    });
+    renderPlayLog();
+    renderBattleState(result.state);
+  }
+
+  function handleEndTurnClick() {
+    const result = JSON.parse(battleDemoEndTurn(JSON.stringify({ sessionId: playState.sessionId })));
+    playState.roundsLog.push({ roundNumber: result.aiRoundNumber, team: 'B', actions: result.aiLog });
+    renderPlayLog();
+    renderBattleState(result.state);
+  }
+  document.getElementById('play-end-turn-btn').addEventListener('click', () => handleEndTurnClick());
+
+  function buildPlayReportText(state) {
+    const line = (s) => s + '\n';
+    let out = '';
+    out += line('=== Isekai Strategem Play Session Report ===');
+    out += line('');
+    out += line('Your Squad: ' + playState.teamAIds.map((id) => charById[id].name).join(', '));
+    out += line('Opponent Squad: ' + playState.teamBIds.map((id) => charById[id].name).join(', ') +
+      '  [AI: ' + profileById[playState.teamBProfileId].name + ']');
+    out += line('');
+    const copy = outcomeCopy[state.outcome] || outcomeCopy.ongoing;
+    out += line('OUTCOME: ' + copy.text + ' (concluded in ' + state.roundNumber + ' round(s))');
+    out += line('');
+
+    out += line('--- Final State ---');
+    out += line('Your Squad:');
+    for (const f of state.teamA) out += line('  ' + f.name + ': ' + f.currentHealth + '/' + f.maxHealth + (f.alive ? '' : ' (defeated)'));
+    out += line('Opponent Squad:');
+    for (const f of state.teamB) out += line('  ' + f.name + ': ' + f.currentHealth + '/' + f.maxHealth + (f.alive ? '' : ' (defeated)'));
+    out += line('');
+
+    out += line('--- Loadouts ---');
+    for (const [charId, loadout] of Object.entries(playState.loadoutSummaries)) {
+      const c = charById[charId];
+      out += line((c ? c.name : charId) + ':');
+      out += line('  Black Trigger: ' + (loadout.blackTrigger ? loadout.blackTrigger.name : 'none'));
+      out += line('  Triggers: ' + loadout.triggers.map((t) => t.name).join(', '));
+    }
+    out += line('');
+
+    out += line('--- Battle Log ---');
+    for (const round of playState.roundsLog) {
+      out += line('Round ' + round.roundNumber + ', ' + (round.team === 'A' ? 'You' : 'Opponent') + ':');
+      for (const action of round.actions) {
+        for (const t of action.targets) {
+          const bits = [];
+          if (t.crits > 0) bits.push(t.crits + ' crit');
+          const normalHits = t.hits - t.crits - t.misses;
+          if (normalHits > 0) bits.push(normalHits + ' hit');
+          if (t.misses > 0) bits.push(t.misses + ' miss');
+          let entry = '  ' + action.characterName + (action.fatTriggered ? ' [FAT]' : '') + ' uses ' + action.triggerName + ' on ' + t.targetName +
+            ' (' + bits.join(', ') + ')';
+          if (t.damage > 0) entry += ' ' + t.damage + ' dmg';
+          if (t.statusEffectsApplied.length) entry += ' [' + t.statusEffectsApplied.join(', ') + ']';
+          entry += ' -> HP ' + t.healthAfter;
+          if (t.died) entry += ' DEFEATED';
+          out += line(entry);
+        }
+      }
+    }
+    return out;
+  }
+
+  function finishPlayBattle(state) {
+    document.getElementById('play-action-area').innerHTML = '';
+    document.getElementById('play-end-turn-btn').style.display = 'none';
+
+    const banner = document.getElementById('play-outcome-banner');
+    const copy = outcomeCopy[state.outcome] || outcomeCopy.ongoing;
+    banner.className = 'outcome-banner ' + copy.cls;
+    banner.innerHTML = copy.text + '<span class="rounds-note">Concluded in ' + state.roundNumber + ' round(s).</span>';
+
+    document.getElementById('play-report-text').value = buildPlayReportText(state);
+    document.getElementById('play-copy-status').textContent = '';
+    document.getElementById('play-results').classList.add('visible');
+  }
+
+  const playCopyReportBtn = document.getElementById('play-copy-report-btn');
+  const playCopyStatus = document.getElementById('play-copy-status');
+  playCopyReportBtn.addEventListener('click', async () => {
+    const text = document.getElementById('play-report-text').value;
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      playCopyStatus.textContent = 'Copied!';
+    } catch (e) {
+      const ta = document.getElementById('play-report-text');
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand('copy');
+        playCopyStatus.textContent = 'Copied!';
+      } catch (e2) {
+        playCopyStatus.textContent = 'Select & copy below';
+      }
+    }
+    setTimeout(() => { playCopyStatus.textContent = ''; }, 2500);
+  });
+
+  // ===================== Guided Tutorial =====================
+  // Walks a first-time player through one full team turn end to end: pick a
+  // fixed squad (one Attacker, one Defender, one Support), draft a fixed
+  // Loadout for each (one of them with a Black Trigger), then use one
+  // specific ability per character in battle and end the turn. Reuses the
+  // exact same Play mode DOM/state (this tab just calls switchMode('play')
+  // under the hood) - at every step, everything except the single scripted
+  // action is disabled, so "wait for the action to complete" is enforced by
+  // the UI itself rather than by validating after the fact. The render
+  // functions below are wrapped (reassigned) rather than edited in place,
+  // so normal Play mode behaves identically whether or not this tab has
+  // ever been opened.
+
+  const TUTORIAL_OPPONENT_IDS = ['yuki_amaral', 'celestine_moreau', 'haru_ellison'];
+  const TUTORIAL_OPPONENT_PROFILE_ID = 'the_turtle';
+
+  const TUTORIAL_LOADOUTS = {
+    ren_kobayashi: {
+      triggerIds: ['twin_fang_strike', 'cleave', 'piercing_thrust', 'whirlwind_slash'],
+      blackTriggerId: null,
+    },
+    ilona_vance: {
+      triggerIds: ['shatterpoint', 'binding_snare', 'fortify', 'second_wind'],
+      blackTriggerId: 'bastion_frame',
+    },
+    priya_nakamura: {
+      triggerIds: ['mending_light', 'vital_surge', 'rally_cry', 'cleansing_ward'],
+      blackTriggerId: null,
+    },
+  };
+
+  const TUTORIAL_SETUP_STEPS = [
+    { slot: 0, charId: 'ren_kobayashi',
+      text: "Let's play through one full battle turn together. First, select Ren Kobayashi for Agent I, your Attacker." },
+    { slot: 1, charId: 'ilona_vance',
+      text: 'Good. Now select Ilona Vance for Agent II, your Defender.' },
+    { slot: 2, charId: 'priya_nakamura',
+      text: 'Last one: select Priya Nakamura for Agent III, your Support.' },
+  ];
+
+  const TUTORIAL_BATTLE_STEPS = [
+    { type: 'single', characterId: 'ren_kobayashi', triggerId: 'twin_fang_strike',
+      text: 'Use Twin Fang Strike with Ren Kobayashi against one of the opponents.' },
+    { type: 'single', characterId: 'ilona_vance', triggerId: 'fortify',
+      text: "Now use Fortify with Ilona Vance. It targets herself, so just confirm the ability." },
+    { type: 'single', characterId: 'priya_nakamura', triggerId: 'rally_cry',
+      text: 'Finally, use Rally Cry with Priya Nakamura on one of your allies.' },
+    { type: 'fat', characterId: 'ren_kobayashi', minUses: 2,
+      text: 'Full Arms Trigger (FAT) just triggered for Ren Kobayashi! Normally each character gets 1 ability use per turn, but a FAT trigger allows up to 3 in the same turn instead. Chaining 2 or more does carry a real cost afterward (doubled cooldowns and halved Trion Affinity next turn), but it is worth it for the burst.' },
+  ];
+
+  let tutorialActive = false;
+  let tutorialPhase = 'setup';
+  let tutorialStepIndex = 0;
+  // Battle phase state: each of the 3 characters gets an entire team turn to
+  // itself (a shared team Trion Pool starting from the forced-Low first-turn
+  // handicap only covers one 10-Trion ability, not three), so the script
+  // waits for an explicit End Turn between each scripted ability use rather
+  // than letting all 3 act in the same turn.
+  let tutorialBattleSubIndex = 0;
+  let tutorialAwaitingEndTurn = false;
+  // Round 4 demonstrates Full Arms Trigger, forced (rather than left to the
+  // real probabilistic roll) via battleDemoForceFat so the walkthrough is
+  // deterministic; the player must then use more than 1 of Ren's abilities
+  // before End Turn is revealed, same as everywhere else in the tutorial.
+  let tutorialFatForced = false;
+  let tutorialFatUsesThisRound = 0;
+
+  function tutorialBanner() { return document.getElementById('tutorial-banner'); }
+
+  function tutorialRenderBanner() {
+    if (!tutorialActive) return;
+    const el = document.getElementById('tutorial-banner-text');
+    if (tutorialPhase === 'setup') {
+      el.textContent = tutorialStepIndex < TUTORIAL_SETUP_STEPS.length
+        ? TUTORIAL_SETUP_STEPS[tutorialStepIndex].text
+        : 'Your squad is set. Click "Next: Build Loadouts" to continue.';
+    } else if (tutorialPhase === 'loadout') {
+      const charId = playState.teamAIds[playState.currentLoadoutIndex];
+      const script = TUTORIAL_LOADOUTS[charId];
+      const triggerNames = script.triggerIds.map((id) => triggerCatalog.find((t) => t.id === id).name);
+      let text = "Build " + charById[charId].name + "'s Loadout: check " + triggerNames.join(', ') + '.';
+      if (script.blackTriggerId) {
+        const btName = blackTriggerCatalog.find((bt) => bt.id === script.blackTriggerId).name;
+        text += ' Then select the ' + btName + ' Black Trigger below.';
+      }
+      text += ' Click "Confirm Loadout" once everything is checked.';
+      el.textContent = text;
+    } else if (tutorialPhase === 'battle') {
+      if (tutorialAwaitingEndTurn) {
+        el.textContent = 'Click "End Turn" to pass control to your opponent, then we will continue with the next character.';
+      } else if (tutorialBattleSubIndex < TUTORIAL_BATTLE_STEPS.length) {
+        const step = TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex];
+        if (step.type === 'fat') {
+          const remaining = step.minUses - tutorialFatUsesThisRound;
+          el.textContent = step.text + (remaining > 0
+            ? (' Use ' + remaining + ' more ' + (remaining === 1 ? 'ability' : 'abilities') + ' with Ren this turn.')
+            : '');
+        } else {
+          el.textContent = step.text;
+        }
+      } else {
+        el.textContent = 'Nicely done. Continue playing freely, or explore Simulate mode.';
+      }
+    }
+  }
+
+  function tutorialLockCharPanelToOne(container, allowedCharId) {
+    container.querySelectorAll('.char-pick-row').forEach((row) => {
+      row.disabled = row.dataset.id !== allowedCharId;
+    });
+  }
+
+  function tutorialRefreshSetupLocks() {
+    const currentStep = tutorialStepIndex < TUTORIAL_SETUP_STEPS.length ? TUTORIAL_SETUP_STEPS[tutorialStepIndex] : null;
+    playCharSelects.a.forEach((select, slot) => {
+      const btn = playCharCards.a[slot].querySelector('.char-pick-btn');
+      if (currentStep && slot === currentStep.slot) {
+        btn.disabled = false;
+        tutorialLockCharPanelToOne(playCharCards.a[slot], currentStep.charId);
+      } else {
+        btn.disabled = true;
+        closeCharPicker();
+      }
+    });
+    playCharSelects.b.forEach((select, slot) => {
+      playCharCards.b[slot].querySelector('.char-pick-btn').disabled = true;
+    });
+    playProfileHintB.querySelector('.char-pick-btn').disabled = true;
+    document.getElementById('play-randomize-a').disabled = true;
+    document.getElementById('play-randomize-b').disabled = true;
+    document.getElementById('play-continue-loadout-btn').disabled = !!currentStep;
+  }
+
+  function tutorialCheckSetupAdvance(slot) {
+    if (!tutorialActive || tutorialPhase !== 'setup') return;
+    const step = TUTORIAL_SETUP_STEPS[tutorialStepIndex];
+    if (!step || step.slot !== slot) return;
+    if (playCharSelects.a[slot].value !== step.charId) return;
+    tutorialStepIndex++;
+    tutorialRefreshSetupLocks();
+    tutorialRenderBanner();
+  }
+  playCharSelects.a.forEach((select, slot) => {
+    select.addEventListener('change', () => tutorialCheckSetupAdvance(slot));
+  });
+
+  function tutorialLockLoadoutBuilder() {
+    if (!tutorialActive) return;
+    tutorialPhase = 'loadout';
+    const charId = playState.teamAIds[playState.currentLoadoutIndex];
+    const script = TUTORIAL_LOADOUTS[charId];
+    if (!script) return;
+    document.querySelectorAll('#play-active-triggers input, #play-passive-triggers input').forEach((el) => {
+      el.disabled = !script.triggerIds.includes(el.dataset.tid);
+    });
+    document.querySelectorAll('#play-black-triggers input').forEach((el) => {
+      const allowed = script.blackTriggerId ? el.value === script.blackTriggerId : el.value === '';
+      el.disabled = !allowed;
+    });
+    document.getElementById('play-back-to-setup').disabled = true;
+    tutorialRenderBanner();
+  }
+  const _origRenderLoadoutBuilderForCurrent = renderLoadoutBuilderForCurrent;
+  renderLoadoutBuilderForCurrent = function () {
+    _origRenderLoadoutBuilderForCurrent();
+    tutorialLockLoadoutBuilder();
+  };
+
+  // A Black Trigger is genuinely optional per the real Loadout rules, so
+  // the engine's own validation (which the "Confirm Loadout" button relies
+  // on) has no opinion on which one, if any, is equipped - it only cares
+  // about the 4 active abilities and the Trion budget. The tutorial script
+  // for Ilona Vance specifically wants Bastion Frame equipped, so that has
+  // to be enforced as an extra tutorial-only gate on top.
+  const _origValidateCurrentLoadout = validateCurrentLoadout;
+  validateCurrentLoadout = function (charId) {
+    const isValid = _origValidateCurrentLoadout(charId);
+    if (tutorialActive && tutorialPhase === 'loadout') {
+      const script = TUTORIAL_LOADOUTS[charId];
+      if (script && script.blackTriggerId) {
+        const loadout = getOrInitLoadout(charId);
+        if (loadout.blackTriggerId !== script.blackTriggerId) {
+          document.getElementById('play-confirm-loadout-btn').disabled = true;
+          return false;
+        }
+      }
+    }
+    return isValid;
+  };
+
+  function tutorialLockActionArea(state) {
+    if (!tutorialActive) return;
+    if (tutorialPhase !== 'battle') {
+      tutorialPhase = 'battle';
+      tutorialBattleSubIndex = 0;
+      tutorialAwaitingEndTurn = false;
+    }
+    const area = document.getElementById('play-action-area');
+    const step = (!tutorialAwaitingEndTurn && tutorialBattleSubIndex < TUTORIAL_BATTLE_STEPS.length)
+      ? TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex] : null;
+    area.querySelectorAll('.action-card').forEach((card) => {
+      if (!step || card.dataset.characterId !== step.characterId) {
+        card.classList.add('tutorial-locked');
+        return;
+      }
+      if (step.type === 'fat') {
+        // Leave every one of this character's abilities enabled - the whole
+        // point of this step is that FAT lets them use more than one.
+        return;
+      }
+      card.querySelectorAll('button.ability-btn').forEach((btn) => {
+        if (btn.dataset.triggerId !== step.triggerId) {
+          btn.disabled = true;
+        } else {
+          btn.classList.add('tutorial-highlight');
+        }
+      });
+    });
+    // Only reveal End Turn once the scripted ability for this step has
+    // actually been used, so there is no way to skip past it.
+    document.getElementById('play-end-turn-btn').style.display = tutorialAwaitingEndTurn ? '' : 'none';
+    tutorialRenderBanner();
+  }
+
+  function tutorialMaybeForceFat() {
+    if (!tutorialActive || tutorialPhase !== 'battle') return null;
+    const step = TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex];
+    if (step && step.type === 'fat' && !tutorialFatForced) {
+      tutorialFatForced = true;
+      tutorialFatUsesThisRound = 0;
+      battleDemoForceFat(JSON.stringify({ sessionId: playState.sessionId, characterId: step.characterId }));
+      return step.characterId;
+    }
+    return null;
+  }
+  const _origRenderActionArea = renderActionArea;
+  renderActionArea = function (state) {
+    _origRenderActionArea(state);
+    tutorialLockActionArea(state);
+  };
+
+  function tutorialCheckBattleAdvance(characterId, triggerId) {
+    if (!tutorialActive || tutorialPhase !== 'battle' || tutorialAwaitingEndTurn) return;
+    const step = TUTORIAL_BATTLE_STEPS[tutorialBattleSubIndex];
+    if (!step || step.characterId !== characterId) return;
+    if (step.type === 'fat') {
+      tutorialFatUsesThisRound++;
+      if (tutorialFatUsesThisRound >= step.minUses) tutorialAwaitingEndTurn = true;
+      tutorialRenderBanner();
+      return;
+    }
+    if (step.triggerId !== triggerId) return;
+    tutorialAwaitingEndTurn = true;
+    tutorialRenderBanner();
+  }
+  const _origPushLogAction = pushLogAction;
+  pushLogAction = function (team, roundNumber, actionEntry) {
+    _origPushLogAction(team, roundNumber, actionEntry);
+    if (team === 'A') tutorialCheckBattleAdvance(actionEntry.characterId, actionEntry.triggerId);
+  };
+
+  const _origHandleEndTurnClick = handleEndTurnClick;
+  handleEndTurnClick = function () {
+    if (tutorialActive && tutorialAwaitingEndTurn) {
+      tutorialAwaitingEndTurn = false;
+      tutorialBattleSubIndex++;
+    }
+    _origHandleEndTurnClick();
+  };
+
+  const _origRenderBattleState = renderBattleState;
+  renderBattleState = function (state) {
+    const forcedCharacterId = tutorialMaybeForceFat();
+    if (forcedCharacterId) {
+      // The state snapshot was captured before the force-FAT call above
+      // mutated the session server-side, so it still says false here -
+      // patch it in place (before the fighter list and action area below
+      // both read it) so the FAT badge shows up immediately rather than
+      // only after the next ability use.
+      const forcedChar = state.teamA.find((c) => c.id === forcedCharacterId);
+      if (forcedChar) forcedChar.fatTriggered = true;
+    }
+    _origRenderBattleState(state);
+    if (!tutorialActive) return;
+    if (state.isOver) {
+      tutorialFinish();
+    } else if (tutorialPhase === 'battle' && tutorialBattleSubIndex >= TUTORIAL_BATTLE_STEPS.length &&
+        !tutorialAwaitingEndTurn && state.isPlayerTurn) {
+      tutorialFinish();
+      // The action area above was rendered while still tutorial-locked (this
+      // check only runs after that render); re-render now that the lock is
+      // off so the player regains full control immediately, not on their
+      // next action.
+      renderActionArea(state);
+    } else {
+      tutorialRenderBanner();
+    }
+  };
+
+  function tutorialUnlockEverything() {
+    document.getElementById('play-randomize-a').disabled = false;
+    document.getElementById('play-randomize-b').disabled = false;
+    document.getElementById('play-continue-loadout-btn').disabled = false;
+    document.getElementById('play-back-to-setup').disabled = false;
+    playCharCards.a.forEach((c) => { c.querySelector('.char-pick-btn').disabled = false; });
+    playCharCards.b.forEach((c) => { c.querySelector('.char-pick-btn').disabled = false; });
+    playProfileHintB.querySelector('.char-pick-btn').disabled = false;
+    playEnforceNoDuplicates('a');
+    playEnforceNoDuplicates('b');
+    document.querySelectorAll('#play-active-triggers input, #play-passive-triggers input, #play-black-triggers input')
+      .forEach((el) => { el.disabled = false; });
+  }
+
+  function tutorialFinish() {
+    if (!tutorialActive) return;
+    tutorialActive = false;
+    tutorialBanner().style.display = 'none';
+    tutorialUnlockEverything();
+  }
+
+  function tutorialStart() {
+    tutorialActive = true;
+    tutorialPhase = 'setup';
+    tutorialStepIndex = 0;
+    tutorialBattleSubIndex = 0;
+    tutorialAwaitingEndTurn = false;
+    tutorialFatForced = false;
+    tutorialFatUsesThisRound = 0;
+
+    showWizardStep('play-step-setup');
+    document.getElementById('play-results').classList.remove('visible');
+    document.getElementById('play-setup-error').textContent = '';
+
+    TUTORIAL_OPPONENT_IDS.forEach((id, slot) => {
+      playCharSelects.b[slot].value = id;
+      playUpdateCharCard('b', slot);
+    });
+    playEnforceNoDuplicates('b');
+    playProfileSelectB.value = TUTORIAL_OPPONENT_PROFILE_ID;
+    playUpdateProfileHintB();
+
+    tutorialBanner().style.display = '';
+    tutorialRefreshSetupLocks();
+    tutorialRenderBanner();
+  }
+
+  document.getElementById('tab-tutorial').addEventListener('click', () => {
+    switchMode('tutorial');
+    tutorialStart();
+  });
+  document.getElementById('tab-play').addEventListener('click', () => tutorialFinish());
+  document.getElementById('tab-simulate').addEventListener('click', () => tutorialFinish());
+  document.getElementById('tab-guide').addEventListener('click', () => tutorialFinish());
+  document.getElementById('tutorial-exit-btn').addEventListener('click', () => {
+    tutorialFinish();
+    switchMode('play');
+  });
+})();
+</script>

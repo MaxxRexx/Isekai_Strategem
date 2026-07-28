@@ -115,14 +115,31 @@ class DiceRoller {
   /// rather than a d20 + modifier contest.
   int rollPercent() => random.nextInt(100) + 1;
 
-  /// Rolls an arbitrary NdM dice expression (e.g. 1d4), summing the dice.
-  int rollDice(int count, int sides) {
-    var total = 0;
-    for (var i = 0; i < count; i++) {
-      total += random.nextInt(sides) + 1;
-    }
-    return total;
+  /// Rolls an arbitrary NdM dice expression, returning each individual die
+  /// (in roll order) rather than just the sum - what a UI needs to show
+  /// the actual dice behind a damage roll instead of only its total.
+  List<int> rollDiceRaw(int count, int sides) {
+    return [for (var i = 0; i < count; i++) random.nextInt(sides) + 1];
   }
+
+  /// Rolls an arbitrary NdM dice expression (e.g. 1d4), summing the dice.
+  int rollDice(int count, int sides) =>
+      rollDiceRaw(count, sides).fold(0, (sum, d) => sum + d);
+}
+
+/// The individual dice (in roll order) behind one [DiceExpression.roll],
+/// kept alongside the total so a UI can show the actual roll (e.g.
+/// "14+27+3 = 44") rather than just the resulting number.
+class DiceExpressionRollResult {
+  final List<int> rawRolls;
+  final int flatBonus;
+  final int total;
+
+  const DiceExpressionRollResult({
+    required this.rawRolls,
+    required this.flatBonus,
+    required this.total,
+  });
 }
 
 /// A simple NdM+K dice expression, used for damage rolls like status
@@ -134,7 +151,18 @@ class DiceExpression {
 
   const DiceExpression(this.count, this.sides, {this.flatBonus = 0});
 
-  int roll(DiceRoller roller) => roller.rollDice(count, sides) + flatBonus;
+  /// Rolls this expression, keeping the individual dice - see
+  /// [DiceExpressionRollResult].
+  DiceExpressionRollResult rollDetailed(DiceRoller roller) {
+    final raw = roller.rollDiceRaw(count, sides);
+    return DiceExpressionRollResult(
+      rawRolls: raw,
+      flatBonus: flatBonus,
+      total: raw.fold(0, (sum, d) => sum + d) + flatBonus,
+    );
+  }
+
+  int roll(DiceRoller roller) => rollDetailed(roller).total;
 
   /// Expected value of a roll, e.g. `1d6+2` -> 5.5. Used by heuristics
   /// (like `RuleBasedAi`'s ability scoring) that need a single comparable

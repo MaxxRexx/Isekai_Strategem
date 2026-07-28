@@ -2,11 +2,21 @@
 library battle_engine;
 
 // AI
+export 'src/ai/ai_profile.dart';
+export 'src/ai/ai_skill_class.dart';
+export 'src/ai/loadout_builder.dart';
+export 'src/ai/profile_driven_ai.dart';
 export 'src/ai/rule_based_ai.dart';
+
+// Content
+export 'src/content/black_trigger_catalog.dart';
+export 'src/content/character_roster.dart';
+export 'src/content/trigger_catalog.dart';
 
 // Models
 export 'src/models/black_trigger.dart';
 export 'src/models/character.dart';
+export 'src/models/character_perk.dart';
 export 'src/models/character_type.dart';
 export 'src/models/damage_type.dart';
 export 'src/models/loadout.dart';

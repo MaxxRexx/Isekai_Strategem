@@ -1,0 +1,62 @@
+# Builds the Flutter web app and publishes it to GitHub Pages on every push,
+# so the whole develop / build / deploy / test-on-phone loop needs no PC.
+#
+# One-time setup after the first run of this workflow: in the repo's
+# Settings > Pages, set Source to "Deploy from a branch" and pick the
+# gh-pages branch (root folder). The app is then served at
+# https://maxxrexx.github.io/Isekai_Strategem/
+name: Deploy web app
+
+on:
+  push:
+    branches:
+      - main
+      - claude/**
+    paths:
+      - app/**
+      - packages/**
+      - .github/workflows/deploy-web.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# One deploy at a time; a newer push cancels an in-flight older one.
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.4
+          cache: true
+
+      - name: Battle engine tests
+        working-directory: packages/battle_engine
+        run: |
+          dart pub get
+          dart test
+
+      - name: App tests
+        working-directory: app
+        run: |
+          flutter pub get
+          flutter test
+
+      - name: Build web app
+        working-directory: app
+        run: flutter build web --release --base-href "/Isekai_Strategem/"
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: app/build/web
+          force_orphan: true
