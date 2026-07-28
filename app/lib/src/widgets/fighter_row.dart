@@ -7,8 +7,10 @@ import 'portrait_tile.dart';
 /// One character's line in a team panel: portrait tile, HP bar (value
 /// overlaid inside it), name, and status/FAT badges.
 ///
-/// [compact] switches to the mirrored, right-aligned column layout used
-/// for the narrow opponent lane, where there's no room for a wide row.
+/// [compact] mirrors the row horizontally (name/status on the left,
+/// portrait on the right, right-aligned text) for the opponent lane, so
+/// its rows match the player's row height instead of stacking the name
+/// below the portrait.
 class FighterRow extends StatelessWidget {
   final FighterSnapshot fighter;
   final double portraitSize;
@@ -66,21 +68,28 @@ class FighterRow extends StatelessWidget {
 
     if (compact) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  nameLine,
+                  if (effects != null) ...[const SizedBox(height: 6), effects],
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
             portrait,
-            const SizedBox(height: 4),
-            nameLine,
-            if (effects != null) ...[const SizedBox(height: 4), effects],
           ],
         ),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
