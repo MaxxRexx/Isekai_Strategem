@@ -4,6 +4,7 @@ import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../data/character_art.dart';
 import '../data/describe.dart';
 import '../game/battle_models.dart';
 import '../game/draft.dart';
@@ -81,6 +82,20 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   final Set<String> _selectedTargets = {};
 
   TutorialState? _tutorial;
+
+  // Which cutout variant (if any) each character shows in the spotlight
+  // panel this battle - chosen once and cached, not re-rolled every
+  // rebuild, so a character doesn't flicker between art variants.
+  final Map<String, String> _cutoutChoices = {};
+
+  String? _cutoutFor(String characterId) {
+    if (_cutoutChoices.containsKey(characterId)) {
+      return _cutoutChoices[characterId];
+    }
+    final asset = randomCutoutAssetFor(characterId, Random());
+    if (asset != null) _cutoutChoices[characterId] = asset;
+    return asset;
+  }
 
   @override
   void initState() {
@@ -858,56 +873,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           opponentSkillLabel: skillClassLabel[opponentProfile.skillClass]!,
         ),
         const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 48,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  border: Border(
-                    top: BorderSide(color: Palette.teamA, width: 3),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'YOUR SQUAD',
-                      style: TextStyle(
-                        color: Palette.teamA,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    for (final fighter in session.teamA)
-                      _playerFighterRow(fighter, session, tutorialStep),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 26,
-              child: _characterSpotlight(_spotlightFighter(session)),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 26,
-              child: TeamPanel(
-                label: 'Opponent Squad',
-                color: Palette.teamB,
-                fighters: session.teamB,
-                portraitSize: 64,
-                compact: true,
-              ),
-            ),
-          ],
-        ),
+        _battleRow(session, tutorialStep),
         const SizedBox(height: 12),
         if (session.isOver) ...[
           OutcomeBanner(
@@ -940,6 +906,108 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
+  /// The three-column Your Squad / Spotlight / Opponent Squad row. Kept as
+  /// its own [LayoutBuilder] so the spotlighted character's cutout art (if
+  /// any) can be painted as a [Positioned] overlay sized/placed from the
+  /// row's actual pixel widths - letting it bleed rightward past its own
+  /// column into the Opponent Squad column's space a little, the way the
+  /// approved reference lets a character's cutout drift over neighboring
+  /// panels without covering their text.
+  Widget _battleRow(PlaySession session, TutorialBattleStep? tutorialStep) {
+    final fighter = _spotlightFighter(session);
+    final cutout = fighter == null ? null : _cutoutFor(fighter.id);
+
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 48,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              border: Border(top: BorderSide(color: Palette.teamA, width: 3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'YOUR SQUAD',
+                  style: TextStyle(
+                    color: Palette.teamA,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                for (final fighter in session.teamA)
+                  _playerFighterRow(fighter, session, tutorialStep),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          flex: 26,
+          child: _characterSpotlight(fighter, hasCutout: cutout != null),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          flex: 26,
+          child: TeamPanel(
+            label: 'Opponent Squad',
+            color: Palette.teamB,
+            fighters: session.teamB,
+            portraitSize: 64,
+            compact: true,
+          ),
+        ),
+      ],
+    );
+
+    if (cutout == null) return row;
+
+    // The source art (804x1400) is much narrower than tall, so fitting it
+    // to the reserved 220px height gives its actual on-screen width here -
+    // BoxFit.contain inside an artificially wide box would just center the
+    // narrow result instead of pushing it to one edge, so the width has to
+    // be computed for real to get a deliberate bleed past the column edge.
+    const cutoutAspectRatio = 804 / 1400;
+    const artHeight = 220.0;
+    const artRenderWidth = artHeight * cutoutAspectRatio;
+    const bleedIntoOpponent = 36.0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gutters = 20.0;
+        final flexWidth = constraints.maxWidth - gutters;
+        final spotlightLeft = flexWidth * 48 / 100 + 10;
+        final spotlightWidth = flexWidth * 26 / 100;
+        final spotlightRight = spotlightLeft + spotlightWidth;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            row,
+            Positioned(
+              left: spotlightRight + bleedIntoOpponent - artRenderWidth,
+              width: artRenderWidth,
+              // Fixed to match _characterSpotlight's own reserved 220px
+              // placeholder gap below the SPOTLIGHT label - not the tallest
+              // sibling column's height (Your Squad's, which varies with
+              // squad size and would otherwise stretch/misalign the art).
+              top: 34,
+              height: artHeight,
+              child: IgnorePointer(
+                child: Image.asset(cutout, fit: BoxFit.contain),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// Whichever fighter the spotlight column shows: whoever's ability row
   /// was last tapped (so picking an ability spotlights its user), falling
   /// back to the first living squad member.
@@ -954,10 +1022,15 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   }
 
   /// A large "spotlight" panel for one character, reserving the screen
-  /// real estate the approved reference gives to full character art - for
-  /// now this is just the shared portrait tile scaled up as a stand-in
-  /// until real generated art lands.
-  Widget _characterSpotlight(FighterSnapshot? fighter) {
+  /// real estate the approved reference gives to full character art. When
+  /// [hasCutout] is true the actual cutout image is painted by [_battleRow]
+  /// as a separate overlay (so it can bleed past this panel's own bounds);
+  /// this just leaves room for it. Characters without art yet keep the
+  /// shared portrait tile scaled up as a stand-in.
+  Widget _characterSpotlight(
+    FighterSnapshot? fighter, {
+    bool hasCutout = false,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -990,17 +1063,23 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                LayoutBuilder(
-                  builder: (context, constraints) => PortraitHealthBar(
-                    characterId: fighter.id,
-                    name: fighter.name,
-                    type: fighter.type,
-                    currentHealth: fighter.currentHealth,
-                    maxHealth: fighter.maxHealth,
-                    alive: fighter.alive,
-                    size: constraints.maxWidth.clamp(0, 220),
+                if (hasCutout)
+                  // The actual art is painted by _battleRow's overlay, sized
+                  // and positioned from the row's real pixel widths; this
+                  // just reserves matching vertical space in-flow.
+                  const SizedBox(height: 220)
+                else
+                  LayoutBuilder(
+                    builder: (context, constraints) => PortraitHealthBar(
+                      characterId: fighter.id,
+                      name: fighter.name,
+                      type: fighter.type,
+                      currentHealth: fighter.currentHealth,
+                      maxHealth: fighter.maxHealth,
+                      alive: fighter.alive,
+                      size: constraints.maxWidth.clamp(0, 220),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 8),
                 Text(
                   fighter.name,
