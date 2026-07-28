@@ -862,7 +862,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 48,
+              flex: 1,
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -890,14 +890,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 16),
             Expanded(
-              flex: 26,
-              child: _characterSpotlight(_spotlightFighter(session)),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 26,
+              flex: 1,
               child: TeamPanel(
                 label: 'Opponent Squad',
                 color: Palette.teamB,
@@ -937,102 +932,6 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         ),
         const SizedBox(height: 24),
       ],
-    );
-  }
-
-  /// Whichever fighter the spotlight column shows: whoever's ability row
-  /// was last tapped (so picking an ability spotlights its user), falling
-  /// back to the first living squad member.
-  FighterSnapshot? _spotlightFighter(PlaySession session) {
-    for (final f in session.teamA) {
-      if (f.id == _selectedCharacterId) return f;
-    }
-    for (final f in session.teamA) {
-      if (f.alive) return f;
-    }
-    return session.teamA.isEmpty ? null : session.teamA.first;
-  }
-
-  /// A large "spotlight" panel for one character, reserving the screen
-  /// real estate the approved reference gives to full character art - for
-  /// now this is just the shared portrait tile scaled up as a stand-in
-  /// until real generated art lands.
-  Widget _characterSpotlight(FighterSnapshot? fighter) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: Border(
-          top: BorderSide(
-            color: fighter == null ? Colors.white12 : Palette.gold,
-            width: 3,
-          ),
-        ),
-      ),
-      child: fighter == null
-          ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Text(
-                'No living character to spotlight.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-            )
-          : Column(
-              children: [
-                const Text(
-                  'SPOTLIGHT',
-                  style: TextStyle(
-                    color: Palette.gold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                LayoutBuilder(
-                  builder: (context, constraints) => PortraitHealthBar(
-                    characterId: fighter.id,
-                    name: fighter.name,
-                    type: fighter.type,
-                    currentHealth: fighter.currentHealth,
-                    maxHealth: fighter.maxHealth,
-                    alive: fighter.alive,
-                    size: constraints.maxWidth.clamp(0, 220),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  fighter.name,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: fighter.alive ? Colors.white : Colors.white38,
-                    decoration: fighter.alive
-                        ? null
-                        : TextDecoration.lineThrough,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-                if (fighter.statusEffects.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Wrap(
-                      spacing: 3,
-                      runSpacing: 3,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        for (final s in fighter.statusEffects)
-                          StatusBadge(
-                            name: s.name,
-                            remainingTurns: s.remainingTurns,
-                          ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
     );
   }
 
