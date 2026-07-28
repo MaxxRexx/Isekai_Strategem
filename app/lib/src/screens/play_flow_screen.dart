@@ -932,7 +932,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 label: 'Opponent Squad',
                 color: Palette.teamB,
                 fighters: session.teamB,
-                portraitSize: 64,
+                portraitSize: 96,
                 compact: true,
               ),
             ),
