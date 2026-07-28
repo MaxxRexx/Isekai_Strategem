@@ -31,6 +31,7 @@ class FighterRow extends StatelessWidget {
       maxHealth: fighter.maxHealth,
       alive: fighter.alive,
       size: portraitSize,
+      mirrorRank: compact,
     );
     final nameLine = Row(
       mainAxisSize: MainAxisSize.min,

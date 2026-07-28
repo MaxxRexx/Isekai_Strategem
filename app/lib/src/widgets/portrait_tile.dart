@@ -23,6 +23,11 @@ class PortraitTile extends StatelessWidget {
   /// character the way an AI opponent's or the roster browser's does.
   final CharacterRank? rank;
 
+  /// Flips the rank badge to the top-right corner - used for the opponent
+  /// lane so its badges sit on the outer edge, mirroring the player's
+  /// top-left badges across the battle screen's center.
+  final bool mirrorRank;
+
   const PortraitTile({
     super.key,
     required this.characterId,
@@ -31,6 +36,7 @@ class PortraitTile extends StatelessWidget {
     this.size = 64,
     this.showRank = true,
     this.rank,
+    this.mirrorRank = false,
   });
 
   static String initialsFor(String name) {
@@ -85,7 +91,8 @@ class PortraitTile extends StatelessWidget {
         if (showRank && effectiveRank != null)
           Positioned(
             top: -size * 0.14,
-            left: -size * 0.13,
+            left: mirrorRank ? null : -size * 0.13,
+            right: mirrorRank ? -size * 0.13 : null,
             child: RankBadge(rank: effectiveRank, size: size * 0.42),
           ),
       ],
@@ -104,6 +111,7 @@ class PortraitHealthBar extends StatelessWidget {
   final bool alive;
   final double size;
   final CharacterRank? rank;
+  final bool mirrorRank;
 
   const PortraitHealthBar({
     super.key,
@@ -115,6 +123,7 @@ class PortraitHealthBar extends StatelessWidget {
     required this.alive,
     this.size = 64,
     this.rank,
+    this.mirrorRank = false,
   });
 
   @override
@@ -141,6 +150,7 @@ class PortraitHealthBar extends StatelessWidget {
               type: type,
               size: size,
               rank: rank,
+              mirrorRank: mirrorRank,
             ),
           ),
           const SizedBox(height: 4),
