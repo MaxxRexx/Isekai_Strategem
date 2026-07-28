@@ -695,18 +695,19 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           errors: validation.errors,
           startError: _loadoutError,
           onAutoFill: _tutorialActive ? null : _autoFillCurrentLoadout,
+          trailing: LoadoutBuilderPanel(
+            character: character,
+            selection: selection,
+            allowedActiveIds: tutorialScript?.triggerIds.toSet(),
+            allowedBlackId: tutorialScript?.blackTriggerId,
+            tutorialLocked: tutorialScript != null,
+            remainingTrion:
+                character.baseStats.trionCapacity - loadout.totalEquipCost,
+            onSelectionChanged: () => setState(() {}),
+          ),
         ),
         const SizedBox(height: 12),
         _yourPicksAndPlayerPanel(loadout, selection),
-        const SizedBox(height: 12),
-        LoadoutBuilderPanel(
-          character: character,
-          selection: selection,
-          allowedActiveIds: tutorialScript?.triggerIds.toSet(),
-          allowedBlackId: tutorialScript?.blackTriggerId,
-          tutorialLocked: tutorialScript != null,
-          onSelectionChanged: () => setState(() {}),
-        ),
         const SizedBox(height: 16),
         ElevatedButton(
           onPressed: validation.isValid && tutorialValid

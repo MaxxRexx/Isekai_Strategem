@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final Map<String, LoadoutSelection> _selections = {};
 
   LoadoutSelection _selectionFor(String charId) =>
-      _selections.putIfAbsent(charId, LoadoutSelection.new);
+      _selections.putIfAbsent(charId, () => defaultLoadoutSelectionFor(charId));
 
   bool _isSquadValid(String charId) {
     final loadout = _selectionFor(charId).toLoadout(charId);
@@ -116,6 +116,27 @@ class _HomeScreenState extends State<HomeScreen> {
                         loadout: loadout!,
                         errors: validation!.errors,
                         onAutoFill: _autoFillSelected,
+                        trailing: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            LoadoutBuilderPanel(
+                              key: ValueKey(selectedId),
+                              character: selected,
+                              selection: selection!,
+                              remainingTrion:
+                                  selected.baseStats.trionCapacity -
+                                  loadout.totalEquipCost,
+                              onSelectionChanged: () => setState(() {}),
+                            ),
+                            const SizedBox(height: 12),
+                            _SquadMembershipButton(
+                              inSquad: _squadIds.contains(selectedId),
+                              squadFull: _squadIds.length >= 3,
+                              loadoutValid: validation.isValid,
+                              onPressed: () => _toggleSquad(selectedId!),
+                            ),
+                          ],
+                        ),
                       ),
                 const SizedBox(height: 16),
                 _ModeTabsRow(
@@ -156,22 +177,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   squadIds: _squadIds,
                   onTap: _selectCharacter,
                 ),
-                if (selected != null) ...[
-                  const SizedBox(height: 16),
-                  LoadoutBuilderPanel(
-                    key: ValueKey(selectedId),
-                    character: selected,
-                    selection: selection!,
-                    onSelectionChanged: () => setState(() {}),
-                  ),
-                  const SizedBox(height: 12),
-                  _SquadMembershipButton(
-                    inSquad: _squadIds.contains(selectedId),
-                    squadFull: _squadIds.length >= 3,
-                    loadoutValid: validation!.isValid,
-                    onPressed: () => _toggleSquad(selectedId!),
-                  ),
-                ],
               ],
             ),
           ),

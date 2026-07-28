@@ -27,6 +27,12 @@ class LoadoutBuilderPanel extends StatefulWidget {
   final String? allowedBlackId;
   final bool tutorialLocked;
 
+  /// Trion left in this character's budget (Capacity minus the current
+  /// Loadout's total equip cost). Not-yet-equipped Triggers/Black Trigger
+  /// costing more than this are disabled - already-equipped ones stay
+  /// tappable regardless, since unequipping only ever frees budget.
+  final int remainingTrion;
+
   /// Called after [selection] is mutated (equip/unequip/select/remove) so
   /// a parent tracking its own derived state (Trion cost, validation, a
   /// squad list) can rebuild too.
@@ -39,6 +45,7 @@ class LoadoutBuilderPanel extends StatefulWidget {
     this.allowedActiveIds,
     this.allowedBlackId,
     this.tutorialLocked = false,
+    required this.remainingTrion,
     required this.onSelectionChanged,
   });
 
@@ -182,9 +189,12 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
 
     if (active != null) {
       final equipped = selection.triggerIds.contains(active.id);
-      final locked =
+      final tutorialBlocked =
           widget.allowedActiveIds != null &&
           !widget.allowedActiveIds!.contains(active.id);
+      final unaffordable =
+          !equipped && active.equipCost > widget.remainingTrion;
+      final locked = tutorialBlocked || unaffordable;
       return _infoPanelShell(
         icon: TriggerIcon(trigger: active, size: 18),
         name: active.name,
@@ -205,7 +215,10 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
 
     final bt = black!;
     final selected = selection.blackTriggerId == bt.id;
-    final locked = widget.tutorialLocked && widget.allowedBlackId != bt.id;
+    final tutorialBlocked =
+        widget.tutorialLocked && widget.allowedBlackId != bt.id;
+    final unaffordable = !selected && bt.equipCost > widget.remainingTrion;
+    final locked = tutorialBlocked || unaffordable;
     final grade = ResonanceGrid.defaultGrid.lookup(
       widget.character.type,
       bt.type,
@@ -310,8 +323,10 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
                 !selection.triggerIds.contains(t.id) &&
                 _previewTriggerId == t.id,
             enabled:
-                widget.allowedActiveIds == null ||
-                widget.allowedActiveIds!.contains(t.id),
+                (widget.allowedActiveIds == null ||
+                    widget.allowedActiveIds!.contains(t.id)) &&
+                (selection.triggerIds.contains(t.id) ||
+                    t.equipCost <= widget.remainingTrion),
             tooltip: t.name,
             onTap: () => setState(() => _previewTriggerId = t.id),
             size: 44,
@@ -362,7 +377,10 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
                 highlighted:
                     selection.blackTriggerId != bt.id &&
                     _previewTriggerId == bt.id,
-                enabled: !tutorialLocked || allowedId == bt.id,
+                enabled:
+                    (!tutorialLocked || allowedId == bt.id) &&
+                    (selection.blackTriggerId == bt.id ||
+                        bt.equipCost <= widget.remainingTrion),
                 tooltip: bt.name,
                 onTap: () => setState(() => _previewTriggerId = bt.id),
                 size: 44,

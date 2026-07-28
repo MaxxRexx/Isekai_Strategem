@@ -19,6 +19,12 @@ class LoadoutBudgetPanel extends StatelessWidget {
   final String? startError;
   final VoidCallback? onAutoFill;
 
+  /// Rendered inside this same bordered panel, below the budget readout -
+  /// typically the matching [LoadoutBuilderPanel] (and a squad add/remove
+  /// button), so the whole per-character Loadout workflow lives in one box
+  /// instead of a separate panel further down the page.
+  final Widget? trailing;
+
   const LoadoutBudgetPanel({
     super.key,
     required this.character,
@@ -26,6 +32,7 @@ class LoadoutBudgetPanel extends StatelessWidget {
     this.errors = const [],
     this.startError,
     this.onAutoFill,
+    this.trailing,
   });
 
   @override
@@ -175,6 +182,7 @@ class LoadoutBudgetPanel extends StatelessWidget {
                 style: const TextStyle(color: Palette.danger, fontSize: 11),
               ),
             ),
+          if (trailing != null) ...[const SizedBox(height: 12), trailing!],
         ],
       ),
     );

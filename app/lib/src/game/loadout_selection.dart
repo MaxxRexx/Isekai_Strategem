@@ -1,5 +1,6 @@
 import 'package:battle_engine/battle_engine.dart';
 
+import '../data/default_loadout_profiles.dart';
 import 'draft.dart';
 
 /// A player's in-progress Loadout choices for one character. Shared between
@@ -17,4 +18,25 @@ class LoadoutSelection {
         ? null
         : blackTriggerCatalog[blackTriggerId!],
   );
+}
+
+/// A character's curated default Loadout selection (see
+/// data/default_loadout_profiles.dart), so a player can draft a squad and
+/// hit Play without touching a single Trigger - every pick made this way
+/// stays fully editable afterward, same as any other selection.
+LoadoutSelection defaultLoadoutSelectionFor(String characterId) {
+  final selection = LoadoutSelection();
+  final profileId = defaultLoadoutProfileId[characterId];
+  if (profileId == null) return selection;
+
+  final loadout = loadoutBuilder.build(
+    roster[characterId],
+    activeTriggerPool: triggerCatalog.activeTriggers,
+    passiveTriggerPool: triggerCatalog.passiveTriggers,
+    blackTriggerPool: blackTriggerCatalog.all,
+    profile: profileById(profileId),
+  );
+  selection.triggerIds.addAll(loadout.triggers.map((t) => t.id));
+  selection.blackTriggerId = loadout.blackTrigger?.id;
+  return selection;
 }
