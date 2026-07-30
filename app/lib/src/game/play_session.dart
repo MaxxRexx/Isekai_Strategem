@@ -195,15 +195,13 @@ class PlaySession {
       loadouts: teamBDraft.loadouts,
     );
 
-    // Cross-team Initiative: the higher Team Efficiency Grade takes the
-    // opening turn; a tie falls back to a coin flip.
+    // Who moves first is an even coin flip, independent of any stat or
+    // grade. (The Team Efficiency Grade is still computed and stored for
+    // later use, but it does not decide the opening turn.)
     final teamAGoesFirst = switch (firstTurn) {
       'teamA' => true,
       'teamB' => false,
-      _ =>
-        teamAEfficiency.composite != teamBEfficiency.composite
-            ? teamAEfficiency.composite > teamBEfficiency.composite
-            : Random().nextBool(),
+      _ => Random().nextBool(),
     };
 
     final battle = Battle(

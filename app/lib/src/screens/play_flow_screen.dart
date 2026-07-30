@@ -11,7 +11,6 @@ import '../game/draft.dart';
 import '../game/loadout_selection.dart';
 import '../game/play_session.dart';
 import '../game/report.dart';
-import '../game/team_efficiency.dart';
 import '../game/tutorial.dart';
 import '../ui/palette.dart';
 import '../widgets/ability_slot.dart';
@@ -949,12 +948,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           isOver: session.isOver,
           roundNumber: session.roundNumber,
           teamATrion: session.teamATrion,
-          playerGradeLabel:
-              'Team Efficiency Grade ${_session!.teamAEfficiency.tier.label}',
           opponentName: opponentProfile.name,
-          opponentSkillLabel:
-              '${skillClassLabel[opponentProfile.skillClass]!} - '
-              'Team Efficiency Grade ${_session!.teamBEfficiency.tier.label}',
+          opponentSkillLabel: skillClassLabel[opponentProfile.skillClass]!,
         ),
         const SizedBox(height: 12),
         Row(
@@ -1400,6 +1395,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         children: [
           for (final id in action.legalTargetIds)
             ChoiceChip(
+              shape: _rectButtonShape,
               label: Text(
                 names[id] ?? id,
                 style: const TextStyle(fontSize: 11),
@@ -1419,6 +1415,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         children: [
           for (final id in action.legalTargetIds)
             FilterChip(
+              shape: _rectButtonShape,
               label: Text(
                 names[id] ?? id,
                 style: const TextStyle(fontSize: 11),
@@ -1592,7 +1589,6 @@ class _BattleTopBar extends StatelessWidget {
   final bool isOver;
   final int roundNumber;
   final int teamATrion;
-  final String playerGradeLabel;
   final String opponentName;
   final String opponentSkillLabel;
 
@@ -1600,7 +1596,6 @@ class _BattleTopBar extends StatelessWidget {
     required this.isOver,
     required this.roundNumber,
     required this.teamATrion,
-    required this.playerGradeLabel,
     required this.opponentName,
     required this.opponentSkillLabel,
   });
@@ -1641,12 +1636,13 @@ class _BattleTopBar extends StatelessWidget {
       ],
     );
     final portrait = _TopBarPortrait(color: color);
-    // The name block flexes/ellipsizes so the bar never overflows on narrow
-    // screens; the portrait keeps its fixed size next to it.
+    // Centered name+portrait cluster; the name block flexes/ellipsizes so
+    // the bar never overflows on narrow screens.
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: portraitFirst
-          ? [portrait, const SizedBox(width: 8), Flexible(child: nameBlock)]
-          : [Flexible(child: nameBlock), const SizedBox(width: 8), portrait],
+          ? [portrait, const SizedBox(width: 12), Flexible(child: nameBlock)]
+          : [Flexible(child: nameBlock), const SizedBox(width: 12), portrait],
     );
   }
 
@@ -1672,13 +1668,23 @@ class _BattleTopBar extends StatelessWidget {
                 Expanded(
                   child: _identity(
                     playerDisplayName,
-                    playerGradeLabel,
+                    null,
                     Palette.gold,
                     portraitFirst: false,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                const SizedBox(width: 20),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    border: Border.all(
+                      color: Palette.accent.withValues(alpha: 0.7),
+                    ),
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1690,9 +1696,9 @@ class _BattleTopBar extends StatelessWidget {
                           letterSpacing: 1,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
-                        '⟡ Trion $teamATrion',
+                        '⟡ Trion Available $teamATrion',
                         style: const TextStyle(
                           color: Palette.gold,
                           fontWeight: FontWeight.w600,
@@ -1701,6 +1707,7 @@ class _BattleTopBar extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(width: 20),
                 Expanded(
                   child: _identity(
                     opponentName,

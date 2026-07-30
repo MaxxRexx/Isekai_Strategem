@@ -106,7 +106,7 @@ void main() {
     expect(a.tier, b.tier);
   });
 
-  test('the higher-grade squad takes the opening turn', () {
+  test('both squads get a grade stored on the session', () {
     const playerIds = ['marren_osei', 'ilona_vance', 'bastian_cole'];
     final session = PlaySession.start(
       playerCharacterIds: playerIds,
@@ -116,15 +116,14 @@ void main() {
       },
       opponentCharacterIds: const ['kaito_reyes', 'vela_ashworth', 'dross'],
       opponentProfileId: 'the_tactician',
-      firstTurn: 'random',
+      // The opening turn is a coin flip, independent of the grade; the
+      // grades are still computed and stored for later use.
+      firstTurn: 'teamA',
     );
-    final a = session.teamAEfficiency.composite;
-    final b = session.teamBEfficiency.composite;
-    if (a > b) {
-      // Team A opened, so the AI never took an opening turn.
-      expect(session.openingAiRound, isNull);
-    } else if (b > a) {
-      expect(session.openingAiRound, isNotNull);
-    }
+    expect(session.teamAEfficiency.composite, inInclusiveRange(0, 100));
+    expect(session.teamBEfficiency.composite, inInclusiveRange(0, 100));
+    // firstTurn: 'teamA' is honored deterministically, so the AI does not
+    // take an opening turn.
+    expect(session.openingAiRound, isNull);
   });
 }
