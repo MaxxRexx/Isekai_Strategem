@@ -440,6 +440,39 @@ class PlaySession {
     return const QueueOutcome.ok();
   }
 
+  /// Whether [triggerId] on [characterId] could be queued right now: it is
+  /// usable, not already queued, within this character's per-turn ability
+  /// limit given what is already queued, and affordable. Mirrors [queue]'s
+  /// checks (minus the target list) so the UI can gray out abilities that
+  /// would just be rejected.
+  bool canQueueAbility(String characterId, String triggerId) {
+    if (!battle.isTeamATurn) return false;
+    final state = battle.states[characterId];
+    if (state == null || !state.isAlive) return false;
+    ActiveTrigger? trigger;
+    for (final t in equippedA[characterId] ?? const <ActiveTrigger>[]) {
+      if (t.id == triggerId) {
+        trigger = t;
+        break;
+      }
+    }
+    if (trigger == null) return false;
+    final engine = battle.turnEngine;
+    if (!engine.canUseAbility(state, trigger)) return false;
+    if (_queue.any(
+      (q) => q.characterId == characterId && q.triggerId == triggerId,
+    )) {
+      return false;
+    }
+    final maxUses = engine.fatEngine.maxAbilitiesThisTurn(state);
+    if (state.abilitiesUsedThisTurnCount + queuedCountFor(characterId) >=
+        maxUses) {
+      return false;
+    }
+    final cost = (trigger.trionCost * state.trionCostMultiplier()).round();
+    return cost <= battle.teamA.trionPool.current;
+  }
+
   /// Removes the queued action at [index] and refunds its Trion. Returns
   /// false if [index] is out of range.
   bool unqueue(int index) {

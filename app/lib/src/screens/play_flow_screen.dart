@@ -29,6 +29,12 @@ import '../widgets/trigger_icons.dart';
 
 enum _PlayStep { setup, loadout, battle }
 
+/// Sharp rectangular button corners for the battle controls, matching the
+/// squared-off tag/chip design rather than the default rounded pills.
+const _rectButtonShape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.zero,
+);
+
 /// Play mode: draft your own squad and Loadouts, then play turn by turn
 /// against an AI opponent. With [tutorial] set, the Guided Tutorial's
 /// script locks each step to a single scripted action. With
@@ -943,11 +949,12 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           isOver: session.isOver,
           roundNumber: session.roundNumber,
           teamATrion: session.teamATrion,
-          playerGradeLabel: 'Grade ${_session!.teamAEfficiency.tier.label}',
+          playerGradeLabel:
+              'Team Efficiency Grade ${_session!.teamAEfficiency.tier.label}',
           opponentName: opponentProfile.name,
           opponentSkillLabel:
               '${skillClassLabel[opponentProfile.skillClass]!} - '
-              'Grade ${_session!.teamBEfficiency.tier.label}',
+              'Team Efficiency Grade ${_session!.teamBEfficiency.tier.label}',
         ),
         const SizedBox(height: 12),
         Row(
@@ -1156,8 +1163,15 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     AbilityDisplay display,
   ) {
     if (!display.usable) return false;
-    if (step == null || step.characterId != fighterId) return true;
-    return step.isFatStep || step.triggerId == display.trigger.id;
+    if (_tutorialActive) {
+      if (step == null || step.characterId != fighterId) return true;
+      return step.isFatStep || step.triggerId == display.trigger.id;
+    }
+    // Play mode: gray out anything that could not actually be queued right
+    // now (already queued, out of ability uses this turn, unaffordable) or
+    // while the turn is resolving. Un-queueing re-enables it.
+    if (_resolving) return false;
+    return _session!.canQueueAbility(fighterId, display.trigger.id);
   }
 
   Widget _abilitySlot(
@@ -1187,14 +1201,17 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           '${t.name} (${action.actualTrionCost} Trion) - '
           '${triggerSummaryLine(t)}';
     }
+    final enabled = _abilityEnabled(tutorialStep, fighter.id, display);
     return AbilitySlot(
       icon: TriggerIcon(trigger: t, size: 28),
       selected: isSelected,
       highlighted: !isSelected && highlight,
-      enabled: _abilityEnabled(tutorialStep, fighter.id, display),
+      enabled: enabled,
       cooldownRemaining: display.cooldownRemaining,
       tooltip: tooltip,
-      onTap: (action == null || _resolving)
+      // Selecting is still allowed for an already-selected ability so it can
+      // be deselected/read; otherwise a disabled slot is not tappable.
+      onTap: (action == null || _resolving || (!enabled && !isSelected))
           ? null
           : () => _selectAbility(fighter.id, action),
       size: 60,
@@ -1248,17 +1265,24 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ),
-          InkWell(
-            onTap: _resolving
+          const SizedBox(width: 10),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Palette.danger,
+              side: const BorderSide(color: Palette.danger),
+              shape: _rectButtonShape,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: _resolving
                 ? null
                 : () => setState(() {
                     _session!.unqueue(index);
                     _afterBattleStateChange();
                   }),
-            child: const Padding(
-              padding: EdgeInsets.all(4),
-              child: Icon(Icons.close, size: 16, color: Palette.danger),
-            ),
+            icon: const Icon(Icons.close, size: 14),
+            label: const Text('UNQUEUE'),
           ),
         ],
       ),
@@ -1271,8 +1295,12 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   /// there's no audio system yet either, so both are presentational;
   /// Surrender is fully functional (see [_confirmSurrender]).
   Widget _sideControls() {
-    return SizedBox(
-      width: 150,
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.only(right: 14),
+      decoration: const BoxDecoration(
+        border: Border(right: BorderSide(color: Colors.white24)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1280,12 +1308,14 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: Palette.danger,
               side: const BorderSide(color: Palette.danger),
+              shape: _rectButtonShape,
             ),
             onPressed: _confirmSurrender,
             child: const Text('SURRENDER'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(shape: _rectButtonShape),
             onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Chat is not available in this mode.'),
@@ -1350,6 +1380,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       return Align(
         alignment: Alignment.centerRight,
         child: ElevatedButton(
+          style: ElevatedButton.styleFrom(shape: _rectButtonShape),
           onPressed: _endTurn,
           child: const Text('END TURN'),
         ),
@@ -1486,12 +1517,14 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             children: [
               if (endTurnVisible)
                 OutlinedButton(
+                  style: OutlinedButton.styleFrom(shape: _rectButtonShape),
                   onPressed: _endTurn,
                   child: const Text('END TURN'),
                 )
               else
                 const SizedBox.shrink(),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(shape: _rectButtonShape),
                 onPressed: canUse
                     ? () {
                         final targets =
@@ -1589,6 +1622,8 @@ class _BattleTopBar extends StatelessWidget {
         Text(
           name,
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -1599,16 +1634,19 @@ class _BattleTopBar extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Colors.white54, fontSize: 10.5),
           ),
       ],
     );
     final portrait = _TopBarPortrait(color: color);
+    // The name block flexes/ellipsizes so the bar never overflows on narrow
+    // screens; the portrait keeps its fixed size next to it.
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: portraitFirst
-          ? [portrait, const SizedBox(width: 8), nameBlock]
-          : [nameBlock, const SizedBox(width: 8), portrait],
+          ? [portrait, const SizedBox(width: 8), Flexible(child: nameBlock)]
+          : [Flexible(child: nameBlock), const SizedBox(width: 8), portrait],
     );
   }
 
@@ -1630,39 +1668,46 @@ class _BattleTopBar extends StatelessWidget {
               ),
             )
           : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _identity(
-                  playerDisplayName,
-                  playerGradeLabel,
-                  Palette.gold,
-                  portraitFirst: false,
+                Expanded(
+                  child: _identity(
+                    playerDisplayName,
+                    playerGradeLabel,
+                    Palette.gold,
+                    portraitFirst: false,
+                  ),
                 ),
-                Row(
-                  children: [
-                    Text(
-                      'ROUND $roundNumber',
-                      style: const TextStyle(
-                        color: Palette.accent,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'ROUND $roundNumber',
+                        style: const TextStyle(
+                          color: Palette.accent,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Text(
-                      '⟡ Trion $teamATrion',
-                      style: const TextStyle(
-                        color: Palette.gold,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 2),
+                      Text(
+                        '⟡ Trion $teamATrion',
+                        style: const TextStyle(
+                          color: Palette.gold,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                _identity(
-                  opponentName,
-                  opponentSkillLabel,
-                  Palette.teamB,
-                  portraitFirst: true,
+                Expanded(
+                  child: _identity(
+                    opponentName,
+                    opponentSkillLabel,
+                    Palette.teamB,
+                    portraitFirst: true,
+                  ),
                 ),
               ],
             ),
@@ -1680,7 +1725,7 @@ class _TopBarPortrait extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const size = 28.0;
+    const size = 84.0; // three times the original 28px top-bar portrait
     return Container(
       width: size,
       height: size,
