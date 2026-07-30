@@ -977,7 +977,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                         letterSpacing: 0.6,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
                     for (final fighter in session.teamA)
                       _playerFighterRow(fighter, session, tutorialStep),
                   ],
@@ -1064,7 +1064,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           ? 0.4
           : 1,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1201,7 +1201,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       selected: isSelected,
       highlighted: !isSelected && highlight,
       enabled: enabled,
-      cooldownRemaining: display.cooldownRemaining,
+      // A dead fighter's abilities are just grayed out like the rest of its
+      // row; no cooldown number is shown on them.
+      cooldownRemaining: fighter.alive ? display.cooldownRemaining : 0,
       tooltip: tooltip,
       // Selecting is still allowed for an already-selected ability so it can
       // be deselected/read; otherwise a disabled slot is not tappable.

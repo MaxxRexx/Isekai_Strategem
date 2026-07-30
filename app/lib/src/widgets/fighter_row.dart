@@ -76,7 +76,7 @@ class FighterRow extends StatelessWidget {
 
     if (compact) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -97,7 +97,7 @@ class FighterRow extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -161,7 +161,7 @@ class TeamPanel extends StatelessWidget {
               letterSpacing: 0.6,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           for (final f in fighters)
             FighterRow(
               fighter: f,
