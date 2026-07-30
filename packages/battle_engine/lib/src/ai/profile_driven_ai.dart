@@ -10,6 +10,22 @@ import 'ai_skill_class.dart';
 import 'loadout_builder.dart';
 import 'rule_based_ai.dart';
 
+/// One ability use the AI has committed to for this turn, chosen up front
+/// against a predicted overlay (a blind queue) and resolved later through
+/// the shared phase-priority resolver - the same path the player's queue
+/// uses (see [ProfileDrivenAi.planTurn]).
+class AiPlannedAction {
+  final String characterId;
+  final String triggerId;
+  final List<String> targetIds;
+
+  const AiPlannedAction({
+    required this.characterId,
+    required this.triggerId,
+    required this.targetIds,
+  });
+}
+
 /// Plays one [AiProfile]'s strategy for a [Battle]'s active team: which
 /// ability, which target, and whether to keep chaining FAT-triggered
 /// extra actions, all read from the profile's data rather than
@@ -85,6 +101,91 @@ class ProfileDrivenAi {
     }
 
     return results;
+  }
+
+  /// Chooses the active team's entire turn up front, without resolving any
+  /// of it, so it can be committed as a blind queue and resolved later
+  /// through the shared phase-priority resolver (the same path the player's
+  /// queue uses). Reuses the same ability/target selection as [takeTurn] but
+  /// evaluates it against a predicted overlay - remaining health per
+  /// character, the Trion budget, and per-character use counts - rather than
+  /// mutating the battle. Does not spend Trion or record uses; the caller
+  /// resolves the returned plan.
+  List<AiPlannedAction> planTurn(
+    Battle battle, {
+    required Map<String, List<ActiveTrigger>> equippedActiveTriggers,
+  }) {
+    final engine = battle.turnEngine;
+    final config = profile.skillConfig;
+    final plan = <AiPlannedAction>[];
+
+    final predictedHealth = <String, int>{
+      for (final team in [battle.activeTeam, battle.inactiveTeam])
+        for (final c in team.characters)
+          c.id: battle.states[c.id]!.currentHealth,
+    };
+    var trionBudget = battle.activeTeamPool.current;
+    final usesPerChar = <String, int>{};
+
+    for (final character in battle.activeTeam.characters) {
+      final state = battle.states[character.id]!;
+      if (!state.isAlive) continue;
+
+      final triggers = equippedActiveTriggers[character.id] ?? const [];
+      if (triggers.isEmpty) continue;
+
+      final unusableThisTurn = <String>{};
+      while (true) {
+        if ((usesPerChar[character.id] ?? 0) >=
+            engine.fatEngine.maxAbilitiesThisTurn(state)) {
+          break;
+        }
+        final usable = triggers.where((t) {
+          if (unusableThisTurn.contains(t.id)) return false;
+          if (!engine.canUseAbility(state, t)) return false;
+          final cost = (t.trionCost * state.trionCostMultiplier()).round();
+          return cost <= trionBudget;
+        }).toList();
+        if (usable.isEmpty) break;
+
+        final trigger = _chooseAbility(state, usable, config, battle);
+        final targets = _chooseTargets(
+          engine,
+          state,
+          trigger,
+          battle,
+          config,
+          predictedHealth: predictedHealth,
+        );
+        if (targets.isEmpty) {
+          unusableThisTurn.add(trigger.id);
+          continue;
+        }
+
+        final cost = (trigger.trionCost * state.trionCostMultiplier()).round();
+        trionBudget -= cost;
+        usesPerChar[character.id] = (usesPerChar[character.id] ?? 0) + 1;
+        plan.add(AiPlannedAction(
+          characterId: character.id,
+          triggerId: trigger.id,
+          targetIds: [for (final t in targets) t.character.id],
+        ));
+
+        // Update the overlay with predicted damage so later choices avoid
+        // predicted-dead targets and the chaining check can see kills.
+        for (final t in targets) {
+          final id = t.character.id;
+          final dmg = _predictedDamage(engine, state, t, trigger).round();
+          predictedHealth[id] = (predictedHealth[id]! - dmg).clamp(0, 1 << 30);
+        }
+
+        if (!_shouldKeepChainingPlanned(battle, targets, predictedHealth)) {
+          break;
+        }
+      }
+    }
+
+    return plan;
   }
 
   bool _isMistake(AiSkillClassConfig config) =>
@@ -266,13 +367,27 @@ class ProfileDrivenAi {
     return damagePower + matchedTags * 50;
   }
 
+  /// Reads [t]'s health, or its predicted health during planning (see
+  /// [planTurn]); with no overlay it is exactly the live value, so
+  /// [takeTurn]'s behavior is unchanged.
+  int _healthOf(CharacterBattleState t, Map<String, int>? predicted) =>
+      predicted == null
+          ? t.currentHealth
+          : (predicted[t.character.id] ?? t.currentHealth);
+
+  bool _aliveOf(CharacterBattleState t, Map<String, int>? predicted) =>
+      predicted == null
+          ? t.isAlive
+          : (predicted[t.character.id] ?? t.currentHealth) > 0;
+
   List<CharacterBattleState> _chooseTargets(
     TurnEngine engine,
     CharacterBattleState attacker,
     ActiveTrigger trigger,
     Battle battle,
-    AiSkillClassConfig config,
-  ) {
+    AiSkillClassConfig config, {
+    Map<String, int>? predictedHealth,
+  }) {
     if (trigger.targetAffiliation == TargetAffiliation.self) {
       return [attacker];
     }
@@ -283,7 +398,7 @@ class ProfileDrivenAi {
 
     final legal = pool
         .where((t) =>
-            t.isAlive &&
+            _aliveOf(t, predictedHealth) &&
             (trigger.targetAffiliation != TargetAffiliation.opponent ||
                 engine.canTarget(attacker, t)))
         .toList();
@@ -295,13 +410,16 @@ class ProfileDrivenAi {
     } else {
       switch (profile.targetPriority) {
         case AiTargetPriority.lowestHealth:
-          legal.sort((a, b) => a.currentHealth.compareTo(b.currentHealth));
+          legal.sort((a, b) => _healthOf(a, predictedHealth)
+              .compareTo(_healthOf(b, predictedHealth)));
           break;
         case AiTargetPriority.matchupAware:
           if (config.matchupAwareEvaluation) {
-            legal.sort((a, b) => _matchupScore(a).compareTo(_matchupScore(b)));
+            legal.sort((a, b) => _matchupScore(a, predictedHealth)
+                .compareTo(_matchupScore(b, predictedHealth)));
           } else {
-            legal.sort((a, b) => a.currentHealth.compareTo(b.currentHealth));
+            legal.sort((a, b) => _healthOf(a, predictedHealth)
+                .compareTo(_healthOf(b, predictedHealth)));
           }
           break;
         case AiTargetPriority.highestThreat:
@@ -334,7 +452,8 @@ class ProfileDrivenAi {
         !isMistake &&
         trigger.damageType != null &&
         legal.length > 1) {
-      _preferALethalTargetIfAvailable(engine, attacker, trigger, legal);
+      _preferALethalTargetIfAvailable(
+          engine, attacker, trigger, legal, predictedHealth);
     }
 
     final maxTargets = trigger.rangeTag == RangeTag.ranged
@@ -346,9 +465,9 @@ class ProfileDrivenAi {
   /// Lower is a more attractive kill target: current health, softened by
   /// Armor/Defense (a high-Armor target with the same health is a worse
   /// use of this hit than a low-Armor one).
-  double _matchupScore(CharacterBattleState t) {
+  double _matchupScore(CharacterBattleState t, Map<String, int>? predicted) {
     final stats = t.effectiveStats();
-    return t.currentHealth + stats.armor * 2 + stats.defense * 0.5;
+    return _healthOf(t, predicted) + stats.armor * 2 + stats.defense * 0.5;
   }
 
   /// Expert-only lookahead: if [trigger]'s predicted damage wouldn't
@@ -362,15 +481,16 @@ class ProfileDrivenAi {
     CharacterBattleState attacker,
     ActiveTrigger trigger,
     List<CharacterBattleState> legal,
+    Map<String, int>? predictedHealth,
   ) {
     final topPick = legal.first;
     if (_predictedDamage(engine, attacker, topPick, trigger) >=
-        topPick.currentHealth) {
+        _healthOf(topPick, predictedHealth)) {
       return;
     }
     for (final candidate in legal.skip(1)) {
       if (_predictedDamage(engine, attacker, candidate, trigger) >=
-          candidate.currentHealth) {
+          _healthOf(candidate, predictedHealth)) {
         legal.remove(candidate);
         legal.insert(0, candidate);
         return;
@@ -439,6 +559,44 @@ class ProfileDrivenAi {
     for (final c in team.characters) {
       final s = battle.states[c.id]!;
       current += s.currentHealth;
+      max += s.effectiveStats().maxHealth;
+    }
+    return max == 0 ? 0 : current / max;
+  }
+
+  /// [_shouldKeepChaining]'s planning counterpart: evaluated against the
+  /// predicted overlay ([planTurn]) rather than resolved results.
+  bool _shouldKeepChainingPlanned(
+    Battle battle,
+    List<CharacterBattleState> targets,
+    Map<String, int> predicted,
+  ) {
+    switch (profile.fatPolicy) {
+      case AiFatPolicy.alwaysChain:
+        return true;
+      case AiFatPolicy.neverVoluntary:
+        return false;
+      case AiFatPolicy.killOrTempoOnly:
+        final securedKill =
+            targets.any((t) => (predicted[t.character.id] ?? 1) <= 0);
+        if (securedKill) return true;
+        return _predictedTeamHealthFraction(
+                battle, battle.activeTeam, predicted) >
+            _predictedTeamHealthFraction(
+                battle, battle.inactiveTeam, predicted);
+    }
+  }
+
+  double _predictedTeamHealthFraction(
+    Battle battle,
+    Team team,
+    Map<String, int> predicted,
+  ) {
+    var current = 0;
+    var max = 0;
+    for (final c in team.characters) {
+      final s = battle.states[c.id]!;
+      current += predicted[c.id] ?? s.currentHealth;
       max += s.effectiveStats().maxHealth;
     }
     return max == 0 ? 0 : current / max;

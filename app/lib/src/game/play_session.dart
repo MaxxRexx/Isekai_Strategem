@@ -448,66 +448,124 @@ class PlaySession {
   ///
   /// Call this before [endTurn].
   LogRound resolveQueue() {
-    final engine = battle.turnEngine;
-    // TeamSpiritCurveConfig.defaults.midpoint.
-    const midpoint = 50;
-
-    final ordered = List<QueuedAction>.from(_queue);
-    final phase = <QueuedAction, int>{};
-    final deviation = <QueuedAction, num>{};
-    final queuedAt = <QueuedAction, int>{};
-    for (var i = 0; i < ordered.length; i++) {
-      final q = ordered[i];
-      final state = battle.states[q.characterId]!;
-      final trigger = equippedA[q.characterId]!.firstWhere(
-        (t) => t.id == q.triggerId,
-      );
-      phase[q] = _phaseFor(trigger).index;
-      deviation[q] =
-          (state.effectiveStats(fatConfig: engine.fatConfig).teamSpirit -
-                  midpoint)
-              .abs();
-      queuedAt[q] = i;
-    }
-    ordered.sort((a, b) {
-      if (phase[a] != phase[b]) return phase[a]!.compareTo(phase[b]!);
-      if (deviation[a] != deviation[b]) {
-        return deviation[b]!.compareTo(deviation[a]!);
-      }
-      return queuedAt[a]!.compareTo(queuedAt[b]!);
-    });
-
-    final actions = [for (final q in ordered) _resolveQueuedAction(q)];
-    final round = LogRound(
-      roundNumber: battle.roundNumber,
+    final round = _resolvePlan(
+      [
+        for (final q in _queue)
+          (
+            characterId: q.characterId,
+            triggerId: q.triggerId,
+            targetIds: q.targetIds,
+          ),
+      ],
+      equipped: equippedA,
       team: 'A',
-      actions: actions,
     );
     _queue.clear();
     return round;
   }
 
-  /// Resolves a single queued action and returns its log entry. This is the
-  /// seam where reactive counters (reflect / dodge / negate / redirect /
-  /// trap) will intercept an attack before it resolves in a later phase;
-  /// today the only reactive rule is the engine's own Guardian redirect
-  /// inside `resolveAbilityUse`.
-  LogAction _resolveQueuedAction(QueuedAction q) {
-    final engine = battle.turnEngine;
-    final state = battle.states[q.characterId]!;
-    final trigger = equippedA[q.characterId]!.firstWhere(
-      (t) => t.id == q.triggerId,
+  /// Resolves the AI's committed plan (see [ProfileDrivenAi.planTurn]) for
+  /// team B through the same phase-priority resolver the player's queue
+  /// uses. Trion was budgeted during planning but not spent, so it is spent
+  /// here as the plan is committed.
+  LogRound resolveAiPlan(List<AiPlannedAction> plan) {
+    final pool = battle.teamB.trionPool;
+    for (final a in plan) {
+      final state = battle.states[a.characterId]!;
+      final trigger = equippedB[a.characterId]!.firstWhere(
+        (t) => t.id == a.triggerId,
+      );
+      pool.trySpend((trigger.trionCost * state.trionCostMultiplier()).round());
+    }
+    return _resolvePlan(
+      [
+        for (final a in plan)
+          (
+            characterId: a.characterId,
+            triggerId: a.triggerId,
+            targetIds: a.targetIds,
+          ),
+      ],
+      equipped: equippedB,
+      team: 'B',
     );
-    // Trion was spent when queued; record the use here (without re-spending)
-    // so the FAT count and end-of-turn cooldowns are set.
+  }
+
+  /// Shared phase-priority resolver for a committed set of actions from one
+  /// team - the player's queue or the AI's plan. Orders by resolution phase,
+  /// then Team Spirit deviation from the midpoint, then original order (see
+  /// [resolveQueue] for the rationale), then resolves each and returns a
+  /// [LogRound]. Trion is the caller's responsibility.
+  LogRound _resolvePlan(
+    List<({String characterId, String triggerId, List<String> targetIds})>
+    items, {
+    required Map<String, List<ActiveTrigger>> equipped,
+    required String team,
+  }) {
+    final engine = battle.turnEngine;
+    const midpoint = 50; // TeamSpiritCurveConfig.defaults.midpoint.
+
+    final ordered = List.of(items);
+    ActiveTrigger triggerAt(int i) => equipped[ordered[i].characterId]!
+        .firstWhere((t) => t.id == ordered[i].triggerId);
+    // Keyed by original index (records are value types, so two identical
+    // actions would collide as map keys).
+    final phase = <int, int>{};
+    final deviation = <int, num>{};
+    for (var i = 0; i < ordered.length; i++) {
+      final state = battle.states[ordered[i].characterId]!;
+      phase[i] = _phaseFor(triggerAt(i)).index;
+      deviation[i] =
+          (state.effectiveStats(fatConfig: engine.fatConfig).teamSpirit -
+                  midpoint)
+              .abs();
+    }
+    final order = List<int>.generate(ordered.length, (i) => i)
+      ..sort((a, b) {
+        if (phase[a] != phase[b]) return phase[a]!.compareTo(phase[b]!);
+        if (deviation[a] != deviation[b]) {
+          return deviation[b]!.compareTo(deviation[a]!);
+        }
+        return a.compareTo(b);
+      });
+
+    return LogRound(
+      roundNumber: battle.roundNumber,
+      team: team,
+      actions: [
+        for (final i in order)
+          _resolveAction(
+            ordered[i].characterId,
+            triggerAt(i),
+            ordered[i].targetIds,
+          ),
+      ],
+    );
+  }
+
+  /// Records the use and resolves one committed action, returning its log
+  /// entry. This is the seam where Phase B reactive counters (reflect /
+  /// dodge / negate / redirect / trap) will intercept an attack before it
+  /// resolves; today the only reactive rule is the engine's own Guardian
+  /// redirect inside `resolveAbilityUse`.
+  LogAction _resolveAction(
+    String characterId,
+    ActiveTrigger trigger,
+    List<String> targetIds,
+  ) {
+    final engine = battle.turnEngine;
+    final state = battle.states[characterId]!;
+    // Trion was already spent (at queue time for the player, at plan commit
+    // for the AI); record the use here so the FAT count and end-of-turn
+    // cooldowns are set.
     state.recordAbilityUse(trigger);
     final useResult = engine.resolveAbilityUse(
       attacker: state,
       trigger: trigger,
-      targets: [for (final id in q.targetIds) battle.states[id]!],
+      targets: [for (final id in targetIds) battle.states[id]!],
     );
     return LogAction(
-      characterId: q.characterId,
+      characterId: characterId,
       characterName: state.character.name,
       triggerId: trigger.id,
       triggerName: trigger.name,
@@ -528,6 +586,22 @@ class PlaySession {
     return aiRound;
   }
 
+  /// Like [endTurn] but waits [thinkingDelay] before the AI acts, so the UI
+  /// can let the player's resolution settle before the opponent responds
+  /// (the simulated "thinking" beat). Behaves identically to [endTurn] with
+  /// a zero delay.
+  Future<LogRound> endTurnWithDelay(Duration thinkingDelay) async {
+    battle.endTurn();
+    if (thinkingDelay > Duration.zero) {
+      await Future<void>.delayed(thinkingDelay);
+    }
+    final aiRound = _playAiTurns();
+    if (!battle.isOver) {
+      battle.startTurn(equippedActiveTriggers: equippedA);
+    }
+    return aiRound;
+  }
+
   /// Forces Full Arms Trigger active for the rest of this character's
   /// current turn, bypassing the normal FAT Chance roll. Not part of the
   /// real rules; exists solely so the Guided Tutorial can demonstrate the
@@ -536,8 +610,10 @@ class PlaySession {
     battle.states[characterId]!.fatTriggeredThisTurn = true;
   }
 
-  /// Resolves consecutive AI (team B) turns - normally just one -
-  /// stopping once control returns to team A or the battle ends.
+  /// Resolves consecutive AI (team B) turns - normally just one - stopping
+  /// once control returns to team A or the battle ends. The AI commits its
+  /// whole turn up front as a blind plan and resolves it through the same
+  /// phase-priority path the player's queue uses ([resolveAiPlan]).
   LogRound _playAiTurns() {
     final actions = <LogAction>[];
     var aiRoundNumber = battle.roundNumber;
@@ -546,21 +622,8 @@ class PlaySession {
       aiRoundNumber = battle.roundNumber;
       if (battle.isOver) break;
 
-      final actionResults = aiB.takeTurn(
-        battle,
-        equippedActiveTriggers: equippedB,
-      );
-      for (final result in actionResults) {
-        actions.add(
-          logActionFor(
-            battle,
-            equippedB[result.characterId]!.firstWhere(
-              (t) => t.id == result.triggerId,
-            ),
-            result,
-          ),
-        );
-      }
+      final plan = aiB.planTurn(battle, equippedActiveTriggers: equippedB);
+      actions.addAll(resolveAiPlan(plan).actions);
 
       if (battle.isOver) break;
       battle.endTurn();
