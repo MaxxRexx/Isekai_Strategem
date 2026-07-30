@@ -90,6 +90,32 @@ class QueueOutcome {
   const QueueOutcome.failure(this.error) : success = false;
 }
 
+/// The phase a queued action resolves in. Lower phases resolve first, so a
+/// setup/buff lands before the attack that benefits from it, controls land
+/// before attacks, and heals land after damage. Within a phase, ties break
+/// by Team Spirit deviation then queue order (see [PlaySession.resolveQueue]).
+// arm and cleanup carry no content yet (reactive/trap abilities arrive in a
+// later phase); keeping them fixes the phase ordinals so that content slots
+// in without renumbering.
+// ignore: unused_field
+enum _ResolutionPhase { arm, buffs, control, attacks, heals, cleanup }
+
+/// Classifies an [ActiveTrigger] into its [_ResolutionPhase]. A
+/// damage-dealing ability (including a damage-plus-status rider or a drain)
+/// is an attack; a no-damage opponent-targeted ability is control; a
+/// no-damage ally/self heal is a heal; anything else ally/self is a buff.
+/// The arm and cleanup phases are reserved for the reactive/trap content
+/// added in a later phase.
+_ResolutionPhase _phaseFor(ActiveTrigger trigger) {
+  final dealsDamage = trigger.damageType != null && trigger.damage != null;
+  if (dealsDamage) return _ResolutionPhase.attacks;
+  if (trigger.targetAffiliation == TargetAffiliation.opponent) {
+    return _ResolutionPhase.control;
+  }
+  if (trigger.healAmount != null) return _ResolutionPhase.heals;
+  return _ResolutionPhase.buffs;
+}
+
 /// A live player-vs-AI battle: the player drives team A turn by turn,
 /// the AI plays team B automatically between the player's turns. Native
 /// port of the web demo bridge's session API.
@@ -411,35 +437,47 @@ class PlaySession {
   /// recording the use so end-of-turn cooldowns are set - and returns them
   /// as a single [LogRound]. Trion was already spent at queue time.
   ///
-  /// A1: actions resolve in the order they were queued; the phase-priority
-  /// ordering lands in A2. Call this before [endTurn].
+  /// Actions do not resolve in click order. Each is sorted into a
+  /// [_ResolutionPhase] (arm, buffs, control, attacks, heals, cleanup),
+  /// phases resolve low to high, and within a phase ties break by the
+  /// acting character's Team Spirit deviation from the neutral midpoint (a
+  /// more committed pole resolves first) then by queue order. Sort keys are
+  /// snapshotted before any action resolves, so ordering does not depend on
+  /// mid-resolution state changes. Cross-team Initiative (via the Team
+  /// Efficiency Grade) arrives in A5; this is the within-team ordering.
+  ///
+  /// Call this before [endTurn].
   LogRound resolveQueue() {
     final engine = battle.turnEngine;
-    final actions = <LogAction>[];
-    for (final q in _queue) {
+    // TeamSpiritCurveConfig.defaults.midpoint.
+    const midpoint = 50;
+
+    final ordered = List<QueuedAction>.from(_queue);
+    final phase = <QueuedAction, int>{};
+    final deviation = <QueuedAction, num>{};
+    final queuedAt = <QueuedAction, int>{};
+    for (var i = 0; i < ordered.length; i++) {
+      final q = ordered[i];
       final state = battle.states[q.characterId]!;
       final trigger = equippedA[q.characterId]!.firstWhere(
         (t) => t.id == q.triggerId,
       );
-      // Trion was spent when queued; record the use here (without
-      // re-spending) so the FAT count and end-of-turn cooldowns are set.
-      state.recordAbilityUse(trigger);
-      final useResult = engine.resolveAbilityUse(
-        attacker: state,
-        trigger: trigger,
-        targets: [for (final id in q.targetIds) battle.states[id]!],
-      );
-      actions.add(
-        LogAction(
-          characterId: q.characterId,
-          characterName: state.character.name,
-          triggerId: trigger.id,
-          triggerName: trigger.name,
-          fatTriggered: state.fatTriggeredThisTurn,
-          targets: logTargets(battle, useResult),
-        ),
-      );
+      phase[q] = _phaseFor(trigger).index;
+      deviation[q] =
+          (state.effectiveStats(fatConfig: engine.fatConfig).teamSpirit -
+                  midpoint)
+              .abs();
+      queuedAt[q] = i;
     }
+    ordered.sort((a, b) {
+      if (phase[a] != phase[b]) return phase[a]!.compareTo(phase[b]!);
+      if (deviation[a] != deviation[b]) {
+        return deviation[b]!.compareTo(deviation[a]!);
+      }
+      return queuedAt[a]!.compareTo(queuedAt[b]!);
+    });
+
+    final actions = [for (final q in ordered) _resolveQueuedAction(q)];
     final round = LogRound(
       roundNumber: battle.roundNumber,
       team: 'A',
@@ -447,6 +485,35 @@ class PlaySession {
     );
     _queue.clear();
     return round;
+  }
+
+  /// Resolves a single queued action and returns its log entry. This is the
+  /// seam where reactive counters (reflect / dodge / negate / redirect /
+  /// trap) will intercept an attack before it resolves in a later phase;
+  /// today the only reactive rule is the engine's own Guardian redirect
+  /// inside `resolveAbilityUse`.
+  LogAction _resolveQueuedAction(QueuedAction q) {
+    final engine = battle.turnEngine;
+    final state = battle.states[q.characterId]!;
+    final trigger = equippedA[q.characterId]!.firstWhere(
+      (t) => t.id == q.triggerId,
+    );
+    // Trion was spent when queued; record the use here (without re-spending)
+    // so the FAT count and end-of-turn cooldowns are set.
+    state.recordAbilityUse(trigger);
+    final useResult = engine.resolveAbilityUse(
+      attacker: state,
+      trigger: trigger,
+      targets: [for (final id in q.targetIds) battle.states[id]!],
+    );
+    return LogAction(
+      characterId: q.characterId,
+      characterName: state.character.name,
+      triggerId: trigger.id,
+      triggerName: trigger.name,
+      fatTriggered: state.fatTriggeredThisTurn,
+      targets: logTargets(battle, useResult),
+    );
   }
 
   /// Ends the player's turn, plays out the AI's turn, and starts the

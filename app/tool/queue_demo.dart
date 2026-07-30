@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+//
 // A1 manual demo: exercises the new PlaySession turn-queue API and prints a
 // readable trace, so the queue-then-resolve behavior can be seen before it
 // is wired into the battle UI (that happens in stage A4).
