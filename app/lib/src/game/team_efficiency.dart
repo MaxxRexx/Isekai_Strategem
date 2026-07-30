@@ -1,0 +1,292 @@
+import 'package:battle_engine/battle_engine.dart';
+
+import 'draft.dart';
+
+/// Team Efficiency Grade tier, D (worst) through SSS (best).
+enum TegTier { d, c, b, a, s, ss, sss }
+
+extension TegTierLabel on TegTier {
+  String get label => switch (this) {
+    TegTier.d => 'D',
+    TegTier.c => 'C',
+    TegTier.b => 'B',
+    TegTier.a => 'A',
+    TegTier.s => 'S',
+    TegTier.ss => 'SS',
+    TegTier.sss => 'SSS',
+  };
+}
+
+/// The Team Efficiency Grade for one squad: how well tuned its loadouts are
+/// (not how powerful), scored from six weighted sub-scores. It drives
+/// cross-team Initiative (the higher-grade team resolves first when both
+/// teams' effects would land at the same instant) and is shown under Player
+/// info. Weights and thresholds are deliberately tunable.
+class TeamEfficiency {
+  final double teamSpiritAlignment;
+  final double statCoherence;
+  final double loadoutSynergy;
+  final double perkUtilization;
+  final double trionEconomy;
+
+  /// Null when the squad equips no Black Triggers (its weight is then
+  /// redistributed across the other five sub-scores).
+  final double? resonanceFit;
+
+  /// Weighted composite in [0, 100].
+  final double composite;
+  final TegTier tier;
+
+  const TeamEfficiency({
+    required this.teamSpiritAlignment,
+    required this.statCoherence,
+    required this.loadoutSynergy,
+    required this.perkUtilization,
+    required this.trionEconomy,
+    required this.resonanceFit,
+    required this.composite,
+    required this.tier,
+  });
+}
+
+// Sub-score weights (tunable).
+const _wAlignment = 0.25;
+const _wStat = 0.20;
+const _wSynergy = 0.20;
+const _wPerk = 0.15;
+const _wEconomy = 0.10;
+const _wResonance = 0.10;
+
+/// Computes the [TeamEfficiency] for a squad from its characters and their
+/// chosen loadouts.
+TeamEfficiency computeTeamEfficiency({
+  required List<String> characterIds,
+  required Map<String, Loadout> loadouts,
+}) {
+  final chars = [for (final id in characterIds) roster[id]];
+  final los = [for (final id in characterIds) loadouts[id]!];
+
+  final alignment = _alignment(chars, los);
+  final coherence = _statCoherence(chars, los);
+  final synergy = _loadoutSynergy(los);
+  final perk = _perkUtilization(chars, los);
+  final economy = _trionEconomy(chars, los);
+  final resonance = _resonanceFit(chars, los);
+
+  final double weightSum;
+  var weighted =
+      alignment * _wAlignment +
+      coherence * _wStat +
+      synergy * _wSynergy +
+      perk * _wPerk +
+      economy * _wEconomy;
+  if (resonance == null) {
+    weightSum = _wAlignment + _wStat + _wSynergy + _wPerk + _wEconomy;
+  } else {
+    weighted += resonance * _wResonance;
+    weightSum = 1.0;
+  }
+  final composite = (weighted / weightSum).clamp(0, 100).toDouble();
+
+  return TeamEfficiency(
+    teamSpiritAlignment: alignment,
+    statCoherence: coherence,
+    loadoutSynergy: synergy,
+    perkUtilization: perk,
+    trionEconomy: economy,
+    resonanceFit: resonance,
+    composite: composite,
+    tier: _tierFor(composite),
+  );
+}
+
+TegTier _tierFor(double c) {
+  if (c >= 96) return TegTier.sss;
+  if (c >= 89) return TegTier.ss;
+  if (c >= 79) return TegTier.s;
+  if (c >= 68) return TegTier.a;
+  if (c >= 55) return TegTier.b;
+  if (c >= 40) return TegTier.c;
+  return TegTier.d;
+}
+
+// --- Helpers ---
+
+List<ActiveTrigger> _actives(Loadout l) => [
+  ...l.triggers.whereType<ActiveTrigger>(),
+  ...?l.blackTrigger?.activeAbilities,
+];
+
+bool _isDamage(ActiveTrigger t) => t.damageType != null && t.damage != null;
+
+bool _isSupport(ActiveTrigger t) =>
+    t.targetAffiliation != TargetAffiliation.opponent && !_isDamage(t);
+
+bool _isEnemyDebuff(ActiveTrigger t) =>
+    t.targetAffiliation == TargetAffiliation.opponent &&
+    t.inflictedStatusEffects.isNotEmpty;
+
+/// Each character's loadout lean (offense vs sustain) vs whether their Team
+/// Spirit sits on the matching pole (offense wants low TS, sustain high).
+double _alignment(List<Character> chars, List<Loadout> los) {
+  var sum = 0.0;
+  for (var i = 0; i < chars.length; i++) {
+    final actives = _actives(los[i]);
+    final offense = actives.where(_isDamage).length;
+    final support = actives.where(_isSupport).length;
+    final dev = (chars[i].baseStats.teamSpirit - 50) / 50.0; // -1..+1
+    final double a;
+    if (offense > support) {
+      a = -dev * 0.5 + 0.5; // offense wants low TS
+    } else if (support > offense) {
+      a = dev * 0.5 + 0.5; // sustain wants high TS
+    } else {
+      a = 1 - dev.abs(); // neutral wants the midpoint
+    }
+    sum += a.clamp(0.0, 1.0) * 100;
+  }
+  return sum / chars.length;
+}
+
+/// Each character's stats fitting their loadout's dominant demand.
+double _statCoherence(List<Character> chars, List<Loadout> los) {
+  var sum = 0.0;
+  for (var i = 0; i < chars.length; i++) {
+    final actives = _actives(los[i]);
+    final s = chars[i].baseStats;
+    final dmg = actives.where(_isDamage).length;
+    final debuff = actives.where(_isEnemyDebuff).length;
+    final support = actives.where(_isSupport).length;
+    final double score;
+    if (dmg >= debuff && dmg >= support) {
+      score =
+          (s.attack / 30).clamp(0.0, 1.0) * 0.7 +
+          (s.criticalChance / 20).clamp(0.0, 1.0) * 0.3;
+    } else if (debuff >= support) {
+      score = (s.statusEffectInfliction / 14).clamp(0.0, 1.0);
+    } else {
+      // Support: healing scales with high Team Spirit (health-regen pole).
+      score = (s.teamSpirit / 100).clamp(0.0, 1.0);
+    }
+    sum += score * 100;
+  }
+  return sum / chars.length;
+}
+
+/// Squad-wide complementary-ability signals.
+double _loadoutSynergy(List<Loadout> los) {
+  final all = [for (final l in los) ..._actives(l)];
+  final hasDebuff = all.any(_isEnemyDebuff);
+  final hasBigDamage = all.any(
+    (t) => _isDamage(t) && (t.damage?.average ?? 0) >= 30,
+  );
+  final hasSupport = all.any(_isSupport);
+  final hasAoe = all.any((t) => t.attackSubtype == AttackSubtype.aoe);
+  final hasFinisher = all.any(
+    (t) => _isDamage(t) && t.attackSubtype == AttackSubtype.single,
+  );
+  final damageTypes = {
+    for (final t in all)
+      if (t.damageType != null) t.damageType,
+  }.length;
+
+  var signals = 0;
+  if (hasDebuff && hasBigDamage) signals++; // setup + payoff
+  if (hasSupport && hasBigDamage) signals++; // protector + carry
+  if (hasAoe && hasFinisher) signals++; // wide + focused
+  if (damageTypes >= 3) signals++; // damage-type coverage
+  return signals / 4 * 100;
+}
+
+/// Whether each character's loadout plays to its Perk.
+double _perkUtilization(List<Character> chars, List<Loadout> los) {
+  var sum = 0.0;
+  for (var i = 0; i < chars.length; i++) {
+    final perk = chars[i].perk;
+    if (perk == null) {
+      sum += 50;
+      continue;
+    }
+    final actives = _actives(los[i]);
+    final dmg = actives.where(_isDamage).length;
+    final support = actives.where(_isSupport).length;
+    final debuff = actives.where(_isEnemyDebuff).length;
+    final aoe = actives
+        .where((t) => t.attackSubtype == AttackSubtype.aoe)
+        .length;
+
+    double score = 50; // neutral default when a perk fits no clear kit
+    if (perk.firstAttackCritBonusVsFullHealthTarget != null ||
+        perk.doublesCritChanceWhenLastAlive ||
+        perk.firstTurnAttackBonus != null ||
+        perk.maxDamageBonusPercentAtZeroHealth != null ||
+        perk.perExtraAbilityDamageBonusPercent != null ||
+        perk.canRerollOwnAttackRollOncePerBattle) {
+      score = dmg / 4 * 100;
+    } else if (perk.aoeDamageBonusPercentVsDebuffedTarget != null) {
+      score = (aoe > 0 && debuff > 0)
+          ? 100
+          : aoe > 0
+          ? 70
+          : 30;
+    } else if (perk.incomingHealBonusPercent != null ||
+        perk.healBonusPercentVsAllyBelowHalfHealth != null ||
+        perk.bonusStatusResistanceGrantedByAllyBuffs != null ||
+        perk.teamTrionGainModifierWhileAlive != null) {
+      score = support / 4 * 100;
+    } else if (perk.bonusDurationVsAlreadyAffectedTarget != null) {
+      score = debuff / 4 * 100;
+    } else if (perk.doublesArmorWhileAllyBelowQuarterHealth ||
+        perk.firstDamageInstanceReductionPercent != null ||
+        perk.attackStackBonusOnMeleeMissAgainstSelf != null ||
+        perk.firstIncomingAttackHasDisadvantage) {
+      score = 60; // defensive perks reward a non-glass-cannon kit
+    }
+    sum += score.clamp(0.0, 100.0);
+  }
+  return sum / chars.length;
+}
+
+/// Whether the squad can afford to act each turn: cheap-castable abilities
+/// plus equip-budget headroom.
+double _trionEconomy(List<Character> chars, List<Loadout> los) {
+  const income = 35.0; // a high-tier turn (tunable)
+  var sum = 0.0;
+  for (var i = 0; i < chars.length; i++) {
+    final actives = _actives(los[i]);
+    if (actives.isEmpty) continue;
+    final minCost = actives
+        .map((t) => t.trionCost)
+        .reduce((a, b) => a < b ? a : b)
+        .toDouble();
+    final afford = (1 - minCost / income).clamp(0.0, 1.0);
+    final headroom =
+        (1 - los[i].totalEquipCost / chars[i].baseStats.trionCapacity).clamp(
+          0.0,
+          1.0,
+        );
+    sum += (afford * 0.6 + headroom * 0.4) * 100;
+  }
+  return sum / chars.length;
+}
+
+/// Average resonance grade of equipped Black Triggers with their wielders'
+/// types. Null when the squad runs no Black Triggers.
+double? _resonanceFit(List<Character> chars, List<Loadout> los) {
+  final grades = <double>[];
+  for (var i = 0; i < chars.length; i++) {
+    final bt = los[i].blackTrigger;
+    if (bt == null) continue;
+    grades.add(switch (ResonanceGrid.defaultGrid.lookup(
+      chars[i].type,
+      bt.type,
+    )) {
+      ResonanceGrade.a => 100.0,
+      ResonanceGrade.b => 75.0,
+      ResonanceGrade.c => 50.0,
+      ResonanceGrade.d => 25.0,
+    });
+  }
+  if (grades.isEmpty) return null;
+  return grades.reduce((a, b) => a + b) / grades.length;
+}

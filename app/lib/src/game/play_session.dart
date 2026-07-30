@@ -4,6 +4,7 @@ import 'package:battle_engine/battle_engine.dart';
 
 import 'battle_models.dart';
 import 'draft.dart';
+import 'team_efficiency.dart';
 
 /// A legal ability use for one of the player's characters right now:
 /// the trigger itself plus everything the target picker needs.
@@ -127,6 +128,11 @@ class PlaySession {
   final Map<String, Loadout> loadoutsB;
   final ProfileDrivenAi aiB;
 
+  /// Each squad's Team Efficiency Grade, computed once at battle start. The
+  /// higher grade wins cross-team Initiative (here, the opening turn).
+  final TeamEfficiency teamAEfficiency;
+  final TeamEfficiency teamBEfficiency;
+
   /// Set when team B randomly won the opening move: its entire opening
   /// turn, resolved before the session surfaces (the player's session
   /// always begins on their own turn).
@@ -145,6 +151,8 @@ class PlaySession {
     required this.loadoutsA,
     required this.loadoutsB,
     required this.aiB,
+    required this.teamAEfficiency,
+    required this.teamBEfficiency,
   });
 
   /// [firstTurn] is 'teamA', 'teamB', or 'random' (the default, matching
@@ -178,10 +186,24 @@ class PlaySession {
       profile: profileById(opponentProfileId),
     );
 
+    final teamAEfficiency = computeTeamEfficiency(
+      characterIds: playerCharacterIds,
+      loadouts: teamADraft.loadouts,
+    );
+    final teamBEfficiency = computeTeamEfficiency(
+      characterIds: opponentCharacterIds,
+      loadouts: teamBDraft.loadouts,
+    );
+
+    // Cross-team Initiative: the higher Team Efficiency Grade takes the
+    // opening turn; a tie falls back to a coin flip.
     final teamAGoesFirst = switch (firstTurn) {
       'teamA' => true,
       'teamB' => false,
-      _ => Random().nextBool(),
+      _ =>
+        teamAEfficiency.composite != teamBEfficiency.composite
+            ? teamAEfficiency.composite > teamBEfficiency.composite
+            : Random().nextBool(),
     };
 
     final battle = Battle(
@@ -198,6 +220,8 @@ class PlaySession {
       loadoutsA: teamADraft.loadouts,
       loadoutsB: teamBDraft.loadouts,
       aiB: ProfileDrivenAi(profileById(opponentProfileId)),
+      teamAEfficiency: teamAEfficiency,
+      teamBEfficiency: teamBEfficiency,
     );
 
     if (teamAGoesFirst) {

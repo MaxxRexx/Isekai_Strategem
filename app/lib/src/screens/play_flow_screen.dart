@@ -11,6 +11,7 @@ import '../game/draft.dart';
 import '../game/loadout_selection.dart';
 import '../game/play_session.dart';
 import '../game/report.dart';
+import '../game/team_efficiency.dart';
 import '../game/tutorial.dart';
 import '../ui/palette.dart';
 import '../widgets/ability_slot.dart';
@@ -942,8 +943,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           isOver: session.isOver,
           roundNumber: session.roundNumber,
           teamATrion: session.teamATrion,
+          playerGradeLabel: 'Grade ${_session!.teamAEfficiency.tier.label}',
           opponentName: opponentProfile.name,
-          opponentSkillLabel: skillClassLabel[opponentProfile.skillClass]!,
+          opponentSkillLabel:
+              '${skillClassLabel[opponentProfile.skillClass]!} - '
+              'Grade ${_session!.teamBEfficiency.tier.label}',
         ),
         const SizedBox(height: 12),
         Row(
@@ -1555,6 +1559,7 @@ class _BattleTopBar extends StatelessWidget {
   final bool isOver;
   final int roundNumber;
   final int teamATrion;
+  final String playerGradeLabel;
   final String opponentName;
   final String opponentSkillLabel;
 
@@ -1562,6 +1567,7 @@ class _BattleTopBar extends StatelessWidget {
     required this.isOver,
     required this.roundNumber,
     required this.teamATrion,
+    required this.playerGradeLabel,
     required this.opponentName,
     required this.opponentSkillLabel,
   });
@@ -1628,7 +1634,7 @@ class _BattleTopBar extends StatelessWidget {
               children: [
                 _identity(
                   playerDisplayName,
-                  null,
+                  playerGradeLabel,
                   Palette.gold,
                   portraitFirst: false,
                 ),

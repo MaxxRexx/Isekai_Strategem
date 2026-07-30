@@ -30,6 +30,8 @@ void main() {
     s.battle.endTurn();
     expect(s.battle.isTeamATurn, isFalse);
     s.battle.startTurn(equippedActiveTriggers: s.equippedB);
+    // Guarantee the AI can afford to act, independent of the opening roll.
+    s.battle.teamB.trionPool.gain(500);
 
     final healthBefore = {
       for (final f in s.teamA) f.id: f.currentHealth,
@@ -62,6 +64,7 @@ void main() {
     final s = freshSession();
     s.battle.endTurn();
     s.battle.startTurn(equippedActiveTriggers: s.equippedB);
+    s.battle.teamB.trionPool.gain(500);
 
     final plan = s.aiB.planTurn(s.battle, equippedActiveTriggers: s.equippedB);
     final expectedSpend = plan.fold<int>(0, (sum, a) {
