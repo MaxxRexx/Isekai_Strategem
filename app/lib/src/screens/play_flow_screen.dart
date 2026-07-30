@@ -81,6 +81,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   LegalAction? _selectedAction;
   final Set<String> _selectedTargets = {};
 
+  /// True while the turn is resolving (player queue + the AI's response),
+  /// which briefly locks input in Play mode.
+  bool _resolving = false;
+
   TutorialState? _tutorial;
 
   // Presentational only - there's no audio system to actually drive yet.
@@ -279,6 +283,26 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     });
   }
 
+  /// Play mode: commit the selected ability to the turn queue (Trion is
+  /// spent now, effects apply on End Turn) instead of resolving immediately.
+  void _queueAbility(
+    String characterId,
+    LegalAction action,
+    List<String> targetIds,
+  ) {
+    final outcome = _session!.queue(characterId, action.trigger.id, targetIds);
+    setState(() {
+      if (!outcome.success) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(outcome.error!)));
+        return;
+      }
+      _clearSelection();
+      _afterBattleStateChange();
+    });
+  }
+
   void _clearSelection() {
     _selectedCharacterId = null;
     _selectedAction = null;
@@ -295,12 +319,43 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     });
   }
 
-  void _endTurn() {
+  Future<void> _endTurn() async {
+    if (_resolving) return;
+
+    // The Guided Tutorial is scripted around immediate ability use, so it
+    // keeps the direct end-turn path.
+    if (_tutorialActive) {
+      setState(() {
+        _clearSelection();
+        _tutorial?.onEndTurn();
+        final aiRound = _session!.endTurn();
+        _roundsLog.add(aiRound);
+        _afterBattleStateChange();
+      });
+      return;
+    }
+
+    // Play mode: resolve the player's queued actions, show them, then let
+    // the AI respond after a short "thinking" beat.
+    final session = _session!;
     setState(() {
       _clearSelection();
-      _tutorial?.onEndTurn();
-      final aiRound = _session!.endTurn();
+      final playerRound = session.resolveQueue();
+      if (playerRound.actions.isNotEmpty) _roundsLog.add(playerRound);
+      _resolving = true;
+      _afterBattleStateChange();
+    });
+    if (session.isOver) {
+      setState(() => _resolving = false);
+      return;
+    }
+    final aiRound = await session.endTurnWithDelay(
+      const Duration(milliseconds: 1200),
+    );
+    if (!mounted) return;
+    setState(() {
       _roundsLog.add(aiRound);
+      _resolving = false;
       _afterBattleStateChange();
     });
   }
@@ -954,7 +1009,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             onPressed: _copyReport,
             child: const Text('COPY FULL REPORT'),
           ),
-        ] else
+        ] else ...[
+          if (!_tutorialActive && _session!.queuedActions.isNotEmpty)
+            _queuedStrip(names),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -965,6 +1022,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ),
             ],
           ),
+        ],
         const SizedBox(height: 12),
         SizedBox(
           height: 280,
@@ -1132,8 +1190,74 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       enabled: _abilityEnabled(tutorialStep, fighter.id, display),
       cooldownRemaining: display.cooldownRemaining,
       tooltip: tooltip,
-      onTap: action == null ? null : () => _selectAbility(fighter.id, action),
+      onTap: (action == null || _resolving)
+          ? null
+          : () => _selectAbility(fighter.id, action),
       size: 60,
+    );
+  }
+
+  /// Play mode: the actions the player has committed to the turn queue but
+  /// not yet resolved, each removable (refunding its Trion) until End Turn.
+  Widget _queuedStrip(Map<String, String> names) {
+    final queued = _session!.queuedActions;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        border: Border.all(color: Palette.teamA.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'QUEUED THIS TURN',
+            style: TextStyle(
+              color: Palette.teamA,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 6),
+          for (var i = 0; i < queued.length; i++)
+            _queuedRow(i, queued[i], names),
+        ],
+      ),
+    );
+  }
+
+  Widget _queuedRow(int index, QueuedAction q, Map<String, String> names) {
+    final trigger = _session!.equippedA[q.characterId]!.firstWhere(
+      (t) => t.id == q.triggerId,
+    );
+    final targetLabel = q.targetIds.map((id) => names[id] ?? id).join(', ');
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${names[q.characterId] ?? q.characterId}: ${trigger.name}'
+              '${targetLabel.isEmpty ? '' : ' -> $targetLabel'}',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ),
+          InkWell(
+            onTap: _resolving
+                ? null
+                : () => setState(() {
+                    _session!.unqueue(index);
+                    _afterBattleStateChange();
+                  }),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(Icons.close, size: 16, color: Palette.danger),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1195,6 +1319,26 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     TutorialBattleStep? tutorialStep,
     bool endTurnVisible,
   ) {
+    if (_resolving) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 10),
+            Text(
+              'Resolving...',
+              style: TextStyle(color: Palette.accent, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
     final action = _selectedAction;
     final charId = _selectedCharacterId;
     if (action == null || charId == null) {
@@ -1345,15 +1489,26 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 const SizedBox.shrink(),
               ElevatedButton(
                 onPressed: canUse
-                    ? () => _useAbility(
-                        charId,
-                        action,
-                        t.targetAffiliation == TargetAffiliation.self
+                    ? () {
+                        final targets =
+                            t.targetAffiliation == TargetAffiliation.self
                             ? [charId]
-                            : _selectedTargets.take(action.maxTargets).toList(),
-                      )
+                            : _selectedTargets.take(action.maxTargets).toList();
+                        // The tutorial resolves immediately; Play mode queues.
+                        if (_tutorialActive) {
+                          _useAbility(charId, action, targets);
+                        } else {
+                          _queueAbility(charId, action, targets);
+                        }
+                      }
                     : null,
-                child: Text(_useButtonLabel(t, names)),
+                child: Text(
+                  _actionButtonLabel(
+                    t,
+                    names,
+                    _tutorialActive ? 'USE' : 'QUEUE',
+                  ),
+                ),
               ),
             ],
           ),
@@ -1362,15 +1517,19 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
-  String _useButtonLabel(ActiveTrigger t, Map<String, String> names) {
-    if (t.targetAffiliation == TargetAffiliation.self) return 'USE (SELF)';
+  String _actionButtonLabel(
+    ActiveTrigger t,
+    Map<String, String> names,
+    String verb,
+  ) {
+    if (t.targetAffiliation == TargetAffiliation.self) return '$verb (SELF)';
     if (_selectedTargets.length > 1) {
-      return 'USE (${_selectedTargets.length} TARGETS)';
+      return '$verb (${_selectedTargets.length} TARGETS)';
     }
     final only = _selectedTargets.firstOrNull;
     return only == null
-        ? 'USE'
-        : 'USE ON ${(names[only] ?? only).toUpperCase()}';
+        ? verb
+        : '$verb ON ${(names[only] ?? only).toUpperCase()}';
   }
 
   Widget _panel({required Color borderColor, required List<Widget> children}) {
