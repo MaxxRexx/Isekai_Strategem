@@ -1636,17 +1636,16 @@ class _BattleTopBar extends StatelessWidget {
       ],
     );
     final portrait = _TopBarPortrait(color: color);
-    // Each cluster hugs the center of the bar: the left identity aligns to
-    // its end and the right identity to its start, so both portraits sit
-    // the same distance from the round/Trion box regardless of name length
-    // (the name blocks flex/ellipsize outward toward the screen edges).
+    // The portrait sits at the inner edge (a fixed 12px from the divider,
+    // so both portraits are equidistant from the center round/Trion box);
+    // the name block is centered within the outer half. Because the two
+    // halves are equal width, the empty space around each name mirrors the
+    // other side regardless of how long the two names are.
+    final centeredName = Expanded(child: Center(child: nameBlock));
     return Row(
-      mainAxisAlignment: portraitFirst
-          ? MainAxisAlignment.start
-          : MainAxisAlignment.end,
       children: portraitFirst
-          ? [portrait, const SizedBox(width: 12), Flexible(child: nameBlock)]
-          : [Flexible(child: nameBlock), const SizedBox(width: 12), portrait],
+          ? [portrait, const SizedBox(width: 12), centeredName]
+          : [centeredName, const SizedBox(width: 12), portrait],
     );
   }
 
