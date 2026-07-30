@@ -12,6 +12,7 @@ import '../game/loadout_selection.dart';
 import '../game/play_session.dart';
 import '../game/report.dart';
 import '../game/tutorial.dart';
+import '../ui/notched.dart';
 import '../ui/palette.dart';
 import '../widgets/ability_slot.dart';
 import '../widgets/badges.dart';
@@ -993,10 +994,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               flex: 48,
               child: Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: Theme.of(context).cardColor,
-                  border: Border(
-                    top: BorderSide(color: Palette.teamA, width: 3),
+                  shape: const NotchedBorder(
+                    side: BorderSide(color: Palette.teamA),
+                    notch: 16,
                   ),
                 ),
                 child: Column(
@@ -1494,8 +1496,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Palette.accent)),
+      decoration: const ShapeDecoration(
+        shape: NotchedBorder(
+          side: BorderSide(color: Palette.accent),
+          notch: 16,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1508,9 +1513,13 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 height: 36,
                 alignment: Alignment.center,
                 margin: const EdgeInsets.only(right: 10),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: Colors.white.withValues(alpha: 0.06),
-                  border: Border.all(color: Palette.accent),
+                  shape: const NotchedBorder(
+                    side: BorderSide(color: Palette.accent),
+                    notch: 8,
+                    corners: {NotchCorner.bottomRight},
+                  ),
                 ),
                 child: TriggerIcon(trigger: t, size: 18),
               ),
@@ -1718,9 +1727,12 @@ class _BattleTopBar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: Colors.black.withValues(alpha: 0.3),
-        border: Border.all(color: isOver ? Colors.white24 : Palette.accent),
+        shape: NotchedBorder(
+          side: BorderSide(color: isOver ? Colors.white24 : Palette.accent),
+          notch: 16,
+        ),
       ),
       child: isOver
           ? const Text(
@@ -1746,10 +1758,13 @@ class _BattleTopBar extends StatelessWidget {
                     horizontal: 16,
                     vertical: 7,
                   ),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: Colors.black.withValues(alpha: 0.25),
-                    border: Border.all(
-                      color: Palette.accent.withValues(alpha: 0.7),
+                    shape: NotchedBorder(
+                      side: BorderSide(
+                        color: Palette.accent.withValues(alpha: 0.7),
+                      ),
+                      notch: 10,
                     ),
                   ),
                   child: Column(
@@ -1804,9 +1819,13 @@ class _TopBarPortrait extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color, width: 1.5),
+        shape: NotchedBorder(
+          side: BorderSide(color: color, width: 1.5),
+          notch: size * 0.2,
+          corners: const {NotchCorner.bottomRight},
+        ),
       ),
       child: Icon(Icons.person, color: color, size: size * 0.6),
     );
