@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../game/battle_models.dart';
+import '../ui/rank.dart';
 import 'badges.dart';
 import 'portrait_tile.dart';
 
@@ -16,11 +17,17 @@ class FighterRow extends StatelessWidget {
   final double portraitSize;
   final bool compact;
 
+  /// Overrides the per-character placeholder rank with a single squad-wide
+  /// value (e.g. the opponent's account rank), so every row shows the same
+  /// badge instead of varying per character.
+  final CharacterRank? rank;
+
   const FighterRow({
     super.key,
     required this.fighter,
     this.portraitSize = 64,
     this.compact = false,
+    this.rank,
   });
 
   @override
@@ -33,6 +40,7 @@ class FighterRow extends StatelessWidget {
       maxHealth: fighter.maxHealth,
       alive: fighter.alive,
       size: portraitSize,
+      rank: rank,
       mirrorRank: compact,
     );
     final nameLine = Row(
@@ -118,6 +126,9 @@ class TeamPanel extends StatelessWidget {
   final double portraitSize;
   final bool compact;
 
+  /// A single squad-wide rank for every row (see [FighterRow.rank]).
+  final CharacterRank? rank;
+
   const TeamPanel({
     super.key,
     required this.label,
@@ -125,6 +136,7 @@ class TeamPanel extends StatelessWidget {
     required this.fighters,
     this.portraitSize = 64,
     this.compact = false,
+    this.rank,
   });
 
   @override
@@ -155,6 +167,7 @@ class TeamPanel extends StatelessWidget {
               fighter: f,
               portraitSize: portraitSize,
               compact: compact,
+              rank: rank,
             ),
         ],
       ),

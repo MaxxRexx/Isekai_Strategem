@@ -61,14 +61,18 @@ class AbilitySlot extends StatelessWidget {
               if (onCooldown)
                 Positioned.fill(
                   child: ColoredBox(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    child: Center(
-                      child: Text(
-                        '$cooldownRemaining',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: size * 0.4,
+                    color: Colors.black.withValues(alpha: 0.55),
+                    child: Padding(
+                      padding: EdgeInsets.all(size * 0.1),
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Text(
+                          '$cooldownRemaining',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                          ),
                         ),
                       ),
                     ),

@@ -93,7 +93,11 @@ class PortraitTile extends StatelessWidget {
             top: -size * 0.14,
             left: mirrorRank ? null : -size * 0.13,
             right: mirrorRank ? -size * 0.13 : null,
-            child: RankBadge(rank: effectiveRank, size: size * 0.42),
+            child: RankBadge(
+              rank: effectiveRank,
+              size: size * 0.42,
+              mirror: mirrorRank,
+            ),
           ),
       ],
     );

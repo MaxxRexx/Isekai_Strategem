@@ -7,6 +7,13 @@ import '../ui/rank.dart';
 /// AI opponents/roster browsing, where a per-character value makes sense).
 const playerAccountRank = CharacterRank.c;
 
+/// The AI opponent's account-wide rank. Like the player's, it's a single
+/// value for the whole opposing squad (every opponent character shows the
+/// same badge) rather than the per-character [placeholderRanks]. Ranked
+/// matchmaking pairs equal ranks, so this stands in as the player's own
+/// rank until the real progression/matchmaking system exists.
+const opponentAccountRank = playerAccountRank;
+
 /// Stand-in per-character ranks for AI opponents (and roster browsing
 /// before a squad is committed to), until the real system exists to
 /// actually earn them. Values for the 10 characters visible in the

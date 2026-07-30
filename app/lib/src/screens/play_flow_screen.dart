@@ -995,6 +995,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 fighters: session.teamB,
                 portraitSize: 96,
                 compact: true,
+                rank: opponentAccountRank,
               ),
             ),
           ],

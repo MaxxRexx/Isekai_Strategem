@@ -29,15 +29,26 @@ extension CharacterRankStyle on CharacterRank {
 class RankBadge extends StatelessWidget {
   final CharacterRank rank;
   final double size;
-  const RankBadge({super.key, required this.rank, this.size = 26});
+
+  /// Mirror the badge for the opponent's top-right corner: it tilts the
+  /// other way (toward the right) and its cut corner is on the bottom
+  /// right, so it reflects the player's top-left badge across the screen.
+  final bool mirror;
+
+  const RankBadge({
+    super.key,
+    required this.rank,
+    this.size = 26,
+    this.mirror = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Transform.rotate(
-      angle: -0.24,
+      angle: mirror ? 0.24 : -0.24,
       child: CustomPaint(
         size: Size(size, size * 0.9),
-        painter: _RankFlagPainter(rank.color),
+        painter: _RankFlagPainter(rank.color, mirror: mirror),
         child: SizedBox(
           width: size,
           height: size * 0.9,
@@ -61,22 +72,33 @@ class RankBadge extends StatelessWidget {
 
 class _RankFlagPainter extends CustomPainter {
   final Color color;
-  const _RankFlagPainter(this.color);
+  final bool mirror;
+  const _RankFlagPainter(this.color, {this.mirror = false});
 
   @override
   void paint(Canvas canvas, Size size) {
     final fill = Paint()..color = color;
     final notch = size.width * 0.32;
 
-    // A squared-off tag with its bottom-left corner cut at an angle,
-    // rather than a rounded plate with a separate hanging tail.
-    final flag = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width, size.height)
-      ..lineTo(notch, size.height)
-      ..lineTo(0, size.height - notch)
-      ..close();
+    // A squared-off tag with one bottom corner cut at an angle, rather
+    // than a rounded plate with a separate hanging tail. The cut is on the
+    // bottom left normally; mirrored (opponent) it moves to the bottom
+    // right so the two lanes' badges reflect each other.
+    final flag = mirror
+        ? (Path()
+            ..moveTo(0, 0)
+            ..lineTo(size.width, 0)
+            ..lineTo(size.width, size.height - notch)
+            ..lineTo(size.width - notch, size.height)
+            ..lineTo(0, size.height)
+            ..close())
+        : (Path()
+            ..moveTo(0, 0)
+            ..lineTo(size.width, 0)
+            ..lineTo(size.width, size.height)
+            ..lineTo(notch, size.height)
+            ..lineTo(0, size.height - notch)
+            ..close());
     canvas.drawPath(flag, fill);
 
     // A thin fold/header line near the top, echoing the reference tag.
@@ -93,5 +115,5 @@ class _RankFlagPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RankFlagPainter oldDelegate) =>
-      oldDelegate.color != color;
+      oldDelegate.color != color || oldDelegate.mirror != mirror;
 }
