@@ -60,6 +60,36 @@ class UseAbilityOutcome {
       error = null;
 }
 
+/// A player action committed to the turn queue but not yet resolved. Its
+/// Trion cost is already spent (refunded on [PlaySession.unqueue]); no
+/// effects are applied and no cooldown is set until the queue resolves at
+/// end of turn via [PlaySession.resolveQueue].
+class QueuedAction {
+  final String characterId;
+  final String triggerId;
+  final List<String> targetIds;
+
+  /// Trion actually spent when this action was queued, tracked so that
+  /// un-queueing refunds the exact amount.
+  final int trionSpent;
+
+  QueuedAction({
+    required this.characterId,
+    required this.triggerId,
+    required this.targetIds,
+    required this.trionSpent,
+  });
+}
+
+/// Result of trying to [PlaySession.queue] an action.
+class QueueOutcome {
+  final bool success;
+  final String? error;
+
+  const QueueOutcome.ok() : success = true, error = null;
+  const QueueOutcome.failure(this.error) : success = false;
+}
+
 /// A live player-vs-AI battle: the player drives team A turn by turn,
 /// the AI plays team B automatically between the player's turns. Native
 /// port of the web demo bridge's session API.
@@ -75,6 +105,12 @@ class PlaySession {
   /// turn, resolved before the session surfaces (the player's session
   /// always begins on their own turn).
   LogRound? openingAiRound;
+
+  /// Player actions committed this turn but not yet resolved (see [queue]/
+  /// [resolveQueue]). Trion is spent as actions are queued and refunded on
+  /// [unqueue]; effects and cooldowns are applied only when the queue
+  /// resolves at end of turn.
+  final List<QueuedAction> _queue = [];
 
   PlaySession._({
     required this.battle,
@@ -284,6 +320,133 @@ class PlaySession {
         targets: logTargets(battle, useResult),
       ),
     );
+  }
+
+  /// The player's currently queued actions, in the order they were added.
+  List<QueuedAction> get queuedActions => List.unmodifiable(_queue);
+
+  /// How many actions [characterId] currently has queued, counted against
+  /// its per-turn ability limit.
+  int queuedCountFor(String characterId) =>
+      _queue.where((q) => q.characterId == characterId).length;
+
+  /// Commits one of the player's abilities to the turn queue: validates
+  /// legality, spends its Trion cost now (refunded by [unqueue]), and
+  /// records it for resolution at end of turn. Does not apply any effect
+  /// or set a cooldown yet - that happens in [resolveQueue].
+  QueueOutcome queue(
+    String characterId,
+    String triggerId,
+    List<String> targetIds,
+  ) {
+    if (!battle.isTeamATurn) {
+      return const QueueOutcome.failure('It is not your turn.');
+    }
+    final state = battle.states[characterId];
+    if (state == null || !state.isAlive) {
+      return const QueueOutcome.failure('That character cannot act.');
+    }
+    ActiveTrigger? trigger;
+    for (final t in equippedA[characterId] ?? const <ActiveTrigger>[]) {
+      if (t.id == triggerId) {
+        trigger = t;
+        break;
+      }
+    }
+    if (trigger == null) {
+      return const QueueOutcome.failure('That ability is not equipped.');
+    }
+    final engine = battle.turnEngine;
+    if (!engine.canUseAbility(state, trigger)) {
+      return const QueueOutcome.failure(
+        'That ability is not usable right now.',
+      );
+    }
+    if (_queue.any(
+      (q) => q.characterId == characterId && q.triggerId == triggerId,
+    )) {
+      return const QueueOutcome.failure('That ability is already queued.');
+    }
+    // The engine only records ability uses (and so enforces the per-turn
+    // FAT limit) at resolution, so enforce that limit here against what is
+    // already queued plus anything already resolved this turn.
+    final maxUses = engine.fatEngine.maxAbilitiesThisTurn(state);
+    if (state.abilitiesUsedThisTurnCount + queuedCountFor(characterId) >=
+        maxUses) {
+      return const QueueOutcome.failure('No ability uses left this turn.');
+    }
+    final cost = (trigger.trionCost * state.trionCostMultiplier()).round();
+    if (!battle.teamA.trionPool.trySpend(cost)) {
+      return const QueueOutcome.failure('Not enough Trion.');
+    }
+    _queue.add(
+      QueuedAction(
+        characterId: characterId,
+        triggerId: triggerId,
+        targetIds: List.of(targetIds),
+        trionSpent: cost,
+      ),
+    );
+    return const QueueOutcome.ok();
+  }
+
+  /// Removes the queued action at [index] and refunds its Trion. Returns
+  /// false if [index] is out of range.
+  bool unqueue(int index) {
+    if (index < 0 || index >= _queue.length) return false;
+    final action = _queue.removeAt(index);
+    battle.teamA.trionPool.gain(action.trionSpent);
+    return true;
+  }
+
+  /// Clears the whole queue, refunding all Trion spent on queued actions.
+  void clearQueue() {
+    for (final action in _queue) {
+      battle.teamA.trionPool.gain(action.trionSpent);
+    }
+    _queue.clear();
+  }
+
+  /// Resolves every queued player action - applying its effects and
+  /// recording the use so end-of-turn cooldowns are set - and returns them
+  /// as a single [LogRound]. Trion was already spent at queue time.
+  ///
+  /// A1: actions resolve in the order they were queued; the phase-priority
+  /// ordering lands in A2. Call this before [endTurn].
+  LogRound resolveQueue() {
+    final engine = battle.turnEngine;
+    final actions = <LogAction>[];
+    for (final q in _queue) {
+      final state = battle.states[q.characterId]!;
+      final trigger = equippedA[q.characterId]!.firstWhere(
+        (t) => t.id == q.triggerId,
+      );
+      // Trion was spent when queued; record the use here (without
+      // re-spending) so the FAT count and end-of-turn cooldowns are set.
+      state.recordAbilityUse(trigger);
+      final useResult = engine.resolveAbilityUse(
+        attacker: state,
+        trigger: trigger,
+        targets: [for (final id in q.targetIds) battle.states[id]!],
+      );
+      actions.add(
+        LogAction(
+          characterId: q.characterId,
+          characterName: state.character.name,
+          triggerId: trigger.id,
+          triggerName: trigger.name,
+          fatTriggered: state.fatTriggeredThisTurn,
+          targets: logTargets(battle, useResult),
+        ),
+      );
+    }
+    final round = LogRound(
+      roundNumber: battle.roundNumber,
+      team: 'A',
+      actions: actions,
+    );
+    _queue.clear();
+    return round;
   }
 
   /// Ends the player's turn, plays out the AI's turn, and starts the
