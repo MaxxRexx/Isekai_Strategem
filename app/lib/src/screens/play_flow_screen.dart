@@ -422,6 +422,19 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // Explicit, generously sized back button: the default auto-inserted
+        // one has a cramped hit area in the top-left corner that is easy to
+        // miss. This gives it a wider tap target and a larger icon.
+        automaticallyImplyLeading: false,
+        leadingWidth: 72,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          iconSize: 30,
+          tooltip: 'Back',
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          constraints: const BoxConstraints(minWidth: 72, minHeight: 56),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: Text(
           widget.tutorial && _tutorialActive
               ? 'Guided Tutorial'
