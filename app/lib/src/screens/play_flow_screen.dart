@@ -422,19 +422,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // Explicit, generously sized back button: the default auto-inserted
-        // one has a cramped hit area in the top-left corner that is easy to
-        // miss. This gives it a wider tap target and a larger icon.
+        // No back button: a mid-battle exit goes through Surrender (which
+        // ends the match), and the Return to Home button appears once the
+        // match is over.
         automaticallyImplyLeading: false,
-        leadingWidth: 72,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          iconSize: 30,
-          tooltip: 'Back',
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          constraints: const BoxConstraints(minWidth: 72, minHeight: 56),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
         title: Text(
           widget.tutorial && _tutorialActive
               ? 'Guided Tutorial'
@@ -1025,9 +1016,20 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             note: 'Concluded in ${session.roundNumber} round(s).',
           ),
           const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: _copyReport,
-            child: const Text('COPY FULL REPORT'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.home_outlined, size: 18),
+                label: const Text('RETURN TO HOME'),
+              ),
+              OutlinedButton(
+                onPressed: _copyReport,
+                child: const Text('COPY FULL REPORT'),
+              ),
+            ],
           ),
         ] else ...[
           if (!_tutorialActive && _session!.queuedActions.isNotEmpty)
