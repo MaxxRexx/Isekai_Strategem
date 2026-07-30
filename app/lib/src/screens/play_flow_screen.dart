@@ -1031,13 +1031,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           ),
         ],
         const SizedBox(height: 12),
-        SizedBox(
-          height: 280,
-          child: BattleLogView(
-            rounds: _roundsLog,
-            teamAName: 'You',
-            teamBName: 'Opponent',
-          ),
+        BattleLogView(
+          rounds: _roundsLog,
+          teamAName: 'You',
+          teamBName: 'Opponent',
+          initiallyOpen: false,
         ),
         const SizedBox(height: 24),
       ],

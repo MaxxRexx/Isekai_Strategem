@@ -5,7 +5,7 @@ import '../ui/palette.dart';
 
 /// The scrollable battle log: one block per team turn, one line per
 /// (action, target) pair, mirroring the HTML demo's log composition.
-class BattleLogView extends StatelessWidget {
+class BattleLogView extends StatefulWidget {
   final List<LogRound> rounds;
   final String title;
 
@@ -14,17 +14,34 @@ class BattleLogView extends StatelessWidget {
   final String teamAName;
   final String teamBName;
 
+  /// Height of the scrollable log body when the panel is expanded.
+  final double bodyHeight;
+
+  /// Whether the dropdown starts expanded. Play mode passes false (the log
+  /// starts closed); Simulate leaves it open to show the result.
+  final bool initiallyOpen;
+
   const BattleLogView({
     super.key,
     required this.rounds,
     this.title = 'BATTLE LOG',
     this.teamAName = 'Squad A',
     this.teamBName = 'Squad B',
+    this.bodyHeight = 260,
+    this.initiallyOpen = true,
   });
+
+  @override
+  State<BattleLogView> createState() => _BattleLogViewState();
+}
+
+class _BattleLogViewState extends State<BattleLogView> {
+  // The whole log is a top-level dropdown.
+  late bool _open = widget.initiallyOpen;
 
   int get _eventCount {
     var count = 0;
-    for (final round in rounds) {
+    for (final round in widget.rounds) {
       count += round.actions.isEmpty
           ? 1
           : round.actions.fold<int>(
@@ -43,40 +60,60 @@ class BattleLogView extends StatelessWidget {
         border: Border.all(color: Colors.white12),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 12,
-                    letterSpacing: 1,
+          InkWell(
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      letterSpacing: 1,
+                    ),
                   ),
-                ),
-                Text(
-                  '$_eventCount events',
-                  style: const TextStyle(color: Colors.white38, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: Colors.white12),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: rounds.length,
-              itemBuilder: (context, i) => RoundEntry(
-                round: rounds[i],
-                teamAName: teamAName,
-                teamBName: teamBName,
+                  Row(
+                    children: [
+                      Text(
+                        '$_eventCount events',
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        _open ? Icons.expand_less : Icons.expand_more,
+                        size: 18,
+                        color: Colors.white54,
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
+          if (_open) ...[
+            const Divider(height: 1, color: Colors.white12),
+            SizedBox(
+              height: widget.bodyHeight,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: widget.rounds.length,
+                itemBuilder: (context, i) => RoundEntry(
+                  round: widget.rounds[i],
+                  teamAName: widget.teamAName,
+                  teamBName: widget.teamBName,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

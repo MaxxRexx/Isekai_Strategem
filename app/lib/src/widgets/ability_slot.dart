@@ -69,15 +69,22 @@ class AbilitySlot extends StatelessWidget {
                     // The count fills the whole slot, so it reads as a
                     // cooldown cover rather than a small number floating in
                     // the middle of the icon.
-                    child: FittedBox(
-                      fit: BoxFit.fitHeight,
-                      child: Text(
-                        '$cooldownRemaining',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          height: 1,
+                    // The number sits centered at 75% of the slot height
+                    // (the dark cover still fills the whole slot).
+                    child: Center(
+                      child: FractionallySizedBox(
+                        heightFactor: 0.75,
+                        child: FittedBox(
+                          fit: BoxFit.fitHeight,
+                          child: Text(
+                            '$cooldownRemaining',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              height: 1,
+                            ),
+                          ),
                         ),
                       ),
                     ),
