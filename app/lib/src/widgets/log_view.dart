@@ -17,9 +17,16 @@ class BattleLogView extends StatefulWidget {
   /// Height of the scrollable log body when the panel is expanded.
   final double bodyHeight;
 
-  /// Whether the dropdown starts expanded. Play mode passes false (the log
-  /// starts closed); Simulate leaves it open to show the result.
+  /// Whether the dropdown starts expanded, in uncontrolled mode. Ignored
+  /// when [open] is provided (controlled mode).
   final bool initiallyOpen;
+
+  /// Controlled open state. When non-null, the caller owns the open/closed
+  /// state (so it survives this widget being rebuilt as siblings come and
+  /// go) and must update it via [onToggle]. When null, the widget keeps its
+  /// own state seeded from [initiallyOpen].
+  final bool? open;
+  final VoidCallback? onToggle;
 
   const BattleLogView({
     super.key,
@@ -29,6 +36,8 @@ class BattleLogView extends StatefulWidget {
     this.teamBName = 'Squad B',
     this.bodyHeight = 260,
     this.initiallyOpen = true,
+    this.open,
+    this.onToggle,
   });
 
   @override
@@ -36,8 +45,18 @@ class BattleLogView extends StatefulWidget {
 }
 
 class _BattleLogViewState extends State<BattleLogView> {
-  // The whole log is a top-level dropdown.
-  late bool _open = widget.initiallyOpen;
+  // Uncontrolled fallback state (used only when widget.open is null).
+  late bool _internalOpen = widget.initiallyOpen;
+
+  bool get _open => widget.open ?? _internalOpen;
+
+  void _toggle() {
+    if (widget.onToggle != null) {
+      widget.onToggle!();
+    } else {
+      setState(() => _internalOpen = !_internalOpen);
+    }
+  }
 
   int get _eventCount {
     var count = 0;
@@ -64,7 +83,7 @@ class _BattleLogViewState extends State<BattleLogView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           InkWell(
-            onTap: () => setState(() => _open = !_open),
+            onTap: _toggle,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(

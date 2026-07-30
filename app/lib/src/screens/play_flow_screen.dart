@@ -91,6 +91,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   /// which briefly locks input in Play mode.
   bool _resolving = false;
 
+  /// Whether the battle log dropdown is open. Owned here (not inside the
+  /// log widget) so it survives turn-to-turn rebuilds and the queued-strip
+  /// coming and going; only reset to closed when a new battle starts.
+  bool _battleLogOpen = false;
+
   TutorialState? _tutorial;
 
   // Presentational only - there's no audio system to actually drive yet.
@@ -216,6 +221,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     }
     _roundsLog.clear();
     _clearSelection();
+    _battleLogOpen = false; // the log defaults to closed at battle start
     if (_session!.openingAiRound != null) {
       _roundsLog.add(_session!.openingAiRound!);
     }
@@ -1074,7 +1080,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           rounds: _roundsLog,
           teamAName: 'You',
           teamBName: 'Opponent',
-          initiallyOpen: false,
+          open: _battleLogOpen,
+          onToggle: () => setState(() => _battleLogOpen = !_battleLogOpen),
         ),
         const SizedBox(height: 24),
       ],
