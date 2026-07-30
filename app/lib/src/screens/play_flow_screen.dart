@@ -1328,9 +1328,14 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 size: 16,
               ),
               Expanded(
-                child: Slider(
-                  value: _volume,
-                  onChanged: (v) => setState(() => _volume = v),
+                child: SliderTheme(
+                  data: SliderTheme.of(
+                    context,
+                  ).copyWith(thumbShape: const _DiamondSliderThumbShape()),
+                  child: Slider(
+                    value: _volume,
+                    onChanged: (v) => setState(() => _volume = v),
+                  ),
                 ),
               ),
             ],
@@ -1746,5 +1751,45 @@ class _TopBarPortrait extends StatelessWidget {
       ),
       child: Icon(Icons.person, color: color, size: size * 0.6),
     );
+  }
+}
+
+/// A diamond (square rotated 45 degrees) slider thumb, so the volume
+/// control's handle matches the app's square-cornered styling instead of
+/// the default circular thumb.
+class _DiamondSliderThumbShape extends SliderComponentShape {
+  static const double halfSize = 8;
+  const _DiamondSliderThumbShape();
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
+      Size.fromRadius(halfSize);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final canvas = context.canvas;
+    final paint = Paint()
+      ..color = sliderTheme.thumbColor ?? Colors.white
+      ..style = PaintingStyle.fill;
+    final path = Path()
+      ..moveTo(center.dx, center.dy - halfSize)
+      ..lineTo(center.dx + halfSize, center.dy)
+      ..lineTo(center.dx, center.dy + halfSize)
+      ..lineTo(center.dx - halfSize, center.dy)
+      ..close();
+    canvas.drawPath(path, paint);
   }
 }
