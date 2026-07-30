@@ -46,7 +46,6 @@ class AbilitySlot extends StatelessWidget {
         child: Container(
           width: size,
           height: size,
-          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: Palette.panel,
             border: Border.all(
@@ -54,25 +53,31 @@ class AbilitySlot extends StatelessWidget {
               width: selected || highlighted ? 2 : 1,
             ),
           ),
+          // StackFit.expand makes the layers fill the whole slot (not just
+          // the small icon), so the cooldown cover and its number span the
+          // entire box rather than sitting in the middle of the icon.
           child: Stack(
-            alignment: Alignment.center,
+            fit: StackFit.expand,
             children: [
-              Opacity(opacity: onCooldown ? 0.35 : 1, child: icon),
+              Center(
+                child: Opacity(opacity: onCooldown ? 0.35 : 1, child: icon),
+              ),
               if (onCooldown)
                 Positioned.fill(
                   child: ColoredBox(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    child: Padding(
-                      padding: EdgeInsets.all(size * 0.1),
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: Text(
-                          '$cooldownRemaining',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            height: 1,
-                          ),
+                    color: Colors.black.withValues(alpha: 0.6),
+                    // The count fills the whole slot, so it reads as a
+                    // cooldown cover rather than a small number floating in
+                    // the middle of the icon.
+                    child: FittedBox(
+                      fit: BoxFit.fitHeight,
+                      child: Text(
+                        '$cooldownRemaining',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
                         ),
                       ),
                     ),
