@@ -1636,10 +1636,14 @@ class _BattleTopBar extends StatelessWidget {
       ],
     );
     final portrait = _TopBarPortrait(color: color);
-    // Centered name+portrait cluster; the name block flexes/ellipsizes so
-    // the bar never overflows on narrow screens.
+    // Each cluster hugs the center of the bar: the left identity aligns to
+    // its end and the right identity to its start, so both portraits sit
+    // the same distance from the round/Trion box regardless of name length
+    // (the name blocks flex/ellipsize outward toward the screen edges).
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: portraitFirst
+          ? MainAxisAlignment.start
+          : MainAxisAlignment.end,
       children: portraitFirst
           ? [portrait, const SizedBox(width: 12), Flexible(child: nameBlock)]
           : [Flexible(child: nameBlock), const SizedBox(width: 12), portrait],
@@ -1698,7 +1702,7 @@ class _BattleTopBar extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '⟡ Trion Available $teamATrion',
+                        '⟡ Trion Available: $teamATrion',
                         style: const TextStyle(
                           color: Palette.gold,
                           fontWeight: FontWeight.w600,
