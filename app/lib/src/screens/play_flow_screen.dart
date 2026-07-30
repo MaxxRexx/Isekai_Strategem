@@ -1607,21 +1607,30 @@ class _BattleTopBar extends StatelessWidget {
 
   /// A name/subtitle block with its portrait, matching the Naruto-Arena
   /// reference: the portrait sits toward the center of the bar (between
-  /// the name block and the round/Trion readout) on both sides, and the
-  /// name/subtitle text itself is centered rather than outer-aligned.
+  /// the name block and the round/Trion readout) on both sides. The name
+  /// text is justified off the portrait: the player's name hugs the left
+  /// of its portrait and extends leftward; the opponent's hugs the right
+  /// of its portrait and extends rightward.
   Widget _identity(
     String name,
     String? subtitle,
     Color color, {
     required bool portraitFirst,
   }) {
+    // portraitFirst == true is the opponent side (portrait then name,
+    // text extends right); false is the player side (name then portrait,
+    // text extends left).
+    final textAlign = portraitFirst ? TextAlign.left : TextAlign.right;
+    final crossAxis = portraitFirst
+        ? CrossAxisAlignment.start
+        : CrossAxisAlignment.end;
     final nameBlock = Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: crossAxis,
       children: [
         Text(
           name,
-          textAlign: TextAlign.center,
+          textAlign: textAlign,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
@@ -1633,7 +1642,7 @@ class _BattleTopBar extends StatelessWidget {
         if (subtitle != null)
           Text(
             subtitle,
-            textAlign: TextAlign.center,
+            textAlign: textAlign,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Colors.white54, fontSize: 10.5),
@@ -1643,14 +1652,17 @@ class _BattleTopBar extends StatelessWidget {
     final portrait = _TopBarPortrait(color: color);
     // The portrait sits at the inner edge (a fixed 12px from the divider,
     // so both portraits are equidistant from the center round/Trion box);
-    // the name block is centered within the outer half. Because the two
-    // halves are equal width, the empty space around each name mirrors the
-    // other side regardless of how long the two names are.
-    final centeredName = Expanded(child: Center(child: nameBlock));
+    // the name block hugs the portrait and its text grows outward.
+    final huggedName = Expanded(
+      child: Align(
+        alignment: portraitFirst ? Alignment.centerLeft : Alignment.centerRight,
+        child: nameBlock,
+      ),
+    );
     return Row(
       children: portraitFirst
-          ? [portrait, const SizedBox(width: 12), centeredName]
-          : [centeredName, const SizedBox(width: 12), portrait],
+          ? [portrait, const SizedBox(width: 12), huggedName]
+          : [huggedName, const SizedBox(width: 12), portrait],
     );
   }
 
