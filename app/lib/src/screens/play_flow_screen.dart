@@ -370,17 +370,43 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Surrender?'),
+        backgroundColor: Palette.panel,
+        surfaceTintColor: Colors.transparent,
+        // Square-cornered panel with an accent border, matching the app's
+        // rectangular panels/buttons rather than the default rounded card.
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(color: Palette.accent),
+        ),
+        title: const Text(
+          'SURRENDER?',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.6,
+          ),
+        ),
         content: const Text(
           'This immediately ends the battle as a defeat. This cannot be '
           'undone.',
+          style: TextStyle(color: Colors.white70),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white70,
+              side: const BorderSide(color: Palette.hairline),
+              shape: _rectButtonShape,
+            ),
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('CANCEL'),
           ),
-          TextButton(
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Palette.danger,
+              side: const BorderSide(color: Palette.danger),
+              shape: _rectButtonShape,
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('SURRENDER'),
           ),
@@ -426,11 +452,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         // ends the match), and the Return to Home button appears once the
         // match is over.
         automaticallyImplyLeading: false,
-        title: Text(
-          widget.tutorial && _tutorialActive
-              ? 'Guided Tutorial'
-              : 'Play Battle',
-        ),
+        title: widget.tutorial && _tutorialActive
+            ? const Text('Guided Tutorial')
+            : null,
       ),
       body: SafeArea(
         child: Column(
