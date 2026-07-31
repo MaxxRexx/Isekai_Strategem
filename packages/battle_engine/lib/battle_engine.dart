@@ -21,6 +21,7 @@ export 'src/models/character_type.dart';
 export 'src/models/damage_type.dart';
 export 'src/models/loadout.dart';
 export 'src/models/passive_effect.dart';
+export 'src/models/reactive_effect.dart';
 export 'src/models/resonance.dart';
 export 'src/models/stats.dart';
 export 'src/models/status_effect.dart';

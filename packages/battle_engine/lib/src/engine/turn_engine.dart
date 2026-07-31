@@ -1,6 +1,7 @@
 import '../constants.dart';
 import '../models/character_type.dart';
 import '../models/damage_type.dart';
+import '../models/reactive_effect.dart';
 import '../models/resonance.dart';
 import '../models/status_effect.dart';
 import '../models/status_effect_catalog.dart';
@@ -416,6 +417,29 @@ class TurnEngine {
     return target;
   }
 
+  /// The Phase-4 reactive-stack remap: before a hit resolves against
+  /// [target], the target's standing reactive effects (combat v2 counters)
+  /// get a chance to reroute it. Currently handles Mirror Ward - a non-AoE
+  /// hit against a warded target is reflected back onto its [attacker] at
+  /// full effect, consuming the ward (AoE bypasses). Falls through to the
+  /// perk-based Guardian redirect when no reactive effect applies. Returns
+  /// the character the hit should actually resolve against.
+  CharacterBattleState _applyReactiveTargetRemap(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    CharacterBattleState target,
+  ) {
+    if (trigger.attackSubtype != AttackSubtype.aoe) {
+      final wardIndex = target.reactiveEffects
+          .indexWhere((r) => r.kind == ReactiveKind.reflectNonAoe);
+      if (wardIndex >= 0) {
+        target.reactiveEffects.removeAt(wardIndex);
+        return attacker;
+      }
+    }
+    return _applyGuardianRedirect(target);
+  }
+
   /// Combined outgoing-damage multiplier from [attacker]'s perk (Rurik's
   /// low-health scaling, Dross's AOE-vs-debuffed bonus, Nadia's
   /// stacking-per-extra-FAT-use bonus). 1.0 if [attacker] has no perk or
@@ -486,7 +510,7 @@ class TurnEngine {
     final clampedTargets = targets
         .where((t) => canTarget(attacker, t))
         .take(maxTargets)
-        .map((t) => _applyGuardianRedirect(t))
+        .map((t) => _applyReactiveTargetRemap(attacker, trigger, t))
         .toList();
 
     final baseContext = _attackRollContextFor(attacker, trigger);

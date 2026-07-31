@@ -2,6 +2,7 @@ import '../constants.dart';
 import '../models/character.dart';
 import '../models/damage_type.dart';
 import '../models/passive_effect.dart';
+import '../models/reactive_effect.dart';
 import '../models/stats.dart';
 import '../models/status_effect.dart';
 import '../models/status_effect_catalog.dart';
@@ -46,6 +47,12 @@ class CharacterBattleState {
   int currentHealth;
 
   final List<StatusEffectInstance> statusEffects = [];
+
+  /// Reactive/counter effects (wards, traps, marks) standing on this
+  /// character - the combat-v2 counter layer (see [ReactiveEffect]). Armed on
+  /// the holder's turn; consulted and consumed when the opponent acts into
+  /// them during resolution. Empty for all pre-combat-v2 content.
+  final List<ReactiveEffect> reactiveEffects = [];
 
   /// Trigger id -> turns remaining before it can be used again.
   final Map<String, int> cooldowns = {};
