@@ -96,6 +96,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   /// as an ability is picked or the selection is dismissed.
   String? _infoCharacterId;
 
+  /// Whether the description panel is previewing the player's own account
+  /// info (set by tapping the top-bar player portrait). The squad section is
+  /// omitted from that readout since it's already on screen during battle.
+  bool _showPlayerInfo = false;
+
   /// True while the turn is resolving (player queue + the AI's response),
   /// which briefly locks input in Play mode.
   bool _resolving = false;
@@ -329,6 +334,16 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     _selectedAction = null;
     _selectedTargets.clear();
     _infoCharacterId = null;
+    _showPlayerInfo = false;
+  }
+
+  /// The top-bar player portrait was tapped: preview the player's account
+  /// info in the description panel (clearing any ability/target selection).
+  void _showAccountInfo() {
+    setState(() {
+      _clearSelection();
+      _showPlayerInfo = true;
+    });
   }
 
   void _selectAbility(String characterId, LegalAction action) {
@@ -1039,6 +1054,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       onTap: () {
         if (_selectedAction != null ||
             _infoCharacterId != null ||
+            _showPlayerInfo ||
             _selectedTargets.isNotEmpty) {
           setState(_clearSelection);
         }
@@ -1052,6 +1068,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           teamATrion: session.teamATrion,
           opponentName: opponentProfile.name,
           opponentSkillLabel: skillClassLabel[opponentProfile.skillClass]!,
+          onPlayerTap: _resolving ? null : _showAccountInfo,
         ),
         const SizedBox(height: 12),
         Row(
@@ -1547,6 +1564,16 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     if (_infoCharacterId != null) {
       return _characterInfoPanel(_infoCharacterId!);
     }
+    if (_showPlayerInfo) {
+      return _descPanel(
+        PlayerPanel(
+          squadIds: _teamAIds.whereType<String>().toList(),
+          bordered: false,
+          compact: true,
+          showSquad: false,
+        ),
+      );
+    }
     return const SizedBox.shrink();
   }
 
@@ -1874,12 +1901,17 @@ class _BattleTopBar extends StatelessWidget {
   final String opponentName;
   final String opponentSkillLabel;
 
+  /// Tapping the player's own portrait previews the account info in the
+  /// description panel. Null while the turn is resolving.
+  final VoidCallback? onPlayerTap;
+
   const _BattleTopBar({
     required this.isOver,
     required this.roundNumber,
     required this.teamATrion,
     required this.opponentName,
     required this.opponentSkillLabel,
+    this.onPlayerTap,
   });
 
   /// A name/subtitle block with its portrait, matching the Naruto-Arena
@@ -1893,6 +1925,7 @@ class _BattleTopBar extends StatelessWidget {
     String? subtitle,
     Color color, {
     required bool portraitFirst,
+    VoidCallback? onPortraitTap,
   }) {
     // portraitFirst == true is the opponent side (portrait then name,
     // text extends right); false is the player side (name then portrait,
@@ -1926,7 +1959,7 @@ class _BattleTopBar extends StatelessWidget {
           ),
       ],
     );
-    final portrait = _TopBarPortrait(color: color);
+    final portrait = _TopBarPortrait(color: color, onTap: onPortraitTap);
     // The portrait sits at the inner edge (a fixed 12px from the divider,
     // so both portraits are equidistant from the center round/Trion box);
     // the name block hugs the portrait and its text grows outward.
@@ -1971,6 +2004,7 @@ class _BattleTopBar extends StatelessWidget {
                     null,
                     Palette.gold,
                     portraitFirst: false,
+                    onPortraitTap: onPlayerTap,
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -2031,12 +2065,17 @@ class _BattleTopBar extends StatelessWidget {
 /// portrait) recolored per side.
 class _TopBarPortrait extends StatelessWidget {
   final Color color;
-  const _TopBarPortrait({required this.color});
+
+  /// Makes the portrait tappable (the player side uses this to preview the
+  /// account info). Null leaves it non-interactive (the opponent side).
+  final VoidCallback? onTap;
+
+  const _TopBarPortrait({required this.color, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     const size = 84.0; // three times the original 28px top-bar portrait
-    return Container(
+    final tile = Container(
       width: size,
       height: size,
       alignment: Alignment.center,
@@ -2045,6 +2084,11 @@ class _TopBarPortrait extends StatelessWidget {
         border: Border.all(color: color, width: 1.5),
       ),
       child: Icon(Icons.person, color: color, size: size * 0.6),
+    );
+    if (onTap == null) return tile;
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(onTap: onTap, child: tile),
     );
   }
 }

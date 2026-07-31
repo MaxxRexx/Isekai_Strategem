@@ -66,12 +66,18 @@ class PlayerPanel extends StatelessWidget {
   /// Tutorial's locked squad).
   final ValueChanged<String>? onSquadMemberTap;
 
+  /// Whether to render the "YOUR SQUAD" section. Off when the panel is shown
+  /// somewhere the squad is already on screen (e.g. the battle screen's
+  /// description panel), so it isn't repeated.
+  final bool showSquad;
+
   const PlayerPanel({
     super.key,
     this.squadIds = const [],
     this.bordered = true,
     this.compact = false,
     this.onSquadMemberTap,
+    this.showSquad = true,
   });
 
   @override
@@ -146,42 +152,44 @@ class PlayerPanel extends StatelessWidget {
               _HatBadge(data: rank, size: hatSize),
           ],
         ),
-        SizedBox(height: compact ? 10 : 12),
-        Text(
-          'YOUR SQUAD',
-          style: TextStyle(
-            color: Colors.white38,
-            fontSize: compact ? 9.5 : 10.5,
-            letterSpacing: 0.6,
+        if (showSquad) ...[
+          SizedBox(height: compact ? 10 : 12),
+          Text(
+            'YOUR SQUAD',
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: compact ? 9.5 : 10.5,
+              letterSpacing: 0.6,
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (var i = 0; i < 3; i++)
-              i < squadIds.length
-                  ? _SquadMemberTile(
-                      characterId: squadIds[i],
-                      size: squadSize,
-                      onTap: onSquadMemberTap,
-                    )
-                  : Container(
-                      width: squadSize,
-                      height: squadSize,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white24),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var i = 0; i < 3; i++)
+                i < squadIds.length
+                    ? _SquadMemberTile(
+                        characterId: squadIds[i],
+                        size: squadSize,
+                        onTap: onSquadMemberTap,
+                      )
+                    : Container(
+                        width: squadSize,
+                        height: squadSize,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white24,
+                          size: 20,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.add,
-                        color: Colors.white24,
-                        size: 20,
-                      ),
-                    ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ],
     );
 
