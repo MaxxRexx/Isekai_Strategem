@@ -2,7 +2,6 @@ import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
 import '../data/placeholder_ranks.dart';
-import '../ui/notched.dart';
 import '../ui/palette.dart';
 import '../ui/rank.dart';
 import 'game_icons.dart';
@@ -56,18 +55,14 @@ class PortraitTile extends StatelessWidget {
         Container(
           width: size,
           height: size,
-          clipBehavior: Clip.antiAlias,
-          decoration: ShapeDecoration(
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [top, bottom],
             ),
-            shape: NotchedBorder(
-              side: BorderSide(color: Colors.black.withValues(alpha: 0.35)),
-              notch: size * 0.2,
-              corners: const {NotchCorner.bottomRight},
-            ),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.35)),
           ),
           child: Stack(
             children: [

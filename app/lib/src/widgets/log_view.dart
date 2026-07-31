@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../game/battle_models.dart';
-import '../ui/notched.dart';
 import '../ui/palette.dart';
 
 /// The scrollable battle log: one block per team turn, one line per
@@ -75,13 +74,9 @@ class _BattleLogViewState extends State<BattleLogView> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: ShapeDecoration(
+      decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        shape: const NotchedBorder(
-          side: BorderSide(color: Colors.white12),
-          notch: 16,
-        ),
+        border: Border.all(color: Colors.white12),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../game/battle_models.dart';
-import '../ui/notched.dart';
 import '../ui/rank.dart';
 import 'badges.dart';
 import 'portrait_tile.dart';
@@ -144,9 +143,9 @@ class TeamPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: ShapeDecoration(
+      decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        shape: NotchedBorder(side: BorderSide(color: color), notch: 16),
+        border: Border(top: BorderSide(color: color, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: compact
