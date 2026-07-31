@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../data/describe.dart';
 import '../game/draft.dart';
 import '../game/loadout_selection.dart';
+import '../ui/notched.dart';
 import '../ui/palette.dart';
 import 'ability_slot.dart';
 import 'black_trigger_ability_list.dart';
@@ -227,6 +228,8 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
         description: describeTrigger(active),
         tags: ['${active.equipCost} TRION'],
         buttonLabel: equipped ? 'UNEQUIP' : 'EQUIP',
+        // Equip keeps the solid fill; unequip switches to the open outline.
+        filled: !equipped,
         onPressed: locked
             ? null
             : () => _mutate(() {
@@ -257,6 +260,8 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
       tags: ['${bt.equipCost} TRION'],
       extraTags: [_gradeTag(grade)],
       buttonLabel: selected ? 'REMOVE' : 'SELECT',
+      // Select keeps the solid fill; remove switches to the open outline.
+      filled: !selected,
       onPressed: locked
           ? null
           : () => _mutate(
@@ -273,8 +278,37 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
     required List<String> tags,
     List<Widget> extraTags = const [],
     required String buttonLabel,
+    required bool filled,
     required VoidCallback? onPressed,
   }) {
+    // Equipped/selected items offer an unequip/remove action drawn as an
+    // open-notch outlined button; not-yet-equipped items offer an
+    // equip/select action drawn as the solid closed-notch filled button.
+    final button = filled
+        ? ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              shape: const NotchedBorder(notch: 12),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+            onPressed: onPressed,
+            child: Text(buttonLabel),
+          )
+        : OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              shape: const OpenNotchBorder(notch: 11),
+              side: const BorderSide(color: Palette.accent, width: 1.5),
+              foregroundColor: Colors.white,
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+            onPressed: onPressed,
+            child: Text(buttonLabel),
+          );
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -329,7 +363,7 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
             ),
           ),
           const SizedBox(width: 8),
-          ElevatedButton(onPressed: onPressed, child: Text(buttonLabel)),
+          button,
         ],
       ),
     );
