@@ -389,3 +389,23 @@ stage. Nothing goes to main without explicit approval.
   abilities.
 - TEG name (currently "Team Efficiency Grade").
 - Whether A5 (TEG) ships inside Phase A or as its own slice.
+
+## 14. Post-combat-v2 product roadmap (after Phases A-G)
+
+These are app/product tasks, not combat-engine phases. They are scheduled
+after the combat rework (Phases A-G) is complete. PvP is AI-backed for now;
+real online multiplayer comes later (it does not gate these items).
+
+1. Redesign the Guided Tutorial for the new systems (queue resolution,
+   portrait-based targeting, counters/uniques).
+2. Update How to Play with screenshots and worked examples; flesh out
+   character backgrounds and world state; include the artwork the owner
+   will provide.
+3. Quick Battle becomes a first-class button like Play and drops you
+   straight into a battle like Play, but auto-selects a random squad for
+   you.
+4. Redo Simulate to match the new systems and designs.
+5. Replace Play with **Start Training Battle** (PvE) - the third home option.
+6. Replace Quick Battle with **Start Quick Match** (PvP) - the second home
+   option.
+7. Add **Start Ladder Battle** (PvP) - the first home option.
