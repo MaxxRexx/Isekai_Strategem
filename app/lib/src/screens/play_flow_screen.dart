@@ -1575,11 +1575,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                   style: OutlinedButton.styleFrom(
                     fixedSize: const Size(134, 48),
                     padding: EdgeInsets.zero,
-                    shape: const NotchedBorder(notch: 11),
-                    side: const BorderSide(
-                      color: Color(0xFF77B1B2),
-                      width: 1.5,
-                    ),
+                    shape: const OpenNotchBorder(notch: 11),
+                    side: const BorderSide(color: Palette.accent, width: 1.5),
                     foregroundColor: Colors.white,
                     textStyle: const TextStyle(
                       fontWeight: FontWeight.w700,

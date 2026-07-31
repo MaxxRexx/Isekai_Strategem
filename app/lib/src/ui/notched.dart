@@ -89,3 +89,51 @@ class NotchedBorder extends OutlinedBorder {
   @override
   EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);
 }
+
+/// An "open" notch outline: the shape stays a full rectangle, but the drawn
+/// border leaves the top-left and bottom-right corners OPEN - each edge
+/// stops [notch] short of those corners, so the corner reads as an L-shaped
+/// gap (no diagonal, no closing line). The top-right and bottom-left corners
+/// stay closed 90 degrees. Used for outlined (no-fill) buttons and panels.
+class OpenNotchBorder extends OutlinedBorder {
+  final double notch;
+
+  const OpenNotchBorder({super.side = BorderSide.none, this.notch = 11});
+
+  // The hit/fill area is the full rectangle; only the stroke has the gaps.
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) =>
+      Path()..addRect(rect.deflate(side.width));
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) =>
+      Path()..addRect(rect);
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    if (side.style == BorderStyle.none) return;
+    final r = rect.deflate(side.width / 2);
+    final n = notch.clamp(0.0, r.shortestSide / 2);
+    final l = r.left, t = r.top, rt = r.right, b = r.bottom;
+    final p = side.toPaint();
+    // Top edge: open on the left (starts at l+n), closed at top-right.
+    canvas.drawLine(Offset(l + n, t), Offset(rt, t), p);
+    // Right edge: closed at top-right, open at bottom-right (stops at b-n).
+    canvas.drawLine(Offset(rt, t), Offset(rt, b - n), p);
+    // Bottom edge: open on the right (starts at rt-n), closed at bottom-left.
+    canvas.drawLine(Offset(rt - n, b), Offset(l, b), p);
+    // Left edge: closed at bottom-left, open at top-left (stops at t+n).
+    canvas.drawLine(Offset(l, b), Offset(l, t + n), p);
+  }
+
+  @override
+  OpenNotchBorder copyWith({BorderSide? side, double? notch}) =>
+      OpenNotchBorder(side: side ?? this.side, notch: notch ?? this.notch);
+
+  @override
+  ShapeBorder scale(double t) =>
+      OpenNotchBorder(side: side.scale(t), notch: notch * t);
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);
+}
