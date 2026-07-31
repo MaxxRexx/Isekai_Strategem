@@ -23,12 +23,20 @@ class FighterRow extends StatelessWidget {
   /// badge instead of varying per character.
   final CharacterRank? rank;
 
+  /// Marks this fighter's portrait as a selected ability target (pulsing
+  /// overlay) and makes it tappable, respectively - used by the battle
+  /// screen's portrait-based target picker.
+  final bool selected;
+  final VoidCallback? onTap;
+
   const FighterRow({
     super.key,
     required this.fighter,
     this.portraitSize = 64,
     this.compact = false,
     this.rank,
+    this.selected = false,
+    this.onTap,
   });
 
   @override
@@ -43,6 +51,8 @@ class FighterRow extends StatelessWidget {
       size: portraitSize,
       rank: rank,
       mirrorRank: compact,
+      selected: selected,
+      onTap: onTap,
     );
     final nameLine = Row(
       mainAxisSize: MainAxisSize.min,
@@ -130,6 +140,12 @@ class TeamPanel extends StatelessWidget {
   /// A single squad-wide rank for every row (see [FighterRow.rank]).
   final CharacterRank? rank;
 
+  /// Ids of fighters whose portraits are currently selected as ability
+  /// targets (pulsing overlay), and a tap handler for portrait-based
+  /// target selection. Empty/null leaves the panel non-interactive.
+  final Set<String> selectedIds;
+  final void Function(String characterId)? onFighterTap;
+
   const TeamPanel({
     super.key,
     required this.label,
@@ -138,6 +154,8 @@ class TeamPanel extends StatelessWidget {
     this.portraitSize = 64,
     this.compact = false,
     this.rank,
+    this.selectedIds = const {},
+    this.onFighterTap,
   });
 
   @override
@@ -169,6 +187,8 @@ class TeamPanel extends StatelessWidget {
               portraitSize: portraitSize,
               compact: compact,
               rank: rank,
+              selected: selectedIds.contains(f.id),
+              onTap: onFighterTap == null ? null : () => onFighterTap!(f.id),
             ),
         ],
       ),

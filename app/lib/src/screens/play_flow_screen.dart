@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/describe.dart';
+import '../data/flavor_text.dart';
 import '../data/placeholder_ranks.dart';
 import '../game/battle_models.dart';
 import '../game/draft.dart';
@@ -28,12 +29,6 @@ import '../widgets/tag_chip.dart';
 import '../widgets/trigger_icons.dart';
 
 enum _PlayStep { setup, loadout, battle }
-
-/// Sharp rectangular button corners for the battle controls, matching the
-/// squared-off tag/chip design rather than the default rounded pills.
-const _rectButtonShape = RoundedRectangleBorder(
-  borderRadius: BorderRadius.zero,
-);
 
 /// Filled/primary buttons (Queue, Use, Return to Home) use the solid closed
 /// diagonal notch on the top-left + bottom-right corners, matching the
@@ -95,6 +90,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   String? _selectedCharacterId;
   LegalAction? _selectedAction;
   final Set<String> _selectedTargets = {};
+
+  /// Which character's info the description panel is previewing (set by
+  /// tapping a portrait while no ability is mid-selection). Cleared as soon
+  /// as an ability is picked or the selection is dismissed.
+  String? _infoCharacterId;
 
   /// True while the turn is resolving (player queue + the AI's response),
   /// which briefly locks input in Play mode.
@@ -328,15 +328,60 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     _selectedCharacterId = null;
     _selectedAction = null;
     _selectedTargets.clear();
+    _infoCharacterId = null;
   }
 
   void _selectAbility(String characterId, LegalAction action) {
     setState(() {
+      _infoCharacterId = null;
       _selectedCharacterId = characterId;
       _selectedAction = action;
-      _selectedTargets
-        ..clear()
-        ..addAll(action.legalTargetIds.take(action.maxTargets));
+      _selectedTargets.clear();
+      final t = action.trigger;
+      if (t.targetAffiliation == TargetAffiliation.self) {
+        // Self-target: auto-highlight the caster's own portrait.
+        _selectedTargets.add(characterId);
+      } else if (t.attackSubtype == AttackSubtype.aoe) {
+        // AoE: auto-highlight every character it hits.
+        _selectedTargets.addAll(action.legalTargetIds);
+      }
+      // Otherwise the player picks targets by tapping portraits.
+    });
+  }
+
+  /// True when [action] leaves target choice up to the player (i.e. it is
+  /// neither self-cast nor an auto-selecting AoE). While this holds, tapping
+  /// a portrait toggles it as a target instead of previewing its info.
+  bool _awaitingTargets(LegalAction action) {
+    final t = action.trigger;
+    return t.targetAffiliation != TargetAffiliation.self &&
+        t.attackSubtype != AttackSubtype.aoe;
+  }
+
+  /// A portrait was tapped. If an ability is mid-selection and waiting for
+  /// targets, toggle this character as a target; otherwise preview its info
+  /// in the description panel.
+  void _onPortraitTap(String characterId) {
+    final action = _selectedAction;
+    if (action != null && _awaitingTargets(action)) {
+      _toggleTarget(action, characterId);
+    } else {
+      setState(() => _infoCharacterId = characterId);
+    }
+  }
+
+  void _toggleTarget(LegalAction action, String id) {
+    if (!action.legalTargetIds.contains(id)) return;
+    setState(() {
+      if (_selectedTargets.contains(id)) {
+        _selectedTargets.remove(id);
+      } else if (action.maxTargets == 1) {
+        _selectedTargets
+          ..clear()
+          ..add(id);
+      } else if (_selectedTargets.length < action.maxTargets) {
+        _selectedTargets.add(id);
+      }
     });
   }
 
@@ -387,11 +432,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Palette.panel,
         surfaceTintColor: Colors.transparent,
-        // Square-cornered panel with an accent border, matching the app's
-        // rectangular panels/buttons rather than the default rounded card.
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+        // Open L-bracket notched panel with an accent border, matching the
+        // app's Rift Cyan panels rather than the default rounded card.
+        shape: const OpenNotchBorder(
           side: BorderSide(color: Palette.accent),
+          notch: 16,
         ),
         title: const Text(
           'SURRENDER?',
@@ -411,7 +456,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.white70,
               side: const BorderSide(color: Palette.hairline),
-              shape: _rectButtonShape,
+              shape: _openBtnStyleShape,
             ),
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('CANCEL'),
@@ -420,7 +465,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: Palette.danger,
               side: const BorderSide(color: Palette.danger),
-              shape: _rectButtonShape,
+              shape: _openBtnStyleShape,
             ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('SURRENDER'),
@@ -741,15 +786,17 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       child: Container(
         height: 64,
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: active
               ? Palette.gold.withValues(alpha: 0.08)
               : Colors.white.withValues(alpha: 0.03),
-          border: Border.all(
-            color: active ? Palette.gold : Colors.white24,
-            width: active ? 1.5 : 1,
+          shape: OpenNotchBorder(
+            side: BorderSide(
+              color: active ? Palette.gold : Colors.white24,
+              width: active ? 1.5 : 1,
+            ),
+            notch: 12,
           ),
-          borderRadius: BorderRadius.circular(4),
         ),
         child: character == null
             ? Center(
@@ -984,9 +1031,21 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       for (final f in [...session.teamA, ...session.teamB]) f.id: f.name,
     };
 
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
+    return GestureDetector(
+      // Tapping any non-interactive area (empty space, panel backgrounds)
+      // dismisses the current ability/target/info selection. Buttons and
+      // portraits win the tap on themselves, so only "dead" space clears.
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        if (_selectedAction != null ||
+            _infoCharacterId != null ||
+            _selectedTargets.isNotEmpty) {
+          setState(_clearSelection);
+        }
+      },
+      child: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
         _BattleTopBar(
           isOver: session.isOver,
           roundNumber: session.roundNumber,
@@ -1040,6 +1099,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 portraitSize: 96,
                 compact: true,
                 rank: opponentAccountRank,
+                selectedIds: _selectedAction != null
+                    ? _selectedTargets
+                    : const {},
+                onFighterTap: _resolving ? null : _onPortraitTap,
               ),
             ),
           ],
@@ -1073,6 +1136,15 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 label: const Text('RETURN TO HOME'),
               ),
               OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  shape: _openBtnStyleShape,
+                  side: const BorderSide(color: Palette.accent, width: 1.5),
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
                 onPressed: _copyReport,
                 child: const Text('COPY FULL REPORT'),
               ),
@@ -1080,14 +1152,28 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           ),
         ] else ...[
           if (!_tutorialActive && _session!.queuedActions.isNotEmpty)
-            _queuedStrip(names),
+            // Inset to line up with the (now narrower) description box: the
+            // left inset clears the side controls, the right inset clears the
+            // fixed End Turn column.
+            Padding(
+              padding: const EdgeInsets.only(left: 170, right: 144),
+              child: _queuedStrip(names),
+            ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _sideControls(),
               const SizedBox(width: 10),
-              Expanded(
-                child: _bottomActionBar(names, tutorialStep, endTurnVisible),
+              Expanded(child: _bottomActionBar(names)),
+              const SizedBox(width: 10),
+              // End Turn lives in its own fixed-width column to the right of
+              // the description box, so it stays put and visible no matter
+              // what the description box is showing.
+              SizedBox(
+                width: 134,
+                child: endTurnVisible
+                    ? _endTurnButton()
+                    : const SizedBox.shrink(),
               ),
             ],
           ),
@@ -1100,8 +1186,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           open: _battleLogOpen,
           onToggle: () => setState(() => _battleLogOpen = !_battleLogOpen),
         ),
-        const SizedBox(height: 24),
-      ],
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 
@@ -1140,6 +1227,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               alive: fighter.alive,
               size: 96,
               rank: playerAccountRank,
+              selected:
+                  _selectedAction != null &&
+                  _selectedTargets.contains(fighter.id),
+              onTap: _resolving ? null : () => _onPortraitTap(fighter.id),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1268,11 +1359,13 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       // row; no cooldown number is shown on them.
       cooldownRemaining: fighter.alive ? display.cooldownRemaining : 0,
       tooltip: tooltip,
-      // Selecting is still allowed for an already-selected ability so it can
-      // be deselected/read; otherwise a disabled slot is not tappable.
+      // Tapping the already-selected ability deselects it; otherwise a
+      // disabled slot is not tappable.
       onTap: (action == null || _resolving || (!enabled && !isSelected))
           ? null
-          : () => _selectAbility(fighter.id, action),
+          : () => isSelected
+                ? setState(_clearSelection)
+                : _selectAbility(fighter.id, action),
       size: 60,
     );
   }
@@ -1329,7 +1422,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: Palette.danger,
               side: const BorderSide(color: Palette.danger),
-              shape: _rectButtonShape,
+              shape: const OpenNotchBorder(notch: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1366,15 +1459,27 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           OutlinedButton(
             style: OutlinedButton.styleFrom(
               foregroundColor: Palette.danger,
-              side: const BorderSide(color: Palette.danger),
-              shape: _rectButtonShape,
+              side: const BorderSide(color: Palette.danger, width: 1.5),
+              shape: _openBtnStyleShape,
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
             ),
             onPressed: _confirmSurrender,
             child: const Text('SURRENDER'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(shape: _rectButtonShape),
+            style: OutlinedButton.styleFrom(
+              shape: _openBtnStyleShape,
+              side: const BorderSide(color: Palette.accent, width: 1.5),
+              foregroundColor: Colors.white,
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
             onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Chat is not available in this mode.'),
@@ -1409,18 +1514,15 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
-  /// The single shared bottom bar: whichever ability was last tapped
-  /// anywhere in the squad list drives this one panel, matching the
-  /// approved reference (not a stacked card per character).
-  Widget _bottomActionBar(
-    Map<String, String> names,
-    TutorialBattleStep? tutorialStep,
-    bool endTurnVisible,
-  ) {
+  /// The single shared description panel to the right of the side controls.
+  /// It shows the selected ability (with a portrait-driven target picker and
+  /// a selected/total counter) or, when no ability is mid-selection, a
+  /// preview of whichever portrait was last tapped. End Turn no longer lives
+  /// here - it has its own fixed column (see [_endTurnButton]).
+  Widget _bottomActionBar(Map<String, String> names) {
     if (_resolving) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Row(
+      return _descPanel(
+        const Row(
           children: [
             SizedBox(
               width: 14,
@@ -1439,86 +1541,17 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
 
     final action = _selectedAction;
     final charId = _selectedCharacterId;
-    if (action == null || charId == null) {
-      if (!endTurnVisible) return const SizedBox.shrink();
-      return Align(
-        alignment: Alignment.centerRight,
-        child: OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            fixedSize: const Size(134, 48),
-            padding: EdgeInsets.zero,
-            shape: _openBtnStyleShape,
-            side: const BorderSide(color: Palette.accent, width: 1.5),
-            foregroundColor: Colors.white,
-            textStyle: const TextStyle(
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-              fontSize: 14,
-            ),
-          ),
-          onPressed: _endTurn,
-          child: const Text('END TURN'),
-        ),
-      );
+    if (action != null && charId != null) {
+      return _abilityPanel(action, charId, names);
     }
-
-    final t = action.trigger;
-    Widget targets;
-    if (t.targetAffiliation == TargetAffiliation.self) {
-      targets = Text(
-        'Target: ${names[charId]} (self)',
-        style: const TextStyle(color: Colors.white70, fontSize: 12),
-      );
-    } else if (action.maxTargets == 1) {
-      targets = Wrap(
-        spacing: 6,
-        children: [
-          for (final id in action.legalTargetIds)
-            ChoiceChip(
-              shape: _rectButtonShape,
-              label: Text(
-                names[id] ?? id,
-                style: const TextStyle(fontSize: 11),
-              ),
-              selected: _selectedTargets.contains(id),
-              onSelected: (_) => setState(
-                () => _selectedTargets
-                  ..clear()
-                  ..add(id),
-              ),
-            ),
-        ],
-      );
-    } else {
-      targets = Wrap(
-        spacing: 6,
-        children: [
-          for (final id in action.legalTargetIds)
-            FilterChip(
-              shape: _rectButtonShape,
-              label: Text(
-                names[id] ?? id,
-                style: const TextStyle(fontSize: 11),
-              ),
-              selected: _selectedTargets.contains(id),
-              onSelected: (selected) => setState(() {
-                if (selected) {
-                  if (_selectedTargets.length < action.maxTargets) {
-                    _selectedTargets.add(id);
-                  }
-                } else {
-                  _selectedTargets.remove(id);
-                }
-              }),
-            ),
-        ],
-      );
+    if (_infoCharacterId != null) {
+      return _characterInfoPanel(_infoCharacterId!);
     }
+    return const SizedBox.shrink();
+  }
 
-    final canUse =
-        _selectedTargets.isNotEmpty ||
-        t.targetAffiliation == TargetAffiliation.self;
-
+  /// The open-notch accent panel that wraps every description-panel state.
+  Widget _descPanel(Widget child) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -1528,7 +1561,56 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           notch: 14,
         ),
       ),
-      child: Column(
+      child: child,
+    );
+  }
+
+  /// The selected-ability description: the ability blurb plus a target
+  /// instruction line (a live selected/total counter for multi-target and
+  /// Burst abilities) and the Queue/Use button. Targets are chosen by
+  /// tapping portraits, not from a list here.
+  Widget _abilityPanel(
+    LegalAction action,
+    String charId,
+    Map<String, String> names,
+  ) {
+    final t = action.trigger;
+
+    Widget targetLine;
+    if (t.targetAffiliation == TargetAffiliation.self) {
+      targetLine = _targetHint('Self-cast: ${names[charId]} highlighted.');
+    } else if (t.attackSubtype == AttackSubtype.aoe) {
+      targetLine = _targetHint(
+        'Area of effect: all ${action.legalTargetIds.length} target(s) '
+        'highlighted.',
+      );
+    } else if (action.maxTargets > 1) {
+      targetLine = Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Tap portraits to pick targets',
+              style: TextStyle(color: Colors.white54, fontSize: 11),
+            ),
+          ),
+          _targetCounter(_selectedTargets.length, action.maxTargets),
+        ],
+      );
+    } else {
+      final only = _selectedTargets.firstOrNull;
+      targetLine = _targetHint(
+        only == null
+            ? "Tap a target's portrait to select it."
+            : 'Target: ${names[only]}',
+      );
+    }
+
+    final canUse =
+        _selectedTargets.isNotEmpty ||
+        t.targetAffiliation == TargetAffiliation.self;
+
+    return _descPanel(
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -1581,78 +1663,173 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          if (t.targetAffiliation != TargetAffiliation.self &&
-              action.maxTargets > 1)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+          targetLine,
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                shape: _filledNotchShape,
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              onPressed: canUse
+                  ? () {
+                      final targets =
+                          t.targetAffiliation == TargetAffiliation.self
+                          ? [charId]
+                          : _selectedTargets.take(action.maxTargets).toList();
+                      // The tutorial resolves immediately; Play mode queues.
+                      if (_tutorialActive) {
+                        _useAbility(charId, action, targets);
+                      } else {
+                        _queueAbility(charId, action, targets);
+                      }
+                    }
+                  : null,
               child: Text(
-                'Pick up to ${action.maxTargets} target(s):',
-                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                _actionButtonLabel(t, names, _tutorialActive ? 'USE' : 'QUEUE'),
               ),
             ),
-          targets,
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (endTurnVisible)
-                OutlinedButton(
-                  // EXAMPLE (exact Rift Cyan spec measured from the ref):
-                  // ~134x48 box, open 2-notch (top-left + bottom-right cut,
-                  // other two corners square 90 degrees), a muted teal
-                  // border, and white bold text. styleFrom applies the
-                  // shape/side to every state (hover/pressed included).
-                  style: OutlinedButton.styleFrom(
-                    fixedSize: const Size(134, 48),
-                    padding: EdgeInsets.zero,
-                    shape: const OpenNotchBorder(notch: 11),
-                    side: const BorderSide(color: Palette.accent, width: 1.5),
-                    foregroundColor: Colors.white,
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                      fontSize: 14,
-                    ),
-                  ),
-                  onPressed: _endTurn,
-                  child: const Text('END TURN'),
-                )
-              else
-                const SizedBox.shrink(),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  shape: _filledNotchShape,
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                onPressed: canUse
-                    ? () {
-                        final targets =
-                            t.targetAffiliation == TargetAffiliation.self
-                            ? [charId]
-                            : _selectedTargets.take(action.maxTargets).toList();
-                        // The tutorial resolves immediately; Play mode queues.
-                        if (_tutorialActive) {
-                          _useAbility(charId, action, targets);
-                        } else {
-                          _queueAbility(charId, action, targets);
-                        }
-                      }
-                    : null,
-                child: Text(
-                  _actionButtonLabel(
-                    t,
-                    names,
-                    _tutorialActive ? 'USE' : 'QUEUE',
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _targetHint(String text) => Text(
+    text,
+    style: const TextStyle(color: Colors.white54, fontSize: 11),
+  );
+
+  /// The "currently selected / total selectable" counter shown for
+  /// multi-target and Burst abilities.
+  Widget _targetCounter(int selected, int total) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: ShapeDecoration(
+        color: Palette.gold.withValues(alpha: 0.12),
+        shape: const OpenNotchBorder(
+          side: BorderSide(color: Palette.gold),
+          notch: 6,
+        ),
+      ),
+      child: Text(
+        '$selected / $total',
+        style: const TextStyle(
+          color: Palette.gold,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  /// The portrait-preview state of the description panel: a tapped
+  /// character's identity, health, flavor, and active status effects.
+  Widget _characterInfoPanel(String id) {
+    final fighter = _fighterById(id);
+    if (fighter == null) return const SizedBox.shrink();
+    final flavor = characterFlavor[id];
+    return _descPanel(
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PortraitTile(
+            characterId: id,
+            name: fighter.name,
+            type: fighter.type,
+            size: 48,
+            showRank: false,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        fighter.name.toUpperCase(),
+                        style: TextStyle(
+                          color: fighter.alive ? Colors.white : Colors.white38,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${fighter.currentHealth}/${fighter.maxHealth} HP',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  typeLabel[fighter.type]!,
+                  style: const TextStyle(color: Palette.accent, fontSize: 11),
+                ),
+                if (flavor != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    flavor,
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                ],
+                if (fighter.statusEffects.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 3,
+                    runSpacing: 3,
+                    children: [
+                      for (final s in fighter.statusEffects)
+                        StatusBadge(
+                          name: s.name,
+                          remainingTurns: s.remainingTurns,
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  FighterSnapshot? _fighterById(String id) {
+    for (final f in [..._session!.teamA, ..._session!.teamB]) {
+      if (f.id == id) return f;
+    }
+    return null;
+  }
+
+  /// The fixed End Turn button, always in the same spot to the right of the
+  /// description panel.
+  Widget _endTurnButton() {
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        fixedSize: const Size(134, 48),
+        padding: EdgeInsets.zero,
+        shape: _openBtnStyleShape,
+        side: const BorderSide(color: Palette.accent, width: 1.5),
+        foregroundColor: Colors.white,
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+          fontSize: 14,
+        ),
+      ),
+      onPressed: _endTurn,
+      child: const Text('END TURN'),
     );
   }
 

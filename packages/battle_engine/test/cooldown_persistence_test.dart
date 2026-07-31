@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 /// ability through the opponent's turn AND the caster's own next turn.
 void main() {
   final roster = CharacterRoster.defaultRoster;
-  final ashbringer = BlackTriggerCatalog.defaultCatalog['ashbringer']!;
+  final ashbringer = BlackTriggerCatalog.defaultCatalog['ashbringer'];
   final slash = // cooldownTurns: 1
       ashbringer.activeAbilities.firstWhere((a) => a.id == 'ashbringer_melee');
   final volley = // cooldownTurns: 2

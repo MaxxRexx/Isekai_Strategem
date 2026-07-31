@@ -9,6 +9,7 @@ import 'quick_battle/quick_battle_screen.dart';
 import 'screens/guide_screen.dart';
 import 'screens/play_flow_screen.dart';
 import 'screens/simulate_screen.dart';
+import 'ui/notched.dart';
 import 'ui/palette.dart';
 import 'widgets/loadout_builder_panel.dart';
 import 'widgets/loadout_budget_panel.dart';
@@ -425,11 +426,31 @@ class _SquadMembershipButton extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: inSquad
+          // Outlined button: open L-bracket notch, matching the battle
+          // screen's End Turn / Surrender treatment.
           ? OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                shape: const OpenNotchBorder(notch: 11),
+                side: const BorderSide(color: Palette.danger, width: 1.5),
+                foregroundColor: Palette.danger,
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
               onPressed: onPressed,
               child: const Text('REMOVE FROM SQUAD'),
             )
+          // Filled button: solid closed diagonal notch, matching the battle
+          // screen's Queue / Return to Home buttons.
           : ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                shape: const NotchedBorder(notch: 12),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
               onPressed: canAdd ? onPressed : null,
               child: const Text('ADD TO SQUAD'),
             ),

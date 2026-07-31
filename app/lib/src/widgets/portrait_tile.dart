@@ -117,6 +117,14 @@ class PortraitHealthBar extends StatelessWidget {
   final CharacterRank? rank;
   final bool mirrorRank;
 
+  /// When true, an animated color overlay pulses over the portrait to mark
+  /// it as a currently selected ability target.
+  final bool selected;
+
+  /// Makes the portrait tappable (target selection / info preview in the
+  /// battle screen). Null leaves it non-interactive (Simulate results, etc.).
+  final VoidCallback? onTap;
+
   const PortraitHealthBar({
     super.key,
     required this.characterId,
@@ -128,6 +136,8 @@ class PortraitHealthBar extends StatelessWidget {
     this.size = 64,
     this.rank,
     this.mirrorRank = false,
+    this.selected = false,
+    this.onTap,
   });
 
   @override
@@ -142,21 +152,40 @@ class PortraitHealthBar extends StatelessWidget {
         : frac <= 0.5
         ? Palette.warn
         : Palette.good;
+    Widget portrait = Opacity(
+      opacity: alive ? 1 : 0.4,
+      child: PortraitTile(
+        characterId: characterId,
+        name: name,
+        type: type,
+        size: size,
+        rank: rank,
+        mirrorRank: mirrorRank,
+      ),
+    );
+    if (selected || onTap != null) {
+      portrait = Stack(
+        children: [
+          portrait,
+          if (selected)
+            const Positioned.fill(
+              child: IgnorePointer(child: _SelectionPulse()),
+            ),
+          if (onTap != null)
+            Positioned.fill(
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(onTap: onTap),
+              ),
+            ),
+        ],
+      );
+    }
     return SizedBox(
       width: size,
       child: Column(
         children: [
-          Opacity(
-            opacity: alive ? 1 : 0.4,
-            child: PortraitTile(
-              characterId: characterId,
-              name: name,
-              type: type,
-              size: size,
-              rank: rank,
-              mirrorRank: mirrorRank,
-            ),
-          ),
+          portrait,
           const SizedBox(height: 4),
           Container(
             width: size,
@@ -190,6 +219,50 @@ class PortraitHealthBar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A pulsing gold overlay laid over a selected portrait, so a chosen
+/// ability target reads as an "animated color overlay" rather than a
+/// static tint.
+class _SelectionPulse extends StatefulWidget {
+  const _SelectionPulse();
+
+  @override
+  State<_SelectionPulse> createState() => _SelectionPulseState();
+}
+
+class _SelectionPulseState extends State<_SelectionPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 750),
+  )..repeat(reverse: true);
+
+  late final Animation<double> _opacity = Tween<double>(
+    begin: 0.18,
+    end: 0.5,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // A gold border is always fully visible so the selection reads clearly
+    // at any point in the pulse; the fill breathes on top of it.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: Palette.gold, width: 2.5),
+      ),
+      child: FadeTransition(
+        opacity: _opacity,
+        child: const ColoredBox(color: Palette.gold),
       ),
     );
   }
