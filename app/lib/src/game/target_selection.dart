@@ -1,5 +1,3 @@
-import 'package:battle_engine/battle_engine.dart';
-
 /// Pure helpers describing how the battle screen's portrait-based target
 /// picker behaves for a given ability, factored out of the widget so the
 /// rules can be unit-tested against the whole trigger catalog.
@@ -10,8 +8,10 @@ import 'package:battle_engine/battle_engine.dart';
 /// - Area of effect: every legal target is auto-highlighted (capped at how
 ///   many the ability may actually hit), nothing to pick.
 /// - Everything else (single / unique / burst against opponents or allies):
-///   the player picks targets by tapping portraits, up to [maxTargets].
+///   the player picks targets by tapping portraits, up to `maxTargets`.
 library;
+
+import 'package:battle_engine/battle_engine.dart';
 
 /// Whether [trigger] leaves target choice up to the player (tapping
 /// portraits) rather than auto-selecting them. True for single/unique/burst
