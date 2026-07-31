@@ -35,22 +35,6 @@ const _rectButtonShape = RoundedRectangleBorder(
   borderRadius: BorderRadius.zero,
 );
 
-/// Filled/primary buttons (Queue, Use, Return to Home) use the solid
-/// closed angled-notch corners (top-left + bottom-right), matching the
-/// Rift Cyan mockup's blue-background buttons.
-const _filledBtnShape = NotchedBorder(
-  notch: 12,
-  corners: {NotchCorner.topLeft, NotchCorner.bottomRight},
-);
-
-/// Outlined buttons (End Turn, squad add/remove) use the open tactical
-/// bracket frame, matching the mockup's bordered buttons.
-const _openBtnShape = OpenNotchedBorder(
-  side: BorderSide(color: Palette.accent),
-  notch: 12,
-  gap: 10,
-);
-
 /// Play mode: draft your own squad and Loadouts, then play turn by turn
 /// against an AI opponent. With [tutorial] set, the Guided Tutorial's
 /// script locks each step to a single scripted action. With
@@ -749,18 +733,15 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       child: Container(
         height: 64,
         padding: const EdgeInsets.all(6),
-        decoration: ShapeDecoration(
+        decoration: BoxDecoration(
           color: active
               ? Palette.gold.withValues(alpha: 0.08)
               : Colors.white.withValues(alpha: 0.03),
-          shape: OpenNotchedBorder(
-            side: BorderSide(
-              color: active ? Palette.gold : Colors.white24,
-              width: active ? 1.5 : 1,
-            ),
-            notch: 12,
-            gap: 10,
+          border: Border.all(
+            color: active ? Palette.gold : Colors.white24,
+            width: active ? 1.5 : 1,
           ),
+          borderRadius: BorderRadius.circular(4),
         ),
         child: character == null
             ? Center(
@@ -1015,10 +996,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: ShapeDecoration(
                   color: Theme.of(context).cardColor,
-                  shape: const OpenNotchedBorder(
+                  shape: const NotchedBorder(
                     side: BorderSide(color: Palette.teamA),
-                    notch: 18,
-                    gap: 16,
+                    notch: 16,
                   ),
                 ),
                 child: Column(
@@ -1049,7 +1029,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 label: 'Opponent Squad',
                 color: Palette.teamB,
                 fighters: session.teamB,
-                portraitSize: 76,
+                portraitSize: 96,
                 compact: true,
                 rank: opponentAccountRank,
               ),
@@ -1073,7 +1053,6 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             runSpacing: 8,
             children: [
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(shape: _filledBtnShape),
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(Icons.home_outlined, size: 18),
                 label: const Text('RETURN TO HOME'),
@@ -1144,7 +1123,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               currentHealth: fighter.currentHealth,
               maxHealth: fighter.maxHealth,
               alive: fighter.alive,
-              size: 76,
+              size: 96,
               rank: playerAccountRank,
             ),
             const SizedBox(width: 10),
@@ -1266,7 +1245,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     }
     final enabled = _abilityEnabled(tutorialStep, fighter.id, display);
     return AbilitySlot(
-      icon: TriggerIcon(trigger: t, size: 38),
+      icon: TriggerIcon(trigger: t, size: 28),
       selected: isSelected,
       highlighted: !isSelected && highlight,
       enabled: enabled,
@@ -1279,7 +1258,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       onTap: (action == null || _resolving || (!enabled && !isSelected))
           ? null
           : () => _selectAbility(fighter.id, action),
-      size: 62,
+      size: 60,
     );
   }
 
@@ -1449,12 +1428,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       if (!endTurnVisible) return const SizedBox.shrink();
       return Align(
         alignment: Alignment.centerRight,
-        child: OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            shape: _openBtnShape,
-            side: const BorderSide(color: Palette.accent),
-            foregroundColor: Palette.accent,
-          ),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(shape: _rectButtonShape),
           onPressed: _endTurn,
           child: const Text('END TURN'),
         ),
@@ -1522,10 +1497,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: const ShapeDecoration(
-        shape: OpenNotchedBorder(
+        shape: NotchedBorder(
           side: BorderSide(color: Palette.accent),
-          notch: 18,
-          gap: 16,
+          notch: 16,
         ),
       ),
       child: Column(
@@ -1601,18 +1575,14 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             children: [
               if (endTurnVisible)
                 OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    shape: _openBtnShape,
-                    side: const BorderSide(color: Palette.accent),
-                    foregroundColor: Palette.accent,
-                  ),
+                  style: OutlinedButton.styleFrom(shape: _rectButtonShape),
                   onPressed: _endTurn,
                   child: const Text('END TURN'),
                 )
               else
                 const SizedBox.shrink(),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(shape: _filledBtnShape),
+                style: ElevatedButton.styleFrom(shape: _rectButtonShape),
                 onPressed: canUse
                     ? () {
                         final targets =
@@ -1759,10 +1729,9 @@ class _BattleTopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
       decoration: ShapeDecoration(
         color: Colors.black.withValues(alpha: 0.3),
-        shape: OpenNotchedBorder(
+        shape: NotchedBorder(
           side: BorderSide(color: isOver ? Colors.white24 : Palette.accent),
-          notch: 18,
-          gap: 16,
+          notch: 16,
         ),
       ),
       child: isOver
@@ -1791,12 +1760,11 @@ class _BattleTopBar extends StatelessWidget {
                   ),
                   decoration: ShapeDecoration(
                     color: Colors.black.withValues(alpha: 0.25),
-                    shape: OpenNotchedBorder(
+                    shape: NotchedBorder(
                       side: BorderSide(
                         color: Palette.accent.withValues(alpha: 0.7),
                       ),
-                      notch: 12,
-                      gap: 10,
+                      notch: 10,
                     ),
                   ),
                   child: Column(
@@ -1851,9 +1819,13 @@ class _TopBarPortrait extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color, width: 1.5),
+        shape: NotchedBorder(
+          side: BorderSide(color: color, width: 1.5),
+          notch: size * 0.2,
+          corners: const {NotchCorner.bottomRight},
+        ),
       ),
       child: Icon(Icons.person, color: color, size: size * 0.6),
     );

@@ -78,10 +78,9 @@ class _BattleLogViewState extends State<BattleLogView> {
       clipBehavior: Clip.antiAlias,
       decoration: ShapeDecoration(
         color: Theme.of(context).cardColor,
-        shape: const OpenNotchedBorder(
+        shape: const NotchedBorder(
           side: BorderSide(color: Colors.white12),
-          notch: 18,
-          gap: 16,
+          notch: 16,
         ),
       ),
       child: Column(
