@@ -44,15 +44,15 @@ class AbilitySlot extends StatelessWidget {
       opacity: enabled ? 1 : 0.4,
       child: Material(
         color: Palette.panel,
-        // A single closed diagonal notch on the bottom-right corner (where
-        // the cooldown count sits), matching the Rift Cyan ability slots.
-        shape: NotchedBorder(
+        // Open L-bracket notch on the top-left + bottom-right corners (the
+        // same open notch as the End Turn button), matching the Rift Cyan
+        // ability slots.
+        shape: OpenNotchBorder(
           side: BorderSide(
             color: borderColor,
             width: selected || highlighted ? 2 : 1,
           ),
-          notch: size * 0.11,
-          corners: const {NotchCorner.bottomRight},
+          notch: size * 0.16,
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
