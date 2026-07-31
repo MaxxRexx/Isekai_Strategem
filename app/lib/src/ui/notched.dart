@@ -100,14 +100,30 @@ class OpenNotchBorder extends OutlinedBorder {
 
   const OpenNotchBorder({super.side = BorderSide.none, this.notch = 11});
 
-  // The hit/fill area is the full rectangle; only the stroke has the gaps.
+  // The fill/overlay area (what a hover/press highlight is clipped to) is
+  // the 2-notch chamfered shape, so the click fill respects the notches
+  // instead of showing square corners. The stroke (see paint) draws only
+  // the open L-brackets - the diagonals here are left open.
+  Path _fillPath(Rect r) {
+    final n = notch.clamp(0.0, r.shortestSide / 2);
+    final l = r.left, t = r.top, rt = r.right, b = r.bottom;
+    return Path()
+      ..moveTo(l + n, t)
+      ..lineTo(rt, t)
+      ..lineTo(rt, b - n)
+      ..lineTo(rt - n, b)
+      ..lineTo(l, b)
+      ..lineTo(l, t + n)
+      ..close();
+  }
+
   @override
   Path getInnerPath(Rect rect, {TextDirection? textDirection}) =>
-      Path()..addRect(rect.deflate(side.width));
+      _fillPath(rect.deflate(side.width));
 
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) =>
-      Path()..addRect(rect);
+      _fillPath(rect);
 
   @override
   void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
