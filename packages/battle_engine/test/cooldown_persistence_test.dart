@@ -1,5 +1,21 @@
+import 'dart:math';
+
 import 'package:battle_engine/battle_engine.dart';
 import 'package:test/test.dart';
+
+/// A [Random] that always returns the maximum value, so [DiceRoller.rollPercent]
+/// yields 100 and [FatEngine] never triggers FAT. Without this the test flakes:
+/// a randomly-triggered FAT clears the caster's cooldowns (the very thing under
+/// test), turning an expected `1` into `null`.
+class _NoFatRandom implements Random {
+  const _NoFatRandom();
+  @override
+  int nextInt(int max) => max - 1;
+  @override
+  double nextDouble() => 0.9999999;
+  @override
+  bool nextBool() => true;
+}
 
 /// Locks in the cooldown timing that Play mode relies on: a used ability's
 /// cooldown is applied at the caster's *end of turn* and only ticks down on
@@ -14,6 +30,11 @@ void main() {
       ashbringer.activeAbilities.firstWhere((a) => a.id == 'ashbringer_ranged');
 
   Battle freshBattle() => Battle(
+    // Deterministic FAT (never triggers) so a stray FAT proc can't clear the
+    // cooldown this test is asserting on.
+    turnEngine: TurnEngine(
+      fatEngine: FatEngine(diceRoller: DiceRoller(_NoFatRandom())),
+    ),
     teamA: Team(
       id: 'a',
       characters: [
