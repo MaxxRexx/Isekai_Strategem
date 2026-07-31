@@ -1,50 +1,44 @@
 import 'package:flutter/material.dart';
 
-/// A rectangle with exactly two opposite corners cut at 45 degrees (the
-/// top-left and bottom-right by default); the other two corners stay
-/// square 90 degrees. This is the "angled-notch" corner of the Rift Cyan
-/// tactical HUD.
-///
-/// Used both filled (a solid "closed" notch, e.g. primary buttons) and
-/// outline-only (an "open" notch that shows the background through the cut,
-/// e.g. bordered buttons and panels).
+/// Which corners get the 45-degree cut.
+enum NotchCorner { topLeft, topRight, bottomLeft, bottomRight }
+
+/// A rectangle with the chosen corners cut at 45 degrees (a solid "closed"
+/// diagonal notch); the other corners stay square 90 degrees. The Rift Cyan
+/// tactical HUD's filled shapes: primary buttons cut the top-left +
+/// bottom-right pair; ability slots cut only the bottom-right.
 class NotchedBorder extends OutlinedBorder {
   /// Length of each corner cut, along each edge.
   final double notch;
 
-  /// Whether the cut corners are the top-left/bottom-right pair (default)
-  /// or the top-right/bottom-left pair.
-  final bool mirror;
+  /// Which corners to cut.
+  final Set<NotchCorner> corners;
 
   const NotchedBorder({
     super.side = BorderSide.none,
     this.notch = 12,
-    this.mirror = false,
+    this.corners = const {NotchCorner.topLeft, NotchCorner.bottomRight},
   });
+
+  bool _has(NotchCorner c) => corners.contains(c);
 
   Path _pathFor(Rect r) {
     final n = notch.clamp(0.0, r.shortestSide / 2);
     final l = r.left, t = r.top, rt = r.right, b = r.bottom;
-    if (mirror) {
-      // Top-right and bottom-left cut; top-left and bottom-right square.
-      return Path()
-        ..moveTo(l, t)
-        ..lineTo(rt - n, t)
-        ..lineTo(rt, t + n)
-        ..lineTo(rt, b)
-        ..lineTo(l + n, b)
-        ..lineTo(l, b - n)
-        ..close();
-    }
-    // Top-left and bottom-right cut; top-right and bottom-left square.
-    return Path()
-      ..moveTo(l + n, t)
-      ..lineTo(rt, t)
-      ..lineTo(rt, b - n)
-      ..lineTo(rt - n, b)
-      ..lineTo(l, b)
-      ..lineTo(l, t + n)
-      ..close();
+    final tl = _has(NotchCorner.topLeft);
+    final tr = _has(NotchCorner.topRight);
+    final bl = _has(NotchCorner.bottomLeft);
+    final br = _has(NotchCorner.bottomRight);
+    final path = Path()..moveTo(l + (tl ? n : 0), t);
+    path.lineTo(rt - (tr ? n : 0), t);
+    if (tr) path.lineTo(rt, t + n);
+    path.lineTo(rt, b - (br ? n : 0));
+    if (br) path.lineTo(rt - n, b);
+    path.lineTo(l + (bl ? n : 0), b);
+    if (bl) path.lineTo(l, b - n);
+    path.lineTo(l, t + (tl ? n : 0));
+    if (tl) path.lineTo(l + n, t);
+    return path..close();
   }
 
   @override
@@ -75,16 +69,19 @@ class NotchedBorder extends OutlinedBorder {
   }
 
   @override
-  NotchedBorder copyWith({BorderSide? side, double? notch, bool? mirror}) =>
-      NotchedBorder(
-        side: side ?? this.side,
-        notch: notch ?? this.notch,
-        mirror: mirror ?? this.mirror,
-      );
+  NotchedBorder copyWith({
+    BorderSide? side,
+    double? notch,
+    Set<NotchCorner>? corners,
+  }) => NotchedBorder(
+    side: side ?? this.side,
+    notch: notch ?? this.notch,
+    corners: corners ?? this.corners,
+  );
 
   @override
   ShapeBorder scale(double t) =>
-      NotchedBorder(side: side.scale(t), notch: notch * t, mirror: mirror);
+      NotchedBorder(side: side.scale(t), notch: notch * t, corners: corners);
 
   @override
   EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);

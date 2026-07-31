@@ -35,6 +35,14 @@ const _rectButtonShape = RoundedRectangleBorder(
   borderRadius: BorderRadius.zero,
 );
 
+/// Filled/primary buttons (Queue, Use, Return to Home) use the solid closed
+/// diagonal notch on the top-left + bottom-right corners, matching the
+/// Rift Cyan mockup's blue-background buttons.
+const _filledNotchShape = NotchedBorder(notch: 12);
+
+/// Outlined battle buttons (End Turn) use the open L-bracket notch.
+const _openBtnStyleShape = OpenNotchBorder(notch: 11);
+
 /// Play mode: draft your own squad and Loadouts, then play turn by turn
 /// against an AI opponent. With [tutorial] set, the Guided Tutorial's
 /// script locks each step to a single scripted action. With
@@ -1052,6 +1060,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             runSpacing: 8,
             children: [
               ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(shape: _filledNotchShape),
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(Icons.home_outlined, size: 18),
                 label: const Text('RETURN TO HOME'),
@@ -1427,8 +1436,19 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       if (!endTurnVisible) return const SizedBox.shrink();
       return Align(
         alignment: Alignment.centerRight,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(shape: _rectButtonShape),
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            fixedSize: const Size(134, 48),
+            padding: EdgeInsets.zero,
+            shape: _openBtnStyleShape,
+            side: const BorderSide(color: Palette.accent, width: 1.5),
+            foregroundColor: Colors.white,
+            textStyle: const TextStyle(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              fontSize: 14,
+            ),
+          ),
           onPressed: _endTurn,
           child: const Text('END TURN'),
         ),
@@ -1495,8 +1515,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Palette.accent)),
+      decoration: const ShapeDecoration(
+        shape: OpenNotchBorder(
+          side: BorderSide(color: Palette.accent),
+          notch: 14,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1590,7 +1613,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               else
                 const SizedBox.shrink(),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(shape: _rectButtonShape),
+                style: ElevatedButton.styleFrom(shape: _filledNotchShape),
                 onPressed: canUse
                     ? () {
                         final targets =
@@ -1735,9 +1758,12 @@ class _BattleTopBar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: Colors.black.withValues(alpha: 0.3),
-        border: Border.all(color: isOver ? Colors.white24 : Palette.accent),
+        shape: OpenNotchBorder(
+          side: BorderSide(color: isOver ? Colors.white24 : Palette.accent),
+          notch: 14,
+        ),
       ),
       child: isOver
           ? const Text(
@@ -1763,10 +1789,13 @@ class _BattleTopBar extends StatelessWidget {
                     horizontal: 16,
                     vertical: 7,
                   ),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: Colors.black.withValues(alpha: 0.25),
-                    border: Border.all(
-                      color: Palette.accent.withValues(alpha: 0.7),
+                    shape: OpenNotchBorder(
+                      side: BorderSide(
+                        color: Palette.accent.withValues(alpha: 0.7),
+                      ),
+                      notch: 10,
                     ),
                   ),
                   child: Column(

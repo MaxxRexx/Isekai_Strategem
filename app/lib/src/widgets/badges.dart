@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/flavor_text.dart';
+import '../ui/notched.dart';
 import '../ui/palette.dart';
 import 'game_icons.dart';
 
@@ -62,9 +63,12 @@ class StatusBadge extends StatelessWidget {
         width: 19,
         height: 19,
         alignment: Alignment.center,
-        decoration: BoxDecoration(
+        decoration: const ShapeDecoration(
           color: Palette.panel,
-          border: Border.all(color: Palette.accent),
+          shape: OpenNotchBorder(
+            side: BorderSide(color: Palette.accent),
+            notch: 5,
+          ),
         ),
         child: Stack(
           alignment: Alignment.center,
