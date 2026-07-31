@@ -12,6 +12,7 @@ import '../game/draft.dart';
 import '../game/loadout_selection.dart';
 import '../game/play_session.dart';
 import '../game/report.dart';
+import '../game/target_selection.dart';
 import '../game/tutorial.dart';
 import '../ui/notched.dart';
 import '../ui/palette.dart';
@@ -100,6 +101,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   /// info (set by tapping the top-bar player portrait). The squad section is
   /// omitted from that readout since it's already on screen during battle.
   bool _showPlayerInfo = false;
+
+  /// Whether the description panel is previewing the opponent's AI profile
+  /// info (set by tapping the top-bar opponent portrait), mirroring
+  /// [_showPlayerInfo].
+  bool _showOpponentInfo = false;
 
   /// True while the turn is resolving (player queue + the AI's response),
   /// which briefly locks input in Play mode.
@@ -335,6 +341,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     _selectedTargets.clear();
     _infoCharacterId = null;
     _showPlayerInfo = false;
+    _showOpponentInfo = false;
   }
 
   /// The top-bar player portrait was tapped: preview the player's account
@@ -346,32 +353,41 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     });
   }
 
+  /// The top-bar opponent portrait was tapped: preview the opponent's AI
+  /// profile info in the description panel.
+  void _showOpponentAccountInfo() {
+    setState(() {
+      _clearSelection();
+      _showOpponentInfo = true;
+    });
+  }
+
   void _selectAbility(String characterId, LegalAction action) {
     setState(() {
       _infoCharacterId = null;
       _selectedCharacterId = characterId;
       _selectedAction = action;
-      _selectedTargets.clear();
-      final t = action.trigger;
-      if (t.targetAffiliation == TargetAffiliation.self) {
-        // Self-target: auto-highlight the caster's own portrait.
-        _selectedTargets.add(characterId);
-      } else if (t.attackSubtype == AttackSubtype.aoe) {
-        // AoE: auto-highlight every character it hits.
-        _selectedTargets.addAll(action.legalTargetIds);
-      }
-      // Otherwise the player picks targets by tapping portraits.
+      // Self-cast highlights the caster; AoE highlights every target it can
+      // hit; everything else starts empty for the player to pick. (See
+      // autoSelectedTargets - shared so it can be catalog-tested.)
+      _selectedTargets
+        ..clear()
+        ..addAll(
+          autoSelectedTargets(
+            action.trigger,
+            characterId,
+            action.legalTargetIds,
+            action.maxTargets,
+          ),
+        );
     });
   }
 
   /// True when [action] leaves target choice up to the player (i.e. it is
   /// neither self-cast nor an auto-selecting AoE). While this holds, tapping
   /// a portrait toggles it as a target instead of previewing its info.
-  bool _awaitingTargets(LegalAction action) {
-    final t = action.trigger;
-    return t.targetAffiliation != TargetAffiliation.self &&
-        t.attackSubtype != AttackSubtype.aoe;
-  }
+  bool _awaitingTargets(LegalAction action) =>
+      awaitingManualTargets(action.trigger);
 
   /// A portrait was tapped. If an ability is mid-selection and waiting for
   /// targets, toggle this character as a target; otherwise preview its info
@@ -1055,6 +1071,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         if (_selectedAction != null ||
             _infoCharacterId != null ||
             _showPlayerInfo ||
+            _showOpponentInfo ||
             _selectedTargets.isNotEmpty) {
           setState(_clearSelection);
         }
@@ -1069,6 +1086,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           opponentName: opponentProfile.name,
           opponentSkillLabel: skillClassLabel[opponentProfile.skillClass]!,
           onPlayerTap: _resolving ? null : _showAccountInfo,
+          onOpponentTap: _resolving ? null : _showOpponentAccountInfo,
         ),
         const SizedBox(height: 12),
         Row(
@@ -1574,7 +1592,59 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         ),
       );
     }
+    if (_showOpponentInfo) {
+      return _opponentInfoPanel();
+    }
     return const SizedBox.shrink();
+  }
+
+  /// The opponent AI profile preview: name, skill tier, and its behavioural
+  /// description - the mirror of the player-account preview.
+  Widget _opponentInfoPanel() {
+    final profile = profileById(_profileBId!);
+    return _descPanel(
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Palette.teamB.withValues(alpha: 0.12),
+              border: Border.all(color: Palette.teamB, width: 1.5),
+            ),
+            child: const Icon(Icons.person, color: Palette.teamB, size: 26),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  profile.name.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${skillClassLabel[profile.skillClass]!} AI',
+                  style: const TextStyle(color: Palette.teamB, fontSize: 11),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  profile.description,
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// The open-notch accent panel that wraps every description-panel state.
@@ -1901,9 +1971,10 @@ class _BattleTopBar extends StatelessWidget {
   final String opponentName;
   final String opponentSkillLabel;
 
-  /// Tapping the player's own portrait previews the account info in the
-  /// description panel. Null while the turn is resolving.
+  /// Tapping a top-bar portrait previews that side's info in the description
+  /// panel (player account / opponent AI profile). Null while resolving.
   final VoidCallback? onPlayerTap;
+  final VoidCallback? onOpponentTap;
 
   const _BattleTopBar({
     required this.isOver,
@@ -1912,6 +1983,7 @@ class _BattleTopBar extends StatelessWidget {
     required this.opponentName,
     required this.opponentSkillLabel,
     this.onPlayerTap,
+    this.onOpponentTap,
   });
 
   /// A name/subtitle block with its portrait, matching the Naruto-Arena
@@ -2051,6 +2123,7 @@ class _BattleTopBar extends StatelessWidget {
                     opponentSkillLabel,
                     Palette.teamB,
                     portraitFirst: true,
+                    onPortraitTap: onOpponentTap,
                   ),
                 ),
               ],
