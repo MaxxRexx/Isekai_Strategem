@@ -146,7 +146,11 @@ class TeamPanel extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: ShapeDecoration(
         color: Theme.of(context).cardColor,
-        shape: NotchedBorder(side: BorderSide(color: color), notch: 16),
+        shape: OpenNotchedBorder(
+          side: BorderSide(color: color),
+          notch: 18,
+          gap: 16,
+        ),
       ),
       child: Column(
         crossAxisAlignment: compact
