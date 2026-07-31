@@ -51,7 +51,7 @@ class AbilitySlot extends StatelessWidget {
             color: borderColor,
             width: selected || highlighted ? 2 : 1,
           ),
-          notch: size * 0.22,
+          notch: size * 0.11,
           corners: const {NotchCorner.bottomRight},
         ),
         clipBehavior: Clip.antiAlias,
