@@ -1002,10 +1002,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               flex: 48,
               child: Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: Theme.of(context).cardColor,
-                  border: Border(
-                    top: BorderSide(color: Palette.teamA, width: 3),
+                  shape: const OpenNotchBorder(
+                    side: BorderSide(color: Palette.teamA),
+                    notch: 16,
                   ),
                 ),
                 child: Column(
@@ -1060,7 +1061,13 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             runSpacing: 8,
             children: [
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(shape: _filledNotchShape),
+                style: ElevatedButton.styleFrom(
+                  shape: _filledNotchShape,
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(Icons.home_outlined, size: 18),
                 label: const Text('RETURN TO HOME'),
@@ -1613,7 +1620,13 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               else
                 const SizedBox.shrink(),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(shape: _filledNotchShape),
+                style: ElevatedButton.styleFrom(
+                  shape: _filledNotchShape,
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
                 onPressed: canUse
                     ? () {
                         final targets =

@@ -39,7 +39,9 @@ class AbilitySlot extends StatelessWidget {
         ? Palette.gold
         : highlighted
         ? Palette.warn
-        : Palette.hairline;
+        // Brighter than the faint hairline so the open L-brackets read
+        // clearly on an unselected slot.
+        : Colors.white.withValues(alpha: 0.34);
     final button = Opacity(
       opacity: enabled ? 1 : 0.4,
       child: Material(
