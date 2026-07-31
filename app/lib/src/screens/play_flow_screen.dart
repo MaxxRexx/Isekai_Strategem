@@ -12,6 +12,7 @@ import '../game/loadout_selection.dart';
 import '../game/play_session.dart';
 import '../game/report.dart';
 import '../game/tutorial.dart';
+import '../ui/notched.dart';
 import '../ui/palette.dart';
 import '../widgets/ability_slot.dart';
 import '../widgets/badges.dart';
@@ -1566,7 +1567,13 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             children: [
               if (endTurnVisible)
                 OutlinedButton(
-                  style: OutlinedButton.styleFrom(shape: _rectButtonShape),
+                  // EXAMPLE: open 2-notch corners (top-left + bottom-right
+                  // cut, other two corners square 90 degrees).
+                  style: OutlinedButton.styleFrom(
+                    shape: const NotchedBorder(notch: 11),
+                    side: const BorderSide(color: Palette.accent),
+                    foregroundColor: Palette.accent,
+                  ),
                   onPressed: _endTurn,
                   child: const Text('END TURN'),
                 )
