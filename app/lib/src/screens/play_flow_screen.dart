@@ -1567,12 +1567,25 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             children: [
               if (endTurnVisible)
                 OutlinedButton(
-                  // EXAMPLE: open 2-notch corners (top-left + bottom-right
-                  // cut, other two corners square 90 degrees).
+                  // EXAMPLE (exact Rift Cyan spec measured from the ref):
+                  // ~134x48 box, open 2-notch (top-left + bottom-right cut,
+                  // other two corners square 90 degrees), a muted teal
+                  // border, and white bold text. styleFrom applies the
+                  // shape/side to every state (hover/pressed included).
                   style: OutlinedButton.styleFrom(
+                    fixedSize: const Size(134, 48),
+                    padding: EdgeInsets.zero,
                     shape: const NotchedBorder(notch: 11),
-                    side: const BorderSide(color: Palette.accent),
-                    foregroundColor: Palette.accent,
+                    side: const BorderSide(
+                      color: Color(0xFF77B1B2),
+                      width: 1.5,
+                    ),
+                    foregroundColor: Colors.white,
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      fontSize: 14,
+                    ),
                   ),
                   onPressed: _endTurn,
                   child: const Text('END TURN'),
