@@ -1,10 +1,11 @@
 import '../models/damage_type.dart';
 import '../models/passive_effect.dart';
+import '../models/reactive_effect.dart';
 import '../models/status_effect.dart';
 import '../models/trigger.dart';
 import '../util/dice.dart';
 
-/// The built-in 40-Trigger catalog (34 active, 6 passive), a shared draft
+/// The built-in 42-Trigger catalog (36 active, 6 passive), a shared draft
 /// pool any character may equip regardless of their own [CharacterType] -
 /// nothing in the [Loadout] rules restricts equipping by type.
 class TriggerCatalog {
@@ -530,6 +531,35 @@ class TriggerCatalog {
           StatusEffectApplication('regenerating'),
           StatusEffectApplication('warded'),
         ],
+      ),
+      ActiveTrigger(
+        id: 'predictive_parry',
+        name: 'Predictive Parry',
+        category: TriggerCategory.attacker,
+        equipCost: 20,
+        trionCost: 20,
+        cooldownTurns: 2,
+        originTag: OriginTag.physical,
+        rangeTag: RangeTag.melee,
+        attackType: AttackType.melee,
+        attackSubtype: AttackSubtype.single,
+        targetAffiliation: TargetAffiliation.self,
+        armsReactive: ReactiveKind.dodgeMeleeSingle,
+      ),
+      ActiveTrigger(
+        id: 'numbing_toxin',
+        name: 'Numbing Toxin',
+        category: TriggerCategory.trapper,
+        equipCost: 18,
+        trionCost: 20,
+        cooldownTurns: 2,
+        originTag: OriginTag.afflict,
+        rangeTag: RangeTag.melee,
+        attackType: AttackType.melee,
+        attackSubtype: AttackSubtype.single,
+        targetAffiliation: TargetAffiliation.self,
+        armsReactive: ReactiveKind.burstMitigation,
+        armsReactiveDefaultTurns: 2,
       ),
       PassiveTrigger(
         id: 'guardians_bulwark',

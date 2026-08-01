@@ -419,16 +419,29 @@ class TurnEngine {
 
   /// The Phase-4 reactive-stack remap: before a hit resolves against
   /// [target], the target's standing reactive effects (combat v2 counters)
-  /// get a chance to reroute it. Currently handles Mirror Ward - a non-AoE
-  /// hit against a warded target is reflected back onto its [attacker] at
-  /// full effect, consuming the ward (AoE bypasses). Falls through to the
-  /// perk-based Guardian redirect when no reactive effect applies. Returns
-  /// the character the hit should actually resolve against.
-  CharacterBattleState _applyReactiveTargetRemap(
+  /// get a chance to reroute, negate, or modify it. Dispatches on
+  /// [ReactiveKind] in priority order. Falls through to the perk-based
+  /// Guardian redirect when no reactive effect applies. Returns the
+  /// character the hit should actually resolve against, or null if the hit
+  /// is negated entirely.
+  CharacterBattleState? _applyReactiveTargetRemap(
     CharacterBattleState attacker,
     ActiveTrigger trigger,
     CharacterBattleState target,
   ) {
+    // Foresight Counter: negate by origin tag (non-AoE only).
+    if (trigger.attackSubtype != AttackSubtype.aoe) {
+      final negateIndex = target.reactiveEffects.indexWhere((r) =>
+          r.kind == ReactiveKind.negateByOrigin &&
+          r.data['originTag'] == trigger.originTag.name);
+      if (negateIndex >= 0) {
+        target.reactiveEffects.removeAt(negateIndex);
+        _applyStun(attacker, 2);
+        return null;
+      }
+    }
+
+    // Mirror Ward: reflect non-AoE.
     if (trigger.attackSubtype != AttackSubtype.aoe) {
       final wardIndex = target.reactiveEffects
           .indexWhere((r) => r.kind == ReactiveKind.reflectNonAoe);
@@ -437,7 +450,66 @@ class TurnEngine {
         return attacker;
       }
     }
+
+    // Predictive Parry: dodge melee single and counter-hit.
+    if (trigger.attackType == AttackType.melee &&
+        trigger.attackSubtype == AttackSubtype.single) {
+      final parryIndex = target.reactiveEffects
+          .indexWhere((r) => r.kind == ReactiveKind.dodgeMeleeSingle);
+      if (parryIndex >= 0) {
+        target.reactiveEffects.removeAt(parryIndex);
+        _resolveCounterHit(target, attacker);
+        return null;
+      }
+    }
+
     return _applyGuardianRedirect(target);
+  }
+
+  /// Applies a Stun (action prevention) to [target] for [turns] turns via
+  /// the status effect engine.
+  void _applyStun(CharacterBattleState target, int turns) {
+    statusEffectEngine.apply(
+      target,
+      'stunned',
+      durationOverride: turns,
+    );
+  }
+
+  /// Resolves a free counter-hit from [attacker] against [target] using
+  /// standard Twin Fang Strike damage (2d6+37 slashing).
+  void _resolveCounterHit(
+    CharacterBattleState attacker,
+    CharacterBattleState target,
+  ) {
+    final counterDamageRoll =
+        const DiceExpression(2, 6, flatBonus: 37).roll(combatEngine.diceRoller);
+    _applyDamage(
+      target: target,
+      baseDamage: counterDamageRoll,
+      damageType: DamageType.slashing,
+      isCriticalHit: false,
+    );
+  }
+
+  /// Checks whether [target] has burst mitigation armed; if so, records
+  /// the index so subsequent hits on the same target in the same burst
+  /// are suppressed. Returns true if this is NOT the first hit and burst
+  /// mitigation is active (meaning the hit should be skipped).
+  bool _isBurstMitigated(
+    CharacterBattleState target,
+    Map<String, bool> burstFirstHitLanded,
+  ) {
+    final mitigationIndex = target.reactiveEffects
+        .indexWhere((r) => r.kind == ReactiveKind.burstMitigation);
+    if (mitigationIndex < 0) return false;
+    final key = target.character.id;
+    if (!burstFirstHitLanded.containsKey(key)) {
+      burstFirstHitLanded[key] = true;
+      return false;
+    }
+    target.reactiveEffects.removeAt(mitigationIndex);
+    return true;
   }
 
   /// Combined outgoing-damage multiplier from [attacker]'s perk (Rurik's
@@ -505,13 +577,18 @@ class TurnEngine {
     required List<CharacterBattleState> targets,
     double damageMultiplier = 1.0,
     double healMultiplier = 1.0,
+    Map<String, Object?>? reactiveData,
   }) {
     final maxTargets = maxRangedTargets(attacker, trigger);
-    final clampedTargets = targets
+    final filteredTargets = targets
         .where((t) => canTarget(attacker, t))
         .take(maxTargets)
-        .map((t) => _applyReactiveTargetRemap(attacker, trigger, t))
         .toList();
+    final clampedTargets = <CharacterBattleState>[];
+    for (final t in filteredTargets) {
+      final remapped = _applyReactiveTargetRemap(attacker, trigger, t);
+      if (remapped != null) clampedTargets.add(remapped);
+    }
 
     final baseContext = _attackRollContextFor(attacker, trigger);
     final stats = attacker.effectiveStats(fatConfig: fatConfig);
@@ -757,8 +834,10 @@ class TurnEngine {
         }
         break;
       case AttackSubtype.burst:
+        final burstFirstHitLanded = <String, bool>{};
         for (final target in clampedTargets) {
           for (var hitIndex = 0; hitIndex < trigger.hitsPerUse; hitIndex++) {
+            if (_isBurstMitigated(target, burstFirstHitLanded)) continue;
             resolveHitAgainst(target);
           }
         }
@@ -780,11 +859,49 @@ class TurnEngine {
       ));
     }
 
+    // Arm reactive effects declared by the trigger.
+    if (trigger.armsReactive != null) {
+      _armReactiveEffect(attacker, trigger, filteredTargets, reactiveData);
+    }
+
     return AbilityUseResult(
       attackerCharacterId: attacker.character.id,
       triggerId: trigger.id,
       targetResults: targetResults,
     );
+  }
+
+  /// Arms a [ReactiveEffect] on the appropriate character after an ability
+  /// with [ActiveTrigger.armsReactive] resolves. Self/ally-targeted
+  /// abilities arm on the target; opponent-targeted abilities arm on the
+  /// caster.
+  void _armReactiveEffect(
+    CharacterBattleState caster,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> originalTargets,
+    Map<String, Object?>? reactiveData,
+  ) {
+    final kind = trigger.armsReactive!;
+    final holder = trigger.targetAffiliation == TargetAffiliation.opponent
+        ? caster
+        : (originalTargets.isNotEmpty ? originalTargets.first : caster);
+
+    holder.reactiveEffects.add(ReactiveEffect(
+      kind: kind,
+      sourceCharacterId: caster.character.id,
+      data: reactiveData,
+      remainingTurns: trigger.armsReactiveDefaultTurns,
+    ));
+  }
+
+  /// Ticks down reactive-effect expiry timers on [state]. Called once per
+  /// opponent turn (at end of their turn). Expired effects are removed.
+  void tickReactiveEffects(CharacterBattleState state) {
+    state.reactiveEffects.removeWhere((effect) {
+      if (effect.remainingTurns == null) return false;
+      effect.remainingTurns = effect.remainingTurns! - 1;
+      return effect.remainingTurns! <= 0;
+    });
   }
 
   /// Finalizes [state] for the turn: applies cooldowns (doubled if FAT

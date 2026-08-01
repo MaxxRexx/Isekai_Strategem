@@ -1,5 +1,6 @@
 import 'damage_type.dart';
 import 'passive_effect.dart';
+import 'reactive_effect.dart';
 import '../util/dice.dart';
 
 /// Broad equipment category for a Trigger.
@@ -125,6 +126,18 @@ class ActiveTrigger extends Trigger {
 
   final List<StatusEffectApplication> inflictedStatusEffects;
 
+  /// If non-null, using this ability arms a [ReactiveEffect] of the given
+  /// [ReactiveKind] on the target (for self/ally-targeted counters) or on
+  /// the caster (for opponent-targeted traps). The arm step is declarative
+  /// (no roll, no separate resolution) and happens alongside normal
+  /// ability resolution. The armed effect persists for
+  /// [armsReactiveDefaultTurns] opponent turns unless triggered first.
+  final ReactiveKind? armsReactive;
+
+  /// How many opponent turns the armed reactive lasts before expiring on
+  /// its own. Null means it only ends when triggered.
+  final int? armsReactiveDefaultTurns;
+
   ActiveTrigger({
     required super.id,
     required super.name,
@@ -144,6 +157,8 @@ class ActiveTrigger extends Trigger {
     this.healAmount,
     this.healsCasterInstead = false,
     this.inflictedStatusEffects = const [],
+    this.armsReactive,
+    this.armsReactiveDefaultTurns,
   }) : assert(
           attackType.validSubtypes.contains(attackSubtype),
           '$attackSubtype is not a valid subtype for $attackType',

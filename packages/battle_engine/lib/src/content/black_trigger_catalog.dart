@@ -2,6 +2,7 @@ import '../models/black_trigger.dart';
 import '../models/character_type.dart';
 import '../models/damage_type.dart';
 import '../models/passive_effect.dart';
+import '../models/reactive_effect.dart';
 import '../models/status_effect.dart';
 import '../models/trigger.dart';
 import '../models/world_ability_effect.dart';
@@ -156,7 +157,26 @@ class BlackTriggerCatalog {
         name: 'Bastion Frame',
         type: BlackTriggerType.defense,
         equipCost: 42,
-        description: 'Armor, Damage Resistance, and Status Resistance stack.',
+        description:
+            'Armor, Damage Resistance, Status Resistance, and Foresight '
+            'Counter negate.',
+        activeAbilities: [
+          ActiveTrigger(
+            id: 'bastion_frame_foresight',
+            name: 'Foresight Counter',
+            category: TriggerCategory.trapper,
+            equipCost: 0,
+            trionCost: 20,
+            cooldownTurns: 2,
+            originTag: OriginTag.energy,
+            rangeTag: RangeTag.melee,
+            attackType: AttackType.melee,
+            attackSubtype: AttackSubtype.single,
+            targetAffiliation: TargetAffiliation.ally,
+            armsReactive: ReactiveKind.negateByOrigin,
+            armsReactiveDefaultTurns: 2,
+          ),
+        ],
         passiveAbilities: const [
           BlackTriggerPassiveAbility(
             id: 'bastion_frame_armor',
@@ -186,7 +206,8 @@ class BlackTriggerCatalog {
         name: 'Wellspring',
         type: BlackTriggerType.support,
         equipCost: 40,
-        description: 'A direct heal plus a Regenerating-granting ability.',
+        description:
+            'A direct heal, a Regenerating buff, and Mirror Ward reflect.',
         activeAbilities: [
           ActiveTrigger(
             id: 'wellspring_heal',
@@ -217,6 +238,21 @@ class BlackTriggerCatalog {
             inflictedStatusEffects: const [
               StatusEffectApplication('regenerating')
             ],
+          ),
+          ActiveTrigger(
+            id: 'wellspring_mirror_ward',
+            name: 'Mirror Ward',
+            category: TriggerCategory.optional,
+            equipCost: 0,
+            trionCost: 25,
+            cooldownTurns: 3,
+            originTag: OriginTag.energy,
+            rangeTag: RangeTag.melee,
+            attackType: AttackType.melee,
+            attackSubtype: AttackSubtype.single,
+            targetAffiliation: TargetAffiliation.ally,
+            armsReactive: ReactiveKind.reflectNonAoe,
+            armsReactiveDefaultTurns: 2,
           ),
         ],
       ),

@@ -19,6 +19,19 @@ enum ReactiveKind {
   /// onto its attacker at full effect, and the ward is then consumed. An AoE
   /// bypasses it entirely (and leaves it armed).
   reflectNonAoe,
+
+  /// Predictive Parry: once per battle, dodge a melee single-target attack
+  /// and answer with a free counter-hit (standard Twin Fang Strike damage).
+  dodgeMeleeSingle,
+
+  /// Foresight Counter: call an attack class (stored in `data['originTag']`
+  /// as an [OriginTag] name). If the opponent's move against the warded ally
+  /// matches, negate it and Stun the attacker for 2 turns.
+  negateByOrigin,
+
+  /// Numbing Toxin: a multi-hit Burst against the holder only lands its
+  /// first hit; subsequent hits in the same burst are suppressed.
+  burstMitigation,
 }
 
 /// One armed reactive effect on a [CharacterBattleState].

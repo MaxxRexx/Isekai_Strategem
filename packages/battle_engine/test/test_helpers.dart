@@ -106,6 +106,8 @@ ActiveTrigger testTrigger({
   DiceExpression? healAmount,
   bool healsCasterInstead = false,
   List<StatusEffectApplication> inflictedStatusEffects = const [],
+  ReactiveKind? armsReactive,
+  int? armsReactiveDefaultTurns,
 }) {
   return ActiveTrigger(
     id: id,
@@ -126,6 +128,8 @@ ActiveTrigger testTrigger({
     healAmount: healAmount,
     healsCasterInstead: healsCasterInstead,
     inflictedStatusEffects: inflictedStatusEffects,
+    armsReactive: armsReactive,
+    armsReactiveDefaultTurns: armsReactiveDefaultTurns,
   );
 }
 
