@@ -49,12 +49,12 @@ void main() {
   group('TriggerCatalog.defaultCatalog', () {
     final catalog = TriggerCatalog.defaultCatalog;
 
-    test('has exactly 42 Triggers', () {
-      expect(catalog.all, hasLength(42));
+    test('has exactly 47 Triggers', () {
+      expect(catalog.all, hasLength(47));
     });
 
-    test('has 36 active and 6 passive Triggers', () {
-      expect(catalog.activeTriggers, hasLength(36));
+    test('has 41 active and 6 passive Triggers', () {
+      expect(catalog.activeTriggers, hasLength(41));
       expect(catalog.passiveTriggers, hasLength(6));
     });
 
@@ -91,11 +91,11 @@ void main() {
       expect(ids.toSet(), hasLength(ids.length));
     });
 
-    test('every Black Trigger has abilities xor a World ability', () {
+    test('every Black Trigger has abilities or a World ability', () {
       for (final bt in catalog.all) {
         final hasAbilities =
             bt.activeAbilities.isNotEmpty || bt.passiveAbilities.isNotEmpty;
-        expect(hasAbilities != (bt.worldAbility != null), isTrue,
+        expect(hasAbilities || bt.worldAbility != null, isTrue,
             reason: bt.id);
       }
     });

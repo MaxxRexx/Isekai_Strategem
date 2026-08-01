@@ -425,6 +425,24 @@ class StatusEffectCatalog {
         turnStartDamageType: DamageType.necrotic,
         preventsHealing: true,
       ),
+      StatusEffectDefinition(
+        id: 'origin_lockout',
+        name: 'Origin Lockout',
+        defaultDurationTurns: magnitudes.originLockoutDurationTurns,
+        locksOriginFromData: true,
+      ),
+      StatusEffectDefinition(
+        id: 'forced_repetition',
+        name: 'Forced Repetition',
+        defaultDurationTurns: magnitudes.forcedRepetitionDurationTurns,
+        forcesRepetitionOfLastAbility: true,
+      ),
+      StatusEffectDefinition(
+        id: 'misfire',
+        name: 'Misfire',
+        defaultDurationTurns: magnitudes.misfireDurationTurns,
+        misfireChance: magnitudes.misfireChance,
+      ),
     ];
     return StatusEffectCatalog._({for (final d in defs) d.id: d});
   }

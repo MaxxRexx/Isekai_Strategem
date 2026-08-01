@@ -27,8 +27,8 @@ class BlackTriggerPassiveAbility {
 ///
 /// Unlike a regular Trigger (always exactly one Active or Passive
 /// ability), a Black Trigger has [activeAbilities] (0-4) and
-/// [passiveAbilities] (0-4) independently. If both are empty, it instead
-/// has exactly one [worldAbility]: a bespoke, battle-state-modifying rule
+/// [passiveAbilities] (0-4) independently. It may also have a
+/// [worldAbility]: a bespoke, battle-state-modifying rule
 /// rather than a targeted action or a stat buff. A Black Trigger is
 /// deliberately bespoke content, not a template - some are narrow or
 /// situational enough that a normal Trigger set is the better pick for a
@@ -58,10 +58,10 @@ class BlackTrigger {
         assert(passiveAbilities.length <= 4,
             'A Black Trigger may have at most 4 passive abilities'),
         assert(
-          (activeAbilities.isEmpty && passiveAbilities.isEmpty) ==
-              (worldAbility != null),
-          'A Black Trigger has a World ability if and only if it has zero '
-          'active and zero passive abilities',
+          activeAbilities.isNotEmpty ||
+              passiveAbilities.isNotEmpty ||
+              worldAbility != null,
+          'A Black Trigger must have abilities or a World ability',
         );
 
   /// Total number of active abilities this Black Trigger contributes

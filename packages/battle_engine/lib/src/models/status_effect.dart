@@ -153,6 +153,21 @@ class StatusEffectDefinition {
   /// Applied by `TurnEngine.useAbility`.
   final double? trionCostMultiplier;
 
+  /// While active, abilities whose [OriginTag] matches the origin stored
+  /// in the instance's `data['lockedOrigin']` are blocked. Seal of
+  /// Severance inflicts this.
+  final bool locksOriginFromData;
+
+  /// While active, the character may only use the ability whose id matches
+  /// their last-used trigger (`CharacterBattleState.lastUsedTriggerId`).
+  /// Root Snare inflicts this.
+  final bool forcesRepetitionOfLastAbility;
+
+  /// While active, each offensive ability the character uses has this
+  /// probability (0-1) of being redirected onto one of their own living
+  /// allies. Scramble inflicts this.
+  final double? misfireChance;
+
   const StatusEffectDefinition({
     required this.id,
     required this.name,
@@ -177,6 +192,9 @@ class StatusEffectDefinition {
     this.outgoingDamageMultiplier,
     this.preventsHealing = false,
     this.trionCostMultiplier,
+    this.locksOriginFromData = false,
+    this.forcesRepetitionOfLastAbility = false,
+    this.misfireChance,
   });
 }
 

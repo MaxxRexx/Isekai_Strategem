@@ -211,6 +211,12 @@ class StatusEffectMagnitudes {
   final int necroticWoundDurationTurns;
   final int necroticWoundDamagePerTurn;
 
+  // --- B3 counter status effects ---
+  final int originLockoutDurationTurns;
+  final int forcedRepetitionDurationTurns;
+  final int misfireDurationTurns;
+  final double misfireChance;
+
   const StatusEffectMagnitudes({
     this.acidArmorReduction = 5,
     this.acidDurationTurns = 3,
@@ -297,6 +303,10 @@ class StatusEffectMagnitudes {
     this.radiantBlessingAllDamageTakenMultiplier = 0.9,
     this.necroticWoundDurationTurns = 3,
     this.necroticWoundDamagePerTurn = 12,
+    this.originLockoutDurationTurns = 2,
+    this.forcedRepetitionDurationTurns = 2,
+    this.misfireDurationTurns = 2,
+    this.misfireChance = 0.5,
   });
 
   static const StatusEffectMagnitudes defaults = StatusEffectMagnitudes();

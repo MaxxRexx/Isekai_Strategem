@@ -5,7 +5,7 @@ import '../models/status_effect.dart';
 import '../models/trigger.dart';
 import '../util/dice.dart';
 
-/// The built-in 42-Trigger catalog (36 active, 6 passive), a shared draft
+/// The built-in 47-Trigger catalog (41 active, 6 passive), a shared draft
 /// pool any character may equip regardless of their own [CharacterType] -
 /// nothing in the [Loadout] rules restricts equipping by type.
 class TriggerCatalog {
@@ -559,6 +559,83 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.single,
         targetAffiliation: TargetAffiliation.self,
         armsReactive: ReactiveKind.burstMitigation,
+        armsReactiveDefaultTurns: 2,
+      ),
+      ActiveTrigger(
+        id: 'root_snare',
+        name: 'Root Snare',
+        category: TriggerCategory.trapper,
+        equipCost: 20,
+        trionCost: 18,
+        cooldownTurns: 2,
+        originTag: OriginTag.physical,
+        rangeTag: RangeTag.ranged,
+        attackType: AttackType.ranged,
+        attackSubtype: AttackSubtype.single,
+        damageType: DamageType.bludgeoning,
+        damage: const DiceExpression(1, 4, flatBonus: 8),
+        inflictedStatusEffects: const [
+          StatusEffectApplication('forced_repetition')
+        ],
+      ),
+      ActiveTrigger(
+        id: 'death_ledger',
+        name: 'Death Ledger',
+        category: TriggerCategory.trapper,
+        equipCost: 20,
+        trionCost: 18,
+        cooldownTurns: 2,
+        originTag: OriginTag.physical,
+        rangeTag: RangeTag.ranged,
+        attackType: AttackType.ranged,
+        attackSubtype: AttackSubtype.single,
+        damageType: DamageType.piercing,
+        damage: const DiceExpression(1, 4, flatBonus: 8),
+        armsReactive: ReactiveKind.nullifyAoe,
+        armsReactiveDefaultTurns: 3,
+      ),
+      ActiveTrigger(
+        id: 'scramble',
+        name: 'Scramble',
+        category: TriggerCategory.trapper,
+        equipCost: 24,
+        trionCost: 20,
+        cooldownTurns: 2,
+        originTag: OriginTag.mental,
+        rangeTag: RangeTag.ranged,
+        attackType: AttackType.psychic,
+        attackSubtype: AttackSubtype.single,
+        damageType: DamageType.psychic,
+        damage: const DiceExpression(1, 4, flatBonus: 8),
+        inflictedStatusEffects: const [StatusEffectApplication('misfire')],
+      ),
+      ActiveTrigger(
+        id: 'stored_retribution',
+        name: 'Stored Retribution',
+        category: TriggerCategory.optional,
+        equipCost: 18,
+        trionCost: 16,
+        cooldownTurns: 2,
+        originTag: OriginTag.physical,
+        rangeTag: RangeTag.melee,
+        attackType: AttackType.melee,
+        attackSubtype: AttackSubtype.single,
+        targetAffiliation: TargetAffiliation.self,
+        armsReactive: ReactiveKind.bankDamage,
+      ),
+      ActiveTrigger(
+        id: 'frozen_tempo',
+        name: 'Frozen Tempo',
+        category: TriggerCategory.optional,
+        equipCost: 20,
+        trionCost: 18,
+        cooldownTurns: 2,
+        originTag: OriginTag.energy,
+        rangeTag: RangeTag.melee,
+        attackType: AttackType.melee,
+        attackSubtype: AttackSubtype.single,
+        targetAffiliation: TargetAffiliation.self,
+        armsReactive: ReactiveKind.cooldownSabotage,
         armsReactiveDefaultTurns: 2,
       ),
       PassiveTrigger(

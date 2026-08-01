@@ -119,6 +119,7 @@ class StatusEffectEngine {
     String statusEffectId, {
     String? sourceCharacterId,
     int? durationOverride,
+    Map<String, Object?>? instanceData,
   }) {
     if (target.isInvulnerableTo(statusEffectId)) return false;
     final def = catalog[statusEffectId];
@@ -127,6 +128,7 @@ class StatusEffectEngine {
       definitionId: statusEffectId,
       remainingTurns: durationOverride ?? def.defaultDurationTurns,
       sourceCharacterId: sourceCharacterId,
+      data: instanceData,
     );
 
     if (def.vulnerableToRandomDamageTypesCount != null) {

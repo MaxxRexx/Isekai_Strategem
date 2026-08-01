@@ -32,6 +32,36 @@ enum ReactiveKind {
   /// Numbing Toxin: a multi-hit Burst against the holder only lands its
   /// first hit; subsequent hits in the same burst are suppressed.
   burstMitigation,
+
+  /// Frozen Tempo: when the holder is hit by a ranged attack, the
+  /// attacker's cooldown for that ability is doubled. Consumed on fire.
+  cooldownSabotage,
+
+  /// Puppet Strings: redirect any non-AoE attack against the protected
+  /// ally onto a random living ally of the attacker. The caster is
+  /// Exposed while this is armed. Consumed on fire.
+  redirectToOwnAlly,
+
+  /// Deadfall: placed on an enemy. If that enemy uses a damaging ability,
+  /// the ability is countered (does not resolve) and they take trap damage
+  /// instead. Consumed on fire.
+  trapOnAction,
+
+  /// Death Ledger: placed on an enemy (once per enemy per battle). If
+  /// that enemy uses an AoE against the marker's team, it is nullified.
+  /// Trigger swap deferred to Phase E. Consumed on fire.
+  nullifyAoe,
+
+  /// Stored Retribution: while the holder is Guarded or Braced, incoming
+  /// damage is banked. The holder's next offensive ability deals the
+  /// banked amount as bonus damage, then the bank and this effect reset.
+  bankDamage,
+
+  /// One More Breath: enriches Gravebind's survive-lethal-damage-once.
+  /// When the survive-lethal charge fires, doubles all the wielder's
+  /// current status durations and Stuns whoever dealt the lethal blow
+  /// for 2 turns.
+  enrichSurviveLethal,
 }
 
 /// One armed reactive effect on a [CharacterBattleState].

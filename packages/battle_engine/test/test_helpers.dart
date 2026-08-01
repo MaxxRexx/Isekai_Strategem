@@ -11,7 +11,7 @@ class SequenceRandom implements Random {
   SequenceRandom(this._sequence);
 
   @override
-  int nextInt(int max) => _sequence[_index++];
+  int nextInt(int max) => _sequence[_index++] % max;
 
   @override
   double nextDouble() => 0;
@@ -23,13 +23,15 @@ class SequenceRandom implements Random {
 /// A [Random] that always returns the same `nextInt` result, regardless of
 /// how many times it's called. Useful for forcing a specific die face
 /// (e.g. `FixedRandom(19)` always rolls a natural 20 on a d20) without
-/// needing to know exactly how many rolls a call will consume.
+/// needing to know exactly how many rolls a call will consume. The value is
+/// taken modulo [max] so it always satisfies `Random.nextInt`'s contract
+/// of returning a value in `[0, max)`.
 class FixedRandom implements Random {
   final int value;
   const FixedRandom(this.value);
 
   @override
-  int nextInt(int max) => value;
+  int nextInt(int max) => value % max;
 
   @override
   double nextDouble() => 0;

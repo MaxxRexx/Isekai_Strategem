@@ -117,6 +117,22 @@ class CharacterBattleState {
   /// Attack-stat proxy.
   int cumulativeDamageDealt = 0;
 
+  /// Damage banked by Stored Retribution while Guarded/Braced. Discharged
+  /// as bonus damage on this character's next offensive ability.
+  int bankedDamage = 0;
+
+  /// The id of the last ActiveTrigger this character used, for Root Snare's
+  /// forced_repetition status. Null until the first ability use.
+  String? lastUsedTriggerId;
+
+  /// Trigger ids whose cooldown should be doubled this turn (Frozen
+  /// Tempo). Cleared at the end of each turn.
+  final Set<String> _cooldownSabotagedIds = {};
+
+  /// Enemy character ids already marked by Death Ledger this battle (once
+  /// per enemy per battle).
+  final Set<String> deathLedgerMarkedIds = {};
+
   /// The character id this character's last landed damaging hit was
   /// against, for `AiProfile.fixatesOnLastDamagedTarget` (The Berserker).
   /// Null until this character's first landed hit.
@@ -164,12 +180,18 @@ class CharacterBattleState {
       equippedPassiveEffects
           .any((e) => e.damageResistancesGranted.contains(type));
 
+  /// Marks [triggerId]'s cooldown to be doubled this turn (Frozen Tempo).
+  void sabotageAbilityCooldown(String triggerId) {
+    _cooldownSabotagedIds.add(triggerId);
+  }
+
   /// Records that [trigger] was used this turn; cooldown application
   /// (including any FAT doubling penalty) happens in `endTurn`.
   void recordAbilityUse(ActiveTrigger trigger) {
     _abilitiesUsedThisTurn
         .add(_AbilityUseRecord(trigger.id, trigger.cooldownTurns));
     lastActiveTriggerCategory = trigger.category;
+    lastUsedTriggerId = trigger.id;
     hasActedThisBattle = true;
   }
 
@@ -204,15 +226,17 @@ class CharacterBattleState {
         _abilitiesUsedThisTurn.length >= fatConfig.multiAbilityPenaltyThreshold;
 
     for (final use in _abilitiesUsedThisTurn) {
-      final cooldown = multiAbilityPenalty
+      var cooldown = multiAbilityPenalty
           ? (use.baseCooldownTurns * fatConfig.cooldownDoubleMultiplier).round()
           : use.baseCooldownTurns;
+      if (_cooldownSabotagedIds.contains(use.triggerId)) cooldown *= 2;
       if (cooldown > 0) cooldowns[use.triggerId] = cooldown;
     }
 
     trionAffinityHalvedNextTurn = multiAbilityPenalty;
 
     _abilitiesUsedThisTurn.clear();
+    _cooldownSabotagedIds.clear();
     fatTriggeredThisTurn = false;
 
     if (fatCooldownRemaining > 0) fatCooldownRemaining--;

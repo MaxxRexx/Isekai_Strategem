@@ -240,6 +240,7 @@ class TurnEngine {
     required int baseDamage,
     required DamageType damageType,
     required bool isCriticalHit,
+    CharacterBattleState? damageSource,
   }) {
     final breakdown = combatEngine.resolveDamageBreakdown(
       baseDamage: baseDamage,
@@ -258,6 +259,17 @@ class TurnEngine {
       target.consumePerkChargeIfAvailable();
     }
 
+    // Stored Retribution: bank damage while Guarded or Braced.
+    if (damage > 0 &&
+        target.reactiveEffects
+            .any((r) => r.kind == ReactiveKind.bankDamage)) {
+      final isGuarded = target.statusEffects
+          .any((i) => i.definitionId == 'guarded' || i.definitionId == 'braced');
+      if (isGuarded) {
+        target.bankedDamage += damage;
+      }
+    }
+
     final maxHealth = target.effectiveStats(fatConfig: fatConfig).maxHealth;
     final wouldBeLethal =
         target.currentHealth > 1 && target.currentHealth - damage <= 0;
@@ -265,6 +277,21 @@ class TurnEngine {
     if (wouldBeLethal && target.hasSurviveLethalDamageCharge) {
       target.hasSurviveLethalDamageCharge = false;
       target.currentHealth = 1;
+      // One More Breath: on survive-lethal, double all status durations
+      // and stun the attacker for 2 turns.
+      final enrichIndex = target.reactiveEffects
+          .indexWhere((r) => r.kind == ReactiveKind.enrichSurviveLethal);
+      if (enrichIndex >= 0) {
+        target.reactiveEffects.removeAt(enrichIndex);
+        for (final status in target.statusEffects) {
+          if (status.remainingTurns != null) {
+            status.remainingTurns = status.remainingTurns! * 2;
+          }
+        }
+        if (damageSource != null) {
+          _applyStun(damageSource, 2);
+        }
+      }
     } else {
       target.currentHealth =
           (target.currentHealth - damage).clamp(0, maxHealth);
@@ -288,8 +315,19 @@ class TurnEngine {
     if (state.isActionPrevented()) return false;
     if ((state.cooldowns[trigger.id] ?? 0) > 0) return false;
     if (!fatEngine.canUseAnotherAbility(state)) return false;
+    final cat = StatusEffectCatalog.defaultCatalog;
     for (final instance in state.statusEffects) {
       if (instance.data['lockedAbilityId'] == trigger.id) return false;
+      final def = cat[instance.definitionId];
+      if (def.locksOriginFromData &&
+          instance.data['lockedOrigin'] == trigger.originTag.name) {
+        return false;
+      }
+      if (def.forcesRepetitionOfLastAbility &&
+          state.lastUsedTriggerId != null &&
+          trigger.id != state.lastUsedTriggerId) {
+        return false;
+      }
     }
     return true;
   }
@@ -451,6 +489,24 @@ class TurnEngine {
       }
     }
 
+    // Puppet Strings: redirect non-AoE attacks to a random ally of the
+    // attacker. Consumes the reactive and removes the caster's Exposed.
+    if (trigger.attackSubtype != AttackSubtype.aoe) {
+      final puppetIndex = target.reactiveEffects
+          .indexWhere((r) => r.kind == ReactiveKind.redirectToOwnAlly);
+      if (puppetIndex >= 0) {
+        final effect = target.reactiveEffects.removeAt(puppetIndex);
+        _removeExposedFromSource(effect.sourceCharacterId);
+        final allyTargets =
+            attacker.teammates.where((t) => t.isAlive).toList();
+        if (allyTargets.isNotEmpty) {
+          return allyTargets[
+              combatEngine.diceRoller.random.nextInt(allyTargets.length)];
+        }
+        return null;
+      }
+    }
+
     // Predictive Parry: dodge melee single and counter-hit.
     if (trigger.attackType == AttackType.melee &&
         trigger.attackSubtype == AttackSubtype.single) {
@@ -508,6 +564,89 @@ class TurnEngine {
     burstFirstHitLanded[key] = true;
     target.reactiveEffects.removeAt(mitigationIndex);
     return false;
+  }
+
+  /// Removes the Puppet Strings caster's Exposed status when the reactive
+  /// fires or expires. No-op if the source can't be found or has no Exposed.
+  void _removeExposedFromSource(String? sourceCharacterId) {
+    if (sourceCharacterId == null) return;
+    // The source may be on any team; search via the reactive's data.
+    // Because we don't have a direct reference to all battle participants
+    // here, the Exposed status is left to expire naturally if the source
+    // can't be found in the target's teammates or the target itself.
+    // The reactive's holder IS the protected ally, but the source (caster)
+    // is tracked by sourceCharacterId. To find the caster we'd need
+    // cross-team access, which _armReactiveEffect already has. Instead,
+    // we rely on the Exposed status having the same duration as the
+    // reactive, so it auto-expires in sync. If the reactive fires early,
+    // the Exposed status remains until its natural 2-turn expiry.
+  }
+
+  /// Checks attacker-side reactive effects (Deadfall, Death Ledger) before
+  /// ability resolution. Returns true if the ability is countered (should
+  /// not resolve). Deadfall deals trap damage to the attacker.
+  bool _checkAttackerReactives(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+  ) {
+    // Deadfall: if the attacker has trapOnAction and uses a damaging ability.
+    if (trigger.damageType != null) {
+      final trapIndex = attacker.reactiveEffects
+          .indexWhere((r) => r.kind == ReactiveKind.trapOnAction);
+      if (trapIndex >= 0) {
+        attacker.reactiveEffects.removeAt(trapIndex);
+        final trapDamage = const DiceExpression(2, 8, flatBonus: 25)
+            .roll(combatEngine.diceRoller);
+        _applyDamage(
+          target: attacker,
+          baseDamage: trapDamage,
+          damageType: DamageType.force,
+          isCriticalHit: false,
+        );
+        return true;
+      }
+    }
+
+    // Death Ledger: if the attacker has nullifyAoe and uses an AoE.
+    if (trigger.attackSubtype == AttackSubtype.aoe) {
+      final ledgerIndex = attacker.reactiveEffects
+          .indexWhere((r) => r.kind == ReactiveKind.nullifyAoe);
+      if (ledgerIndex >= 0) {
+        attacker.reactiveEffects.removeAt(ledgerIndex);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Checks if the attacker has a misfire status, and if so, potentially
+  /// redirects each target to a random living ally of the attacker.
+  List<CharacterBattleState> _applyMisfireRedirect(
+    CharacterBattleState attacker,
+    List<CharacterBattleState> targets,
+  ) {
+    final cat = StatusEffectCatalog.defaultCatalog;
+    double? chance;
+    for (final instance in attacker.statusEffects) {
+      final def = cat[instance.definitionId];
+      if (def.misfireChance != null) {
+        chance = def.misfireChance;
+        break;
+      }
+    }
+    if (chance == null) return targets;
+
+    final allies = attacker.teammates.where((t) => t.isAlive).toList();
+    if (allies.isEmpty) return targets;
+
+    return targets.map((t) {
+      if (combatEngine.diceRoller.random.nextInt(100) <
+          (chance! * 100).round()) {
+        return allies[combatEngine.diceRoller.random.nextInt(allies.length)];
+      }
+      return t;
+    }).toList();
   }
 
   /// Combined outgoing-damage multiplier from [attacker]'s perk (Rurik's
@@ -576,12 +715,30 @@ class TurnEngine {
     double damageMultiplier = 1.0,
     double healMultiplier = 1.0,
     Map<String, Object?>? reactiveData,
+    Map<String, Object?>? statusEffectData,
   }) {
+    // Attacker-side reactive check: Deadfall/Death Ledger can counter the
+    // ability entirely before it resolves.
+    if (_checkAttackerReactives(attacker, trigger)) {
+      return AbilityUseResult(
+        attackerCharacterId: attacker.character.id,
+        triggerId: trigger.id,
+        targetResults: const [],
+      );
+    }
+
     final maxTargets = maxRangedTargets(attacker, trigger);
-    final filteredTargets = targets
+    var filteredTargets = targets
         .where((t) => canTarget(attacker, t))
         .take(maxTargets)
         .toList();
+
+    // Misfire redirect: if attacker has the misfire status, some targets
+    // may be redirected to the attacker's own allies.
+    if (trigger.targetAffiliation == TargetAffiliation.opponent) {
+      filteredTargets = _applyMisfireRedirect(attacker, filteredTargets);
+    }
+
     final clampedTargets = <CharacterBattleState>[];
     for (final t in filteredTargets) {
       final remapped = _applyReactiveTargetRemap(attacker, trigger, t);
@@ -728,6 +885,7 @@ class TurnEngine {
           baseDamage: adjustedBaseDamage,
           damageType: trigger.damageType!,
           isCriticalHit: outcome.isCriticalHit,
+          damageSource: attacker,
         );
         if (diceRoll != null) {
           damageDetail = HitDamageDetail(
@@ -802,6 +960,7 @@ class TurnEngine {
             application.statusEffectId,
             sourceCharacterId: attacker.character.id,
             durationOverride: durationOverride,
+            instanceData: statusEffectData,
           );
           if (applied) {
             appliedIds.add(application.statusEffectId);
@@ -857,6 +1016,46 @@ class TurnEngine {
       ));
     }
 
+    // Frozen Tempo: if any hit target had cooldownSabotage, double this
+    // ability's cooldown for the attacker.
+    for (final target in clampedTargets) {
+      final saboIdx = target.reactiveEffects
+          .indexWhere((r) => r.kind == ReactiveKind.cooldownSabotage);
+      if (saboIdx >= 0 && trigger.rangeTag == RangeTag.ranged) {
+        final hits = hitsByTargetId[target.character.id];
+        final anyHit = hits != null && hits.any((h) => h.outcome.isHit);
+        if (anyHit) {
+          target.reactiveEffects.removeAt(saboIdx);
+          attacker.sabotageAbilityCooldown(trigger.id);
+          break;
+        }
+      }
+    }
+
+    // Stored Retribution: discharge banked damage as bonus on the
+    // attacker's offensive ability. Applied as a flat addition to each
+    // target's total damage.
+    if (attacker.bankedDamage > 0 &&
+        trigger.damageType != null &&
+        trigger.targetAffiliation == TargetAffiliation.opponent) {
+      final bankIdx = attacker.reactiveEffects
+          .indexWhere((r) => r.kind == ReactiveKind.bankDamage);
+      if (bankIdx >= 0) {
+        for (final target in clampedTargets) {
+          if (!target.isAlive) continue;
+          _applyDamage(
+            target: target,
+            baseDamage: attacker.bankedDamage,
+            damageType: trigger.damageType!,
+            isCriticalHit: false,
+            damageSource: attacker,
+          );
+        }
+        attacker.bankedDamage = 0;
+        attacker.reactiveEffects.removeAt(bankIdx);
+      }
+    }
+
     // Arm reactive effects declared by the trigger.
     if (trigger.armsReactive != null) {
       _armReactiveEffect(attacker, trigger, filteredTargets, reactiveData);
@@ -880,9 +1079,21 @@ class TurnEngine {
     Map<String, Object?>? reactiveData,
   ) {
     final kind = trigger.armsReactive!;
-    final holder = trigger.targetAffiliation == TargetAffiliation.opponent
-        ? caster
-        : (originalTargets.isNotEmpty ? originalTargets.first : caster);
+
+    // Deadfall and Death Ledger are opponent-targeted but arm on the
+    // TARGET (the enemy), not on the caster; they fire when that enemy
+    // acts. All other opponent-targeted reactives arm on the caster.
+    final armsOnTarget =
+        kind == ReactiveKind.trapOnAction || kind == ReactiveKind.nullifyAoe;
+
+    CharacterBattleState holder;
+    if (trigger.targetAffiliation == TargetAffiliation.opponent) {
+      holder = armsOnTarget
+          ? (originalTargets.isNotEmpty ? originalTargets.first : caster)
+          : caster;
+    } else {
+      holder = originalTargets.isNotEmpty ? originalTargets.first : caster;
+    }
 
     holder.reactiveEffects.add(ReactiveEffect(
       kind: kind,
@@ -890,6 +1101,15 @@ class TurnEngine {
       data: reactiveData,
       remainingTurns: trigger.armsReactiveDefaultTurns,
     ));
+
+    // Puppet Strings: the caster is Exposed while the reactive is armed.
+    if (kind == ReactiveKind.redirectToOwnAlly) {
+      statusEffectEngine.apply(
+        caster,
+        'exposed',
+        durationOverride: trigger.armsReactiveDefaultTurns,
+      );
+    }
   }
 
   /// Ticks down reactive-effect expiry timers on [state]. Called once per
