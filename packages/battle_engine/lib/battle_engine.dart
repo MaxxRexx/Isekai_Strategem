@@ -20,6 +20,7 @@ export 'src/models/character_perk.dart';
 export 'src/models/character_type.dart';
 export 'src/models/damage_type.dart';
 export 'src/models/loadout.dart';
+export 'src/models/passive_counter.dart';
 export 'src/models/passive_effect.dart';
 export 'src/models/reactive_effect.dart';
 export 'src/models/resonance.dart';

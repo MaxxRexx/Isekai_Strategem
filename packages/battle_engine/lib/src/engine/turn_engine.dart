@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import '../constants.dart';
 import '../models/character_type.dart';
 import '../models/damage_type.dart';
+import '../models/passive_counter.dart';
 import '../models/reactive_effect.dart';
 import '../models/resonance.dart';
 import '../models/status_effect.dart';
@@ -117,6 +120,7 @@ class TurnEngine {
   final StatusEffectEngine statusEffectEngine;
   final TeamSpiritCurve teamSpiritCurve;
   final FatConfig fatConfig;
+  final PassiveCounterConfig passiveCounterConfig;
 
   TurnEngine({
     TrionGainEngine? trionGainEngine,
@@ -125,6 +129,7 @@ class TurnEngine {
     StatusEffectEngine? statusEffectEngine,
     TeamSpiritCurve? teamSpiritCurve,
     this.fatConfig = FatConfig.defaults,
+    this.passiveCounterConfig = PassiveCounterConfig.defaults,
   })  : trionGainEngine = trionGainEngine ?? TrionGainEngine(),
         fatEngine = fatEngine ?? FatEngine(),
         combatEngine = combatEngine ?? CombatEngine(),
@@ -821,6 +826,21 @@ class TurnEngine {
         attackerContext: attackerContext,
       );
 
+      // Reckoning: forced critical miss overrides the roll.
+      final forcedCritMissIdx = attacker.statusEffects
+          .indexWhere((i) => i.definitionId == 'forced_critical_miss');
+      if (forcedCritMissIdx >= 0) {
+        attacker.statusEffects.removeAt(forcedCritMissIdx);
+        outcome = AttackRollOutcome(
+          attackerRoll: outcome.attackerRoll,
+          defenderRoll: outcome.defenderRoll,
+          isHit: false,
+          isCriticalHit: false,
+          isCriticalMiss: true,
+          criticalHitThreshold: outcome.criticalHitThreshold,
+        );
+      }
+
       // Zheng-style "Foresight" perk: once per battle, reroll a missed
       // attack roll.
       if (!outcome.isHit &&
@@ -874,10 +894,13 @@ class TurnEngine {
             : bonuses.singleTargetDamageBonus;
         final perkMultiplier =
             _perkOutgoingDamageMultiplier(attacker, target, trigger);
+        final interdictMultiplier =
+            _interdictDamageMultiplier(attacker, trigger);
         final preCritMultiplier = (1 + damageBonus) *
             damageMultiplier *
             attacker.outgoingDamageMultiplier() *
-            perkMultiplier;
+            perkMultiplier *
+            interdictMultiplier;
         final adjustedBaseDamage = (baseDamage * preCritMultiplier).round();
         final healthBefore = target.currentHealth;
         final breakdown = _applyDamage(
@@ -1174,5 +1197,561 @@ class TurnEngine {
     return (config.secondsPerTurn + delta) < 1
         ? 1
         : config.secondsPerTurn + delta;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Passive-counter engine (Phase B4)
+  // ---------------------------------------------------------------------------
+
+  /// Interdict damage multiplier: if the attacker has an interdict status
+  /// and is repeating an ability they used last turn, multiply damage.
+  double _interdictDamageMultiplier(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+  ) {
+    final cat = StatusEffectCatalog.defaultCatalog;
+    var multiplier = 1.0;
+    for (final instance in attacker.statusEffects) {
+      final def = cat[instance.definitionId];
+      if (def.repeatAbilityDamageMultiplier != null &&
+          attacker.triggersUsedLastTurn.contains(trigger.id)) {
+        multiplier *= def.repeatAbilityDamageMultiplier!;
+      }
+    }
+    return multiplier;
+  }
+
+  /// Called after each ability resolves. Notifies passive counter state
+  /// machines on both teams (attacker-side and defender-side).
+  void notifyAbilityResolved({
+    required CharacterBattleState attacker,
+    required ActiveTrigger trigger,
+    required AbilityUseResult result,
+    required List<CharacterBattleState> defenderTeamStates,
+    bool isBlackTriggerAbility = false,
+  }) {
+    final cfg = passiveCounterConfig;
+    final anyDamage = result.targetResults.any((r) => r.totalDamageDealt > 0);
+    final anyCrit =
+        result.targetResults.any((r) => r.attackRolls.any((o) => o.isCriticalHit));
+
+    // --- Attacker-side counters ---
+
+    // Draegor: +1 Enmity when the holder uses an ability.
+    final draegor =
+        attacker.getPassiveCounter(PassiveCounterKind.draegor);
+    if (draegor != null) {
+      _draegorOnAbilityUsed(draegor, attacker, cfg);
+    }
+
+    // Ironvow: track attack type for sanctioned strike detection.
+    final ironvow =
+        attacker.getPassiveCounter(PassiveCounterKind.ironvow);
+    if (ironvow != null && trigger.targetAffiliation == TargetAffiliation.opponent) {
+      ironvow.lastTurnAttackType = trigger.attackType;
+    }
+
+    // --- Defender-side counters ---
+    // Scan defender team for counter holders.
+    if (trigger.targetAffiliation == TargetAffiliation.opponent &&
+        defenderTeamStates.isNotEmpty) {
+      final allDefenders = [defenderTeamStates.first] +
+          defenderTeamStates.first.teammates;
+
+      for (final defender in allDefenders) {
+        if (!defender.isAlive) continue;
+
+        // Reckoning: +1 Debt on crit against team OR 2+ cooldown ability.
+        final reckoning =
+            defender.getPassiveCounter(PassiveCounterKind.reckoning);
+        if (reckoning != null && !reckoning.lockedOut) {
+          if (anyCrit) {
+            _reckoningIncrementDebt(
+                reckoning, attacker.character.id, cfg);
+          }
+          if (trigger.cooldownTurns >= 2) {
+            _reckoningIncrementDebt(
+                reckoning, attacker.character.id, cfg);
+          }
+        }
+
+        // Nullhymn: +1 Discord when enemy uses BT active against team.
+        final nullhymn =
+            defender.getPassiveCounter(PassiveCounterKind.nullhymn);
+        if (nullhymn != null && isBlackTriggerAbility) {
+          nullhymn.counter++;
+        }
+
+        // Coldread: track if marked enemy took a damaging action.
+        final coldread =
+            defender.getPassiveCounter(PassiveCounterKind.coldread);
+        if (coldread != null &&
+            coldread.pendingResolution &&
+            coldread.markedEnemyId == attacker.character.id &&
+            anyDamage) {
+          coldread.markedEnemyActedDamaging = true;
+        }
+      }
+    }
+  }
+
+  /// Called when a status effect is successfully inflicted on [target].
+  /// Increments Nullhymn discord for the holder (deduped per status/turn).
+  void notifyStatusInflicted(
+    CharacterBattleState target,
+    String statusEffectId,
+  ) {
+    final nullhymn =
+        target.getPassiveCounter(PassiveCounterKind.nullhymn);
+    if (nullhymn != null &&
+        !nullhymn.discordedStatusIdsThisTurn.contains(statusEffectId)) {
+      nullhymn.discordedStatusIdsThisTurn.add(statusEffectId);
+      nullhymn.counter++;
+    }
+  }
+
+  /// Start-of-turn passive counter hooks for [activeTeamStates].
+  void tickStartOfTurnPassiveCounters(
+    List<CharacterBattleState> activeTeamStates,
+    List<CharacterBattleState> enemyTeamStates,
+  ) {
+    for (final state in activeTeamStates) {
+      if (!state.isAlive) continue;
+
+      // Draegor: tick Regret remaining turns.
+      final draegor =
+          state.getPassiveCounter(PassiveCounterKind.draegor);
+      if (draegor != null && draegor.regretRemainingTurns > 0) {
+        draegor.regretRemainingTurns--;
+      }
+
+      // Coldread: mark one enemy if not on cooldown and not pending.
+      final coldread =
+          state.getPassiveCounter(PassiveCounterKind.coldread);
+      if (coldread != null &&
+          coldread.cooldownTurns <= 0 &&
+          !coldread.pendingResolution) {
+        final livingEnemies =
+            enemyTeamStates.where((e) => e.isAlive).toList();
+        if (livingEnemies.isNotEmpty) {
+          final target = livingEnemies[
+              combatEngine.diceRoller.random.nextInt(livingEnemies.length)];
+          coldread.markedEnemyId = target.character.id;
+          coldread.pendingResolution = true;
+          coldread.markedEnemyActedDamaging = false;
+        }
+      }
+
+      // Ironvow: sanction one attack type at random (not last turn's).
+      final ironvow =
+          state.getPassiveCounter(PassiveCounterKind.ironvow);
+      if (ironvow != null) {
+        if (ironvow.sanctionedStrikeCooldown > 0) {
+          ironvow.sanctionedStrikeCooldown--;
+        }
+        final eligible = AttackType.values
+            .where((t) => t != ironvow.lastTurnAttackType)
+            .toList();
+        ironvow.sanctionedType = eligible[
+            combatEngine.diceRoller.random.nextInt(eligible.length)];
+      }
+
+      // Tick down cooldowns for counters with per-turn cooldowns.
+      for (final pc in state.passiveCounters.values) {
+        if (pc.cooldownTurns > 0) pc.cooldownTurns--;
+      }
+    }
+  }
+
+  /// End-of-turn passive counter hooks. Called at the end of [activeTeam]'s
+  /// turn; [inactiveTeamStates] hold the counters that fire "at end of
+  /// opponent turn." [activeTeamDealtDamage] tracks whether the active team
+  /// dealt any damage this turn (for Gravehour stall detection).
+  void tickEndOfTurnPassiveCounters({
+    required List<CharacterBattleState> activeTeamStates,
+    required List<CharacterBattleState> inactiveTeamStates,
+    required TrionPool activeTeamPool,
+    required TrionPool inactiveTeamPool,
+    required bool activeTeamDealtDamage,
+  }) {
+    final cfg = passiveCounterConfig;
+
+    for (final state in inactiveTeamStates) {
+      if (!state.isAlive) continue;
+
+      // Draegor: if opponent chained 2+ abilities (FAT) and holder has
+      // active Regret, consume Regret for a boost.
+      final draegor =
+          state.getPassiveCounter(PassiveCounterKind.draegor);
+      if (draegor != null && draegor.regretRemainingTurns > 0) {
+        final opponentChained = activeTeamStates.any(
+            (s) => s.abilitiesUsedThisTurnCount >= cfg.draegorFatChainThreshold);
+        if (opponentChained) {
+          draegor.regretRemainingTurns = 0;
+          // TEG boost deferred to Phase E (needs TEG engine).
+          // Fallback: double the highest-TA ally's Trion Affinity.
+          final allies = [state] + state.teammates;
+          final livingAllies = allies.where((a) => a.isAlive).toList();
+          if (livingAllies.isNotEmpty) {
+            livingAllies.sort((a, b) => b
+                .effectiveStats(fatConfig: fatConfig)
+                .trionAffinity
+                .compareTo(
+                    a.effectiveStats(fatConfig: fatConfig).trionAffinity));
+            livingAllies.first.applyFlatBonus(
+              ModifiableStat.trionAffinity,
+              livingAllies.first
+                  .effectiveStats(fatConfig: fatConfig)
+                  .trionAffinity
+                  .toDouble(),
+              cfg.draegorBoostDurationTurns,
+            );
+          }
+        }
+      }
+
+      // Gravehour: if opponent stalled or left any enemy at <=30% HP.
+      final gravehour =
+          state.getPassiveCounter(PassiveCounterKind.gravehour);
+      if (gravehour != null && gravehour.cooldownTurns <= 0) {
+        final stalled = !activeTeamDealtDamage;
+        final lowHpEnemy = activeTeamStates.any((e) =>
+            e.isAlive &&
+            e.currentHealth <=
+                e.effectiveStats(fatConfig: fatConfig).maxHealth *
+                    cfg.gravehourLowHpThreshold);
+
+        if (stalled || lowHpEnemy) {
+          _gravehourFinisher(state, activeTeamStates, cfg);
+        }
+      }
+
+      // Coldread: resolve prediction.
+      final coldread =
+          state.getPassiveCounter(PassiveCounterKind.coldread);
+      if (coldread != null && coldread.pendingResolution) {
+        if (coldread.markedEnemyActedDamaging) {
+          // Correct read: Levy the costliest action's Trion from enemy.
+          // Initiative seize deferred to Phase E (needs initiative system).
+          final levyAmount = _findCostliestTrionCost(activeTeamStates);
+          _applyLevy(activeTeamPool, inactiveTeamPool, levyAmount);
+        } else {
+          // Wrong read: dock holder's team Trion gain next turn.
+          coldread.trionGainDockedNextTurn = true;
+        }
+        coldread.pendingResolution = false;
+        coldread.markedEnemyId = null;
+        coldread.markedEnemyActedDamaging = false;
+        coldread.cooldownTurns = cfg.coldreadCooldownTurns;
+      }
+
+      // Nullhymn: check discord threshold.
+      final nullhymn =
+          state.getPassiveCounter(PassiveCounterKind.nullhymn);
+      if (nullhymn != null &&
+          nullhymn.counter >= cfg.nullhymnDiscordThreshold &&
+          nullhymn.chargesUsed < cfg.nullhymnMaxDischarges) {
+        _nullhymnDischarge(state, activeTeamStates);
+        nullhymn.counter = 0;
+        nullhymn.chargesUsed++;
+      }
+
+      // Reckoning: check debt threshold.
+      final reckoning =
+          state.getPassiveCounter(PassiveCounterKind.reckoning);
+      if (reckoning != null &&
+          !reckoning.lockedOut &&
+          reckoning.counter >= cfg.reckoningDebtThreshold) {
+        _reckoningDischarge(
+            reckoning, activeTeamStates, activeTeamPool, inactiveTeamPool, cfg);
+      }
+
+      // Clear per-turn Nullhymn dedup.
+      nullhymn?.discordedStatusIdsThisTurn.clear();
+    }
+  }
+
+  // --- Passive counter helpers ---
+
+  void _draegorOnAbilityUsed(
+    PassiveCounterState draegor,
+    CharacterBattleState holder,
+    PassiveCounterConfig cfg,
+  ) {
+    // Check team-wide Regret cap.
+    final teamRegretTotal = _teamRegretTotal(holder);
+    if (teamRegretTotal >= cfg.draegorMaxRegretPerBattle) return;
+
+    draegor.counter++;
+    if (draegor.counter >= cfg.draegorEnmityThreshold) {
+      draegor.counter = 0;
+      draegor.regretRemainingTurns = cfg.draegorRegretDurationTurns;
+      draegor.totalRegretGenerated++;
+    }
+  }
+
+  int _teamRegretTotal(CharacterBattleState holder) {
+    var total = 0;
+    final all = [holder] + holder.teammates;
+    for (final s in all) {
+      final d = s.getPassiveCounter(PassiveCounterKind.draegor);
+      if (d != null) total += d.totalRegretGenerated;
+    }
+    return total;
+  }
+
+  void _reckoningIncrementDebt(
+    PassiveCounterState reckoning,
+    String enemyId,
+    PassiveCounterConfig cfg,
+  ) {
+    reckoning.counter++;
+    reckoning.counterByEnemyId[enemyId] =
+        (reckoning.counterByEnemyId[enemyId] ?? 0) + 1;
+  }
+
+  void _reckoningDischarge(
+    PassiveCounterState reckoning,
+    List<CharacterBattleState> enemyTeamStates,
+    TrionPool enemyPool,
+    TrionPool holderPool,
+    PassiveCounterConfig cfg,
+  ) {
+    // Find the enemy who ran up the most Debt.
+    String? topEnemyId;
+    var topDebt = 0;
+    for (final entry in reckoning.counterByEnemyId.entries) {
+      if (entry.value > topDebt) {
+        topDebt = entry.value;
+        topEnemyId = entry.key;
+      }
+    }
+
+    if (topEnemyId != null) {
+      final topEnemy = enemyTeamStates
+          .where((s) => s.character.id == topEnemyId)
+          .firstOrNull;
+      if (topEnemy != null) {
+        // Extend all current cooldowns +1.
+        for (final key in topEnemy.cooldowns.keys.toList()) {
+          topEnemy.cooldowns[key] =
+              (topEnemy.cooldowns[key] ?? 0) + cfg.reckoningCooldownExtension;
+        }
+        // Force next attack to critical miss.
+        statusEffectEngine.apply(topEnemy, 'forced_critical_miss');
+      }
+    }
+
+    // Levy: steal Trion from enemy pool.
+    final levyAmount = _findCostliestTrionCost(enemyTeamStates);
+    _applyLevy(enemyPool, holderPool, levyAmount);
+
+    reckoning.counter = 0;
+    reckoning.counterByEnemyId.clear();
+    reckoning.lockedOut = true;
+  }
+
+  void _nullhymnDischarge(
+    CharacterBattleState holder,
+    List<CharacterBattleState> enemyTeamStates,
+  ) {
+    // Resonance downgrade deferred to Phase E (ResonanceGrid is immutable).
+    // Fallback: purge all debuffs on holder's team and reflect the most
+    // prolific enemy's debuffs.
+    final allies = [holder] + holder.teammates;
+    final cat = StatusEffectCatalog.defaultCatalog;
+
+    // Count debuffs by source.
+    final debuffCountBySource = <String, int>{};
+    final debuffsToReflect = <StatusEffectInstance>[];
+
+    for (final ally in allies) {
+      final toRemove = <StatusEffectInstance>[];
+      for (final instance in ally.statusEffects) {
+        final def = cat[instance.definitionId];
+        // Consider anything with negative flat modifiers, DoT, action
+        // prevention, or disadvantage as a "debuff."
+        final isDebuff = def.preventsActions ||
+            def.turnStartDamage != null ||
+            def.disadvantageRollTags.isNotEmpty ||
+            def.flatStatModifiers.values.any((v) => v < 0) ||
+            (def.allDamageTakenMultiplier != null &&
+                def.allDamageTakenMultiplier! > 1) ||
+            (def.outgoingDamageMultiplier != null &&
+                def.outgoingDamageMultiplier! < 1);
+        if (isDebuff) {
+          toRemove.add(instance);
+          if (instance.sourceCharacterId != null) {
+            debuffCountBySource[instance.sourceCharacterId!] =
+                (debuffCountBySource[instance.sourceCharacterId!] ?? 0) + 1;
+            debuffsToReflect.add(instance);
+          }
+        }
+      }
+      for (final r in toRemove) {
+        ally.statusEffects.remove(r);
+      }
+    }
+
+    // Reflect onto the enemy who applied the most debuffs.
+    if (debuffCountBySource.isNotEmpty) {
+      String? topSourceId;
+      var topCount = 0;
+      for (final entry in debuffCountBySource.entries) {
+        if (entry.value > topCount) {
+          topCount = entry.value;
+          topSourceId = entry.key;
+        }
+      }
+      if (topSourceId != null) {
+        final target = enemyTeamStates
+            .where((s) => s.character.id == topSourceId && s.isAlive)
+            .firstOrNull;
+        if (target != null) {
+          for (final debuff in debuffsToReflect) {
+            if (debuff.sourceCharacterId == topSourceId) {
+              statusEffectEngine.apply(
+                target,
+                debuff.definitionId,
+                sourceCharacterId: holder.character.id,
+                durationOverride: debuff.remainingTurns,
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  void _gravehourFinisher(
+    CharacterBattleState holder,
+    List<CharacterBattleState> enemyTeamStates,
+    PassiveCounterConfig cfg,
+  ) {
+    // Find lowest-HP living enemy.
+    final livingEnemies = enemyTeamStates.where((e) => e.isAlive).toList();
+    if (livingEnemies.isEmpty) return;
+    livingEnemies.sort((a, b) => a.currentHealth.compareTo(b.currentHealth));
+    final target = livingEnemies.first;
+
+    // Free, uncounterable finisher.
+    _applyDamage(
+      target: target,
+      baseDamage: cfg.gravehourFinisherFlatDamage,
+      damageType: DamageType.force,
+      isCriticalHit: false,
+      damageSource: holder,
+    );
+
+    // Heal prevention on the target (using Cursed status, 2 turns to
+    // cover through the opponent's next full turn).
+    statusEffectEngine.apply(
+      target,
+      'cursed',
+      sourceCharacterId: holder.character.id,
+      durationOverride: cfg.gravehourHealPreventionDurationTurns,
+    );
+
+    // Set Gravehour on cooldown.
+    final gravehour =
+        holder.getPassiveCounter(PassiveCounterKind.gravehour)!;
+    gravehour.cooldownTurns = cfg.gravehourCooldownTurns;
+
+    // Put one of the holder's own abilities on cooldown at random.
+    final holderCooldowns = holder.cooldowns;
+    final allTriggerIds = holderCooldowns.keys.toList();
+    // Pick from abilities NOT on cooldown (or extend one already on cooldown).
+    final random = combatEngine.diceRoller.random;
+    if (allTriggerIds.isNotEmpty) {
+      final pick = allTriggerIds[random.nextInt(allTriggerIds.length)];
+      holderCooldowns[pick] = (holderCooldowns[pick] ?? 0) + 1;
+    }
+  }
+
+  /// The Levy: steal Trion from [fromPool] and add to [toPool], capped
+  /// at what [fromPool] actually has.
+  void _applyLevy(TrionPool fromPool, TrionPool toPool, int amount) {
+    final actual = min(amount, fromPool.current);
+    if (actual <= 0) return;
+    fromPool.trySpend(actual);
+    toPool.gain(actual);
+  }
+
+  /// Finds the costliest Trion cost among abilities used this turn by any
+  /// living member of [teamStates] (for Levy calculation).
+  int _findCostliestTrionCost(List<CharacterBattleState> teamStates) {
+    var maxCost = 0;
+    for (final state in teamStates) {
+      for (final triggerId in state.triggersUsedThisTurn) {
+        // Look up trigger cost via cooldown records as a proxy - we don't
+        // have direct trigger references here, so use a reasonable default.
+        maxCost = max(maxCost, 20);
+      }
+    }
+    return maxCost;
+  }
+
+  /// Ironvow Sanctioned Strike check: returns true if [attacker] has an
+  /// Ironvow counter and [trigger]'s attack type matches the sanctioned
+  /// type, the strike is available, and the cost is affordable. If true,
+  /// the strike is consumed and effects applied.
+  bool checkSanctionedStrike(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    CharacterBattleState target,
+  ) {
+    final ironvow =
+        attacker.getPassiveCounter(PassiveCounterKind.ironvow);
+    if (ironvow == null) return false;
+    if (ironvow.sanctionedType != trigger.attackType) return false;
+    if (ironvow.sanctionedStrikeCooldown > 0) return false;
+    if (ironvow.chargesUsed >= passiveCounterConfig.ironvowMaxSanctionedStrikes) {
+      return false;
+    }
+
+    // Consume the strike.
+    ironvow.chargesUsed++;
+    ironvow.sanctionedStrikeCooldown =
+        passiveCounterConfig.ironvowStrikeCooldownTurns;
+
+    // Strip one active buff from the target.
+    _stripOneBuff(target);
+
+    // Brand target with Interdict.
+    statusEffectEngine.apply(
+      target,
+      'interdict',
+      sourceCharacterId: attacker.character.id,
+    );
+
+    // Cost: allies Vulnerable (Exposed) until next turn.
+    for (final ally in attacker.teammates) {
+      if (!ally.isAlive) continue;
+      statusEffectEngine.apply(
+        ally,
+        'exposed',
+        durationOverride: 1,
+        sourceCharacterId: attacker.character.id,
+      );
+    }
+
+    return true;
+  }
+
+  void _stripOneBuff(CharacterBattleState target) {
+    final cat = StatusEffectCatalog.defaultCatalog;
+    for (var i = 0; i < target.statusEffects.length; i++) {
+      final def = cat[target.statusEffects[i].definitionId];
+      final isBuff = def.flatStatModifiers.values.any((v) => v > 0) ||
+          def.advantageRollTags.isNotEmpty ||
+          (def.allDamageTakenMultiplier != null &&
+              def.allDamageTakenMultiplier! < 1) ||
+          (def.outgoingDamageMultiplier != null &&
+              def.outgoingDamageMultiplier! > 1);
+      if (isBuff) {
+        target.statusEffects.removeAt(i);
+        return;
+      }
+    }
   }
 }

@@ -217,6 +217,10 @@ class StatusEffectMagnitudes {
   final int misfireDurationTurns;
   final double misfireChance;
 
+  // --- B4 passive-counter status effects ---
+  final int interdictDurationTurns;
+  final double interdictRepeatDamageMultiplier;
+
   const StatusEffectMagnitudes({
     this.acidArmorReduction = 5,
     this.acidDurationTurns = 3,
@@ -307,6 +311,8 @@ class StatusEffectMagnitudes {
     this.forcedRepetitionDurationTurns = 2,
     this.misfireDurationTurns = 2,
     this.misfireChance = 0.5,
+    this.interdictDurationTurns = 2,
+    this.interdictRepeatDamageMultiplier = 0.25,
   });
 
   static const StatusEffectMagnitudes defaults = StatusEffectMagnitudes();
@@ -373,6 +379,59 @@ class LoadoutRulesConfig {
   });
 
   static const LoadoutRulesConfig defaults = LoadoutRulesConfig();
+}
+
+/// Config for the 6 passive-counter archetypes (Phase B4). All tunable
+/// knobs for Draegor, Nullhymn, Reckoning, Gravehour, Coldread, Ironvow.
+class PassiveCounterConfig {
+  // Draegor
+  final int draegorEnmityThreshold;
+  final int draegorRegretDurationTurns;
+  final int draegorMaxRegretPerBattle;
+  final int draegorFatChainThreshold;
+  final int draegorBoostDurationTurns;
+
+  // Nullhymn
+  final int nullhymnDiscordThreshold;
+  final int nullhymnMaxDischarges;
+
+  // Reckoning
+  final int reckoningDebtThreshold;
+  final int reckoningCooldownExtension;
+
+  // Gravehour
+  final int gravehourCooldownTurns;
+  final double gravehourLowHpThreshold;
+  final int gravehourFinisherFlatDamage;
+  final int gravehourHealPreventionDurationTurns;
+
+  // Coldread
+  final int coldreadCooldownTurns;
+
+  // Ironvow
+  final int ironvowMaxSanctionedStrikes;
+  final int ironvowStrikeCooldownTurns;
+
+  const PassiveCounterConfig({
+    this.draegorEnmityThreshold = 5,
+    this.draegorRegretDurationTurns = 2,
+    this.draegorMaxRegretPerBattle = 3,
+    this.draegorFatChainThreshold = 2,
+    this.draegorBoostDurationTurns = 2,
+    this.nullhymnDiscordThreshold = 5,
+    this.nullhymnMaxDischarges = 2,
+    this.reckoningDebtThreshold = 6,
+    this.reckoningCooldownExtension = 1,
+    this.gravehourCooldownTurns = 3,
+    this.gravehourLowHpThreshold = 0.3,
+    this.gravehourFinisherFlatDamage = 40,
+    this.gravehourHealPreventionDurationTurns = 2,
+    this.coldreadCooldownTurns = 1,
+    this.ironvowMaxSanctionedStrikes = 3,
+    this.ironvowStrikeCooldownTurns = 2,
+  });
+
+  static const PassiveCounterConfig defaults = PassiveCounterConfig();
 }
 
 /// Config for the per-team turn timer: how long a team has to lock in

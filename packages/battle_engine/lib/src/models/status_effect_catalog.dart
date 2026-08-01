@@ -443,6 +443,19 @@ class StatusEffectCatalog {
         defaultDurationTurns: magnitudes.misfireDurationTurns,
         misfireChance: magnitudes.misfireChance,
       ),
+      // --- B4 passive-counter status effects ---
+      StatusEffectDefinition(
+        id: 'interdict',
+        name: 'Interdict',
+        defaultDurationTurns: magnitudes.interdictDurationTurns,
+        repeatAbilityDamageMultiplier:
+            magnitudes.interdictRepeatDamageMultiplier,
+      ),
+      StatusEffectDefinition(
+        id: 'forced_critical_miss',
+        name: 'Forced Critical Miss',
+        defaultDurationTurns: 1,
+      ),
     ];
     return StatusEffectCatalog._({for (final d in defs) d.id: d});
   }

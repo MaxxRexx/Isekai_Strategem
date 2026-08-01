@@ -168,6 +168,11 @@ class StatusEffectDefinition {
   /// allies. Scramble inflicts this.
   final double? misfireChance;
 
+  /// If non-null, when the affected character uses the same ability they
+  /// used last turn, damage is multiplied by this value (e.g. 0.25 for
+  /// heavily reduced). Ironvow's Interdict brands the target with this.
+  final double? repeatAbilityDamageMultiplier;
+
   const StatusEffectDefinition({
     required this.id,
     required this.name,
@@ -195,6 +200,7 @@ class StatusEffectDefinition {
     this.locksOriginFromData = false,
     this.forcesRepetitionOfLastAbility = false,
     this.misfireChance,
+    this.repeatAbilityDamageMultiplier,
   });
 }
 

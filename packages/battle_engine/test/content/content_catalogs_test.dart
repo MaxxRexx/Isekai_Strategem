@@ -49,13 +49,13 @@ void main() {
   group('TriggerCatalog.defaultCatalog', () {
     final catalog = TriggerCatalog.defaultCatalog;
 
-    test('has exactly 47 Triggers', () {
-      expect(catalog.all, hasLength(47));
+    test('has exactly 53 Triggers', () {
+      expect(catalog.all, hasLength(53));
     });
 
-    test('has 41 active and 6 passive Triggers', () {
+    test('has 41 active and 12 passive Triggers', () {
       expect(catalog.activeTriggers, hasLength(41));
-      expect(catalog.passiveTriggers, hasLength(6));
+      expect(catalog.passiveTriggers, hasLength(12));
     });
 
     test('every Trigger has a unique id', () {

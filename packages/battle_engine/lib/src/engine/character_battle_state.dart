@@ -1,6 +1,7 @@
 import '../constants.dart';
 import '../models/character.dart';
 import '../models/damage_type.dart';
+import '../models/passive_counter.dart';
 import '../models/passive_effect.dart';
 import '../models/reactive_effect.dart';
 import '../models/stats.dart';
@@ -133,6 +134,17 @@ class CharacterBattleState {
   /// per enemy per battle).
   final Set<String> deathLedgerMarkedIds = {};
 
+  /// Active passive-counter states, keyed by kind. Populated at battle
+  /// start from the character's equipped passive triggers that have a
+  /// [PassiveCounterKind].
+  final Map<PassiveCounterKind, PassiveCounterState> passiveCounters = {};
+
+  /// Trigger ids used this turn, for Ironvow's Interdict repeat detection.
+  final Set<String> triggersUsedThisTurn = {};
+
+  /// Trigger ids used last turn, for Interdict repeat-ability check.
+  final Set<String> triggersUsedLastTurn = {};
+
   /// The character id this character's last landed damaging hit was
   /// against, for `AiProfile.fixatesOnLastDamagedTarget` (The Berserker).
   /// Null until this character's first landed hit.
@@ -192,6 +204,7 @@ class CharacterBattleState {
         .add(_AbilityUseRecord(trigger.id, trigger.cooldownTurns));
     lastActiveTriggerCategory = trigger.category;
     lastUsedTriggerId = trigger.id;
+    triggersUsedThisTurn.add(trigger.id);
     hasActedThisBattle = true;
   }
 
@@ -238,6 +251,11 @@ class CharacterBattleState {
     _abilitiesUsedThisTurn.clear();
     _cooldownSabotagedIds.clear();
     fatTriggeredThisTurn = false;
+
+    triggersUsedLastTurn
+      ..clear()
+      ..addAll(triggersUsedThisTurn);
+    triggersUsedThisTurn.clear();
 
     if (fatCooldownRemaining > 0) fatCooldownRemaining--;
 
@@ -387,6 +405,11 @@ class CharacterBattleState {
     }
     return context;
   }
+
+  /// Returns the passive counter state for [kind], or null if this
+  /// character doesn't have that counter equipped.
+  PassiveCounterState? getPassiveCounter(PassiveCounterKind kind) =>
+      passiveCounters[kind];
 
   /// Whether this character is currently blocked from being healed by any
   /// active status effect (Cursed, Necrotic Wound).

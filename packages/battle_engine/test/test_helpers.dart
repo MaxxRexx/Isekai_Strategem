@@ -141,6 +141,7 @@ PassiveTrigger testPassiveTrigger({
   TriggerCategory category = TriggerCategory.optional,
   int equipCost = 10,
   PassiveEffect effect = const PassiveEffect(),
+  PassiveCounterKind? counterKind,
 }) {
   return PassiveTrigger(
     id: id,
@@ -148,5 +149,6 @@ PassiveTrigger testPassiveTrigger({
     category: category,
     equipCost: equipCost,
     effect: effect,
+    counterKind: counterKind,
   );
 }

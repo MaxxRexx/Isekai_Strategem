@@ -1,3 +1,4 @@
+import '../models/passive_counter.dart';
 import '../models/team.dart';
 import '../models/trigger.dart';
 import '../models/trion.dart';
@@ -51,6 +52,10 @@ class Battle {
   int roundNumber = 1;
   bool isTeamATurn;
 
+  /// Whether the active team dealt any damage this turn (for Gravehour
+  /// stall detection). Reset at start of turn, set by [recordDamageDealt].
+  bool activeTeamDealtDamageThisTurn = false;
+
   /// Whether the very first turn of the battle (round 1's opening turn,
   /// whichever team that belongs to) has already had its first-move
   /// Trion handicap applied - see [startTurn].
@@ -86,6 +91,16 @@ class Battle {
   Team get inactiveTeam => isTeamATurn ? teamB : teamA;
   TrionPool get activeTeamPool => activeTeam.trionPool;
 
+  List<CharacterBattleState> get activeTeamStates =>
+      activeTeam.characters.map((c) => states[c.id]!).toList();
+  List<CharacterBattleState> get inactiveTeamStates =>
+      inactiveTeam.characters.map((c) => states[c.id]!).toList();
+
+  /// Records that the active team dealt damage this turn.
+  void recordDamageDealt() {
+    activeTeamDealtDamageThisTurn = true;
+  }
+
   /// Every character's id mapped to the [TrionPool] of the team they
   /// belong to - used to credit Trion-draining status effects (Sapped) to
   /// the causer's own team pool regardless of which team they're on.
@@ -111,6 +126,24 @@ class Battle {
 
   bool get isOver => outcome != BattleOutcome.ongoing;
 
+  /// Initializes passive counter state for characters whose equipped
+  /// passive triggers declare a [PassiveCounterKind]. Called once at
+  /// battle start, after states are created. [equippedPassiveTriggers]
+  /// maps character ids to the list of passive triggers in their loadout.
+  void initializePassiveCounters(
+      Map<String, List<PassiveTrigger>> equippedPassiveTriggers) {
+    for (final entry in equippedPassiveTriggers.entries) {
+      final state = states[entry.key];
+      if (state == null) continue;
+      for (final trigger in entry.value) {
+        if (trigger.counterKind != null) {
+          state.passiveCounters[trigger.counterKind!] =
+              PassiveCounterState(trigger.counterKind!);
+        }
+      }
+    }
+  }
+
   /// Begins [activeTeam]'s turn: rolls the team's Trion gain (using
   /// members' health at the start of the turn, before any status damage
   /// below - forced to the Low tier on the very first turn of the whole
@@ -126,6 +159,7 @@ class Battle {
     Map<String, List<ActiveTrigger>> equippedActiveTriggers = const {},
   }) {
     final team = activeTeam;
+    activeTeamDealtDamageThisTurn = false;
     final isFirstTurnOfBattle = !_firstTurnHandicapApplied;
     _firstTurnHandicapApplied = true;
     final trionGain = turnEngine.resolveTeamTrionGain(team, states,
@@ -141,7 +175,7 @@ class Battle {
 
       statusTicks[character.id] =
           turnEngine.tickStatusEffects(state, causerTrionPools: causerPools);
-      if (!state.isAlive) continue; // a status tick's damage could kill
+      if (!state.isAlive) continue;
 
       final equipped = equippedActiveTriggers[character.id];
       if (equipped != null) {
@@ -150,6 +184,12 @@ class Battle {
 
       fatTriggered[character.id] = turnEngine.rollFatTrigger(state);
     }
+
+    // Phase B4: start-of-turn passive counter hooks.
+    turnEngine.tickStartOfTurnPassiveCounters(
+      activeTeamStates,
+      inactiveTeamStates,
+    );
 
     return TeamTurnStartResult(
       trionGain: trionGain,
@@ -163,6 +203,16 @@ class Battle {
   /// control to the other team, incrementing [roundNumber] once both
   /// teams have gone.
   void endTurn() {
+    // Phase B4: end-of-turn passive counter hooks (fire before character
+    // bookkeeping so triggersUsedThisTurn is still populated for Levy).
+    turnEngine.tickEndOfTurnPassiveCounters(
+      activeTeamStates: activeTeamStates,
+      inactiveTeamStates: inactiveTeamStates,
+      activeTeamPool: activeTeam.trionPool,
+      inactiveTeamPool: inactiveTeam.trionPool,
+      activeTeamDealtDamage: activeTeamDealtDamageThisTurn,
+    );
+
     for (final character in activeTeam.characters) {
       final state = states[character.id]!;
       if (state.isAlive) turnEngine.endCharacterTurn(state);

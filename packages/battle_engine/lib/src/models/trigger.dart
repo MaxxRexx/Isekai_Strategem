@@ -1,4 +1,5 @@
 import 'damage_type.dart';
+import 'passive_counter.dart';
 import 'passive_effect.dart';
 import 'reactive_effect.dart';
 import '../util/dice.dart';
@@ -166,9 +167,17 @@ class ActiveTrigger extends Trigger {
 }
 
 /// An always-on ability: no cooldown, no Trion cost, no targeting -
-/// just a [PassiveEffect] applied for as long as it's equipped.
+/// just a [PassiveEffect] applied for as long as it's equipped. If
+/// [counterKind] is non-null, this trigger also activates a stateful
+/// passive counter (see [PassiveCounterKind]) whose state machine the
+/// engine tracks across the battle.
 class PassiveTrigger extends Trigger {
   final PassiveEffect effect;
+
+  /// If non-null, equipping this trigger activates a passive counter
+  /// whose state the engine tracks in [CharacterBattleState]. The
+  /// [PassiveEffect] may still carry stat buffs alongside the counter.
+  final PassiveCounterKind? counterKind;
 
   const PassiveTrigger({
     required super.id,
@@ -176,5 +185,6 @@ class PassiveTrigger extends Trigger {
     required super.category,
     required super.equipCost,
     required this.effect,
+    this.counterKind,
   });
 }

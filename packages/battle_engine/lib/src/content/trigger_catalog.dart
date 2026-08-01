@@ -1,11 +1,12 @@
 import '../models/damage_type.dart';
+import '../models/passive_counter.dart';
 import '../models/passive_effect.dart';
 import '../models/reactive_effect.dart';
 import '../models/status_effect.dart';
 import '../models/trigger.dart';
 import '../util/dice.dart';
 
-/// The built-in 47-Trigger catalog (41 active, 6 passive), a shared draft
+/// The built-in 53-Trigger catalog (41 active, 12 passive), a shared draft
 /// pool any character may equip regardless of their own [CharacterType] -
 /// nothing in the [Loadout] rules restricts equipping by type.
 class TriggerCatalog {
@@ -697,6 +698,54 @@ class TriggerCatalog {
         effect: const PassiveEffect(
           flatStatModifiers: {ModifiableStat.statusEffectInfliction: 6},
         ),
+      ),
+      PassiveTrigger(
+        id: 'draegor',
+        name: 'Draegor',
+        category: TriggerCategory.optional,
+        equipCost: 24,
+        effect: const PassiveEffect(),
+        counterKind: PassiveCounterKind.draegor,
+      ),
+      PassiveTrigger(
+        id: 'nullhymn',
+        name: 'Nullhymn',
+        category: TriggerCategory.optional,
+        equipCost: 26,
+        effect: const PassiveEffect(),
+        counterKind: PassiveCounterKind.nullhymn,
+      ),
+      PassiveTrigger(
+        id: 'reckoning',
+        name: 'Reckoning',
+        category: TriggerCategory.optional,
+        equipCost: 28,
+        effect: const PassiveEffect(),
+        counterKind: PassiveCounterKind.reckoning,
+      ),
+      PassiveTrigger(
+        id: 'gravehour',
+        name: 'Gravehour',
+        category: TriggerCategory.optional,
+        equipCost: 26,
+        effect: const PassiveEffect(),
+        counterKind: PassiveCounterKind.gravehour,
+      ),
+      PassiveTrigger(
+        id: 'coldread',
+        name: 'Coldread',
+        category: TriggerCategory.optional,
+        equipCost: 22,
+        effect: const PassiveEffect(),
+        counterKind: PassiveCounterKind.coldread,
+      ),
+      PassiveTrigger(
+        id: 'ironvow',
+        name: 'Ironvow',
+        category: TriggerCategory.optional,
+        equipCost: 24,
+        effect: const PassiveEffect(),
+        counterKind: PassiveCounterKind.ironvow,
       ),
     ];
 
