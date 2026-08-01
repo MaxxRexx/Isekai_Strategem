@@ -49,12 +49,12 @@ void main() {
   group('TriggerCatalog.defaultCatalog', () {
     final catalog = TriggerCatalog.defaultCatalog;
 
-    test('has exactly 40 Triggers', () {
-      expect(catalog.all, hasLength(40));
+    test('has exactly 42 Triggers', () {
+      expect(catalog.all, hasLength(42));
     });
 
-    test('has 34 active and 6 passive Triggers', () {
-      expect(catalog.activeTriggers, hasLength(34));
+    test('has 36 active and 6 passive Triggers', () {
+      expect(catalog.activeTriggers, hasLength(36));
       expect(catalog.passiveTriggers, hasLength(6));
     });
 

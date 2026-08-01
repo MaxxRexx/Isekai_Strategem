@@ -500,16 +500,14 @@ class TurnEngine {
     CharacterBattleState target,
     Map<String, bool> burstFirstHitLanded,
   ) {
+    final key = target.character.id;
+    if (burstFirstHitLanded.containsKey(key)) return true;
     final mitigationIndex = target.reactiveEffects
         .indexWhere((r) => r.kind == ReactiveKind.burstMitigation);
     if (mitigationIndex < 0) return false;
-    final key = target.character.id;
-    if (!burstFirstHitLanded.containsKey(key)) {
-      burstFirstHitLanded[key] = true;
-      return false;
-    }
+    burstFirstHitLanded[key] = true;
     target.reactiveEffects.removeAt(mitigationIndex);
-    return true;
+    return false;
   }
 
   /// Combined outgoing-damage multiplier from [attacker]'s perk (Rurik's
