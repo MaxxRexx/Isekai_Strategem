@@ -11,6 +11,7 @@ import '../models/status_effect_catalog.dart';
 import '../models/team.dart';
 import '../models/trigger.dart';
 import '../models/trion.dart';
+import '../models/unique_behavior.dart';
 import '../util/dice.dart';
 import 'character_battle_state.dart';
 import 'combat_engine.dart';
@@ -1005,7 +1006,18 @@ class TurnEngine {
 
     switch (trigger.attackSubtype) {
       case AttackSubtype.single:
+        if (clampedTargets.isNotEmpty) resolveHitAgainst(clampedTargets.first);
+        break;
       case AttackSubtype.unique:
+        if (trigger.uniqueBehavior != null) {
+          return _resolveUniqueBehavior(
+            attacker: attacker,
+            trigger: trigger,
+            targets: clampedTargets,
+            damageMultiplier: damageMultiplier,
+            healMultiplier: healMultiplier,
+          );
+        }
         if (clampedTargets.isNotEmpty) resolveHitAgainst(clampedTargets.first);
         break;
       case AttackSubtype.aoe:
@@ -1736,6 +1748,197 @@ class TurnEngine {
     }
 
     return true;
+  }
+
+  // --- Unique-subtype dispatch (Phase C) ---
+
+  AbilityUseResult _resolveUniqueBehavior({
+    required CharacterBattleState attacker,
+    required ActiveTrigger trigger,
+    required List<CharacterBattleState> targets,
+    double damageMultiplier = 1.0,
+    double healMultiplier = 1.0,
+  }) {
+    switch (trigger.uniqueBehavior!) {
+      case UniqueBehavior.sharedAgony:
+        return _resolveSharedAgony(attacker, trigger, targets);
+      case UniqueBehavior.graveBargain:
+        return _resolveGraveBargain(attacker, trigger, targets);
+      case UniqueBehavior.martyrsEnd:
+        return _resolveMartyrsEnd(attacker, trigger, targets);
+      case UniqueBehavior.vowOfTheDuel:
+        return _resolveVowOfTheDuel(attacker, trigger, targets);
+      case UniqueBehavior.sunderArms:
+        return _resolveSunderArms(attacker, trigger, targets);
+      case UniqueBehavior.curvingShot:
+        return _resolveCurvingShot(attacker, trigger, targets);
+      case UniqueBehavior.calledShot:
+        return _resolveCalledShot(attacker, trigger, targets);
+      case UniqueBehavior.mindsEye:
+        return _resolveMindsEye(attacker, trigger, targets);
+      case UniqueBehavior.forcedChoice:
+        return _resolveForcedChoice(attacker, trigger, targets);
+      case UniqueBehavior.memoryTheft:
+        return _resolveMemoryTheft(attacker, trigger, targets);
+      case UniqueBehavior.sensorySwap:
+        return _resolveSensorySwap(attacker, trigger, targets);
+      case UniqueBehavior.dreadResonance:
+        return _resolveDreadResonance(attacker, trigger, targets);
+      case UniqueBehavior.isolation:
+        return _resolveIsolation(attacker, trigger, targets);
+      case UniqueBehavior.illusoryDouble:
+        return _resolveIllusoryDouble(attacker, trigger, targets);
+      case UniqueBehavior.echoingDoubt:
+        return _resolveEchoingDoubt(attacker, trigger, targets);
+      case UniqueBehavior.karmicBind:
+        return _resolveKarmicBind(attacker, trigger, targets);
+      case UniqueBehavior.unmaking:
+        return _resolveUnmaking(attacker, trigger, targets);
+    }
+  }
+
+  AbilityUseResult _emptyResult(String attackerId, String triggerId) {
+    return AbilityUseResult(
+      attackerCharacterId: attackerId,
+      triggerId: triggerId,
+      targetResults: const [],
+    );
+  }
+
+  AbilityUseResult _resolveSharedAgony(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveGraveBargain(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveMartyrsEnd(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveVowOfTheDuel(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveSunderArms(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveCurvingShot(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveCalledShot(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveMindsEye(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveForcedChoice(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveMemoryTheft(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveSensorySwap(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveDreadResonance(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveIsolation(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveIllusoryDouble(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveEchoingDoubt(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveKarmicBind(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
+  }
+
+  AbilityUseResult _resolveUnmaking(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    return _emptyResult(attacker.character.id, trigger.id);
   }
 
   void _stripOneBuff(CharacterBattleState target) {

@@ -30,6 +30,7 @@ export 'src/models/status_effect_catalog.dart';
 export 'src/models/team.dart';
 export 'src/models/trigger.dart';
 export 'src/models/trion.dart';
+export 'src/models/unique_behavior.dart';
 export 'src/models/world_ability_effect.dart';
 
 // Config

@@ -2,6 +2,7 @@ import 'damage_type.dart';
 import 'passive_counter.dart';
 import 'passive_effect.dart';
 import 'reactive_effect.dart';
+import 'unique_behavior.dart';
 import '../util/dice.dart';
 
 /// Broad equipment category for a Trigger.
@@ -26,15 +27,17 @@ enum AttackType { melee, ranged, psychic }
 enum AttackSubtype { single, aoe, burst, unique }
 
 extension AttackTypeSubtypes on AttackType {
-  /// The subtypes the design currently allows for this attack type:
-  /// Melee: Single, AoE. Ranged: Single, Burst, AoE. Psychic: Unique,
-  /// Single, AoE.
   Set<AttackSubtype> get validSubtypes {
     switch (this) {
       case AttackType.melee:
-        return {AttackSubtype.single, AttackSubtype.aoe};
+        return {AttackSubtype.single, AttackSubtype.aoe, AttackSubtype.unique};
       case AttackType.ranged:
-        return {AttackSubtype.single, AttackSubtype.burst, AttackSubtype.aoe};
+        return {
+          AttackSubtype.single,
+          AttackSubtype.burst,
+          AttackSubtype.aoe,
+          AttackSubtype.unique,
+        };
       case AttackType.psychic:
         return {AttackSubtype.unique, AttackSubtype.single, AttackSubtype.aoe};
     }
@@ -139,6 +142,11 @@ class ActiveTrigger extends Trigger {
   /// its own. Null means it only ends when triggered.
   final int? armsReactiveDefaultTurns;
 
+  /// If non-null, this trigger uses unique-subtype resolution: the engine
+  /// dispatches on this value instead of standard hit/damage/status flow.
+  /// Only meaningful when [attackSubtype] is [AttackSubtype.unique].
+  final UniqueBehavior? uniqueBehavior;
+
   ActiveTrigger({
     required super.id,
     required super.name,
@@ -160,6 +168,7 @@ class ActiveTrigger extends Trigger {
     this.inflictedStatusEffects = const [],
     this.armsReactive,
     this.armsReactiveDefaultTurns,
+    this.uniqueBehavior,
   }) : assert(
           attackType.validSubtypes.contains(attackSubtype),
           '$attackSubtype is not a valid subtype for $attackType',
