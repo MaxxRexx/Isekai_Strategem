@@ -49,12 +49,12 @@ void main() {
   group('TriggerCatalog.defaultCatalog', () {
     final catalog = TriggerCatalog.defaultCatalog;
 
-    test('has exactly 53 Triggers', () {
-      expect(catalog.all, hasLength(53));
+    test('has exactly 70 Triggers', () {
+      expect(catalog.all, hasLength(70));
     });
 
-    test('has 41 active and 12 passive Triggers', () {
-      expect(catalog.activeTriggers, hasLength(41));
+    test('has 58 active and 12 passive Triggers', () {
+      expect(catalog.activeTriggers, hasLength(58));
       expect(catalog.passiveTriggers, hasLength(12));
     });
 
@@ -68,6 +68,42 @@ void main() {
       for (final t in catalog.activeTriggers) {
         expect(t.attackType.validSubtypes.contains(t.attackSubtype), isTrue,
             reason: '${t.id}: ${t.attackType}/${t.attackSubtype}');
+      }
+    });
+
+    test('includes an equippable Trigger for all 17 unique behaviors', () {
+      final byBehavior = {
+        for (final t in catalog.activeTriggers)
+          if (t.uniqueBehavior != null) t.uniqueBehavior!: t,
+      };
+      // Every UniqueBehavior has exactly one wired Trigger.
+      expect(byBehavior.keys.toSet(), UniqueBehavior.values.toSet());
+      expect(byBehavior, hasLength(UniqueBehavior.values.length));
+    });
+
+    test('every unique-behavior Trigger uses the unique subtype and a valid '
+        'attack type', () {
+      const meleeBehaviors = {
+        UniqueBehavior.sharedAgony,
+        UniqueBehavior.graveBargain,
+        UniqueBehavior.martyrsEnd,
+        UniqueBehavior.vowOfTheDuel,
+        UniqueBehavior.sunderArms,
+      };
+      const rangedBehaviors = {
+        UniqueBehavior.curvingShot,
+        UniqueBehavior.calledShot,
+      };
+      for (final t in catalog.activeTriggers) {
+        final behavior = t.uniqueBehavior;
+        if (behavior == null) continue;
+        expect(t.attackSubtype, AttackSubtype.unique, reason: t.id);
+        final expectedType = meleeBehaviors.contains(behavior)
+            ? AttackType.melee
+            : rangedBehaviors.contains(behavior)
+                ? AttackType.ranged
+                : AttackType.psychic;
+        expect(t.attackType, expectedType, reason: t.id);
       }
     });
   });
