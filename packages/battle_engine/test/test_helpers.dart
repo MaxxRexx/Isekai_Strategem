@@ -110,6 +110,7 @@ ActiveTrigger testTrigger({
   List<StatusEffectApplication> inflictedStatusEffects = const [],
   ReactiveKind? armsReactive,
   int? armsReactiveDefaultTurns,
+  UniqueBehavior? uniqueBehavior,
 }) {
   return ActiveTrigger(
     id: id,
@@ -132,6 +133,7 @@ ActiveTrigger testTrigger({
     inflictedStatusEffects: inflictedStatusEffects,
     armsReactive: armsReactive,
     armsReactiveDefaultTurns: armsReactiveDefaultTurns,
+    uniqueBehavior: uniqueBehavior,
   );
 }
 

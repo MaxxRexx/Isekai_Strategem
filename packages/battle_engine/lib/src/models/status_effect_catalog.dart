@@ -456,6 +456,53 @@ class StatusEffectCatalog {
         name: 'Forced Critical Miss',
         defaultDurationTurns: 1,
       ),
+
+      // --- C1 unique-subtype status effects ---
+      StatusEffectDefinition(
+        id: 'isolation',
+        name: 'Isolation',
+        defaultDurationTurns: magnitudes.isolationDurationTurns,
+        preventsAllyInteraction: true,
+      ),
+      StatusEffectDefinition(
+        id: 'untargetable',
+        name: 'Untargetable',
+        defaultDurationTurns: magnitudes.untargetableDurationTurns,
+        preventsTargeting: true,
+      ),
+      StatusEffectDefinition(
+        id: 'echoing_doubt',
+        name: 'Echoing Doubt',
+        defaultDurationTurns: magnitudes.echoingDoubtDurationTurns,
+        forcesNextAttackMiss: true,
+      ),
+      StatusEffectDefinition(
+        id: 'vow_of_the_duel',
+        name: 'Vow of the Duel',
+        defaultDurationTurns: magnitudes.vowOfTheDuelDurationTurns,
+        outgoingDamageMultiplier: magnitudes.vowOfTheDuelDamageMultiplier,
+        preventsHealing: true,
+      ),
+      StatusEffectDefinition(
+        id: 'forced_choice',
+        name: 'Forced Choice',
+        defaultDurationTurns: magnitudes.forcedChoiceDurationTurns,
+      ),
+      StatusEffectDefinition(
+        id: 'karmic_bind',
+        name: 'Karmic Bind',
+        defaultDurationTurns: magnitudes.karmicBindDurationTurns,
+      ),
+      StatusEffectDefinition(
+        id: 'called_shot_stat_zero',
+        name: 'Called Shot',
+        defaultDurationTurns: magnitudes.calledShotDurationTurns,
+      ),
+      StatusEffectDefinition(
+        id: 'minds_eye_reveal',
+        name: "Mind's Eye",
+        defaultDurationTurns: magnitudes.mindsEyeDurationTurns,
+      ),
     ];
     return StatusEffectCatalog._({for (final d in defs) d.id: d});
   }

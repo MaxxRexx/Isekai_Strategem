@@ -173,6 +173,18 @@ class StatusEffectDefinition {
   /// heavily reduced). Ironvow's Interdict brands the target with this.
   final double? repeatAbilityDamageMultiplier;
 
+  /// While active, the affected character cannot be targeted by any
+  /// ability (Illusory Double's untargetable effect).
+  final bool preventsTargeting;
+
+  /// While active, the affected character cannot be healed or buffed by
+  /// allies, and cannot heal or buff allies (Isolation).
+  final bool preventsAllyInteraction;
+
+  /// While active, the affected character's next offensive ability
+  /// automatically misses (Echoing Doubt's forced whiff).
+  final bool forcesNextAttackMiss;
+
   const StatusEffectDefinition({
     required this.id,
     required this.name,
@@ -201,6 +213,9 @@ class StatusEffectDefinition {
     this.forcesRepetitionOfLastAbility = false,
     this.misfireChance,
     this.repeatAbilityDamageMultiplier,
+    this.preventsTargeting = false,
+    this.preventsAllyInteraction = false,
+    this.forcesNextAttackMiss = false,
   });
 }
 

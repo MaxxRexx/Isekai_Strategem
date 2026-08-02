@@ -150,6 +150,35 @@ class CharacterBattleState {
   /// Null until this character's first landed hit.
   String? lastDamagedTargetId;
 
+  // --- Unique-subtype tracking (Phase C) ---
+
+  /// Enemy character ids this character has landed a melee hit against
+  /// this battle, for Shared Agony's auto-targeting.
+  final Set<String> meleeHitEnemyIds = {};
+
+  /// Charges for Illusory Double. Starts at 1, +1 each time an ally is
+  /// defeated.
+  int illusoryDoubleCharges = 0;
+
+  /// The trigger id of a copied ability (Memory Theft). Null when no
+  /// copy is active. Cleared after one use or at end of turn.
+  String? copiedTriggerId;
+
+  /// The enemy character id this character is bound to via Vow of the
+  /// Duel. Null when not in a duel.
+  String? duelTargetId;
+
+  /// The enemy character id this character is linked to via Karmic Bind.
+  /// Null when no link is active.
+  String? karmicBindTargetId;
+
+  /// Enemy character ids whose loadout has been revealed by Mind's Eye.
+  final Set<String> revealedEnemyIds = {};
+
+  /// Trigger ids that have been permanently destroyed this battle
+  /// (Sunder Arms).
+  final Set<String> destroyedTriggerIds = {};
+
   CharacterBattleState(
     this.character, {
     List<PassiveEffect> equippedPassiveEffects = const [],
@@ -410,6 +439,27 @@ class CharacterBattleState {
   /// character doesn't have that counter equipped.
   PassiveCounterState? getPassiveCounter(PassiveCounterKind kind) =>
       passiveCounters[kind];
+
+  /// Whether this character is currently untargetable (Illusory Double).
+  bool isUntargetable([StatusEffectCatalog? catalog]) {
+    final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
+    return statusEffects.any((i) => cat[i.definitionId].preventsTargeting);
+  }
+
+  /// Whether this character is currently isolated (cannot interact with
+  /// allies).
+  bool isIsolated([StatusEffectCatalog? catalog]) {
+    final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
+    return statusEffects
+        .any((i) => cat[i.definitionId].preventsAllyInteraction);
+  }
+
+  /// Whether this character's next attack will automatically miss
+  /// (Echoing Doubt).
+  bool isNextAttackForced([StatusEffectCatalog? catalog]) {
+    final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
+    return statusEffects.any((i) => cat[i.definitionId].forcesNextAttackMiss);
+  }
 
   /// Whether this character is currently blocked from being healed by any
   /// active status effect (Cursed, Necrotic Wound).

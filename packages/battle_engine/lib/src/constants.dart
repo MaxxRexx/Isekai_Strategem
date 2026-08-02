@@ -221,6 +221,18 @@ class StatusEffectMagnitudes {
   final int interdictDurationTurns;
   final double interdictRepeatDamageMultiplier;
 
+  // --- C1 unique-subtype status effects ---
+  final int isolationDurationTurns;
+  final int untargetableDurationTurns;
+  final int echoingDoubtDurationTurns;
+  final int vowOfTheDuelDurationTurns;
+  final double vowOfTheDuelDamageMultiplier;
+  final int vowOfTheDuelStunDurationTurns;
+  final int forcedChoiceDurationTurns;
+  final int karmicBindDurationTurns;
+  final int calledShotDurationTurns;
+  final int mindsEyeDurationTurns;
+
   const StatusEffectMagnitudes({
     this.acidArmorReduction = 5,
     this.acidDurationTurns = 3,
@@ -313,6 +325,16 @@ class StatusEffectMagnitudes {
     this.misfireChance = 0.5,
     this.interdictDurationTurns = 2,
     this.interdictRepeatDamageMultiplier = 0.25,
+    this.isolationDurationTurns = 2,
+    this.untargetableDurationTurns = 1,
+    this.echoingDoubtDurationTurns = 1,
+    this.vowOfTheDuelDurationTurns = 3,
+    this.vowOfTheDuelDamageMultiplier = 2.0,
+    this.vowOfTheDuelStunDurationTurns = 2,
+    this.forcedChoiceDurationTurns = 1,
+    this.karmicBindDurationTurns = 3,
+    this.calledShotDurationTurns = 2,
+    this.mindsEyeDurationTurns = 3,
   });
 
   static const StatusEffectMagnitudes defaults = StatusEffectMagnitudes();
@@ -432,6 +454,47 @@ class PassiveCounterConfig {
   });
 
   static const PassiveCounterConfig defaults = PassiveCounterConfig();
+}
+
+/// Config for Phase C unique-subtype abilities. All tunable knobs for the
+/// 17 unique behaviors.
+class UniqueConfig {
+  // Shared Agony
+  final double sharedAgonyLinkedDamageMultiplier;
+
+  // Grave Bargain
+  final double graveBargainHpSpendFraction;
+
+  // Martyr's End
+  final double martyrsEndHpThreshold;
+  final int martyrsEndDamage;
+
+  // Vow of the Duel (durations in StatusEffectMagnitudes)
+
+  // Dread Resonance
+  final double dreadResonanceDamagePerCumulativeDamage;
+  final int dreadResonanceMinDamage;
+
+  // Illusory Double
+  final int illusoryDoubleStartingCharges;
+
+  // Karmic Bind
+  final double karmicBindLowTsFraction;
+  final double karmicBindHighTsFraction;
+
+  const UniqueConfig({
+    this.sharedAgonyLinkedDamageMultiplier = 1.2,
+    this.graveBargainHpSpendFraction = 0.25,
+    this.martyrsEndHpThreshold = 0.25,
+    this.martyrsEndDamage = 80,
+    this.dreadResonanceDamagePerCumulativeDamage = 0.15,
+    this.dreadResonanceMinDamage = 5,
+    this.illusoryDoubleStartingCharges = 1,
+    this.karmicBindLowTsFraction = 0.25,
+    this.karmicBindHighTsFraction = 0.60,
+  });
+
+  static const UniqueConfig defaults = UniqueConfig();
 }
 
 /// Config for the per-team turn timer: how long a team has to lock in
