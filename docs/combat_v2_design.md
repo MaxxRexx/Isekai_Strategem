@@ -389,7 +389,7 @@ branch for the next phase.
 | Phase | Status | Branch |
 |---|---|---|
 | Phase B: reactive/counter engine + 19 counters | done (merged to main) | `claude/phase-b-reactive-counters` (deleted) |
-| Phase C: Unique subtype + 17 unique abilities | C1 done (engine seam), C2/C3 next | `claude/tactical-combat-engine-5luk6z` |
+| Phase C: Unique subtype + 17 unique abilities | C1+C2 done (engine seam + 5 melee uniques), C3 next (2 ranged + 10 psychic) | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | not started | TBD |
 | Phase E: new-content wiring | not started | TBD |
 | Phase F: remaining UI | not started | TBD |
