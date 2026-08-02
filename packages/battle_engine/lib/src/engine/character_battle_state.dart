@@ -330,6 +330,11 @@ class CharacterBattleState {
         });
       }
       zeroed.addAll(def.zeroedStats);
+      // Data-driven zeroing: an effect can name a single stat to zero via
+      // its instance data rather than the definition's static zeroedStats
+      // (Called Shot, which zeroes a caller-declared stat for its duration).
+      final dataZeroed = instance.data['zeroedStat'];
+      if (dataZeroed is ModifiableStat) zeroed.add(dataZeroed);
     }
 
     for (final passive in equippedPassiveEffects) {

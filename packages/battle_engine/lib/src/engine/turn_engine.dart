@@ -756,6 +756,23 @@ class TurnEngine {
       filteredTargets = _applyMisfireRedirect(attacker, filteredTargets);
     }
 
+    // Unique subtype uses bespoke resolution and does NOT pass through the
+    // standard reactive-remap (each unique defines its own reactive
+    // handling - e.g. Curving Shot deliberately bends around the first
+    // ward instead of being reflected by it). Dispatch here, before the
+    // remap, on the canTarget/misfire-filtered targets.
+    if (trigger.attackSubtype == AttackSubtype.unique &&
+        trigger.uniqueBehavior != null) {
+      return _resolveUniqueBehavior(
+        attacker: attacker,
+        trigger: trigger,
+        targets: filteredTargets,
+        damageMultiplier: damageMultiplier,
+        healMultiplier: healMultiplier,
+        uniqueData: uniqueData,
+      );
+    }
+
     final clampedTargets = <CharacterBattleState>[];
     for (final t in filteredTargets) {
       final remapped = _applyReactiveTargetRemap(attacker, trigger, t);
@@ -1023,16 +1040,9 @@ class TurnEngine {
         if (clampedTargets.isNotEmpty) resolveHitAgainst(clampedTargets.first);
         break;
       case AttackSubtype.unique:
-        if (trigger.uniqueBehavior != null) {
-          return _resolveUniqueBehavior(
-            attacker: attacker,
-            trigger: trigger,
-            targets: clampedTargets,
-            damageMultiplier: damageMultiplier,
-            healMultiplier: healMultiplier,
-            uniqueData: uniqueData,
-          );
-        }
+        // A unique trigger with a behavior is dispatched earlier (before
+        // the reactive remap); only the no-behavior fallback reaches here,
+        // resolving like a plain single-target hit.
         if (clampedTargets.isNotEmpty) resolveHitAgainst(clampedTargets.first);
         break;
       case AttackSubtype.aoe:
@@ -1789,7 +1799,7 @@ class TurnEngine {
       case UniqueBehavior.curvingShot:
         return _resolveCurvingShot(attacker, trigger, targets);
       case UniqueBehavior.calledShot:
-        return _resolveCalledShot(attacker, trigger, targets);
+        return _resolveCalledShot(attacker, trigger, targets, uniqueData);
       case UniqueBehavior.mindsEye:
         return _resolveMindsEye(attacker, trigger, targets);
       case UniqueBehavior.forcedChoice:
@@ -2127,15 +2137,118 @@ class TurnEngine {
     ActiveTrigger trigger,
     List<CharacterBattleState> targets,
   ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+
+    // Ignore the first ward/dodge/counter the target has standing: consume
+    // it without letting it fire, so the shot bends around it.
+    if (target.reactiveEffects.isNotEmpty) {
+      target.reactiveEffects.removeAt(0);
+    }
+
+    // Always resolves: a guaranteed hit that skips the reactive-remap and
+    // the to-hit contest entirely (no dodge, no reflect, no negate).
+    var damageDealt = 0;
+    if (trigger.damageType != null) {
+      final stats = attacker.effectiveStats(fatConfig: fatConfig);
+      final bonuses = teamSpiritCurve.bonusesFor(stats.teamSpirit);
+      final roll = trigger.damage?.roll(combatEngine.diceRoller) ?? 0;
+      final preCritMultiplier = (1 + bonuses.singleTargetDamageBonus) *
+          attacker.outgoingDamageMultiplier();
+      final base = (roll * preCritMultiplier).round();
+      final healthBefore = target.currentHealth;
+      _applyDamage(
+        target: target,
+        baseDamage: base,
+        damageType: trigger.damageType!,
+        isCriticalHit: false,
+        damageSource: attacker,
+      );
+      damageDealt = healthBefore - target.currentHealth;
+      if (damageDealt > 0) {
+        attacker.cumulativeDamageDealt += damageDealt;
+        attacker.lastDamagedTargetId = target.character.id;
+      }
+    }
+
+    // Riders resolve unconditionally too, since the shot always lands.
+    final appliedIds = <String>[];
+    final stats = attacker.effectiveStats(fatConfig: fatConfig);
+    for (final application in trigger.inflictedStatusEffects) {
+      final inflictionOutcome = statusEffectEngine.resolveInfliction(
+        causerInfliction: stats.statusEffectInfliction,
+        targetResistance:
+            target.effectiveStats(fatConfig: fatConfig).statusEffectResistance,
+      );
+      if (inflictionOutcome.applies) {
+        final applied = statusEffectEngine.apply(
+          target,
+          application.statusEffectId,
+          sourceCharacterId: attacker.character.id,
+          durationOverride: application.durationTurnsOverride,
+        );
+        if (applied) appliedIds.add(application.statusEffectId);
+      }
+    }
+
+    return AbilityUseResult(
+      attackerCharacterId: attacker.character.id,
+      triggerId: trigger.id,
+      targetResults: [
+        TargetHitResult(
+          targetCharacterId: target.character.id,
+          attackRolls: const [],
+          damagePerHit: [damageDealt],
+          damageDetails: const [null],
+          totalDamageDealt: damageDealt,
+          statusEffectsApplied: appliedIds,
+        ),
+      ],
+    );
   }
 
   AbilityUseResult _resolveCalledShot(
     CharacterBattleState attacker,
     ActiveTrigger trigger,
-    List<CharacterBattleState> targets,
-  ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    List<CharacterBattleState> targets, [
+    Map<String, Object?>? uniqueData,
+  ]) {
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+
+    // The declared stat to zero (caller picks it); defaults to Attack when
+    // the caller doesn't declare one.
+    final declared = uniqueData?['calledShotStat'];
+    final zeroedStat =
+        declared is ModifiableStat ? declared : ModifiableStat.attack;
+
+    // No damage: zero the named stat for the effect's duration via
+    // data-driven zeroing (see CharacterBattleState.effectiveStats).
+    statusEffectEngine.apply(
+      target,
+      'called_shot_stat_zero',
+      sourceCharacterId: attacker.character.id,
+      instanceData: {'zeroedStat': zeroedStat},
+    );
+
+    return AbilityUseResult(
+      attackerCharacterId: attacker.character.id,
+      triggerId: trigger.id,
+      targetResults: [
+        TargetHitResult(
+          targetCharacterId: target.character.id,
+          attackRolls: const [],
+          damagePerHit: const [0],
+          damageDetails: const [null],
+          totalDamageDealt: 0,
+          statusEffectsApplied: const ['called_shot_stat_zero'],
+        ),
+      ],
+    );
   }
 
   AbilityUseResult _resolveMindsEye(
