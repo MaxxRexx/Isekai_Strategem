@@ -352,7 +352,9 @@ uniques.
 ## 12. Build phases
 
 Ship Phase A first, in stages, with a commit and review at the end of each
-stage. Nothing goes to main without explicit approval.
+stage. Nothing goes to main without explicit approval. When a phase is
+complete, merge its branch to main, delete the branch, and start a new
+branch for the next phase.
 
 - **Phase A: turn-queue resolution engine** (no new content; all existing
   abilities keep working). Staged:
@@ -384,14 +386,10 @@ stage. Nothing goes to main without explicit approval.
 
 ## 13. Progress
 
-| Sub-phase | Status | Branch |
+| Phase | Status | Branch |
 |---|---|---|
-| B1: reactive-stack seam + Mirror Ward | done | `claude/phase-b-reactive-counters` |
-| B2: declarative arming + first counter batch | done | `claude/phase-b-reactive-counters` |
-| B3: remaining 9 active counters | done | `claude/phase-b-reactive-counters` |
-| B4: 6 passive-trigger counters | done | `claude/phase-b-reactive-counters` |
-| B5: AI + UI for counters | not started | `claude/phase-b-reactive-counters` |
-| Phase C: Unique subtype + 17 unique abilities | not started | TBD |
+| Phase B: reactive/counter engine + 19 counters | done (merged to main) | `claude/phase-b-reactive-counters` (deleted) |
+| Phase C: Unique subtype + 17 unique abilities | not started | `claude/phase-c-unique-subtype` |
 | Phase D: trigger rebalance to 20/20/20 | not started | TBD |
 | Phase E: new-content wiring | not started | TBD |
 | Phase F: remaining UI | not started | TBD |
