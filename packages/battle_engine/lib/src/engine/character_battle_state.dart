@@ -179,12 +179,19 @@ class CharacterBattleState {
   /// (Sunder Arms).
   final Set<String> destroyedTriggerIds = {};
 
+  /// Ids of all active triggers this character has equipped for this
+  /// battle. Populated at battle start; Sunder Arms picks from this list
+  /// when destroying a random enemy trigger.
+  final List<String> equippedTriggerIds;
+
   CharacterBattleState(
     this.character, {
     List<PassiveEffect> equippedPassiveEffects = const [],
+    List<String> equippedTriggerIds = const [],
     WorldAbilityEffect? worldAbility,
   })  : currentHealth = character.baseStats.maxHealth,
         equippedPassiveEffects = equippedPassiveEffects,
+        equippedTriggerIds = equippedTriggerIds,
         remainingDamagePreventionInstances =
             worldAbility?.damagePreventionInstances,
         hasSurviveLethalDamageCharge =
