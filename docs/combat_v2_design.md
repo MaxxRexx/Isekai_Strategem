@@ -404,6 +404,15 @@ branch for the next phase.
 - **Phase F: remaining UI** (clickable portraits, Mind's Eye panel, and any
   UI not already delivered in Phase A).
 - **Phase G: AI tuning** for the new counters and uniques.
+- **Phase H: balancing pass** (after all content phases are done). A
+  dedicated tuning pass over the numbers that were set to first-pass,
+  convention-following values during implementation: dice/Trion/cooldown
+  for the 17 unique Triggers and the Phase D fillers, the Phase D
+  `equipCost` values (note the LoadoutBuilder depends on a cheap-active
+  tier existing - see the cheap-tier fix in Phase D), the UniqueConfig
+  magnitudes (Shared Agony/Grave Bargain/Martyr's End/Dread Resonance/
+  Karmic Bind/Echoing Doubt backlash), and status-effect durations. Play/
+  sim-test for outliers rather than balancing each in isolation.
 
 ## 13. Progress
 
@@ -411,10 +420,11 @@ branch for the next phase.
 |---|---|---|
 | Phase B: reactive/counter engine + 19 counters | done (merged to main) | `claude/phase-b-reactive-counters` (deleted) |
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
-| Phase D: trigger rebalance to 20/20/20 | not started | TBD |
-| Phase E: new-content wiring | not started | TBD |
+| Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
+| Phase E: new-content wiring | not started (includes the two deferred unique hooks - see 7.1) | TBD |
 | Phase F: remaining UI | not started | TBD |
 | Phase G: AI tuning | not started | TBD |
+| Phase H: balancing pass | not started (after all content phases) | TBD |
 
 ## 14. Open / tunable items
 

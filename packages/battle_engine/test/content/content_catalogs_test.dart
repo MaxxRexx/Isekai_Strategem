@@ -31,14 +31,14 @@ void main() {
         "character's own Character Type", () {
       final attackChar = roster['kaito_reyes']; // CharacterType.attack
       final supportTrigger =
-          TriggerCatalog.defaultCatalog['mending_light'] as ActiveTrigger;
+          TriggerCatalog.defaultCatalog['guardians_aegis'] as ActiveTrigger;
       final loadout = Loadout(
         characterId: attackChar.id,
         triggers: [
           supportTrigger,
-          TriggerCatalog.defaultCatalog['fortify'] as ActiveTrigger,
+          TriggerCatalog.defaultCatalog['cleansing_ward'] as ActiveTrigger,
           TriggerCatalog.defaultCatalog['war_chant'] as ActiveTrigger,
-          TriggerCatalog.defaultCatalog['adrenal_rush'] as ActiveTrigger,
+          TriggerCatalog.defaultCatalog['twin_fang_strike'] as ActiveTrigger,
         ],
       );
       final result = loadout.validateFor(attackChar);
@@ -49,13 +49,45 @@ void main() {
   group('TriggerCatalog.defaultCatalog', () {
     final catalog = TriggerCatalog.defaultCatalog;
 
-    test('has exactly 53 Triggers', () {
-      expect(catalog.all, hasLength(53));
+    test('has exactly 72 Triggers', () {
+      expect(catalog.all, hasLength(72));
     });
 
-    test('has 41 active and 12 passive Triggers', () {
-      expect(catalog.activeTriggers, hasLength(41));
+    test('has 60 active and 12 passive Triggers', () {
+      expect(catalog.activeTriggers, hasLength(60));
       expect(catalog.passiveTriggers, hasLength(12));
+    });
+
+    test('active Triggers are balanced to exactly 20 / 20 / 20 by attack type '
+        'with the target subtype distribution', () {
+      int count(AttackType type, AttackSubtype subtype) => catalog
+          .activeTriggers
+          .where((t) => t.attackType == type && t.attackSubtype == subtype)
+          .length;
+
+      // Melee: 10 single, 5 aoe, 0 burst, 5 unique.
+      expect(count(AttackType.melee, AttackSubtype.single), 10);
+      expect(count(AttackType.melee, AttackSubtype.aoe), 5);
+      expect(count(AttackType.melee, AttackSubtype.burst), 0);
+      expect(count(AttackType.melee, AttackSubtype.unique), 5);
+
+      // Ranged: 5 single, 5 aoe, 8 burst, 2 unique.
+      expect(count(AttackType.ranged, AttackSubtype.single), 5);
+      expect(count(AttackType.ranged, AttackSubtype.aoe), 5);
+      expect(count(AttackType.ranged, AttackSubtype.burst), 8);
+      expect(count(AttackType.ranged, AttackSubtype.unique), 2);
+
+      // Psychic: 5 single, 5 aoe, 0 burst, 10 unique.
+      expect(count(AttackType.psychic, AttackSubtype.single), 5);
+      expect(count(AttackType.psychic, AttackSubtype.aoe), 5);
+      expect(count(AttackType.psychic, AttackSubtype.burst), 0);
+      expect(count(AttackType.psychic, AttackSubtype.unique), 10);
+
+      for (final type in AttackType.values) {
+        expect(
+            catalog.activeTriggers.where((t) => t.attackType == type).length, 20,
+            reason: '$type should total 20');
+      }
     });
 
     test('every Trigger has a unique id', () {
@@ -68,6 +100,42 @@ void main() {
       for (final t in catalog.activeTriggers) {
         expect(t.attackType.validSubtypes.contains(t.attackSubtype), isTrue,
             reason: '${t.id}: ${t.attackType}/${t.attackSubtype}');
+      }
+    });
+
+    test('includes an equippable Trigger for all 17 unique behaviors', () {
+      final byBehavior = {
+        for (final t in catalog.activeTriggers)
+          if (t.uniqueBehavior != null) t.uniqueBehavior!: t,
+      };
+      // Every UniqueBehavior has exactly one wired Trigger.
+      expect(byBehavior.keys.toSet(), UniqueBehavior.values.toSet());
+      expect(byBehavior, hasLength(UniqueBehavior.values.length));
+    });
+
+    test('every unique-behavior Trigger uses the unique subtype and a valid '
+        'attack type', () {
+      const meleeBehaviors = {
+        UniqueBehavior.sharedAgony,
+        UniqueBehavior.graveBargain,
+        UniqueBehavior.martyrsEnd,
+        UniqueBehavior.vowOfTheDuel,
+        UniqueBehavior.sunderArms,
+      };
+      const rangedBehaviors = {
+        UniqueBehavior.curvingShot,
+        UniqueBehavior.calledShot,
+      };
+      for (final t in catalog.activeTriggers) {
+        final behavior = t.uniqueBehavior;
+        if (behavior == null) continue;
+        expect(t.attackSubtype, AttackSubtype.unique, reason: t.id);
+        final expectedType = meleeBehaviors.contains(behavior)
+            ? AttackType.melee
+            : rangedBehaviors.contains(behavior)
+                ? AttackType.ranged
+                : AttackType.psychic;
+        expect(t.attackType, expectedType, reason: t.id);
       }
     });
   });
