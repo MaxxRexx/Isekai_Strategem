@@ -419,8 +419,8 @@ void main() {
   });
 
   group('StatusEffectCatalog.defaultCatalog completeness', () {
-    test('has exactly 50 built-in effects', () {
-      expect(StatusEffectCatalog.defaultCatalog.all, hasLength(50));
+    test('has exactly 63 built-in effects', () {
+      expect(StatusEffectCatalog.defaultCatalog.all, hasLength(63));
     });
 
     test('every effect has a unique id', () {

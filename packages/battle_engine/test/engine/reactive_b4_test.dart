@@ -94,8 +94,8 @@ void main() {
       e.tickEndOfTurnPassiveCounters(
         activeTeamStates: [opponent],
         inactiveTeamStates: [holder, ally],
-        activeTeamPool: TrionPool(100),
-        inactiveTeamPool: TrionPool(100),
+        activeTeamPool: TrionPool(current: 100),
+        inactiveTeamPool: TrionPool(current: 100),
         activeTeamDealtDamage: true,
       );
 
@@ -142,8 +142,8 @@ void main() {
       e.tickEndOfTurnPassiveCounters(
         activeTeamStates: [enemy],
         inactiveTeamStates: [holder],
-        activeTeamPool: TrionPool(100),
-        inactiveTeamPool: TrionPool(100),
+        activeTeamPool: TrionPool(current: 100),
+        inactiveTeamPool: TrionPool(current: 100),
         activeTeamDealtDamage: true,
       );
 
@@ -197,8 +197,18 @@ void main() {
             targetCharacterId: holder.character.id,
             attackRolls: [
               AttackRollOutcome(
-                attackerRoll: 20,
-                defenderRoll: 5,
+                attackerRoll: D20RollResult(
+                  rawRolls: const [20],
+                  kept: 20,
+                  mode: RollMode.normal,
+                  modifier: 0,
+                ),
+                defenderRoll: D20RollResult(
+                  rawRolls: const [5],
+                  kept: 5,
+                  mode: RollMode.normal,
+                  modifier: 0,
+                ),
                 isHit: true,
                 isCriticalHit: true,
                 isCriticalMiss: false,
@@ -241,8 +251,8 @@ void main() {
       reckoning.counter = 6;
       reckoning.counterByEnemyId['enemy'] = 6;
 
-      final enemyPool = TrionPool(100)..gain(50);
-      final holderPool = TrionPool(100);
+      final enemyPool = TrionPool(current: 100)..gain(50);
+      final holderPool = TrionPool(current: 100);
       final e = engine();
 
       e.tickEndOfTurnPassiveCounters(
@@ -313,8 +323,8 @@ void main() {
       e.tickEndOfTurnPassiveCounters(
         activeTeamStates: [enemy1, enemy2],
         inactiveTeamStates: [holder],
-        activeTeamPool: TrionPool(100),
-        inactiveTeamPool: TrionPool(100),
+        activeTeamPool: TrionPool(current: 100),
+        inactiveTeamPool: TrionPool(current: 100),
         activeTeamDealtDamage: false,
       );
 
@@ -343,8 +353,8 @@ void main() {
       e.tickEndOfTurnPassiveCounters(
         activeTeamStates: [enemy],
         inactiveTeamStates: [holder],
-        activeTeamPool: TrionPool(100),
-        inactiveTeamPool: TrionPool(100),
+        activeTeamPool: TrionPool(current: 100),
+        inactiveTeamPool: TrionPool(current: 100),
         activeTeamDealtDamage: true,
       );
 
@@ -369,8 +379,8 @@ void main() {
       e.tickEndOfTurnPassiveCounters(
         activeTeamStates: [enemy],
         inactiveTeamStates: [holder],
-        activeTeamPool: TrionPool(100),
-        inactiveTeamPool: TrionPool(100),
+        activeTeamPool: TrionPool(current: 100),
+        inactiveTeamPool: TrionPool(current: 100),
         activeTeamDealtDamage: false,
       );
 
@@ -419,8 +429,8 @@ void main() {
       coldread.pendingResolution = true;
       coldread.markedEnemyActedDamaging = true;
 
-      final enemyPool = TrionPool(100)..gain(60);
-      final holderPool = TrionPool(100);
+      final enemyPool = TrionPool(current: 100)..gain(60);
+      final holderPool = TrionPool(current: 100);
 
       final e = engine();
       e.tickEndOfTurnPassiveCounters(
@@ -455,8 +465,8 @@ void main() {
       e.tickEndOfTurnPassiveCounters(
         activeTeamStates: [enemy],
         inactiveTeamStates: [holder],
-        activeTeamPool: TrionPool(100),
-        inactiveTeamPool: TrionPool(100),
+        activeTeamPool: TrionPool(current: 100),
+        inactiveTeamPool: TrionPool(current: 100),
         activeTeamDealtDamage: false,
       );
 
@@ -605,12 +615,20 @@ void main() {
   group('Battle passive counter integration', () {
     test('initializePassiveCounters sets up counter state from triggers', () {
       final teamA = Team(
-        name: 'A',
-        characters: [testCharacter(id: 'a1'), testCharacter(id: 'a2')],
+        id: 'A',
+        characters: [
+          testCharacter(id: 'a1'),
+          testCharacter(id: 'a2'),
+          testCharacter(id: 'a3'),
+        ],
       );
       final teamB = Team(
-        name: 'B',
-        characters: [testCharacter(id: 'b1')],
+        id: 'B',
+        characters: [
+          testCharacter(id: 'b1'),
+          testCharacter(id: 'b2'),
+          testCharacter(id: 'b3'),
+        ],
       );
       final battle = Battle(teamA: teamA, teamB: teamB);
 
@@ -644,12 +662,20 @@ void main() {
 
     test('recordDamageDealt tracks active team damage for Gravehour', () {
       final teamA = Team(
-        name: 'A',
-        characters: [testCharacter(id: 'a1')],
+        id: 'A',
+        characters: [
+          testCharacter(id: 'a1'),
+          testCharacter(id: 'a2'),
+          testCharacter(id: 'a3'),
+        ],
       );
       final teamB = Team(
-        name: 'B',
-        characters: [testCharacter(id: 'b1')],
+        id: 'B',
+        characters: [
+          testCharacter(id: 'b1'),
+          testCharacter(id: 'b2'),
+          testCharacter(id: 'b3'),
+        ],
       );
       final battle = Battle(teamA: teamA, teamB: teamB);
       battle.startTurn();
