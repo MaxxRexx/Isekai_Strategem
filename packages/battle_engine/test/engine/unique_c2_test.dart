@@ -19,8 +19,8 @@ void main() {
   // -----------------------------------------------------------------------
   group('C2: Shared Agony', () {
     test('auto-targets a melee-hit enemy and deals self + boosted damage', () {
-      // FixedRandom(5) makes all d20 rolls land as 5 (mod 20), all d6
-      // rolls land as 5 (mod 6). Damage dice 2d6 with fixed 5 = 5+5 = 10.
+      // FixedRandom(5): each die is nextInt(sides) + 1, so a d6 rolls
+      // 5 + 1 = 6. Damage dice 2d6 = 6 + 6 = 12.
       final engine = _engine(
         diceRoller: DiceRoller(const FixedRandom(5)),
       );
@@ -53,13 +53,13 @@ void main() {
         targets: [enemy],
       );
 
-      // Self-damage: full rolled amount (10), no mitigation.
-      // 80 - 10 = 70
-      expect(attacker.currentHealth, 70);
+      // Self-damage: full rolled amount (12), no mitigation.
+      // 80 - 12 = 68
+      expect(attacker.currentHealth, 68);
 
-      // Enemy damage: 10 * 1.2 = 12, through damage pipeline (armor 0).
-      // 100 - 12 = 88
-      expect(enemy.currentHealth, 88);
+      // Enemy damage: round(12 * 1.2) = 14, through damage pipeline (armor 0).
+      // 100 - 14 = 86
+      expect(enemy.currentHealth, 86);
 
       expect(result.targetResults, hasLength(1));
       expect(result.targetResults.first.targetCharacterId, 'enemy-1');
@@ -115,7 +115,7 @@ void main() {
         targets: [enemy],
       );
 
-      // 2d6 with FixedRandom(5) = 10. 5 - 10 = -5, clamped to 0.
+      // 2d6 with FixedRandom(5) = 12. 5 - 12 = -7, clamped to 0.
       expect(attacker.currentHealth, 0);
       expect(attacker.isAlive, isFalse);
     });
