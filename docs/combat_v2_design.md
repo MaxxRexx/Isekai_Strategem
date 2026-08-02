@@ -293,6 +293,27 @@ not open scripting.
   equivalents for the remaining duration (Empowered to Weakened, Guarded to
   Exposed, etc.).
 
+### 7.1 Deferred to the Battle-integration phase (Phase E)
+
+Two unique behaviors are implemented at the engine-state level in Phase C
+but need cross-team wiring that lives in the Battle layer, not `TurnEngine`
+(which has no battle-wide character registry). Do NOT forget to wire these
+when Phase E lands:
+
+- **Karmic Bind live propagation.** The cast records the link
+  (`karmicBindTargetId` on the caster) and stores the Team-Spirit-scaled
+  fraction on both partners' `karmic_bind` status instances
+  (`data['karmicBindFraction']`, `data['partnerId']`). The actual 3-turn
+  damage/heal sharing across the two partners still needs a Battle-layer
+  hook that can look up the partner's `CharacterBattleState` by id and
+  propagate a fraction of each damage/heal event (guarded against
+  recursion).
+- **Illusory Double charge-on-ally-death.** Charges start at
+  `UniqueConfig.illusoryDoubleStartingCharges` (1) and the resolver
+  consumes one per use, but the "+1 charge each time an ally is defeated"
+  rule needs a battle-death hook to increment `illusoryDoubleCharges` on
+  surviving allies.
+
 ## 8. Trigger catalog rebalance to 20 / 20 / 20
 
 Base Trigger catalog only (Black Triggers stay a bespoke 10-entry set).
@@ -389,7 +410,7 @@ branch for the next phase.
 | Phase | Status | Branch |
 |---|---|---|
 | Phase B: reactive/counter engine + 19 counters | done (merged to main) | `claude/phase-b-reactive-counters` (deleted) |
-| Phase C: Unique subtype + 17 unique abilities | C1 done (engine seam), C2/C3 next | `claude/tactical-combat-engine-5luk6z` |
+| Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | not started | TBD |
 | Phase E: new-content wiring | not started | TBD |
 | Phase F: remaining UI | not started | TBD |

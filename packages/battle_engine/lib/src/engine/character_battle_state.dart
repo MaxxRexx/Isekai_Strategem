@@ -179,12 +179,19 @@ class CharacterBattleState {
   /// (Sunder Arms).
   final Set<String> destroyedTriggerIds = {};
 
+  /// Ids of all active triggers this character has equipped for this
+  /// battle. Populated at battle start; Sunder Arms picks from this list
+  /// when destroying a random enemy trigger.
+  final List<String> equippedTriggerIds;
+
   CharacterBattleState(
     this.character, {
     List<PassiveEffect> equippedPassiveEffects = const [],
+    List<String> equippedTriggerIds = const [],
     WorldAbilityEffect? worldAbility,
   })  : currentHealth = character.baseStats.maxHealth,
         equippedPassiveEffects = equippedPassiveEffects,
+        equippedTriggerIds = equippedTriggerIds,
         remainingDamagePreventionInstances =
             worldAbility?.damagePreventionInstances,
         hasSurviveLethalDamageCharge =
@@ -323,6 +330,11 @@ class CharacterBattleState {
         });
       }
       zeroed.addAll(def.zeroedStats);
+      // Data-driven zeroing: an effect can name a single stat to zero via
+      // its instance data rather than the definition's static zeroedStats
+      // (Called Shot, which zeroes a caller-declared stat for its duration).
+      final dataZeroed = instance.data['zeroedStat'];
+      if (dataZeroed is ModifiableStat) zeroed.add(dataZeroed);
     }
 
     for (final passive in equippedPassiveEffects) {
