@@ -382,7 +382,22 @@ stage. Nothing goes to main without explicit approval.
   UI not already delivered in Phase A).
 - **Phase G: AI tuning** for the new counters and uniques.
 
-## 13. Open / tunable items
+## 13. Progress
+
+| Sub-phase | Status | Branch |
+|---|---|---|
+| B1: reactive-stack seam + Mirror Ward | done | `claude/phase-b-reactive-counters` |
+| B2: declarative arming + first counter batch | done | `claude/phase-b-reactive-counters` |
+| B3: remaining 9 active counters | done | `claude/phase-b-reactive-counters` |
+| B4: 6 passive-trigger counters | done | `claude/phase-b-reactive-counters` |
+| B5: AI + UI for counters | not started | `claude/phase-b-reactive-counters` |
+| Phase C: Unique subtype + 17 unique abilities | not started | TBD |
+| Phase D: trigger rebalance to 20/20/20 | not started | TBD |
+| Phase E: new-content wiring | not started | TBD |
+| Phase F: remaining UI | not started | TBD |
+| Phase G: AI tuning | not started | TBD |
+
+## 14. Open / tunable items
 
 - TEG weights and tier thresholds.
 - Exact dice/Trion/cooldown numbers for the 26 new triggers and all new
@@ -390,7 +405,7 @@ stage. Nothing goes to main without explicit approval.
 - TEG name (currently "Team Efficiency Grade").
 - Whether A5 (TEG) ships inside Phase A or as its own slice.
 
-## 14. Post-combat-v2 product roadmap (after Phases A-G)
+## 15. Post-combat-v2 product roadmap (after Phases A-G)
 
 These are app/product tasks, not combat-engine phases. They are scheduled
 after the combat rework (Phases A-G) is complete. PvP is AI-backed for now;
