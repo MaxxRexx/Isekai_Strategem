@@ -525,7 +525,12 @@ void main() {
       final target = makeChar(id: 'target');
 
       final firstAbility = testTrigger(id: 'ability-a');
-      target.recordAbilityUse(firstAbility);
+      // Set the last-used ability directly rather than via recordAbilityUse:
+      // recordAbilityUse also consumes the turn's single ability slot, which
+      // would make canUseAbility return false on the per-turn limit before
+      // forced_repetition is ever evaluated. In real play the lockout is read
+      // on a later turn, after the ability count has reset.
+      target.lastUsedTriggerId = firstAbility.id;
 
       final statusEngine =
           StatusEffectEngine(diceRoller: DiceRoller(const FixedRandom(19)));
