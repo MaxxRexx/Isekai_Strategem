@@ -482,6 +482,9 @@ class UniqueConfig {
   final double karmicBindLowTsFraction;
   final double karmicBindHighTsFraction;
 
+  // Echoing Doubt
+  final int echoingDoubtBacklashDamage;
+
   const UniqueConfig({
     this.sharedAgonyLinkedDamageMultiplier = 1.2,
     this.graveBargainHpSpendFraction = 0.25,
@@ -492,6 +495,7 @@ class UniqueConfig {
     this.illusoryDoubleStartingCharges = 1,
     this.karmicBindLowTsFraction = 0.25,
     this.karmicBindHighTsFraction = 0.60,
+    this.echoingDoubtBacklashDamage = 20,
   });
 
   static const UniqueConfig defaults = UniqueConfig();

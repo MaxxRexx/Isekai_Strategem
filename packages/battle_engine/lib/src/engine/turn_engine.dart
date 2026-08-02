@@ -326,6 +326,10 @@ class TurnEngine {
     final cat = StatusEffectCatalog.defaultCatalog;
     for (final instance in state.statusEffects) {
       if (instance.data['lockedAbilityId'] == trigger.id) return false;
+      // Forced Choice: a status may whitelist exactly one usable ability
+      // (the caller-declared cheapest/priciest); everything else is locked.
+      final onlyAllowed = instance.data['onlyAllowedTriggerId'];
+      if (onlyAllowed is String && trigger.id != onlyAllowed) return false;
       final def = cat[instance.definitionId];
       if (def.locksOriginFromData &&
           instance.data['lockedOrigin'] == trigger.originTag.name) {
@@ -742,6 +746,15 @@ class TurnEngine {
         triggerId: trigger.id,
         targetResults: const [],
       );
+    }
+
+    // Echoing Doubt: the afflicted character's next offensive ability is
+    // forced to whiff. They already paid Trion/cooldown (via useAbility);
+    // the whiff then backlashes and Silences them. Deterministic, not RNG.
+    if (trigger.targetAffiliation == TargetAffiliation.opponent &&
+        attacker.isNextAttackForced()) {
+      _consumeEchoingDoubt(attacker);
+      return _emptyResult(attacker.character.id, trigger.id);
     }
 
     final maxTargets = maxRangedTargets(attacker, trigger);
@@ -1803,11 +1816,11 @@ class TurnEngine {
       case UniqueBehavior.mindsEye:
         return _resolveMindsEye(attacker, trigger, targets);
       case UniqueBehavior.forcedChoice:
-        return _resolveForcedChoice(attacker, trigger, targets);
+        return _resolveForcedChoice(attacker, trigger, targets, uniqueData);
       case UniqueBehavior.memoryTheft:
         return _resolveMemoryTheft(attacker, trigger, targets);
       case UniqueBehavior.sensorySwap:
-        return _resolveSensorySwap(attacker, trigger, targets);
+        return _resolveSensorySwap(attacker, trigger, targets, uniqueData);
       case UniqueBehavior.dreadResonance:
         return _resolveDreadResonance(attacker, trigger, targets);
       case UniqueBehavior.isolation:
@@ -2251,20 +2264,85 @@ class TurnEngine {
     );
   }
 
+  /// A no-damage, single-target unique result carrying the status ids that
+  /// were applied to [target].
+  AbilityUseResult _singleStatusResult(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    CharacterBattleState target,
+    List<String> appliedStatusIds,
+  ) {
+    return AbilityUseResult(
+      attackerCharacterId: attacker.character.id,
+      triggerId: trigger.id,
+      targetResults: [
+        TargetHitResult(
+          targetCharacterId: target.character.id,
+          attackRolls: const [],
+          damagePerHit: const [0],
+          damageDetails: const [null],
+          totalDamageDealt: 0,
+          statusEffectsApplied: appliedStatusIds,
+        ),
+      ],
+    );
+  }
+
   AbilityUseResult _resolveMindsEye(
     CharacterBattleState attacker,
     ActiveTrigger trigger,
     List<CharacterBattleState> targets,
   ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+    // Cannot be used on the caster.
+    if (target.character.id == attacker.character.id) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    attacker.revealedEnemyIds.add(target.character.id);
+    statusEffectEngine.apply(
+      target,
+      'minds_eye_reveal',
+      sourceCharacterId: attacker.character.id,
+    );
+    return _singleStatusResult(
+        attacker, trigger, target, const ['minds_eye_reveal']);
   }
 
   AbilityUseResult _resolveForcedChoice(
     CharacterBattleState attacker,
     ActiveTrigger trigger,
-    List<CharacterBattleState> targets,
-  ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    List<CharacterBattleState> targets, [
+    Map<String, Object?>? uniqueData,
+  ]) {
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+    final mode = uniqueData?['forcedChoiceMode'] as String? ?? 'cheapest';
+    final data = <String, Object?>{'forcedChoiceMode': mode};
+
+    // If the caller supplies the target's equipped active Triggers, resolve
+    // the one allowed ability now (cheapest or priciest by Trion cost) and
+    // whitelist it so canUseAbility enforces the restriction next turn.
+    final equipped = uniqueData?['targetEquippedTriggers'];
+    if (equipped is List<ActiveTrigger> && equipped.isNotEmpty) {
+      final sorted = [...equipped]
+        ..sort((a, b) => a.trionCost.compareTo(b.trionCost));
+      final allowed = mode == 'priciest' ? sorted.last : sorted.first;
+      data['onlyAllowedTriggerId'] = allowed.id;
+    }
+
+    statusEffectEngine.apply(
+      target,
+      'forced_choice',
+      sourceCharacterId: attacker.character.id,
+      instanceData: data,
+    );
+    return _singleStatusResult(
+        attacker, trigger, target, const ['forced_choice']);
   }
 
   AbilityUseResult _resolveMemoryTheft(
@@ -2272,15 +2350,42 @@ class TurnEngine {
     ActiveTrigger trigger,
     List<CharacterBattleState> targets,
   ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+    // Copy the target's last-used ability; the caller offers it to the
+    // caster for one cast next turn (occupying Memory Theft's own slot).
+    attacker.copiedTriggerId = target.lastUsedTriggerId;
+    return _singleStatusResult(attacker, trigger, target, const []);
   }
 
   AbilityUseResult _resolveSensorySwap(
     CharacterBattleState attacker,
     ActiveTrigger trigger,
-    List<CharacterBattleState> targets,
-  ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    List<CharacterBattleState> targets, [
+    Map<String, Object?>? uniqueData,
+  ]) {
+    // Needs two characters: move one active status from the first to the
+    // second (enemy to enemy, or self to enemy).
+    if (targets.length < 2) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final source = targets[0];
+    final dest = targets[1];
+    final statusId = uniqueData?['sensorySwapStatusId'] as String?;
+    final idx = statusId != null
+        ? source.statusEffects
+            .indexWhere((i) => i.definitionId == statusId)
+        : (source.statusEffects.isNotEmpty ? 0 : -1);
+    if (idx < 0) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    // Move the live instance so remaining turns / source are preserved.
+    final moved = source.statusEffects.removeAt(idx);
+    dest.statusEffects.add(moved);
+    return _singleStatusResult(
+        attacker, trigger, dest, [moved.definitionId]);
   }
 
   AbilityUseResult _resolveDreadResonance(
@@ -2288,7 +2393,44 @@ class TurnEngine {
     ActiveTrigger trigger,
     List<CharacterBattleState> targets,
   ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+    // Damage scales with the total damage the target has dealt this battle.
+    final scaled = (target.cumulativeDamageDealt *
+            uniqueConfig.dreadResonanceDamagePerCumulativeDamage)
+        .round();
+    final base = scaled < uniqueConfig.dreadResonanceMinDamage
+        ? uniqueConfig.dreadResonanceMinDamage
+        : scaled;
+    final healthBefore = target.currentHealth;
+    _applyDamage(
+      target: target,
+      baseDamage: base,
+      damageType: trigger.damageType ?? DamageType.force,
+      isCriticalHit: false,
+      damageSource: attacker,
+    );
+    final dealt = healthBefore - target.currentHealth;
+    if (dealt > 0) {
+      attacker.cumulativeDamageDealt += dealt;
+      attacker.lastDamagedTargetId = target.character.id;
+    }
+    return AbilityUseResult(
+      attackerCharacterId: attacker.character.id,
+      triggerId: trigger.id,
+      targetResults: [
+        TargetHitResult(
+          targetCharacterId: target.character.id,
+          attackRolls: const [],
+          damagePerHit: [dealt],
+          damageDetails: const [null],
+          totalDamageDealt: dealt,
+          statusEffectsApplied: const [],
+        ),
+      ],
+    );
   }
 
   AbilityUseResult _resolveIsolation(
@@ -2296,7 +2438,16 @@ class TurnEngine {
     ActiveTrigger trigger,
     List<CharacterBattleState> targets,
   ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+    statusEffectEngine.apply(
+      target,
+      'isolation',
+      sourceCharacterId: attacker.character.id,
+    );
+    return _singleStatusResult(attacker, trigger, target, const ['isolation']);
   }
 
   AbilityUseResult _resolveIllusoryDouble(
@@ -2304,7 +2455,24 @@ class TurnEngine {
     ActiveTrigger trigger,
     List<CharacterBattleState> targets,
   ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    // Needs an available charge (starts at 1, +1 per ally defeated).
+    if (attacker.illusoryDoubleCharges <= 0) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    attacker.illusoryDoubleCharges -= 1;
+    // Target self or an ally: make them untargetable for the opponent's
+    // next turn.
+    final target = targets.first;
+    statusEffectEngine.apply(
+      target,
+      'untargetable',
+      sourceCharacterId: attacker.character.id,
+    );
+    return _singleStatusResult(
+        attacker, trigger, target, const ['untargetable']);
   }
 
   AbilityUseResult _resolveEchoingDoubt(
@@ -2312,7 +2480,37 @@ class TurnEngine {
     ActiveTrigger trigger,
     List<CharacterBattleState> targets,
   ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+    // Force the target's next attack to whiff; the backlash + Silence fire
+    // when that whiff is consumed (see _consumeEchoingDoubt).
+    statusEffectEngine.apply(
+      target,
+      'echoing_doubt',
+      sourceCharacterId: attacker.character.id,
+    );
+    return _singleStatusResult(
+        attacker, trigger, target, const ['echoing_doubt']);
+  }
+
+  /// Consumes an active Echoing Doubt on [attacker] when they use an
+  /// offensive ability: removes the forced-miss status, deals flat backlash
+  /// damage, and Silences them.
+  void _consumeEchoingDoubt(CharacterBattleState attacker) {
+    attacker.statusEffects.removeWhere((i) => i.definitionId == 'echoing_doubt');
+    _applyDamage(
+      target: attacker,
+      baseDamage: uniqueConfig.echoingDoubtBacklashDamage,
+      damageType: DamageType.force,
+      isCriticalHit: false,
+    );
+    statusEffectEngine.apply(
+      attacker,
+      'silenced',
+      sourceCharacterId: attacker.character.id,
+    );
   }
 
   AbilityUseResult _resolveKarmicBind(
@@ -2320,15 +2518,94 @@ class TurnEngine {
     ActiveTrigger trigger,
     List<CharacterBattleState> targets,
   ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+    // Both link fractions scale with the caster's Team Spirit: about 25% at
+    // TS 0 up to about 60% at TS 100.
+    final ts = attacker.effectiveStats(fatConfig: fatConfig).teamSpirit;
+    final t = (ts / 100).clamp(0.0, 1.0);
+    final fraction = uniqueConfig.karmicBindLowTsFraction +
+        t *
+            (uniqueConfig.karmicBindHighTsFraction -
+                uniqueConfig.karmicBindLowTsFraction);
+
+    attacker.karmicBindTargetId = target.character.id;
+    // The live damage/heal propagation across the 3-turn link needs a
+    // battle-wide character registry (TurnEngine has no cross-team lookup);
+    // it is a Battle-layer hook, so here we record the link and fraction on
+    // both partners for that layer to read (consistent with the passive
+    // counters' deferred cross-team effects).
+    statusEffectEngine.apply(
+      target,
+      'karmic_bind',
+      sourceCharacterId: attacker.character.id,
+      instanceData: {
+        'karmicBindFraction': fraction,
+        'partnerId': attacker.character.id,
+      },
+    );
+    statusEffectEngine.apply(
+      attacker,
+      'karmic_bind',
+      sourceCharacterId: attacker.character.id,
+      instanceData: {
+        'karmicBindFraction': fraction,
+        'partnerId': target.character.id,
+      },
+    );
+    return _singleStatusResult(
+        attacker, trigger, target, const ['karmic_bind']);
   }
+
+  /// Buff status id -> its debuff equivalent, for Unmaking's inversion.
+  static const Map<String, String> _buffToDebuffInversion = {
+    'empowered': 'weakened',
+    'guarded': 'exposed',
+    'inspired': 'fatigued',
+    'hastened': 'chilled',
+    'prepared': 'reeling',
+    'braced': 'slowed',
+    'overcharged': 'choked',
+    'warded': 'hexed',
+    'focused': 'poisoned',
+    'regenerating': 'bleeding',
+  };
 
   AbilityUseResult _resolveUnmaking(
     CharacterBattleState attacker,
     ActiveTrigger trigger,
     List<CharacterBattleState> targets,
   ) {
-    return _emptyResult(attacker.character.id, trigger.id);
+    if (targets.isEmpty) {
+      return _emptyResult(attacker.character.id, trigger.id);
+    }
+    final target = targets.first;
+
+    // Collect the invertible buffs first (avoid mutating while iterating).
+    final toInvert = <StatusEffectInstance>[];
+    for (final inst in target.statusEffects) {
+      if (_buffToDebuffInversion.containsKey(inst.definitionId)) {
+        toInvert.add(inst);
+      }
+    }
+
+    final inverted = <String>[];
+    for (final inst in toInvert) {
+      final debuffId = _buffToDebuffInversion[inst.definitionId]!;
+      final turns = inst.remainingTurns;
+      target.statusEffects.remove(inst);
+      final applied = statusEffectEngine.apply(
+        target,
+        debuffId,
+        sourceCharacterId: attacker.character.id,
+        durationOverride: turns,
+      );
+      if (applied) inverted.add(debuffId);
+    }
+
+    return _singleStatusResult(attacker, trigger, target, inverted);
   }
 
   void _stripOneBuff(CharacterBattleState target) {
