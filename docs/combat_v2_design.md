@@ -70,9 +70,12 @@ Phases:
 
 **Initiative:**
 
-- **Cross-team** (both teams' effects would resolve at the same instant: the
-  opening turn, or a reactive trigger from each side clashing): the higher
-  **Team Efficiency Grade** team goes first.
+- **Cross-team** (both teams' effects would resolve at the same instant -
+  for example a reactive trigger from each side clashing): the higher
+  **Team Efficiency Grade** team's effects resolve first. This is a
+  resolution-order tiebreak only. It does NOT decide which team takes the
+  first turn of the battle - that is a separate, even 50-50 coin flip, not
+  tied to TEG or any stat.
 - **Within a single team's own queue**, phase order governs; ties within a
   phase break by the acting character's **Team Spirit deviation from
   midpoint** (bigger commitment = higher initiative), then queue order. TEG
@@ -100,7 +103,11 @@ dual-direction stat is legible.
 ## 5. Team Efficiency Grade (TEG)
 
 A squad-level grade, D to SSS, shown under Player Info, measuring how well
-tuned a squad is (not how powerful). It is the cross-team Initiative source.
+tuned a squad is (not how powerful). Its one mechanical job is the
+cross-team resolution-order tiebreak (see section 3): when both teams'
+effects would land at the same instant, the higher-grade team's resolve
+first. It does NOT decide which team takes the first turn (that is an even
+coin flip). Draegor's counter also reads the grade as a threshold.
 
 Six sub-scores (each 0 to 100), weighted into a 0 to 100 composite (weights
 tunable):
@@ -120,13 +127,15 @@ A 68-78, S 79-88, SS 89-95, SSS 96-100. SSS is deliberately hard.
 Consequences:
 
 - A **low-Team-Spirit but well-built** squad earns a high grade and wins
-  initiative races, because TEG scores alignment, not raw TS. This is what
-  makes low-TS strategies viable (the Draegor promise).
+  the cross-team resolution-order tiebreak when effects clash, because TEG
+  scores alignment, not raw TS. This is what makes low-TS strategies viable
+  (the Draegor promise).
 - Display: letter grade prominent under Player Info; tap to expand the six
   sub-scores so players can optimize toward it.
-- Honest caveat: in Phase A, TEG's only live use is the opening-turn race,
-  since there are no counters yet to create cross-team clashes. It gains
-  teeth in Phase B.
+- Honest caveat: TEG's only mechanical use is the cross-team
+  resolution-order tiebreak, which only bites once counters create
+  simultaneous cross-team clashes (Phase B onward). Before that it is
+  display-only. It never decides the opening turn (a coin flip).
 
 ## 6. Counters
 
@@ -293,26 +302,24 @@ not open scripting.
   equivalents for the remaining duration (Empowered to Weakened, Guarded to
   Exposed, etc.).
 
-### 7.1 Deferred to the Battle-integration phase (Phase E)
+### 7.1 Cross-team unique wiring (done in Phase E)
 
-Two unique behaviors are implemented at the engine-state level in Phase C
-but need cross-team wiring that lives in the Battle layer, not `TurnEngine`
-(which has no battle-wide character registry). Do NOT forget to wire these
-when Phase E lands:
+Two unique behaviors were implemented at the engine-state level in Phase C
+but needed cross-team wiring that lives in the Battle layer, not
+`TurnEngine`. Both are now wired (Phase E):
 
-- **Karmic Bind live propagation.** The cast records the link
-  (`karmicBindTargetId` on the caster) and stores the Team-Spirit-scaled
-  fraction on both partners' `karmic_bind` status instances
-  (`data['karmicBindFraction']`, `data['partnerId']`). The actual 3-turn
-  damage/heal sharing across the two partners still needs a Battle-layer
-  hook that can look up the partner's `CharacterBattleState` by id and
-  propagate a fraction of each damage/heal event (guarded against
-  recursion).
-- **Illusory Double charge-on-ally-death.** Charges start at
-  `UniqueConfig.illusoryDoubleStartingCharges` (1) and the resolver
-  consumes one per use, but the "+1 charge each time an ally is defeated"
-  rule needs a battle-death hook to increment `illusoryDoubleCharges` on
-  surviving allies.
+- **Karmic Bind live propagation** - done, "Punish" (one-way) semantics.
+  `TurnEngine` gained an optional `characterRegistry` (set by the Battle
+  constructor); `_propagateKarmicBind` fires from `_applyDamage` and both
+  heal sites, dealing a Team-Spirit-scaled fraction of any damage the
+  caster takes or healing it receives to the bound enemy as unavoidable
+  true damage. Reads the fraction from the caster's `karmic_bind` status,
+  so it stops when that 3-turn status expires; guarded against recursion.
+- **Illusory Double charge-on-ally-death** - done.
+  `Battle.initializeIllusoryDoubleCharges` grants holders their starting
+  charge; `Battle.checkForDefeats()` grants a holder +1 charge per ally
+  defeat (idempotent), called at start/end of turn and exposed for a host
+  to call after mid-turn resolutions.
 
 ## 8. Trigger catalog rebalance to 20 / 20 / 20
 
@@ -416,15 +423,68 @@ branch for the next phase.
 
 ## 13. Progress
 
+**Immediate next priority: wire the cross-team TEG resolution-order
+tiebreak.** Today the resolver (`app/lib/src/game/play_session.dart`,
+`_resolvePlan`) only orders WITHIN a team (phase, then Team Spirit
+deviation, then queue order). The cross-team tiebreak - when both teams'
+effects land at the same instant, the higher-TEG team's resolve first - is
+NOT wired: TEG is computed and stored but never read by the resolver (the
+code marks it "arrives in A5"). This also unblocks Coldread's "seize
+initiative" (win the cross-team tiebreak for a turn). Note: turn order
+stays a 50-50 coin flip; this is purely resolution order.
+
 | Phase | Status | Branch |
 |---|---|---|
 | Phase B: reactive/counter engine + 19 counters | done (merged to main) | `claude/phase-b-reactive-counters` (deleted) |
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
-| Phase E: new-content wiring | not started (includes the two deferred unique hooks - see 7.1) | TBD |
+| Phase E: new-content wiring | in progress: the two deferred unique hooks (7.1) done + green on branch; TEG tiebreak + Coldread + Nullhymn resonance still open | `claude/tactical-combat-engine-5luk6z` |
 | Phase F: remaining UI | not started | TBD |
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
+
+### 13.1 Build status (verified against code)
+
+Read this before starting engine/game work; it is the accurate map of
+what exists vs. what is only specced. Two layers, dependency app -> engine
+(the engine is pure Dart and cannot import app code):
+
+- `packages/battle_engine/` - engine: combat resolution, counters, uniques,
+  status effects, catalogs (triggers/black triggers/roster), AI, story
+  engine. 28 test files.
+- `app/` - Flutter app: the queue/resolution orchestration
+  (`lib/src/game/play_session.dart`), TEG (`lib/src/game/team_efficiency.dart`),
+  draft/loadout/target selection, screens and widgets. 6 test files.
+
+**Built and working:**
+- Turn + queue model with 6-phase within-team resolution ordering
+  (`play_session.dart` `_resolvePlan`: phase, then Team Spirit deviation,
+  then queue order). Trion spent at queue, refunded on unqueue.
+- Turn order (who acts first) = even 50-50 coin flip, not stat-tied.
+- TEG computed and displayed (six sub-scores, D-SSS). App layer only.
+- Phase B counters: 13 active/Black-Trigger counters + 6 passive counters
+  (Draegor, Nullhymn, Reckoning, Gravehour, Coldread, Ironvow). Tested.
+- Phase C: all 17 unique behaviors, wired to equippable Triggers.
+- Phase D: active catalog balanced to exactly 20/20/20 (60 active).
+- Phase E so far (on branch, green): Illusory Double charge-on-ally-death
+  and Karmic Bind live link (Punish, one-way).
+- One More Breath (survive-lethal enrich) is implemented in the engine.
+
+**Specced but NOT built (the real gaps):**
+1. **Cross-team TEG resolution-order tiebreak** - not wired. `_resolvePlan`
+   orders within a team only; TEG is stored but never read there (code says
+   "arrives in A5"). This is the immediate next priority.
+2. **Draegor's real TEG boost** - fallback only. The engine can't reach the
+   app-layer TEG, so `turn_engine.dart` doubles the highest-TA ally instead
+   of raising TEG tiers. Fix: plumb the computed TEG grade into the engine.
+3. **Coldread's "seize initiative"** - the Levy works; the initiative seize
+   does not (needs the cross-team tiebreak from gap 1, then a way to grant a
+   team the tiebreak win for a round).
+4. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
+   debuffs). Permanently dropping an enemy Black Trigger's resonance grade
+   needs a runtime-mutable `ResonanceGrid` (currently a const lookup).
+5. **Death Ledger trigger-swap** - the AoE-nullify works; the swap part is
+   deferred (`reactive_effect.dart`).
 
 ## 14. Open / tunable items
 

@@ -2,6 +2,7 @@ import '../models/passive_counter.dart';
 import '../models/team.dart';
 import '../models/trigger.dart';
 import '../models/trion.dart';
+import '../models/unique_behavior.dart';
 import 'character_battle_state.dart';
 import 'status_effect_engine.dart';
 import 'trion_gain_engine.dart';
@@ -61,6 +62,15 @@ class Battle {
   /// Trion handicap applied - see [startTurn].
   bool _firstTurnHandicapApplied = false;
 
+  /// Character ids holding an Illusory Double active Trigger, populated by
+  /// [initializeIllusoryDoubleCharges]. Only these gain a charge when an
+  /// ally is defeated.
+  final Set<String> _illusoryDoubleHolders = {};
+
+  /// Character ids already handled as defeated, so each defeat grants
+  /// Illusory Double charges to living allies at most once.
+  final Set<String> _processedDefeats = {};
+
   Battle({
     required this.teamA,
     required this.teamB,
@@ -85,6 +95,10 @@ class Battle {
             teamStates.where((s) => !identical(s, state)).toList();
       }
     }
+
+    // Give the engine the battle-wide registry so cross-team unique effects
+    // (Karmic Bind's live link) can look up a partner on the other team.
+    this.turnEngine.characterRegistry = this.states;
   }
 
   Team get activeTeam => isTeamATurn ? teamA : teamB;
@@ -144,6 +158,48 @@ class Battle {
     }
   }
 
+  /// Grants each character holding an Illusory Double active Trigger its
+  /// starting charge(s) (see `UniqueConfig.illusoryDoubleStartingCharges`)
+  /// and records them as a holder, so a later ally defeat grants them an
+  /// extra charge (see [checkForDefeats]). Called once at battle start with
+  /// the same active-Trigger loadout map used elsewhere.
+  void initializeIllusoryDoubleCharges(
+      Map<String, List<ActiveTrigger>> equippedActiveTriggers) {
+    for (final entry in equippedActiveTriggers.entries) {
+      final state = states[entry.key];
+      if (state == null) continue;
+      final holdsIllusoryDouble = entry.value
+          .any((t) => t.uniqueBehavior == UniqueBehavior.illusoryDouble);
+      if (holdsIllusoryDouble) {
+        _illusoryDoubleHolders.add(entry.key);
+        state.illusoryDoubleCharges =
+            turnEngine.uniqueConfig.illusoryDoubleStartingCharges;
+      }
+    }
+  }
+
+  /// Illusory Double: for each newly-defeated character, every living
+  /// teammate that holds an Illusory Double Trigger gains one extra charge.
+  /// Idempotent per defeat. Called automatically at the start and end of a
+  /// turn; a host driving mid-turn resolutions may also call it after each
+  /// ability resolves so charges are granted the instant an ally falls.
+  void checkForDefeats() {
+    for (final team in [teamA, teamB]) {
+      for (final character in team.characters) {
+        final state = states[character.id]!;
+        if (state.isAlive) continue;
+        if (!_processedDefeats.add(character.id)) continue;
+        for (final ally in team.characters) {
+          if (ally.id == character.id) continue;
+          final allyState = states[ally.id]!;
+          if (allyState.isAlive && _illusoryDoubleHolders.contains(ally.id)) {
+            allyState.illusoryDoubleCharges += 1;
+          }
+        }
+      }
+    }
+  }
+
   /// Begins [activeTeam]'s turn: rolls the team's Trion gain (using
   /// members' health at the start of the turn, before any status damage
   /// below - forced to the Low tier on the very first turn of the whole
@@ -191,6 +247,10 @@ class Battle {
       inactiveTeamStates,
     );
 
+    // Phase E: grant Illusory Double charges for any deaths from
+    // start-of-turn status ticks.
+    checkForDefeats();
+
     return TeamTurnStartResult(
       trionGain: trionGain,
       statusTicks: statusTicks,
@@ -217,6 +277,11 @@ class Battle {
       final state = states[character.id]!;
       if (state.isAlive) turnEngine.endCharacterTurn(state);
     }
+
+    // Phase E: grant Illusory Double charges for any deaths this turn
+    // (ability resolutions, end-of-turn finishers like Gravehour).
+    checkForDefeats();
+
     if (!isTeamATurn) roundNumber++;
     isTeamATurn = !isTeamATurn;
   }
