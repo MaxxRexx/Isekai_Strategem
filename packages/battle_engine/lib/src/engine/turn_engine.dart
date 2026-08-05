@@ -124,6 +124,15 @@ class TurnEngine {
   final PassiveCounterConfig passiveCounterConfig;
   final UniqueConfig uniqueConfig;
 
+  /// Battle-wide character registry (id -> state), set by the Battle layer
+  /// so cross-team unique effects (Karmic Bind's live link) can look up a
+  /// partner that isn't a teammate. Empty when TurnEngine is used
+  /// standalone, which simply disables those cross-team effects.
+  Map<String, CharacterBattleState> characterRegistry = {};
+
+  /// Re-entrancy guard so Karmic Bind's propagated damage doesn't recurse.
+  bool _resolvingKarmicBind = false;
+
   TurnEngine({
     TrionGainEngine? trionGainEngine,
     FatEngine? fatEngine,
@@ -206,8 +215,12 @@ class TurnEngine {
     if (!state.isHealingPrevented()) {
       for (final event in result.healEvents) {
         final healed = _scaledHealAmount(state, event.amount);
+        final before = state.currentHealth;
         state.currentHealth =
             (state.currentHealth + healed).clamp(0, maxHealth);
+        // Karmic Bind (Punish): healing received on a bound caster also
+        // strikes the enemy they are bound to.
+        _propagateKarmicBind(state, state.currentHealth - before);
       }
     }
 
@@ -250,6 +263,7 @@ class TurnEngine {
     required bool isCriticalHit,
     CharacterBattleState? damageSource,
   }) {
+    final healthBeforeDamage = target.currentHealth;
     final breakdown = combatEngine.resolveDamageBreakdown(
       baseDamage: baseDamage,
       damageType: damageType,
@@ -304,7 +318,40 @@ class TurnEngine {
       target.currentHealth =
           (target.currentHealth - damage).clamp(0, maxHealth);
     }
+
+    // Karmic Bind (Punish): a fraction of any damage this character takes
+    // is dealt to the enemy they are bound to.
+    _propagateKarmicBind(target, healthBeforeDamage - target.currentHealth);
     return breakdown;
+  }
+
+  /// Karmic Bind, "Punish" (one-way): when a bound caster's own health
+  /// changes by [magnitude] (damage taken or healing received), a
+  /// Team-Spirit-scaled fraction of that magnitude is dealt to the enemy
+  /// they are bound to, as unavoidable true damage. Requires the
+  /// battle-wide [characterRegistry]; guarded against re-entrancy and a
+  /// no-op once the karmic_bind status (which carries the fraction) has
+  /// expired.
+  void _propagateKarmicBind(CharacterBattleState caster, int magnitude) {
+    if (_resolvingKarmicBind || magnitude <= 0) return;
+    final targetId = caster.karmicBindTargetId;
+    if (targetId == null) return;
+    StatusEffectInstance? bind;
+    for (final instance in caster.statusEffects) {
+      if (instance.definitionId == 'karmic_bind') {
+        bind = instance;
+        break;
+      }
+    }
+    final fraction = bind?.data['karmicBindFraction'] as double? ?? 0;
+    if (fraction <= 0) return;
+    final partner = characterRegistry[targetId];
+    if (partner == null || !partner.isAlive) return;
+    final dmg = (magnitude * fraction).round();
+    if (dmg <= 0) return;
+    _resolvingKarmicBind = true;
+    partner.currentHealth = (partner.currentHealth - dmg).clamp(0, 1 << 30);
+    _resolvingKarmicBind = false;
   }
 
   /// Rolls whether Full Arms Trigger activates for [state] this turn,
@@ -992,8 +1039,13 @@ class TurnEngine {
               .round();
           final maxHealth =
               recipient.effectiveStats(fatConfig: fatConfig).maxHealth;
+          final beforeHeal = recipient.currentHealth;
           recipient.currentHealth =
               (recipient.currentHealth + healed).clamp(0, maxHealth);
+          // Karmic Bind (Punish): healing a bound caster also strikes the
+          // enemy they are bound to.
+          _propagateKarmicBind(
+              recipient, recipient.currentHealth - beforeHeal);
         }
       }
 
