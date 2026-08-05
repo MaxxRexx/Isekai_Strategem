@@ -443,6 +443,49 @@ stays a 50-50 coin flip; this is purely resolution order.
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
 
+### 13.1 Build status (verified against code)
+
+Read this before starting engine/game work; it is the accurate map of
+what exists vs. what is only specced. Two layers, dependency app -> engine
+(the engine is pure Dart and cannot import app code):
+
+- `packages/battle_engine/` - engine: combat resolution, counters, uniques,
+  status effects, catalogs (triggers/black triggers/roster), AI, story
+  engine. 28 test files.
+- `app/` - Flutter app: the queue/resolution orchestration
+  (`lib/src/game/play_session.dart`), TEG (`lib/src/game/team_efficiency.dart`),
+  draft/loadout/target selection, screens and widgets. 6 test files.
+
+**Built and working:**
+- Turn + queue model with 6-phase within-team resolution ordering
+  (`play_session.dart` `_resolvePlan`: phase, then Team Spirit deviation,
+  then queue order). Trion spent at queue, refunded on unqueue.
+- Turn order (who acts first) = even 50-50 coin flip, not stat-tied.
+- TEG computed and displayed (six sub-scores, D-SSS). App layer only.
+- Phase B counters: 13 active/Black-Trigger counters + 6 passive counters
+  (Draegor, Nullhymn, Reckoning, Gravehour, Coldread, Ironvow). Tested.
+- Phase C: all 17 unique behaviors, wired to equippable Triggers.
+- Phase D: active catalog balanced to exactly 20/20/20 (60 active).
+- Phase E so far (on branch, green): Illusory Double charge-on-ally-death
+  and Karmic Bind live link (Punish, one-way).
+- One More Breath (survive-lethal enrich) is implemented in the engine.
+
+**Specced but NOT built (the real gaps):**
+1. **Cross-team TEG resolution-order tiebreak** - not wired. `_resolvePlan`
+   orders within a team only; TEG is stored but never read there (code says
+   "arrives in A5"). This is the immediate next priority.
+2. **Draegor's real TEG boost** - fallback only. The engine can't reach the
+   app-layer TEG, so `turn_engine.dart` doubles the highest-TA ally instead
+   of raising TEG tiers. Fix: plumb the computed TEG grade into the engine.
+3. **Coldread's "seize initiative"** - the Levy works; the initiative seize
+   does not (needs the cross-team tiebreak from gap 1, then a way to grant a
+   team the tiebreak win for a round).
+4. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
+   debuffs). Permanently dropping an enemy Black Trigger's resonance grade
+   needs a runtime-mutable `ResonanceGrid` (currently a const lookup).
+5. **Death Ledger trigger-swap** - the AoE-nullify works; the swap part is
+   deferred (`reactive_effect.dart`).
+
 ## 14. Open / tunable items
 
 - TEG weights and tier thresholds.
