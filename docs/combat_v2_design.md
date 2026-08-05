@@ -70,9 +70,12 @@ Phases:
 
 **Initiative:**
 
-- **Cross-team** (both teams' effects would resolve at the same instant: the
-  opening turn, or a reactive trigger from each side clashing): the higher
-  **Team Efficiency Grade** team goes first.
+- **Cross-team** (both teams' effects would resolve at the same instant -
+  for example a reactive trigger from each side clashing): the higher
+  **Team Efficiency Grade** team's effects resolve first. This is a
+  resolution-order tiebreak only. It does NOT decide which team takes the
+  first turn of the battle - that is a separate, even 50-50 coin flip, not
+  tied to TEG or any stat.
 - **Within a single team's own queue**, phase order governs; ties within a
   phase break by the acting character's **Team Spirit deviation from
   midpoint** (bigger commitment = higher initiative), then queue order. TEG
@@ -100,7 +103,11 @@ dual-direction stat is legible.
 ## 5. Team Efficiency Grade (TEG)
 
 A squad-level grade, D to SSS, shown under Player Info, measuring how well
-tuned a squad is (not how powerful). It is the cross-team Initiative source.
+tuned a squad is (not how powerful). Its one mechanical job is the
+cross-team resolution-order tiebreak (see section 3): when both teams'
+effects would land at the same instant, the higher-grade team's resolve
+first. It does NOT decide which team takes the first turn (that is an even
+coin flip). Draegor's counter also reads the grade as a threshold.
 
 Six sub-scores (each 0 to 100), weighted into a 0 to 100 composite (weights
 tunable):
@@ -120,13 +127,15 @@ A 68-78, S 79-88, SS 89-95, SSS 96-100. SSS is deliberately hard.
 Consequences:
 
 - A **low-Team-Spirit but well-built** squad earns a high grade and wins
-  initiative races, because TEG scores alignment, not raw TS. This is what
-  makes low-TS strategies viable (the Draegor promise).
+  the cross-team resolution-order tiebreak when effects clash, because TEG
+  scores alignment, not raw TS. This is what makes low-TS strategies viable
+  (the Draegor promise).
 - Display: letter grade prominent under Player Info; tap to expand the six
   sub-scores so players can optimize toward it.
-- Honest caveat: in Phase A, TEG's only live use is the opening-turn race,
-  since there are no counters yet to create cross-team clashes. It gains
-  teeth in Phase B.
+- Honest caveat: TEG's only mechanical use is the cross-team
+  resolution-order tiebreak, which only bites once counters create
+  simultaneous cross-team clashes (Phase B onward). Before that it is
+  display-only. It never decides the opening turn (a coin flip).
 
 ## 6. Counters
 
@@ -414,12 +423,22 @@ branch for the next phase.
 
 ## 13. Progress
 
+**Immediate next priority: wire the cross-team TEG resolution-order
+tiebreak.** Today the resolver (`app/lib/src/game/play_session.dart`,
+`_resolvePlan`) only orders WITHIN a team (phase, then Team Spirit
+deviation, then queue order). The cross-team tiebreak - when both teams'
+effects land at the same instant, the higher-TEG team's resolve first - is
+NOT wired: TEG is computed and stored but never read by the resolver (the
+code marks it "arrives in A5"). This also unblocks Coldread's "seize
+initiative" (win the cross-team tiebreak for a turn). Note: turn order
+stays a 50-50 coin flip; this is purely resolution order.
+
 | Phase | Status | Branch |
 |---|---|---|
 | Phase B: reactive/counter engine + 19 counters | done (merged to main) | `claude/phase-b-reactive-counters` (deleted) |
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
-| Phase E: new-content wiring | not started (includes the two deferred unique hooks - see 7.1) | TBD |
+| Phase E: new-content wiring | in progress: the two deferred unique hooks (7.1) done + green on branch; TEG tiebreak + Coldread + Nullhymn resonance still open | `claude/tactical-combat-engine-5luk6z` |
 | Phase F: remaining UI | not started | TBD |
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
