@@ -293,26 +293,24 @@ not open scripting.
   equivalents for the remaining duration (Empowered to Weakened, Guarded to
   Exposed, etc.).
 
-### 7.1 Deferred to the Battle-integration phase (Phase E)
+### 7.1 Cross-team unique wiring (done in Phase E)
 
-Two unique behaviors are implemented at the engine-state level in Phase C
-but need cross-team wiring that lives in the Battle layer, not `TurnEngine`
-(which has no battle-wide character registry). Do NOT forget to wire these
-when Phase E lands:
+Two unique behaviors were implemented at the engine-state level in Phase C
+but needed cross-team wiring that lives in the Battle layer, not
+`TurnEngine`. Both are now wired (Phase E):
 
-- **Karmic Bind live propagation.** The cast records the link
-  (`karmicBindTargetId` on the caster) and stores the Team-Spirit-scaled
-  fraction on both partners' `karmic_bind` status instances
-  (`data['karmicBindFraction']`, `data['partnerId']`). The actual 3-turn
-  damage/heal sharing across the two partners still needs a Battle-layer
-  hook that can look up the partner's `CharacterBattleState` by id and
-  propagate a fraction of each damage/heal event (guarded against
-  recursion).
-- **Illusory Double charge-on-ally-death.** Charges start at
-  `UniqueConfig.illusoryDoubleStartingCharges` (1) and the resolver
-  consumes one per use, but the "+1 charge each time an ally is defeated"
-  rule needs a battle-death hook to increment `illusoryDoubleCharges` on
-  surviving allies.
+- **Karmic Bind live propagation** - done, "Punish" (one-way) semantics.
+  `TurnEngine` gained an optional `characterRegistry` (set by the Battle
+  constructor); `_propagateKarmicBind` fires from `_applyDamage` and both
+  heal sites, dealing a Team-Spirit-scaled fraction of any damage the
+  caster takes or healing it receives to the bound enemy as unavoidable
+  true damage. Reads the fraction from the caster's `karmic_bind` status,
+  so it stops when that 3-turn status expires; guarded against recursion.
+- **Illusory Double charge-on-ally-death** - done.
+  `Battle.initializeIllusoryDoubleCharges` grants holders their starting
+  charge; `Battle.checkForDefeats()` grants a holder +1 charge per ally
+  defeat (idempotent), called at start/end of turn and exposed for a host
+  to call after mid-turn resolutions.
 
 ## 8. Trigger catalog rebalance to 20 / 20 / 20
 
