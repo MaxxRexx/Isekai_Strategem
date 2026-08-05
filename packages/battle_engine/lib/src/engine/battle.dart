@@ -98,7 +98,7 @@ class Battle {
 
     // Give the engine the battle-wide registry so cross-team unique effects
     // (Karmic Bind's live link) can look up a partner on the other team.
-    turnEngine.characterRegistry = states;
+    this.turnEngine.characterRegistry = this.states;
   }
 
   Team get activeTeam => isTeamATurn ? teamA : teamB;
