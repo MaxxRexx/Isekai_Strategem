@@ -9,6 +9,7 @@ import '../models/resonance.dart';
 import '../models/status_effect.dart';
 import '../models/status_effect_catalog.dart';
 import '../models/team.dart';
+import '../models/teg_profile.dart';
 import '../models/trigger.dart';
 import '../models/trion.dart';
 import '../models/unique_behavior.dart';
@@ -129,6 +130,34 @@ class TurnEngine {
   /// partner that isn't a teammate. Empty when TurnEngine is used
   /// standalone, which simply disables those cross-team effects.
   Map<String, CharacterBattleState> characterRegistry = {};
+
+  /// Per-character TEG roll profiles (Combat-v2 section 5.2, Effects 1/2/5),
+  /// injected by the Battle layer from the app-computed Team Efficiency
+  /// Grade. Empty when unused (a standalone engine), which simply disables
+  /// the TEG dice-advantage / crit-widen effects.
+  Map<String, TegRollProfile> tegProfiles = {};
+
+  TegRollProfile _tegFor(CharacterBattleState c) =>
+      tegProfiles[c.character.id] ?? TegRollProfile.none;
+
+  /// TEG Effect 1 (Coordination): with the actor's offense chance, grant
+  /// [ctx] advantage on this offensive roll.
+  void _applyTegOffenseAdvantage(RollContext ctx, CharacterBattleState actor) {
+    final p = _tegFor(actor).offenseAdvantagePercent;
+    if (p > 0 && combatEngine.diceRoller.rollPercent() <= p) {
+      ctx.addAdvantage('teg_offense');
+    }
+  }
+
+  /// TEG Effect 2 (Operator's Read): with the defender's (inverted) defense
+  /// chance, grant [ctx] advantage on this defensive roll.
+  void _applyTegDefenseAdvantage(
+      RollContext ctx, CharacterBattleState defender) {
+    final p = _tegFor(defender).defenseAdvantagePercent;
+    if (p > 0 && combatEngine.diceRoller.rollPercent() <= p) {
+      ctx.addAdvantage('teg_defense');
+    }
+  }
 
   /// Re-entrancy guard so Karmic Bind's propagated damage doesn't recurse.
   bool _resolvingKarmicBind = false;
@@ -908,11 +937,21 @@ class TurnEngine {
         target.consumePerkChargeIfAvailable();
       }
 
+      // TEG Effects 1/2/5: coordination advantage on the attacker's roll,
+      // Operator's Read advantage on the defender's contest, and (at SSS)
+      // the widened crit threshold. No-ops when no TEG profile is injected.
+      _applyTegOffenseAdvantage(attackerContext, attacker);
+      final tegDefenderContext = RollContext();
+      _applyTegDefenseAdvantage(tegDefenderContext, target);
+      final tegMaxCrit = _tegFor(attacker).maxCritThreshold;
+
       var outcome = combatEngine.resolveAttackRoll(
         attackerAttack: effectiveAttack,
         defenderDefense: target.effectiveStats(fatConfig: fatConfig).defense,
         attackerCriticalChancePercent: attackerCriticalChancePercent,
         attackerContext: attackerContext,
+        defenderContext: tegDefenderContext,
+        maxCritThreshold: tegMaxCrit,
       );
 
       // Reckoning: forced critical miss overrides the roll.
@@ -941,6 +980,8 @@ class TurnEngine {
           defenderDefense: target.effectiveStats(fatConfig: fatConfig).defense,
           attackerCriticalChancePercent: attackerCriticalChancePercent,
           attackerContext: attackerContext,
+          defenderContext: tegDefenderContext,
+          maxCritThreshold: tegMaxCrit,
         );
         attacker.consumePerkChargeIfAvailable();
       }

@@ -134,6 +134,7 @@ class CombatEngine {
     double attackerCriticalChancePercent = 0,
     RollContext? attackerContext,
     RollContext? defenderContext,
+    int maxCritThreshold = 20,
   }) {
     final attackerRoll = diceRoller.rollD20(
       mode: (attackerContext ?? RollContext()).netMode,
@@ -144,7 +145,12 @@ class CombatEngine {
       modifier: defenderDefense,
     );
 
-    final threshold = criticalHitThreshold(attackerCriticalChancePercent);
+    // TEG Effect 5 (SSS crit widener) lowers the crit threshold ceiling:
+    // the kept die crits when it meets the better (lower) of the
+    // crit-chance threshold and the team's [maxCritThreshold] (18 at SSS).
+    final baseThreshold = criticalHitThreshold(attackerCriticalChancePercent);
+    final threshold =
+        baseThreshold < maxCritThreshold ? baseThreshold : maxCritThreshold;
     final isCriticalHit = attackerRoll.kept >= threshold;
     final isCriticalMiss = attackerRoll.isCriticalMiss;
     final isHit = isCriticalHit ||

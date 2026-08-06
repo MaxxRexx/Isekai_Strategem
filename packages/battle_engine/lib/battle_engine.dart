@@ -30,6 +30,7 @@ export 'src/models/stats.dart';
 export 'src/models/status_effect.dart';
 export 'src/models/status_effect_catalog.dart';
 export 'src/models/team.dart';
+export 'src/models/teg_profile.dart';
 export 'src/models/trigger.dart';
 export 'src/models/trion.dart';
 export 'src/models/unique_behavior.dart';

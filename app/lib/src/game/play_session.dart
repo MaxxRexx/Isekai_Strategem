@@ -211,6 +211,17 @@ class PlaySession {
       teamAGoesFirst: teamAGoesFirst,
     );
 
+    // TEG Effects 1/2/5 (section 5.2): inject each team's grade-derived roll
+    // profile so the engine can grant coordination/defensive advantage and
+    // (at SSS) widen crits. The app computes the grade; the engine only sees
+    // the resulting numbers.
+    final profileA = tegRollProfileFor(teamAEfficiency.tier);
+    final profileB = tegRollProfileFor(teamBEfficiency.tier);
+    battle.turnEngine.tegProfiles = {
+      for (final id in playerCharacterIds) id: profileA,
+      for (final id in opponentCharacterIds) id: profileB,
+    };
+
     final session = PlaySession._(
       battle: battle,
       equippedA: teamADraft.equippedActiveTriggers,

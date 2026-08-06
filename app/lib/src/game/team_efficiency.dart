@@ -17,6 +17,37 @@ extension TegTierLabel on TegTier {
   };
 }
 
+/// Maps a [TegTier] to the engine-consumed [TegRollProfile] (Combat-v2
+/// section 5.2, Effects 1/2/5): the offensive advantage chance climbs with
+/// grade (Effect 1), the defensive advantage chance is inverted (Effect 2),
+/// and only SSS widens the crit threshold to nat-18 (Effect 5). Numbers are
+/// the first-pass 5.2 tables (tunable in Phase H).
+TegRollProfile tegRollProfileFor(TegTier tier) {
+  final offense = switch (tier) {
+    TegTier.d => 0,
+    TegTier.c => 3,
+    TegTier.b => 6,
+    TegTier.a => 9,
+    TegTier.s => 12,
+    TegTier.ss => 16,
+    TegTier.sss => 20,
+  };
+  final defense = switch (tier) {
+    TegTier.d => 20,
+    TegTier.c => 16,
+    TegTier.b => 12,
+    TegTier.a => 9,
+    TegTier.s => 6,
+    TegTier.ss => 3,
+    TegTier.sss => 0,
+  };
+  return TegRollProfile(
+    offenseAdvantagePercent: offense,
+    defenseAdvantagePercent: defense,
+    maxCritThreshold: tier == TegTier.sss ? 18 : 20,
+  );
+}
+
 /// The Team Efficiency Grade for one squad: how well tuned its loadouts are
 /// (not how powerful), scored from six weighted sub-scores. It drives
 /// cross-team Initiative (the higher-grade team resolves first when both
