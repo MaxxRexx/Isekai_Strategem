@@ -550,17 +550,14 @@ branch for the next phase.
 
 ## 13. Progress
 
-**Immediate priority: integrate the 6 passive counters into the resolution
-loop so they actually work in-game.** They are implemented and unit-tested
-in the engine, but the app never feeds them: `notifyAbilityResolved`,
-`notifyStatusInflicted`, `checkSanctionedStrike`, and `recordDamageDealt`
-have ZERO runtime call sites (only tests), and `tickReactiveEffects`
-(reactive-effect expiry) is never called either. Result today: Draegor /
-Reckoning / Nullhymn / Ironvow never accumulate (inert); Coldread always
-reads "wrong" and docks its own holder's Trion; Gravehour always sees a
-"stall" and over-fires. Fix: call these hooks from
-`app/lib/src/game/play_session.dart` (the `_resolveAction` / turn flow) and
-tick reactive expiry once per opponent turn.
+**DONE (green on branch): the 6 passive counters are integrated into the
+resolution loop and work in-game.** `play_session.dart`
+(`_resolveAction` / `useAbility`) now feeds `notifyAbilityResolved`,
+`notifyStatusInflicted`, `recordDamageDealt`, and `checkSanctionedStrike`,
+and `battle.startTurn` ticks `tickReactiveEffects` once per turn. Coldread's
+re-specced Seize (alternating with the Levy, +2 to the squad's rolls for 1
+turn) is built too. So Draegor / Reckoning / Nullhymn / Ironvow now
+accumulate, Coldread reads correctly, and Gravehour no longer over-fires.
 
 **TEG mechanical role: DECIDED (designed, not yet built - Phase J).** We are
 KEEPING alternating resolution, under which TEG's originally-specced
@@ -587,8 +584,9 @@ no longer depends on the retired tiebreak.
 | Phase F: remaining UI | not started | TBD |
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
-| Phase I: Combo Recognition system | specced (section 12), not started | TBD |
-| Phase J: TEG mechanical effects (section 5.2) | specced, not started; Effects 3/4 depend on Phase I, XP on section 15.8 | TBD |
+| Passive-counter integration (design 13.1 gap #1) | done + green on branch: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
+| Phase I: Combo Recognition system | I1-I3 done + green on branch: action ledger + condition primitives + recognizer + Layer-1 generic catalog, unit-tested. Live population + fx3/fx4 consumption land with Phase J. Signature combos (I4) / authoring tooling (I5) later | `claude/tactical-combat-engine-5luk6z` |
+| Phase J: TEG mechanical effects (section 5.2) | in progress: Effects 1/2/5 (self-contained roll-advantage + SSS crit) next; Effects 3/4 consume Phase I; XP on section 15.8 | `claude/tactical-combat-engine-5luk6z` |
 
 ### 13.1 Build status (verified against code)
 
@@ -611,8 +609,14 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 - TEG computed and displayed (six sub-scores, D-SSS). App layer only.
 - Phase B active/reactive counters (13): wired into `resolveAbilityUse` and
   work in-game - armed on your turn, fire when the opponent acts into them.
-  (Caveat: their expiry timer, `tickReactiveEffects`, is never ticked, so an
-  armed counter persists until it fires instead of timing out.)
+  Reactive expiry (`tickReactiveEffects`) is now ticked once per turn in
+  `battle.startTurn`, so timed wards/traps/marks time out.
+- The 6 passive counters are now integrated (green on branch): fed from
+  `play_session.dart` via `notifyAbilityResolved` / `notifyStatusInflicted` /
+  `recordDamageDealt` / `checkSanctionedStrike`. Coldread's Seize is built.
+- Combo Recognition (Phase I1-I3, green on branch): action ledger,
+  condition primitives, recognizer, Layer-1 generic catalog. Unit-tested;
+  not yet populated during live resolution (that lands with Phase J).
 - Phase C: all 17 unique behaviors, wired to equippable Triggers.
 - Phase D: active catalog balanced to exactly 20/20/20 (60 active).
 - Phase E so far (on branch, green): Illusory Double charge-on-ally-death
@@ -620,29 +624,20 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 - One More Breath (survive-lethal enrich) is implemented in the engine.
 
 **Specced but NOT built (the real gaps), most important first:**
-1. **The 6 passive counters are not integrated into the app** (immediate
-   priority). Engine-implemented and unit-tested, but the feed hooks
-   (`notifyAbilityResolved`, `notifyStatusInflicted`, `checkSanctionedStrike`,
-   `recordDamageDealt`) and reactive expiry (`tickReactiveEffects`) are never
-   called at runtime. So Draegor/Reckoning/Nullhymn/Ironvow are inert,
-   Coldread self-harms, Gravehour over-fires. Fix in `play_session.dart`.
-2. **TEG's mechanical effects are designed but not built (Phase J).** The
-   old tiebreak role is retired (it cannot fire under alternating
-   resolution). TEG's role is now the five-effect combination amplifier +
-   inverse XP counterweight (section 5.2). Not yet implemented, so TEG is
-   still display-only in-game. Effects 3 and 4 also need the Combo
-   Recognition system (Phase I), which is likewise specced but not built.
-3. **Draegor's "raise TEG 2 tiers"** now has a defined effect under the new
+1. **TEG's mechanical effects (Phase J) are not built yet.** The recognizer
+   (Phase I) exists, but nothing consumes it and the roll-advantage / crit
+   effects are not wired. Next up: Effects 1/2/5 (self-contained per-team
+   advantage chance + SSS crit widening injected from the app-computed TEG),
+   then Effects 3/4 (consume the recognizer, plus live ledger population).
+   Until then TEG is still display-only in-game.
+2. **Draegor's "raise TEG 2 tiers"** now has a defined effect under the new
    model (it shifts the roll-advantage tables) but is unbuilt until Phase J;
    it currently runs its fallback (double the highest-TA ally's TA).
-   **Coldread's "seize"** is now re-specced (section 6.2: +2 to the squad's
-   rolls for 1 turn, alternating with the Levy, Levy first) and is
-   self-contained, so it builds during the passive-counter integration, not
-   Phase J.
-4. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
+   (Coldread's Seize is now built - see above.)
+3. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
    debuffs). Permanently dropping an enemy Black Trigger's resonance grade
    needs a runtime-mutable `ResonanceGrid` (currently a const lookup).
-5. **Death Ledger trigger-swap** - the AoE-nullify works; the swap part is
+4. **Death Ledger trigger-swap** - the AoE-nullify works; the swap part is
    deferred (`reactive_effect.dart`).
 
 ## 14. Open / tunable items
