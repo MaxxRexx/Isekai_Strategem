@@ -447,6 +447,50 @@ void main() {
       expect(coldread.cooldownTurns, 1);
     });
 
+    test('correct reads alternate Levy then Seize (Levy first)', () {
+      final holder = makeChar(id: 'holder', attack: 1000, defense: 5);
+      final ally = makeChar(id: 'ally', attack: 500, defense: 5);
+      holder.passiveCounters[PassiveCounterKind.coldread] =
+          PassiveCounterState(PassiveCounterKind.coldread);
+      wireTeam([holder, ally]);
+
+      final enemy = makeChar(id: 'enemy');
+      enemy.triggersUsedThisTurn.add('some-attack');
+      wireTeam([enemy]);
+
+      final coldread = holder.passiveCounters[PassiveCounterKind.coldread]!;
+
+      void resolveCorrectRead(TrionPool enemyPool, TrionPool holderPool) {
+        coldread.markedEnemyId = 'enemy';
+        coldread.pendingResolution = true;
+        coldread.markedEnemyActedDamaging = true;
+        engine().tickEndOfTurnPassiveCounters(
+          activeTeamStates: [enemy],
+          inactiveTeamStates: [holder, ally],
+          activeTeamPool: enemyPool,
+          inactiveTeamPool: holderPool,
+          activeTeamDealtDamage: true,
+        );
+      }
+
+      // First correct read: Levy (Trion transfers, no roll bonus yet).
+      resolveCorrectRead(
+          TrionPool(current: 100)..gain(60), TrionPool(current: 100));
+      expect(holder.effectiveStats(fatConfig: FatConfig.defaults).attack, 1000,
+          reason: 'no Seize bonus on the first (Levy) read');
+      expect(coldread.coldreadNextRewardIsSeize, isTrue);
+
+      // Second correct read: Seize (+2 to all rolls squad-wide, no Levy).
+      resolveCorrectRead(
+          TrionPool(current: 100)..gain(60), TrionPool(current: 100));
+      expect(holder.effectiveStats(fatConfig: FatConfig.defaults).attack, 1002);
+      expect(holder.effectiveStats(fatConfig: FatConfig.defaults).defense, 7);
+      expect(ally.effectiveStats(fatConfig: FatConfig.defaults).attack, 502,
+          reason: 'Seize buffs the whole living squad, not just the holder');
+      expect(coldread.coldreadNextRewardIsSeize, isFalse,
+          reason: 'alternation flips back to Levy for the next read');
+    });
+
     test('wrong read docks Trion gain next turn', () {
       final holder = makeChar(id: 'holder');
       holder.passiveCounters[PassiveCounterKind.coldread] =

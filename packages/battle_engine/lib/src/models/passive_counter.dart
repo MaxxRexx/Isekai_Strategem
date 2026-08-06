@@ -93,6 +93,11 @@ class PassiveCounterState {
   /// Trion gain docked next turn (wrong Coldread guess).
   bool trionGainDockedNextTurn = false;
 
+  /// Coldread reward alternation: a correct read grants the Levy first, then
+  /// the Seize, alternating on each successful read (a wrong read does not
+  /// advance it). false = next correct read Levies; true = next one Seizes.
+  bool coldreadNextRewardIsSeize = false;
+
   // --- Ironvow ---
   /// The attack type sanctioned this turn (null if on cooldown or unset).
   AttackType? sanctionedType;

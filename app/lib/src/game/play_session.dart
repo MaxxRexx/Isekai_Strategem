@@ -352,11 +352,17 @@ class PlaySession {
       return const UseAbilityOutcome.failure('Not enough Trion.');
     }
 
+    final targets = [for (final id in targetIds) battle.states[id]!];
+    if (trigger.targetAffiliation == TargetAffiliation.opponent &&
+        targets.isNotEmpty) {
+      engine.checkSanctionedStrike(state, trigger, targets.first);
+    }
     final useResult = engine.resolveAbilityUse(
       attacker: state,
       trigger: trigger,
-      targets: [for (final id in targetIds) battle.states[id]!],
+      targets: targets,
     );
+    _feedPassiveCounters(state, trigger, useResult);
 
     return UseAbilityOutcome.done(
       LogAction(
@@ -610,15 +616,23 @@ class PlaySession {
   ) {
     final engine = battle.turnEngine;
     final state = battle.states[characterId]!;
+    final targets = [for (final id in targetIds) battle.states[id]!];
     // Trion was already spent (at queue time for the player, at plan commit
     // for the AI); record the use here so the FAT count and end-of-turn
     // cooldowns are set.
     state.recordAbilityUse(trigger);
+    // Ironvow: an attack of the sanctioned type consumes a Sanctioned Strike
+    // (strip a buff, brand Interdict, expose allies) before it resolves.
+    if (trigger.targetAffiliation == TargetAffiliation.opponent &&
+        targets.isNotEmpty) {
+      engine.checkSanctionedStrike(state, trigger, targets.first);
+    }
     final useResult = engine.resolveAbilityUse(
       attacker: state,
       trigger: trigger,
-      targets: [for (final id in targetIds) battle.states[id]!],
+      targets: targets,
     );
+    _feedPassiveCounters(state, trigger, useResult);
     return LogAction(
       characterId: characterId,
       characterName: state.character.name,
@@ -627,6 +641,50 @@ class PlaySession {
       fatTriggered: state.fatTriggeredThisTurn,
       targets: logTargets(battle, useResult),
     );
+  }
+
+  /// Feeds the passive-counter state machines after an ability resolves.
+  /// Without these calls the six passive counters never advance (design
+  /// 13.1): Draegor Enmity, Reckoning Debt, Nullhymn Discord, Coldread's
+  /// read tracking, and Ironvow's last-attack-type all accumulate through
+  /// [TurnEngine.notifyAbilityResolved]; Nullhymn also gains Discord from
+  /// statuses inflicted on a holder; Gravehour's stall detection needs to
+  /// know the active team dealt damage this turn.
+  void _feedPassiveCounters(
+    CharacterBattleState state,
+    ActiveTrigger trigger,
+    AbilityUseResult useResult,
+  ) {
+    final engine = battle.turnEngine;
+    final onTeamA =
+        battle.teamA.characters.any((c) => c.id == state.character.id);
+    final defenderTeam = onTeamA ? battle.teamB : battle.teamA;
+    final defenderStates =
+        defenderTeam.characters.map((c) => battle.states[c.id]!).toList();
+    final isBt = state.character.blackTrigger?.activeAbilities
+            .any((t) => t.id == trigger.id) ??
+        false;
+
+    engine.notifyAbilityResolved(
+      attacker: state,
+      trigger: trigger,
+      result: useResult,
+      defenderTeamStates: defenderStates,
+      isBlackTriggerAbility: isBt,
+    );
+
+    for (final tr in useResult.targetResults) {
+      if (tr.statusEffectsApplied.isEmpty) continue;
+      final target = battle.states[tr.targetCharacterId];
+      if (target == null) continue;
+      for (final statusId in tr.statusEffectsApplied) {
+        engine.notifyStatusInflicted(target, statusId);
+      }
+    }
+
+    if (useResult.targetResults.any((r) => r.totalDamageDealt > 0)) {
+      battle.recordDamageDealt();
+    }
   }
 
   /// Ends the player's turn, plays out the AI's turn, and starts the

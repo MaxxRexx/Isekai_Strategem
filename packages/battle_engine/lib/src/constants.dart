@@ -430,6 +430,12 @@ class PassiveCounterConfig {
   // Coldread
   final int coldreadCooldownTurns;
 
+  /// Coldread Seize: flat bonus added to every roll of the holder's squad
+  /// (attack/defense/status-infliction/status-resistance) for
+  /// [coldreadSeizeDurationTurns] turns.
+  final int coldreadSeizeRollBonus;
+  final int coldreadSeizeDurationTurns;
+
   // Ironvow
   final int ironvowMaxSanctionedStrikes;
   final int ironvowStrikeCooldownTurns;
@@ -449,6 +455,8 @@ class PassiveCounterConfig {
     this.gravehourFinisherFlatDamage = 40,
     this.gravehourHealPreventionDurationTurns = 2,
     this.coldreadCooldownTurns = 1,
+    this.coldreadSeizeRollBonus = 2,
+    this.coldreadSeizeDurationTurns = 1,
     this.ironvowMaxSanctionedStrikes = 3,
     this.ironvowStrikeCooldownTurns = 2,
   });

@@ -1533,10 +1533,15 @@ class TurnEngine {
           state.getPassiveCounter(PassiveCounterKind.coldread);
       if (coldread != null && coldread.pendingResolution) {
         if (coldread.markedEnemyActedDamaging) {
-          // Correct read: Levy the costliest action's Trion from enemy.
-          // Initiative seize deferred to Phase E (needs initiative system).
-          final levyAmount = _findCostliestTrionCost(activeTeamStates);
-          _applyLevy(activeTeamPool, inactiveTeamPool, levyAmount);
+          // Correct read: the reward alternates, Levy first then Seize.
+          if (coldread.coldreadNextRewardIsSeize) {
+            _coldreadSeize(state, cfg);
+          } else {
+            final levyAmount = _findCostliestTrionCost(activeTeamStates);
+            _applyLevy(activeTeamPool, inactiveTeamPool, levyAmount);
+          }
+          coldread.coldreadNextRewardIsSeize =
+              !coldread.coldreadNextRewardIsSeize;
         } else {
           // Wrong read: dock holder's team Trion gain next turn.
           coldread.trionGainDockedNextTurn = true;
@@ -1600,6 +1605,27 @@ class TurnEngine {
       if (d != null) total += d.totalRegretGenerated;
     }
     return total;
+  }
+
+  /// Coldread Seize (the alternate reward to the Levy on a correct read):
+  /// grant the whole living squad a flat +N to every roll for a turn. The
+  /// roll modifier for each opposed d20 contest is the acting stat itself
+  /// (attack vs defense, infliction vs resistance), so a temporary flat
+  /// bonus to those four stats is exactly "+N to all their rolls."
+  void _coldreadSeize(CharacterBattleState holder, PassiveCounterConfig cfg) {
+    final squad = [holder, ...holder.teammates].where((s) => s.isAlive);
+    const rollStats = [
+      ModifiableStat.attack,
+      ModifiableStat.defense,
+      ModifiableStat.statusEffectInfliction,
+      ModifiableStat.statusEffectResistance,
+    ];
+    for (final member in squad) {
+      for (final stat in rollStats) {
+        member.applyFlatBonus(stat, cfg.coldreadSeizeRollBonus.toDouble(),
+            cfg.coldreadSeizeDurationTurns);
+      }
+    }
   }
 
   void _reckoningIncrementDebt(

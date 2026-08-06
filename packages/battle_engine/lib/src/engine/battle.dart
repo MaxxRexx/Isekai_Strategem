@@ -247,6 +247,15 @@ class Battle {
       inactiveTeamStates,
     );
 
+    // Tick reactive-effect expiry for the active team once per turn, so a
+    // timed ward/trap/mark that was never triggered still times out (it was
+    // armed on this team's previous turn and has survived the opponent's
+    // turn in between). Untimed effects (remainingTurns == null) persist
+    // until they fire.
+    for (final state in activeTeamStates) {
+      if (state.isAlive) turnEngine.tickReactiveEffects(state);
+    }
+
     // Phase E: grant Illusory Double charges for any deaths from
     // start-of-turn status ticks.
     checkForDefeats();
