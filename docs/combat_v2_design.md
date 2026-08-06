@@ -286,11 +286,23 @@ Deathknell).
 **Coldread** (lever: prediction).
 - At the start of each of your turns, secretly mark one enemy (hidden from
   the opponent).
-- Resolves at the end of the opponent's next turn: if the marked enemy took
-  a damaging action, seize initiative next round and Levy their costliest
-  action's Trion. If not, your Trion gain is docked next turn.
+- Resolves at the end of the opponent's next turn. On a **correct read**
+  (the marked enemy took a damaging action) grant a reward that
+  **alternates** each successful read, **Levy first**:
+  - 1st successful read: **Levy** the marked enemy's costliest action's
+    Trion (the shared steal rule below).
+  - next successful read: **Seize** - grant the whole squad a flat **+2 to
+    all their rolls for 1 turn**.
+  - alternates thereafter (Levy, Seize, Levy, ...). A wrong read does not
+    advance the alternation.
+- On a **wrong read** (no damaging action from the marked enemy), your Trion
+  gain is docked next turn.
 - After a read resolves (right or wrong), 1-turn cooldown before the next
   call.
+- Note: Seize's +2 is a flat roll **modifier** (added to the d20's
+  `modifier`), distinct from advantage, applied squad-wide for 1 turn. This
+  makes Coldread self-contained and independent of the TEG effects (it does
+  NOT rely on the retired cross-team tiebreak).
 
 **Ironvow** (lever: type discipline; merges Interdict and Ironvow).
 - At the start of each of the holder's turns, one attack type is sanctioned
@@ -561,8 +573,10 @@ spec in section 5.2). Built by **Phase J**; Effects 3 and 4 depend on the
 server-XP + accounts task (section 15). Until Phase J lands, TEG remains
 display-only (plus Draegor's threshold read). Turn order stays a 50-50 coin
 flip. NOTE: Draegor's "raise TEG 2 tiers" now has a real effect again (it
-shifts the roll-advantage tables); Coldread's "seize initiative" still needs
-re-specifying against the new model.
+shifts the roll-advantage tables). Coldread's "seize" has been re-specced
+(section 6.2): a flat +2 to the whole squad's rolls for 1 turn, alternating
+with the Levy on successful reads (Levy first), so it is self-contained and
+no longer depends on the retired tiebreak.
 
 | Phase | Status | Branch |
 |---|---|---|
@@ -621,8 +635,10 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 3. **Draegor's "raise TEG 2 tiers"** now has a defined effect under the new
    model (it shifts the roll-advantage tables) but is unbuilt until Phase J;
    it currently runs its fallback (double the highest-TA ally's TA).
-   **Coldread's "seize initiative"** needs re-specifying against the new
-   model; its Levy works, its "seize" does not.
+   **Coldread's "seize"** is now re-specced (section 6.2: +2 to the squad's
+   rolls for 1 turn, alternating with the Levy, Levy first) and is
+   self-contained, so it builds during the passive-counter integration, not
+   Phase J.
 4. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
    debuffs). Permanently dropping an enemy Black Trigger's resonance grade
    needs a runtime-mutable `ResonanceGrid` (currently a const lookup).
