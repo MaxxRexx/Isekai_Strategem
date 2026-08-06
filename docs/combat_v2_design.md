@@ -423,19 +423,33 @@ branch for the next phase.
 
 ## 13. Progress
 
-**Immediate next priority: wire the cross-team TEG resolution-order
-tiebreak.** Today the resolver (`app/lib/src/game/play_session.dart`,
-`_resolvePlan`) only orders WITHIN a team (phase, then Team Spirit
-deviation, then queue order). The cross-team tiebreak - when both teams'
-effects land at the same instant, the higher-TEG team's resolve first - is
-NOT wired: TEG is computed and stored but never read by the resolver (the
-code marks it "arrives in A5"). This also unblocks Coldread's "seize
-initiative" (win the cross-team tiebreak for a turn). Note: turn order
-stays a 50-50 coin flip; this is purely resolution order.
+**Immediate priority: integrate the 6 passive counters into the resolution
+loop so they actually work in-game.** They are implemented and unit-tested
+in the engine, but the app never feeds them: `notifyAbilityResolved`,
+`notifyStatusInflicted`, `checkSanctionedStrike`, and `recordDamageDealt`
+have ZERO runtime call sites (only tests), and `tickReactiveEffects`
+(reactive-effect expiry) is never called either. Result today: Draegor /
+Reckoning / Nullhymn / Ironvow never accumulate (inert); Coldread always
+reads "wrong" and docks its own holder's Trion; Gravehour always sees a
+"stall" and over-fires. Fix: call these hooks from
+`app/lib/src/game/play_session.dart` (the `_resolveAction` / turn flow) and
+tick reactive expiry once per opponent turn.
+
+**TEG mechanical role: OPEN design question (brainstorm pending).** We are
+KEEPING alternating resolution (each team resolves its own queue on its own
+turn). Under alternating, TEG's originally-specced mechanic - the cross-team
+resolution-order tiebreak - cannot occur: two teams never resolve in the
+same pass, so there is no cross-team tie, and TEG is uniform within a team
+so it cannot order same-team actions (that stays Team Spirit deviation). So
+TEG needs a DIFFERENT mechanical role, to be decided. Until then TEG is
+display-only (plus Draegor's threshold read). Turn order stays a 50-50 coin
+flip. NOTE: Coldread's "seize initiative" and Draegor's "raise TEG 2 tiers"
+were both written against the tiebreak, so they also depend on this
+decision.
 
 | Phase | Status | Branch |
 |---|---|---|
-| Phase B: reactive/counter engine + 19 counters | done (merged to main) | `claude/phase-b-reactive-counters` (deleted) |
+| Phase B: reactive/counter engine + 19 counters | engine done + merged to main. The 13 active/reactive counters work in-game (they run inside `resolveAbilityUse`). The 6 passive counters are NOT fed by the app - inert/misbehaving until integrated (see 13.1; immediate priority). | `claude/phase-b-reactive-counters` (deleted) |
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
 | Phase E: new-content wiring | in progress: the two deferred unique hooks (7.1) done + green on branch; TEG tiebreak + Coldread + Nullhymn resonance still open | `claude/tactical-combat-engine-5luk6z` |
@@ -462,24 +476,31 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
   then queue order). Trion spent at queue, refunded on unqueue.
 - Turn order (who acts first) = even 50-50 coin flip, not stat-tied.
 - TEG computed and displayed (six sub-scores, D-SSS). App layer only.
-- Phase B counters: 13 active/Black-Trigger counters + 6 passive counters
-  (Draegor, Nullhymn, Reckoning, Gravehour, Coldread, Ironvow). Tested.
+- Phase B active/reactive counters (13): wired into `resolveAbilityUse` and
+  work in-game - armed on your turn, fire when the opponent acts into them.
+  (Caveat: their expiry timer, `tickReactiveEffects`, is never ticked, so an
+  armed counter persists until it fires instead of timing out.)
 - Phase C: all 17 unique behaviors, wired to equippable Triggers.
 - Phase D: active catalog balanced to exactly 20/20/20 (60 active).
 - Phase E so far (on branch, green): Illusory Double charge-on-ally-death
   and Karmic Bind live link (Punish, one-way).
 - One More Breath (survive-lethal enrich) is implemented in the engine.
 
-**Specced but NOT built (the real gaps):**
-1. **Cross-team TEG resolution-order tiebreak** - not wired. `_resolvePlan`
-   orders within a team only; TEG is stored but never read there (code says
-   "arrives in A5"). This is the immediate next priority.
-2. **Draegor's real TEG boost** - fallback only. The engine can't reach the
-   app-layer TEG, so `turn_engine.dart` doubles the highest-TA ally instead
-   of raising TEG tiers. Fix: plumb the computed TEG grade into the engine.
-3. **Coldread's "seize initiative"** - the Levy works; the initiative seize
-   does not (needs the cross-team tiebreak from gap 1, then a way to grant a
-   team the tiebreak win for a round).
+**Specced but NOT built (the real gaps), most important first:**
+1. **The 6 passive counters are not integrated into the app** (immediate
+   priority). Engine-implemented and unit-tested, but the feed hooks
+   (`notifyAbilityResolved`, `notifyStatusInflicted`, `checkSanctionedStrike`,
+   `recordDamageDealt`) and reactive expiry (`tickReactiveEffects`) are never
+   called at runtime. So Draegor/Reckoning/Nullhymn/Ironvow are inert,
+   Coldread self-harms, Gravehour over-fires. Fix in `play_session.dart`.
+2. **TEG has no mechanical role yet.** Its specced role (cross-team
+   resolution-order tiebreak) cannot occur under the alternating resolution
+   we are keeping. TEG needs a new mechanical role - OPEN design question.
+   Until decided, TEG is display-only.
+3. **Draegor's "raise TEG 2 tiers" and Coldread's "seize initiative"** both
+   assumed the tiebreak, so they are blocked on the TEG-role decision (2).
+   Draegor currently runs a fallback (double the highest-TA ally's TA);
+   Coldread's Levy works but its "seize" does not.
 4. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
    debuffs). Permanently dropping an enemy Black Trigger's resonance grade
    needs a runtime-mutable `ResonanceGrid` (currently a const lookup).
