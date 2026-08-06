@@ -18,7 +18,7 @@ implementation.
    do not fit single/AoE/burst.
 4. Rebalance the base Trigger catalog to 20 melee / 20 ranged / 20 psychic.
 5. Add a **Team Efficiency Grade (TEG)** that scores squad build quality and
-   drives cross-team Initiative.
+   feeds a set of dice-advantage effects (see section 5.2).
 
 ## 2. Turn model (alternating queue resolution)
 
@@ -71,11 +71,13 @@ Phases:
 **Initiative:**
 
 - **Cross-team** (both teams' effects would resolve at the same instant -
-  for example a reactive trigger from each side clashing): the higher
-  **Team Efficiency Grade** team's effects resolve first. This is a
-  resolution-order tiebreak only. It does NOT decide which team takes the
-  first turn of the battle - that is a separate, even 50-50 coin flip, not
-  tied to TEG or any stat.
+  for example a reactive trigger from each side clashing): does not arise
+  under alternating resolution, because the two teams never resolve in the
+  same pass. The earlier design used TEG as a cross-team resolution-order
+  tiebreak here; that has been **retired** (it can never fire). TEG's
+  mechanical role is now the dice-advantage effect set in section 5.2. Turn
+  order (who acts first) remains a separate, even 50-50 coin flip, not tied
+  to TEG or any stat.
 - **Within a single team's own queue**, phase order governs; ties within a
   phase break by the acting character's **Team Spirit deviation from
   midpoint** (bigger commitment = higher initiative), then queue order. TEG
@@ -103,11 +105,9 @@ dual-direction stat is legible.
 ## 5. Team Efficiency Grade (TEG)
 
 A squad-level grade, D to SSS, shown under Player Info, measuring how well
-tuned a squad is (not how powerful). Its one mechanical job is the
-cross-team resolution-order tiebreak (see section 3): when both teams'
-effects would land at the same instant, the higher-grade team's resolve
-first. It does NOT decide which team takes the first turn (that is an even
-coin flip). Draegor's counter also reads the grade as a threshold.
+tuned a squad is (not how powerful).
+
+### 5.1 What TEG scores (six sub-scores)
 
 Six sub-scores (each 0 to 100), weighted into a 0 to 100 composite (weights
 tunable):
@@ -124,18 +124,90 @@ tunable):
 Tier ladder (composite to grade, tunable): D 0-39, C 40-54, B 55-67,
 A 68-78, S 79-88, SS 89-95, SSS 96-100. SSS is deliberately hard.
 
-Consequences:
+### 5.2 TEG's mechanical effects (the combination amplifier)
 
-- A **low-Team-Spirit but well-built** squad earns a high grade and wins
-  the cross-team resolution-order tiebreak when effects clash, because TEG
-  scores alignment, not raw TS. This is what makes low-TS strategies viable
-  (the Draegor promise).
-- Display: letter grade prominent under Player Info; tap to expand the six
-  sub-scores so players can optimize toward it.
-- Honest caveat: TEG's only mechanical use is the cross-team
-  resolution-order tiebreak, which only bites once counters create
-  simultaneous cross-team clashes (Phase B onward). Before that it is
-  display-only. It never decides the opening turn (a coin flip).
+Design decision (supersedes the earlier cross-team resolution-order
+tiebreak, which cannot occur under the alternating resolution we are
+keeping: two teams never resolve in the same pass, so there is never a
+cross-team tie). TEG expresses itself as a **combination amplifier routed
+through the existing d20 / RollContext advantage system**
+(`util/dice.dart`: `RollMode`, composable `RollContext`, `D20RollResult`
+with nat-20/nat-1 crits). Higher TEG does **not** inflate damage or stats;
+it changes how often the dice favor a coordinated squad. Low TEG is never
+penalized in combat; instead it earns more post-battle XP, so TEG is a
+risk/reward dial, not a strictly-better stat. All numbers below are
+first-pass and tunable (Phase H).
+
+**Effect 1 - Coordination (offensive advantage).** Per qualifying
+**offensive** d20 (attack to-hit and status-infliction rolls), the squad
+has a TEG-scaled chance to gain **advantage**. Engine hook: on success,
+`addAdvantage('teg')` on the attacker's `RollContext` before
+`resolveAttackRoll` / the opposed status roll.
+
+| TEG | D | C | B | A | S | SS | SSS |
+|---|---|---|---|---|---|---|---|
+| Adv chance | 0% | 3% | 6% | 9% | 12% | 16% | 20% |
+
+**XP counterweight (inverse).** Battle XP is scaled inversely to TEG, so a
+weaker-graded squad levels faster (an underdog playstyle) and an elite squad
+pays an "elite tax." Depends on real, server-authoritative XP + an account
+system (see section 15, product roadmap). Drafted as a bonus multiplier on
+base XP; exact formula pinned by that task.
+
+| TEG | D | C | B | A | S | SS | SSS |
+|---|---|---|---|---|---|---|---|
+| Battle XP bonus | +75% | +63% | +51% | +40% | +28% | +16% | +5% |
+
+**Effect 2 - Operator's Read (defensive advantage, inverted).** Advantage on
+the squad's **defensive** d20s only: the defender's roll in an opposed attack
+contest (`resolveAttackRoll`'s `defenderContext`) and status-resistance rolls
+(`rollContextFor(StatusRollTag.statusResistanceRoll)`). **Inverted** vs TEG:
+the less in sync a squad is, the more it runs on instinct. Note (verified in
+code): counters/traps themselves do **not** roll (they fire on a condition
+match, not a contest), so Effect 2 attaches to these two real defensive
+rolls, not to counter resolution.
+
+| TEG | D | C | B | A | S | SS | SSS |
+|---|---|---|---|---|---|---|---|
+| Def adv chance | 20% | 16% | 12% | 9% | 6% | 3% | 0% |
+
+**Effect 3 - Synergy Refunds (Trion).** On a recognized **setup->payoff**
+combo (a payoff offensive ability landing on an enemy under a control/debuff
+status **an ally applied**), refund part of the payoff's Trion cost. **SS
+caps at 20%; SSS is 0%** and takes Effect 5 in its place.
+
+| TEG | D | C | B | A | S | SS | SSS |
+|---|---|---|---|---|---|---|---|
+| Trion refund | 0% | 4% | 8% | 12% | 16% | 20% | 0% (-> fx5) |
+
+**Effect 4 - Focus Fire / combo amplifier (pending the Combo Recognition
+system).** When the squad executes a **recognized combo**, the payoff gains
+advantage, its strength scaled by the combo and **hard-capped at 20%** (the
+universal advantage-chance ceiling; focus fire is how sub-SSS squads climb
+to it). This is deliberately **not** positional: it depends on the **Combo
+Recognition system** (new phase, section 12) to decide what counts as a real
+combo from world / story / character / perk / trigger / in-battle-state
+context. Marked **pending** until that phase lands.
+
+**Effect 5 - Crit Range Widener (SSS only).** Always-on at **SSS only**: the
+squad's attack rolls crit on a **natural 18-20** on the kept die (vs nat-20
+normally; hooks `criticalHitThreshold` / kept-die crit eval). Compounds with
+advantage. This is what SSS gets **instead of** Effect 3 refunds.
+
+### 5.3 Resulting tier identities (sanity check)
+
+- **D (instinct survivor):** 0% offense adv, best defense (20%), no refunds,
+  no crit widen, most XP (+75%). Fast-leveling underdog.
+- **SS (peak economy):** strong offense (16%), thin defense (3%), max refunds
+  (20%), low XP. The combo-engine sweet spot.
+- **SSS (coordination glass cannon):** max offense (20%), no defensive read
+  (0%), no refunds, crit on 18-20, least XP (+5%). All-in on offense.
+
+Display: letter grade prominent under Player Info; tap to expand the six
+sub-scores. Also surface which effects are live at the current grade so
+players can optimize toward it. Draegor's counter also reads the grade as a
+threshold (section 6.2), and its "raise TEG 2 tiers" effect now has teeth
+again because TEG shifts the roll-advantage tables above.
 
 ## 6. Counters
 
@@ -350,7 +422,11 @@ HP swap; cheat-death enrichment; selfDamagePercentOfDealt and
 linkedTargetDamageMultiplier fields on ActiveTrigger; TEG scoring; FAT
 activation hook; runtime-mutable resonance grade; crit tracking; the Levy
 (Trion steal); the Interdict brand; charges-on-ally-death; untargetable
-status; Enmity/Regret/Discord/Debt stateful counters.
+status; Enmity/Regret/Discord/Debt stateful counters; TEG dice-advantage
+hook (feed a per-team advantage chance into the attacker/defender/resistance
+RollContexts, plus SSS crit-range widening); a combo-recognition action
+ledger + closed condition primitives + combo catalog (section 12, Phase I);
+inverse-TEG battle XP scaling.
 
 ## 10. UI tasks
 
@@ -420,6 +496,45 @@ branch for the next phase.
   magnitudes (Shared Agony/Grave Bargain/Martyr's End/Dread Resonance/
   Karmic Bind/Echoing Doubt backlash), and status-effect durations. Play/
   sim-test for outliers rather than balancing each in isolation.
+- **Phase I: Combo Recognition system.** A deterministic, data-driven
+  subsystem that recognizes real combos from live battle state, so combos
+  can drive rewards (TEG Effect 4, and Effect 3's setup->payoff). Follows
+  the codebase's closed enumerable-behavior discipline (no open runtime
+  scripting); the engine *matches* encoded combos, it does not *judge*
+  narrative sense at runtime - that is an authoring-time decision. Staged:
+  - I1: **Action ledger.** A battle-level rolling record of resolved
+    actions this turn (actor id, trigger id and its tags - OriginTag /
+    AttackType / AttackSubtype / category - target ids, statuses applied,
+    sequence index). Extends today's thin per-character history
+    (`lastUsedTriggerId`, `triggersUsedThisTurn`). Bounded and cheap.
+  - I2: **Condition primitives + recognizer.** A closed set of composable
+    predicates (`allOf` / `anyOf` / `not` + leaf matchers over the ledger,
+    the payoff action, and the target's live state: ally-applied status
+    present, ally used tag/origin, target hp threshold, character/perk
+    identity, same target, within-turn). `ComboRecognizer.recognize(payoff,
+    ledger, state) -> List<RecognizedCombo>`, deterministic and unit-tested.
+  - I3: **Layer 1 - generic/emergent combos.** A seed catalog of combos
+    that apply to anyone (control-then-strike, affliction-then-detonate,
+    same-origin chain). Satisfies Effect 3 and unblocks Effect 4.
+  - I4: **Layer 2 - signature/authored combos.** Named `ComboDefinition`
+    entries in a `combo_catalog.dart` referencing specific characters,
+    perks, triggers, and world/story context, each with flavor and a
+    stronger reward. Added incrementally as content.
+  - I5 (optional): **authoring tooling** (may be AI-assisted at design
+    time, never at runtime) that proposes signature combos from the content
+    data for human approval.
+  - Consumers: Effect 4 maps a recognized combo's strength to advantage
+    chance (capped 20%); Effect 3 refunds; later, combo VFX, combo-seeking
+    AI, and story beats read the same recognizer output.
+- **Phase J: TEG mechanical effects** (section 5.2). Implements the five
+  dice-advantage effects. Effects 1, 2, 5 are self-contained (feed a
+  per-team advantage chance / crit-range into the existing RollContext /
+  crit path from an app-computed TEG). Effect 3 depends on Phase I's
+  recognizer (setup->payoff category). Effect 4 depends on Phase I in full.
+  The inverse-TEG XP counterweight depends on the server-XP + accounts task
+  (section 15). App computes TEG and injects one scalar per team into the
+  Battle at setup, so the engine stays pure and never compares two grades
+  inline (the coupling that killed the old cross-team tiebreak).
 
 ## 13. Progress
 
@@ -435,27 +550,31 @@ reads "wrong" and docks its own holder's Trion; Gravehour always sees a
 `app/lib/src/game/play_session.dart` (the `_resolveAction` / turn flow) and
 tick reactive expiry once per opponent turn.
 
-**TEG mechanical role: OPEN design question (brainstorm pending).** We are
-KEEPING alternating resolution (each team resolves its own queue on its own
-turn). Under alternating, TEG's originally-specced mechanic - the cross-team
-resolution-order tiebreak - cannot occur: two teams never resolve in the
-same pass, so there is no cross-team tie, and TEG is uniform within a team
-so it cannot order same-team actions (that stays Team Spirit deviation). So
-TEG needs a DIFFERENT mechanical role, to be decided. Until then TEG is
+**TEG mechanical role: DECIDED (designed, not yet built - Phase J).** We are
+KEEPING alternating resolution, under which TEG's originally-specced
+cross-team resolution-order tiebreak can never fire (two teams never resolve
+in the same pass). That tiebreak is retired. TEG's new role is the
+**combination amplifier**: five dice-advantage effects routed through the
+existing d20 / RollContext system, plus an inverse-TEG XP counterweight (full
+spec in section 5.2). Built by **Phase J**; Effects 3 and 4 depend on the
+**Combo Recognition system (Phase I)**; the XP counterweight depends on the
+server-XP + accounts task (section 15). Until Phase J lands, TEG remains
 display-only (plus Draegor's threshold read). Turn order stays a 50-50 coin
-flip. NOTE: Coldread's "seize initiative" and Draegor's "raise TEG 2 tiers"
-were both written against the tiebreak, so they also depend on this
-decision.
+flip. NOTE: Draegor's "raise TEG 2 tiers" now has a real effect again (it
+shifts the roll-advantage tables); Coldread's "seize initiative" still needs
+re-specifying against the new model.
 
 | Phase | Status | Branch |
 |---|---|---|
 | Phase B: reactive/counter engine + 19 counters | engine done + merged to main. The 13 active/reactive counters work in-game (they run inside `resolveAbilityUse`). The 6 passive counters are NOT fed by the app - inert/misbehaving until integrated (see 13.1; immediate priority). | `claude/phase-b-reactive-counters` (deleted) |
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
-| Phase E: new-content wiring | in progress: the two deferred unique hooks (7.1) done + green on branch; TEG tiebreak + Coldread + Nullhymn resonance still open | `claude/tactical-combat-engine-5luk6z` |
+| Phase E: new-content wiring | in progress: the two deferred unique hooks (7.1) done + green on branch; Coldread "seize" + Nullhymn resonance still open (TEG tiebreak retired, superseded by Phases I/J) | `claude/tactical-combat-engine-5luk6z` |
 | Phase F: remaining UI | not started | TBD |
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
+| Phase I: Combo Recognition system | specced (section 12), not started | TBD |
+| Phase J: TEG mechanical effects (section 5.2) | specced, not started; Effects 3/4 depend on Phase I, XP on section 15.8 | TBD |
 
 ### 13.1 Build status (verified against code)
 
@@ -493,14 +612,17 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
    `recordDamageDealt`) and reactive expiry (`tickReactiveEffects`) are never
    called at runtime. So Draegor/Reckoning/Nullhymn/Ironvow are inert,
    Coldread self-harms, Gravehour over-fires. Fix in `play_session.dart`.
-2. **TEG has no mechanical role yet.** Its specced role (cross-team
-   resolution-order tiebreak) cannot occur under the alternating resolution
-   we are keeping. TEG needs a new mechanical role - OPEN design question.
-   Until decided, TEG is display-only.
-3. **Draegor's "raise TEG 2 tiers" and Coldread's "seize initiative"** both
-   assumed the tiebreak, so they are blocked on the TEG-role decision (2).
-   Draegor currently runs a fallback (double the highest-TA ally's TA);
-   Coldread's Levy works but its "seize" does not.
+2. **TEG's mechanical effects are designed but not built (Phase J).** The
+   old tiebreak role is retired (it cannot fire under alternating
+   resolution). TEG's role is now the five-effect combination amplifier +
+   inverse XP counterweight (section 5.2). Not yet implemented, so TEG is
+   still display-only in-game. Effects 3 and 4 also need the Combo
+   Recognition system (Phase I), which is likewise specced but not built.
+3. **Draegor's "raise TEG 2 tiers"** now has a defined effect under the new
+   model (it shifts the roll-advantage tables) but is unbuilt until Phase J;
+   it currently runs its fallback (double the highest-TA ally's TA).
+   **Coldread's "seize initiative"** needs re-specifying against the new
+   model; its Levy works, its "seize" does not.
 4. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
    debuffs). Permanently dropping an enemy Black Trigger's resonance grade
    needs a runtime-mutable `ResonanceGrid` (currently a const lookup).
@@ -534,3 +656,12 @@ real online multiplayer comes later (it does not gate these items).
 6. Replace Quick Battle with **Start Quick Match** (PvP) - the second home
    option.
 7. Add **Start Ladder Battle** (PvP) - the first home option.
+8. **Accounts + server-authoritative player XP.** Stand up an account system
+   with easy sign-in (Google first, room for Apple / email) and a server
+   that owns the XP ledger. Real player XP must be server-authoritative (not
+   client-trusted). The server applies the **inverse-TEG XP multiplier**
+   (section 5.2: D +75% ... SSS +5%) at battle end from a client-reported,
+   server-validated result. This gates TEG's XP counterweight (Phase J) and
+   is a prerequisite for real online multiplayer generally. Capture: auth +
+   provider sign-in, the XP ledger service and its multiplier formula, and a
+   client hook that reports battle results.
