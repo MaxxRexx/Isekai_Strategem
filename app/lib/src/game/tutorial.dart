@@ -43,8 +43,8 @@ const tutorialLoadouts =
       ),
       'priya_nakamura': (
         triggerIds: [
-          'mending_light',
-          'vital_surge',
+          'soul_siphon',
+          'second_wind',
           'rally_cry',
           'cleansing_ward',
         ],

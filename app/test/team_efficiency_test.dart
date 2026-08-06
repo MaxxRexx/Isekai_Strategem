@@ -46,16 +46,16 @@ void main() {
     // Yuki has high Team Spirit (70, the sustain pole). A support loadout is
     // aligned; a pure-offense loadout on the same character is not.
     final aligned = gradeOf('yuki_amaral', [
-      'mending_light', // heal
-      'vital_surge', // buff
-      'rally_cry', // buff
+      'soul_siphon', // heal/siphon (sustain)
+      'cleansing_ward', // ally support
+      'rally_cry', // ally buff
       'war_chant', // self buff
     ]);
     final mismatched = gradeOf('yuki_amaral', [
       'twin_fang_strike',
       'piercing_thrust',
       'longshot',
-      'marksmans_volley',
+      'scattershot',
     ]);
     expect(
       aligned.teamSpiritAlignment,
@@ -68,7 +68,7 @@ void main() {
       'twin_fang_strike',
       'piercing_thrust',
       'longshot',
-      'marksmans_volley',
+      'scattershot',
     ]);
     expect(noBt.resonanceFit, isNull);
 
