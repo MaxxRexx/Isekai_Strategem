@@ -11,12 +11,14 @@ export 'src/ai/rule_based_ai.dart';
 // Content
 export 'src/content/black_trigger_catalog.dart';
 export 'src/content/character_roster.dart';
+export 'src/content/combo_catalog.dart';
 export 'src/content/trigger_catalog.dart';
 
 // Models
 export 'src/models/black_trigger.dart';
 export 'src/models/character.dart';
 export 'src/models/character_perk.dart';
+export 'src/models/combo.dart';
 export 'src/models/character_type.dart';
 export 'src/models/damage_type.dart';
 export 'src/models/loadout.dart';
@@ -48,6 +50,7 @@ export 'src/story/story_engine.dart';
 export 'src/engine/battle.dart';
 export 'src/engine/character_battle_state.dart';
 export 'src/engine/combat_engine.dart';
+export 'src/engine/combo_recognizer.dart';
 export 'src/engine/fat_engine.dart';
 export 'src/engine/status_effect_engine.dart';
 export 'src/engine/team_spirit_curve.dart';
