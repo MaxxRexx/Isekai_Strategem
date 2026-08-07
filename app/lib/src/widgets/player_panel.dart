@@ -71,6 +71,11 @@ class PlayerPanel extends StatelessWidget {
   /// description panel), so it isn't repeated.
   final bool showSquad;
 
+  /// F3c: optional "Reset" (clear the squad) and "Randomize" (roll a random
+  /// squad + loadouts) actions, shown under "YOUR SQUAD" when provided.
+  final VoidCallback? onReset;
+  final VoidCallback? onRandomize;
+
   const PlayerPanel({
     super.key,
     this.squadIds = const [],
@@ -78,6 +83,8 @@ class PlayerPanel extends StatelessWidget {
     this.compact = false,
     this.onSquadMemberTap,
     this.showSquad = true,
+    this.onReset,
+    this.onRandomize,
   });
 
   @override
@@ -189,6 +196,39 @@ class PlayerPanel extends StatelessWidget {
                       ),
             ],
           ),
+          if (onReset != null || onRandomize != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (onRandomize != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onRandomize,
+                      icon: const Icon(Icons.casino, size: 15),
+                      label: const Text('Randomize'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        textStyle: const TextStyle(fontSize: 11),
+                      ),
+                    ),
+                  ),
+                if (onRandomize != null && onReset != null)
+                  const SizedBox(width: 8),
+                if (onReset != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onReset,
+                      icon: const Icon(Icons.refresh, size: 15),
+                      label: const Text('Reset'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        textStyle: const TextStyle(fontSize: 11),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
       ],
     );

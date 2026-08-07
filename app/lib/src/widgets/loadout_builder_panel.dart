@@ -227,6 +227,11 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
         name: active.name,
         description: describeTrigger(active),
         tags: ['${active.equipCost} TRION'],
+        note: tutorialBlocked
+            ? 'Locked during the tutorial.'
+            : unaffordable
+                ? 'Not enough Trion to equip.'
+                : null,
         buttonLabel: equipped ? 'UNEQUIP' : 'EQUIP',
         // Equip keeps the solid fill; unequip switches to the open outline.
         filled: !equipped,
@@ -259,6 +264,11 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
       descriptionWidget: BlackTriggerAbilityList(blackTrigger: bt),
       tags: ['${bt.equipCost} TRION'],
       extraTags: [_gradeTag(grade)],
+      note: tutorialBlocked
+          ? 'Locked during the tutorial.'
+          : unaffordable
+              ? 'Not enough Trion to equip.'
+              : null,
       buttonLabel: selected ? 'UNEQUIP' : 'EQUIP',
       // Equip keeps the solid fill; unequip switches to the open outline.
       filled: !selected,
@@ -280,6 +290,7 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
     required String buttonLabel,
     required bool filled,
     required VoidCallback? onPressed,
+    String? note,
   }) {
     // Equipped/selected items offer an unequip/remove action drawn as an
     // open-notch outlined button; not-yet-equipped items offer an
@@ -359,6 +370,17 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
                     ...extraTags,
                   ],
                 ),
+                if (note != null) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    note,
+                    style: const TextStyle(
+                      color: Palette.warn,
+                      fontSize: 10.5,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -382,11 +404,15 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
             highlighted:
                 !selection.triggerIds.contains(t.id) &&
                 _previewTriggerId == t.id,
-            enabled:
-                (widget.allowedActiveIds == null ||
-                    widget.allowedActiveIds!.contains(t.id)) &&
-                (selection.triggerIds.contains(t.id) ||
-                    t.equipCost <= widget.remainingTrion),
+            // Always tappable so any Trigger (even one you can't equip yet)
+            // can be previewed in the info panel; `dimmed` conveys the
+            // unavailable state, and the Equip button there stays disabled.
+            enabled: true,
+            dimmed:
+                !((widget.allowedActiveIds == null ||
+                        widget.allowedActiveIds!.contains(t.id)) &&
+                    (selection.triggerIds.contains(t.id) ||
+                        t.equipCost <= widget.remainingTrion)),
             tooltip: t.name,
             onTap: () => setState(() => _previewTriggerId = t.id),
             size: 44,
@@ -437,10 +463,12 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
                 highlighted:
                     selection.blackTriggerId != bt.id &&
                     _previewTriggerId == bt.id,
-                enabled:
-                    (!tutorialLocked || allowedId == bt.id) &&
-                    (selection.blackTriggerId == bt.id ||
-                        bt.equipCost <= widget.remainingTrion),
+                // Always tappable to preview; dimmed when it can't be equipped.
+                enabled: true,
+                dimmed:
+                    !((!tutorialLocked || allowedId == bt.id) &&
+                        (selection.blackTriggerId == bt.id ||
+                            bt.equipCost <= widget.remainingTrion)),
                 tooltip: bt.name,
                 onTap: () => setState(() => _previewTriggerId = bt.id),
                 size: 44,

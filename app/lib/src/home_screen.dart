@@ -72,6 +72,56 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// F3b: clears every equipped Trigger / Black Trigger for the selected
+  /// character (back to an empty loadout).
+  void _clearSelected() {
+    final selectedId = _selectedId;
+    if (selectedId == null) return;
+    setState(() {
+      _selectionFor(selectedId)
+        ..triggerIds.clear()
+        ..blackTriggerId = null;
+    });
+  }
+
+  /// Builds a random valid loadout for [charId] into its selection.
+  void _randomizeLoadout(String charId) {
+    final profile = AiProfile.all[Random().nextInt(AiProfile.all.length)];
+    final loadout = loadoutBuilder.build(
+      roster[charId],
+      activeTriggerPool: triggerCatalog.activeTriggers,
+      passiveTriggerPool: triggerCatalog.passiveTriggers,
+      blackTriggerPool: blackTriggerCatalog.all,
+      profile: profile,
+    );
+    final selection = _selectionFor(charId)
+      ..triggerIds.clear()
+      ..blackTriggerId = loadout.blackTrigger?.id;
+    selection.triggerIds.addAll(loadout.triggers.map((t) => t.id));
+  }
+
+  /// F3c: empties the squad and every stored loadout.
+  void _resetSquad() {
+    setState(() {
+      _squadIds.clear();
+      _selections.clear();
+    });
+  }
+
+  /// F3c: picks 3 random distinct characters, each with a random valid
+  /// loadout, as the squad.
+  void _randomizeSquad() {
+    final ids = roster.all.map((c) => c.id).toList()..shuffle(Random());
+    setState(() {
+      _squadIds
+        ..clear()
+        ..addAll(ids.take(3));
+      for (final id in _squadIds) {
+        _randomizeLoadout(id);
+      }
+    });
+  }
+
   void _play() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -120,6 +170,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         trailing: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                onPressed: _clearSelected,
+                                icon: const Icon(Icons.layers_clear, size: 16),
+                                label: const Text('Unequip all'),
+                              ),
+                            ),
                             LoadoutBuilderPanel(
                               key: ValueKey(selectedId),
                               character: selected,
@@ -177,6 +235,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   selectedId: selectedId,
                   squadIds: _squadIds,
                   onTap: _selectCharacter,
+                  onReset: _resetSquad,
+                  onRandomize: _randomizeSquad,
                 ),
               ],
             ),
@@ -307,11 +367,15 @@ class _RosterAndPlayerPanel extends StatelessWidget {
   final String? selectedId;
   final List<String> squadIds;
   final ValueChanged<String> onTap;
+  final VoidCallback onReset;
+  final VoidCallback onRandomize;
 
   const _RosterAndPlayerPanel({
     required this.selectedId,
     required this.squadIds,
     required this.onTap,
+    required this.onReset,
+    required this.onRandomize,
   });
 
   @override
@@ -343,6 +407,8 @@ class _RosterAndPlayerPanel extends StatelessWidget {
               bordered: false,
               compact: true,
               onSquadMemberTap: onTap,
+              onReset: onReset,
+              onRandomize: onRandomize,
             ),
           ),
         ],

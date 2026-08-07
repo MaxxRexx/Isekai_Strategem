@@ -10,6 +10,13 @@ class AbilitySlot extends StatelessWidget {
   final bool selected;
   final bool highlighted;
   final bool enabled;
+
+  /// Visual-only "unavailable" dimming that does NOT block [onTap]. Used in
+  /// the Loadout builder so a not-yet-affordable Trigger still reads as
+  /// unavailable but can be tapped to preview its details (the Equip action
+  /// itself stays disabled in the info panel).
+  final bool dimmed;
+
   final String? tooltip;
   final VoidCallback? onTap;
   final double size;
@@ -26,6 +33,7 @@ class AbilitySlot extends StatelessWidget {
     this.selected = false,
     this.highlighted = false,
     this.enabled = true,
+    this.dimmed = false,
     this.tooltip,
     this.onTap,
     this.size = 48,
@@ -43,7 +51,7 @@ class AbilitySlot extends StatelessWidget {
         // clearly on an unselected slot.
         : Colors.white.withValues(alpha: 0.34);
     final button = Opacity(
-      opacity: enabled ? 1 : 0.4,
+      opacity: (enabled && !dimmed) ? 1 : 0.4,
       child: Material(
         color: Palette.panel,
         // Open L-bracket notch on the top-left + bottom-right corners (the
