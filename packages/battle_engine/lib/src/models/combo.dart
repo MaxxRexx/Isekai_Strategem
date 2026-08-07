@@ -172,6 +172,40 @@ class TargetHpBelow extends ComboCondition {
       ctx.targetId != null && ctx.targetHpFraction <= fraction;
 }
 
+// --- Identity leaves (Layer-2 / signature combos) -----------------------
+// These key off specific trigger / character ids so authored combos can
+// name the exact abilities and characters that make a signature play.
+
+/// The payoff was cast with one of [triggerIds].
+class PayoffUsesTrigger extends ComboCondition {
+  final Set<String> triggerIds;
+  const PayoffUsesTrigger(this.triggerIds);
+  @override
+  bool matches(ComboContext ctx) => triggerIds.contains(ctx.payoff.triggerId);
+}
+
+/// The payoff's actor is one of [characterIds].
+class PayoffActorIs extends ComboCondition {
+  final Set<String> characterIds;
+  const PayoffActorIs(this.characterIds);
+  @override
+  bool matches(ComboContext ctx) => characterIds.contains(ctx.payoff.actorId);
+}
+
+/// A same-team ally, earlier this turn, used one of [triggerIds] against the
+/// payoff's primary target (the setup half of a named signature chain).
+class AllyUsedTriggerOnTarget extends ComboCondition {
+  final Set<String> triggerIds;
+  const AllyUsedTriggerOnTarget(this.triggerIds);
+  @override
+  bool matches(ComboContext ctx) {
+    final target = ctx.targetId;
+    if (target == null) return false;
+    return ctx.priorSameTeamActions.any((e) =>
+        triggerIds.contains(e.triggerId) && e.targetIds.contains(target));
+  }
+}
+
 /// One recognizable combo: a matchable [condition], a display [name] /
 /// [flavor], and a [strength] that downstream effects (TEG Effect 4's
 /// advantage, Effect 3's Trion refund) scale their reward by.

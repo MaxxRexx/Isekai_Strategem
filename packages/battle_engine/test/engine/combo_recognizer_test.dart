@@ -123,4 +123,49 @@ void main() {
       expect(e.sequence, 0, reason: 'sequence restarts after a turn boundary');
     });
   });
+
+  group('Signature combos (Phase I4)', () {
+    test('frozen detonation: Frost Lance setup then Cinderburst payoff', () {
+      final ledger = ComboLedger();
+      setup(ledger, team: 'A', actor: 'a1', statuses: [], target: 'x', id: 'frost_lance');
+      final payoff =
+          setup(ledger, team: 'A', actor: 'a2', statuses: [], target: 'x', id: 'cinderburst');
+      final best = recognizer.best(ledger.contextFor(payoff));
+      expect(best?.id, 'frozen_detonation');
+      expect(best?.strength, 4);
+      expect(best?.isSetupPayoff, isTrue);
+    });
+
+    test('terror cascade: Nightmare Pulse then Dread Gaze', () {
+      final ledger = ComboLedger();
+      setup(ledger, team: 'A', actor: 'a1', statuses: [], target: 'x', id: 'nightmare_pulse');
+      final payoff =
+          setup(ledger, team: 'A', actor: 'a2', statuses: [], target: 'x', id: 'dread_gaze');
+      expect(recognizer.recognize(ledger.contextFor(payoff)).map((c) => c.id),
+          contains('terror_cascade'));
+    });
+
+    test('shatterpoint execution: a Shatterpoint finisher on a softened target',
+        () {
+      final ledger = ComboLedger();
+      setup(ledger, team: 'A', actor: 'a1', statuses: [], target: 'x', id: 'longshot');
+      final payoff =
+          setup(ledger, team: 'A', actor: 'a2', statuses: [], target: 'x', id: 'shatterpoint');
+      final best = recognizer.best(ledger.contextFor(payoff));
+      expect(best?.id, 'shatterpoint_execution');
+      expect(best?.strength, 5);
+    });
+
+    test('a signature payoff without its setup falls back to the generic combo',
+        () {
+      final ledger = ComboLedger();
+      setup(ledger, team: 'A', actor: 'a1', statuses: [], target: 'x', id: 'longshot');
+      final payoff =
+          setup(ledger, team: 'A', actor: 'a2', statuses: [], target: 'x', id: 'cinderburst');
+      final ids = recognizer.recognize(ledger.contextFor(payoff)).map((c) => c.id);
+      expect(ids, isNot(contains('frozen_detonation')),
+          reason: 'no Frost Lance setup was played');
+      expect(ids, contains('focus_fire'));
+    });
+  });
 }

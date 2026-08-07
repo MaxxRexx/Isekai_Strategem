@@ -115,6 +115,60 @@ class ComboCatalog {
     ),
   ];
 
-  /// The default recognizer over the Layer-1 catalog.
-  static const ComboRecognizer defaultRecognizer = ComboRecognizer(generic);
+  /// Layer 2: signature / authored combos (Phase I4). These name specific
+  /// triggers (and can name characters/perks) for bespoke, higher-reward
+  /// plays. Seeded here with thematic trigger chains; the full set is
+  /// designer content added incrementally. Strengths run above the generic
+  /// tier so a signature play amplifies harder (still capped at 20% by the
+  /// consumer). Tunable (Phase H).
+  static const List<ComboDefinition> signature = [
+    ComboDefinition(
+      id: 'frozen_detonation',
+      name: 'Frozen Detonation',
+      flavor:
+          'A teammate flash-freezes the target with Frost Lance; the follow-up '
+          'Cinderburst cracks the ice for a violent thermal shock.',
+      strength: 4,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'cinderburst'}),
+        AllyUsedTriggerOnTarget({'frost_lance'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'terror_cascade',
+      name: 'Terror Cascade',
+      flavor:
+          'Nightmare Pulse primes the mind; Dread Gaze lands while the target '
+          'is already reeling in fear, compounding the dread.',
+      strength: 4,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'dread_gaze'}),
+        AllyUsedTriggerOnTarget({'nightmare_pulse'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'shatterpoint_execution',
+      name: 'Shatterpoint Execution',
+      flavor:
+          'Shatterpoint comes down on an enemy an ally has already softened - '
+          'the finishing blow of a focused takedown.',
+      strength: 5,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'shatterpoint'}),
+        AllyStruckTarget(),
+      ]),
+    ),
+  ];
+
+  /// The full recognizable catalog: generic (Layer 1) plus signature
+  /// (Layer 2), strongest-first ordering handled by the recognizer.
+  static const List<ComboDefinition> all = [...generic, ...signature];
+
+  /// The default recognizer over the full catalog.
+  static const ComboRecognizer defaultRecognizer = ComboRecognizer(all);
 }
