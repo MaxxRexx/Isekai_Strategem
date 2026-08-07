@@ -71,6 +71,7 @@ class ComboCatalog {
           'An ally locks the target down and a teammate capitalises before '
           'it can recover.',
       strength: 3,
+      isSetupPayoff: true,
       condition: AllOf([
         PayoffIsOffensive(),
         AllyAppliedStatusToTarget(controlStatuses),
@@ -96,6 +97,7 @@ class ComboCatalog {
           'A teammate pries the target open (exposed, weakened, marked) and '
           'the payoff drives through the gap.',
       strength: 2,
+      isSetupPayoff: true,
       condition: AllOf([
         PayoffIsOffensive(),
         AllyAppliedStatusToTarget(vulnerabilityStatuses),

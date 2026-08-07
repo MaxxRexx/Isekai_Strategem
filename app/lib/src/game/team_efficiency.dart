@@ -41,10 +41,22 @@ TegRollProfile tegRollProfileFor(TegTier tier) {
     TegTier.ss => 3,
     TegTier.sss => 0,
   };
+  // Effect 3: setup->payoff Trion refund. Scales up to SS; SSS is 0 (it takes
+  // the crit widener instead).
+  final refund = switch (tier) {
+    TegTier.d => 0,
+    TegTier.c => 4,
+    TegTier.b => 8,
+    TegTier.a => 12,
+    TegTier.s => 16,
+    TegTier.ss => 20,
+    TegTier.sss => 0,
+  };
   return TegRollProfile(
     offenseAdvantagePercent: offense,
     defenseAdvantagePercent: defense,
     maxCritThreshold: tier == TegTier.sss ? 18 : 20,
+    trionRefundPercent: refund,
   );
 }
 

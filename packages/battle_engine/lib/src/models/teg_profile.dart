@@ -20,10 +20,16 @@ class TegRollProfile {
   /// The engine crits when the kept die >= min(computed threshold, this).
   final int maxCritThreshold;
 
+  /// Effect 3 (Synergy Refunds): percent of a setup->payoff combo's Trion
+  /// cost refunded to the team. Scales up to SS (20%); SSS is 0% (it takes
+  /// Effect 5 instead). 0 grants no refund.
+  final int trionRefundPercent;
+
   const TegRollProfile({
     this.offenseAdvantagePercent = 0,
     this.defenseAdvantagePercent = 0,
     this.maxCritThreshold = 20,
+    this.trionRefundPercent = 0,
   });
 
   /// A no-op profile (used when a character has no injected TEG data, e.g.

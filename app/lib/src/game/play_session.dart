@@ -378,6 +378,10 @@ class PlaySession {
       trigger: trigger,
       targets: targets,
     );
+    // TEG Effect 3: credit any setup->payoff Trion refund (player = team A).
+    if (useResult.trionRefund > 0) {
+      battle.teamA.trionPool.gain(useResult.trionRefund);
+    }
     _feedPassiveCounters(state, trigger, useResult);
 
     return UseAbilityOutcome.done(
@@ -648,6 +652,14 @@ class PlaySession {
       trigger: trigger,
       targets: targets,
     );
+    // TEG Effect 3: credit any setup->payoff Trion refund to the acting team.
+    if (useResult.trionRefund > 0) {
+      final actingOnTeamA =
+          battle.teamA.characters.any((c) => c.id == characterId);
+      (actingOnTeamA ? battle.teamA : battle.teamB)
+          .trionPool
+          .gain(useResult.trionRefund);
+    }
     _feedPassiveCounters(state, trigger, useResult);
     return LogAction(
       characterId: characterId,

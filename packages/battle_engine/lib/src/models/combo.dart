@@ -182,12 +182,19 @@ class ComboDefinition {
   final ComboCondition condition;
   final int strength;
 
+  /// True for setup->payoff combos (a payoff exploiting a control/debuff an
+  /// ally applied to the target). TEG Effect 3's Trion refund is granted only
+  /// for these; focus-fire / affliction combos amplify (Effect 4) but do not
+  /// refund.
+  final bool isSetupPayoff;
+
   const ComboDefinition({
     required this.id,
     required this.name,
     required this.flavor,
     required this.condition,
     this.strength = 1,
+    this.isSetupPayoff = false,
   });
 }
 
@@ -198,4 +205,5 @@ class RecognizedCombo {
 
   String get id => definition.id;
   int get strength => definition.strength;
+  bool get isSetupPayoff => definition.isSetupPayoff;
 }

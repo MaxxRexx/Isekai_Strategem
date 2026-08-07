@@ -116,5 +116,62 @@ void main() {
       expect(r.targetResults.single.attackRolls.single.attackerRoll.mode,
           RollMode.normal);
     });
+
+    group('TEG Effect 3 (setup->payoff Trion refund)', () {
+      final payoff = testTrigger(
+          id: 'strike', trionCost: 10, damage: const DiceExpression(1, 4, flatBonus: 3));
+
+      test('refunds the team percent when an ally set the target up', () {
+        final s = squad();
+        final e = engineWith({'a2': const TegRollProfile(trionRefundPercent: 20)},
+            fixed: 5)
+          ..comboRecognizer = ComboCatalog.defaultRecognizer;
+        // Ally applied a control status (stunned) to the enemy this turn.
+        e.comboLedger.record(
+          actorId: 'a1',
+          teamId: 'a1|a2',
+          trigger: testTrigger(id: 'stunner'),
+          targetIds: ['e'],
+          statusesApplied: ['stunned'],
+          dealtDamage: false,
+        );
+        final r = e.resolveAbilityUse(attacker: s.a2, trigger: payoff, targets: [s.enemy]);
+        expect(r.trionRefund, 2); // round(10 * 20%)
+      });
+
+      test('no refund for focus fire alone (not a setup->payoff)', () {
+        final s = squad();
+        final e = engineWith({'a2': const TegRollProfile(trionRefundPercent: 20)},
+            fixed: 5)
+          ..comboRecognizer = ComboCatalog.defaultRecognizer;
+        // Prior ally action merely struck the enemy (no ally-applied status).
+        e.comboLedger.record(
+          actorId: 'a1',
+          teamId: 'a1|a2',
+          trigger: testTrigger(id: 'hit'),
+          targetIds: ['e'],
+          statusesApplied: const [],
+          dealtDamage: true,
+        );
+        final r = e.resolveAbilityUse(attacker: s.a2, trigger: payoff, targets: [s.enemy]);
+        expect(r.trionRefund, 0);
+      });
+
+      test('no refund at a 0% refund tier even with a real setup', () {
+        final s = squad();
+        final e = engineWith({}, fixed: 5) // no profile -> 0% refund
+          ..comboRecognizer = ComboCatalog.defaultRecognizer;
+        e.comboLedger.record(
+          actorId: 'a1',
+          teamId: 'a1|a2',
+          trigger: testTrigger(id: 'stunner'),
+          targetIds: ['e'],
+          statusesApplied: ['stunned'],
+          dealtDamage: false,
+        );
+        final r = e.resolveAbilityUse(attacker: s.a2, trigger: payoff, targets: [s.enemy]);
+        expect(r.trionRefund, 0);
+      });
+    });
   });
 }

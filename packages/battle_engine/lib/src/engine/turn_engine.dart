@@ -90,10 +90,16 @@ class AbilityUseResult {
   final String triggerId;
   final List<TargetHitResult> targetResults;
 
+  /// TEG Effect 3: Trion refunded to the acting team because this action was
+  /// the payoff of a recognized setup->payoff combo. 0 when none applied. The
+  /// engine computes it; the app credits the team's Trion pool.
+  final int trionRefund;
+
   const AbilityUseResult({
     required this.attackerCharacterId,
     required this.triggerId,
     required this.targetResults,
+    this.trionRefund = 0,
   });
 }
 
@@ -166,6 +172,28 @@ class TurnEngine {
     return ids.join('|');
   }
 
+  /// A payoff "probe" entry for [attacker]'s [trigger] against [target],
+  /// sequenced above every recorded entry so `contextFor` treats it purely as
+  /// the payoff (never as one of its own priors).
+  ComboLedgerEntry _comboProbe(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    CharacterBattleState target,
+  ) =>
+      ComboLedgerEntry(
+        actorId: attacker.character.id,
+        teamId: _teamKeyFor(attacker),
+        triggerId: trigger.id,
+        originTag: trigger.originTag,
+        attackType: trigger.attackType,
+        attackSubtype: trigger.attackSubtype,
+        targetAffiliation: trigger.targetAffiliation,
+        targetIds: [target.character.id],
+        statusesApplied: const [],
+        dealtDamage: false,
+        sequence: 1 << 30, // above any recorded entry; excluded from priors
+      );
+
   /// TEG Effect 4: if the current payoff against [target] completes a
   /// recognized combo, roll the strength-scaled advantage chance (capped at
   /// the universal 20%) and, on success, grant [ctx] advantage.
@@ -177,27 +205,34 @@ class TurnEngine {
   ) {
     final recognizer = comboRecognizer;
     if (recognizer == null) return;
-    final probe = ComboLedgerEntry(
-      actorId: attacker.character.id,
-      teamId: _teamKeyFor(attacker),
-      triggerId: trigger.id,
-      originTag: trigger.originTag,
-      attackType: trigger.attackType,
-      attackSubtype: trigger.attackSubtype,
-      targetAffiliation: trigger.targetAffiliation,
-      targetIds: [target.character.id],
-      statusesApplied: const [],
-      dealtDamage: false,
-      sequence: 1 << 30, // above any recorded entry; excluded from priors
-    );
-    final combo = recognizer
-        .best(comboLedger.contextFor(probe, targetState: target));
+    final combo = recognizer.best(comboLedger
+        .contextFor(_comboProbe(attacker, trigger, target), targetState: target));
     if (combo == null) return;
     final chance =
         (combo.strength * comboAdvantagePercentPerStrength).clamp(0, 20);
     if (chance > 0 && combatEngine.diceRoller.rollPercent() <= chance) {
       ctx.addAdvantage('teg_combo');
     }
+  }
+
+  /// TEG Effect 3: the Trion refund for this action if it is the payoff of a
+  /// recognized setup->payoff combo against any of its [targets], scaled by
+  /// the attacker team's refund percent. 0 when disabled or unqualified.
+  int _computeComboRefund(
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    List<CharacterBattleState> targets,
+  ) {
+    final recognizer = comboRecognizer;
+    if (recognizer == null) return 0;
+    final refundPercent = _tegFor(attacker).trionRefundPercent;
+    if (refundPercent <= 0) return 0;
+    final qualifies = targets.any((target) => recognizer
+        .recognize(comboLedger
+            .contextFor(_comboProbe(attacker, trigger, target), targetState: target))
+        .any((c) => c.isSetupPayoff));
+    if (!qualifies) return 0;
+    return (trigger.trionCost * refundPercent / 100).round();
   }
 
   /// TEG Effect 1 (Coordination): with the actor's offense chance, grant
@@ -1293,6 +1328,10 @@ class TurnEngine {
       _armReactiveEffect(attacker, trigger, filteredTargets, reactiveData);
     }
 
+    // TEG Effect 3: compute the setup->payoff refund against the ledger
+    // BEFORE recording this action (so it sees only prior actions as setups).
+    final trionRefund = _computeComboRefund(attacker, trigger, clampedTargets);
+
     // Combat-v2 Phase I/J: record this resolved action so a later same-team
     // payoff can recognize a setup->payoff / focus-fire combo (Effects 3/4).
     comboLedger.record(
@@ -1310,6 +1349,7 @@ class TurnEngine {
       attackerCharacterId: attacker.character.id,
       triggerId: trigger.id,
       targetResults: targetResults,
+      trionRefund: trionRefund,
     );
   }
 
