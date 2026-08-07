@@ -595,8 +595,8 @@ retired tiebreak.
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
 | Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
-| Phase I: Combo Recognition system | I1-I4 done (I1-I3 merged; I4 green on branch): action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains). Live population wired. I5 authoring tooling is optional/deferred; the signature-combo roster grows as designer content | `claude/tactical-combat-engine-5luk6z` |
-| Phase J: TEG mechanical effects (section 5.2) | Effects 1-5 done (1/2/5 merged; 3/4 green on branch): fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund. Remaining: inverse-TEG XP (section 15.8), and Draegor's TEG-shift wiring | `claude/tactical-combat-engine-5luk6z` |
+| Phase I: Combo Recognition system | I1-I5 done (I1-I3 merged; I4-I5 green on branch): action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains), live ledger population, and a design-time signature-combo proposer (`tool/propose_signature_combos.dart`). The signature roster grows as designer content | `claude/tactical-combat-engine-5luk6z` |
+| Phase J: TEG mechanical effects (section 5.2) | Effects 1-5 done (1/2/5 merged; 3/4 green on branch): fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund. Draegor's "raise TEG 2 tiers" now wired (shifts the roll-advantage tables). Remaining: inverse-TEG XP (section 15.8) | `claude/tactical-combat-engine-5luk6z` |
 
 ### 13.1 Build status (verified against code)
 
@@ -641,21 +641,14 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 
 **Specced but NOT built (the real gaps), most important first:**
 1. **The inverse-TEG XP counterweight (Phase J).** The five in-combat TEG
-   effects are all built; the XP side (D +75% ... SSS +5%) is not, because it
-   needs server-authoritative XP + accounts (section 15). Until then TEG is a
-   pure in-combat dial with no post-battle counterweight.
-2. **Draegor's "raise TEG 2 tiers"** now has a real effect target (it would
-   shift the roll-advantage tables) but is not yet wired to it; it currently
-   runs its fallback (double the highest-TA ally's TA). (Coldread's Seize is
-   built - see above.)
-3. **Phase I5 (authoring tooling)** - optional, deferred: a design-time tool
-   that proposes signature combos from content data for human approval. The
-   I4 mechanism it would feed is in place; the signature roster otherwise
-   grows by hand.
-4. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
+   effects are all built (and Draegor's TEG boost is wired); the XP side
+   (D +75% ... SSS +5%) is not, because it needs server-authoritative XP +
+   accounts (section 15). Until then TEG is a pure in-combat dial with no
+   post-battle counterweight.
+2. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
    debuffs). Permanently dropping an enemy Black Trigger's resonance grade
    needs a runtime-mutable `ResonanceGrid` (currently a const lookup).
-5. **Death Ledger trigger-swap** - the AoE-nullify works; the swap part is
+3. **Death Ledger trigger-swap** - the AoE-nullify works; the swap part is
    deferred (`reactive_effect.dart`).
 
 ## 14. Open / tunable items
