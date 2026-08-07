@@ -219,6 +219,8 @@ class Battle {
     // Combos never span turns under alternating resolution: start each turn
     // with an empty combo ledger.
     turnEngine.comboLedger.clearTurn();
+    // Draegor's 2-tier TEG boost decays once per turn.
+    turnEngine.tickTegBoost();
     final isFirstTurnOfBattle = !_firstTurnHandicapApplied;
     _firstTurnHandicapApplied = true;
     final trionGain = turnEngine.resolveTeamTrionGain(team, states,

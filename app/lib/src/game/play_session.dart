@@ -222,6 +222,17 @@ class PlaySession {
       for (final id in opponentCharacterIds) id: profileB,
     };
 
+    // Draegor's 2-tier TEG boost: inject each team's 2-tiers-higher profile
+    // (null for SS/SSS teams, which get Draegor's fallback instead).
+    final boostedA = tegBoostedProfileFor(teamAEfficiency.tier);
+    final boostedB = tegBoostedProfileFor(teamBEfficiency.tier);
+    battle.turnEngine.tegBoostedProfiles = {
+      if (boostedA != null)
+        for (final id in playerCharacterIds) id: boostedA,
+      if (boostedB != null)
+        for (final id in opponentCharacterIds) id: boostedB,
+    };
+
     // TEG Effect 4 (combo advantage): enable the combo recognizer over the
     // live action ledger. The ledger is populated during resolution and
     // cleared each turn by the engine.

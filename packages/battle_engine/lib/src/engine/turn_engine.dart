@@ -157,8 +157,50 @@ class TurnEngine {
   /// Effect 4), before the universal 20% cap. Tunable (Phase H).
   static const int comboAdvantagePercentPerStrength = 7;
 
-  TegRollProfile _tegFor(CharacterBattleState c) =>
-      tegProfiles[c.character.id] ?? TegRollProfile.none;
+  /// Draegor's "raise TEG 2 tiers" effect: the app injects, per character, the
+  /// profile their team WOULD have two tiers higher - but only for teams at
+  /// tier <= S (SS/SSS teams get Draegor's fallback instead, so they have no
+  /// entry here). While a character's boost is active ([_tegBoostRemaining])
+  /// their boosted profile replaces the base one.
+  Map<String, TegRollProfile> tegBoostedProfiles = {};
+  final Map<String, int> _tegBoostRemaining = {};
+
+  TegRollProfile _tegFor(CharacterBattleState c) {
+    if ((_tegBoostRemaining[c.character.id] ?? 0) > 0) {
+      final boosted = tegBoostedProfiles[c.character.id];
+      if (boosted != null) return boosted;
+    }
+    return tegProfiles[c.character.id] ?? TegRollProfile.none;
+  }
+
+  /// Whether [holder]'s team is eligible for Draegor's 2-tier TEG boost (the
+  /// app injected boosted profiles only for teams at tier <= S).
+  bool _canTegBoost(CharacterBattleState holder) =>
+      [holder, ...holder.teammates]
+          .any((a) => tegBoostedProfiles.containsKey(a.character.id));
+
+  /// Activates Draegor's 2-tier TEG boost on [holder]'s living team for [turns].
+  void _activateTegBoost(CharacterBattleState holder, int turns) {
+    for (final a in [holder, ...holder.teammates]) {
+      if (a.isAlive) _tegBoostRemaining[a.character.id] = turns;
+    }
+  }
+
+  /// Ticks the Draegor TEG boost down once per turn (call at each turn start).
+  void tickTegBoost() {
+    for (final id in _tegBoostRemaining.keys.toList()) {
+      final next = (_tegBoostRemaining[id] ?? 0) - 1;
+      if (next <= 0) {
+        _tegBoostRemaining.remove(id);
+      } else {
+        _tegBoostRemaining[id] = next;
+      }
+    }
+  }
+
+  /// Read-only: turns remaining on [characterId]'s Draegor TEG boost (0 none).
+  int tegBoostTurnsRemaining(String characterId) =>
+      _tegBoostRemaining[characterId] ?? 0;
 
   /// A stable per-team key for the ledger: the sorted character ids of the
   /// actor plus its teammates. Same for every member of a team, unique per
@@ -1650,24 +1692,31 @@ class TurnEngine {
             (s) => s.abilitiesUsedThisTurnCount >= cfg.draegorFatChainThreshold);
         if (opponentChained) {
           draegor.regretRemainingTurns = 0;
-          // TEG boost deferred to Phase E (needs TEG engine).
-          // Fallback: double the highest-TA ally's Trion Affinity.
-          final allies = [state] + state.teammates;
-          final livingAllies = allies.where((a) => a.isAlive).toList();
-          if (livingAllies.isNotEmpty) {
-            livingAllies.sort((a, b) => b
-                .effectiveStats(fatConfig: fatConfig)
-                .trionAffinity
-                .compareTo(
-                    a.effectiveStats(fatConfig: fatConfig).trionAffinity));
-            livingAllies.first.applyFlatBonus(
-              ModifiableStat.trionAffinity,
-              livingAllies.first
+          if (_canTegBoost(state)) {
+            // Real effect: raise the team's TEG by 2 tiers for the duration
+            // (the app injected the 2-tier-higher profiles), shifting the
+            // roll-advantage tables.
+            _activateTegBoost(state, cfg.draegorBoostDurationTurns);
+          } else {
+            // Exception (team already SS/SSS): double the highest-TA ally's
+            // Trion Affinity instead.
+            final allies = [state] + state.teammates;
+            final livingAllies = allies.where((a) => a.isAlive).toList();
+            if (livingAllies.isNotEmpty) {
+              livingAllies.sort((a, b) => b
                   .effectiveStats(fatConfig: fatConfig)
                   .trionAffinity
-                  .toDouble(),
-              cfg.draegorBoostDurationTurns,
-            );
+                  .compareTo(
+                      a.effectiveStats(fatConfig: fatConfig).trionAffinity));
+              livingAllies.first.applyFlatBonus(
+                ModifiableStat.trionAffinity,
+                livingAllies.first
+                    .effectiveStats(fatConfig: fatConfig)
+                    .trionAffinity
+                    .toDouble(),
+                cfg.draegorBoostDurationTurns,
+              );
+            }
           }
         }
       }

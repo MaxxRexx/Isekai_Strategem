@@ -103,6 +103,52 @@ void main() {
       expect(ally.tempFlatBonuses, isNotEmpty,
           reason: 'highest-TA ally gets bonus');
     });
+
+    test('Regret consumed on FAT chain raises TEG 2 tiers when eligible', () {
+      final holder = makeChar(id: 'holder', trionAffinity: 20);
+      holder.passiveCounters[PassiveCounterKind.draegor] =
+          PassiveCounterState(PassiveCounterKind.draegor);
+      final ally = makeChar(id: 'ally', trionAffinity: 30);
+      wireTeam([holder, ally]);
+
+      final draegor = holder.passiveCounters[PassiveCounterKind.draegor]!;
+      draegor.regretRemainingTurns = 2;
+      draegor.totalRegretGenerated = 1;
+
+      final opponent = makeChar(id: 'opp');
+      wireTeam([opponent]);
+      opponent.recordAbilityUse(testTrigger(id: 'a1', damage: damage));
+      opponent.recordAbilityUse(testTrigger(id: 'a2', damage: damage));
+
+      final e = engine();
+      // The team is boost-eligible: a 2-tiers-higher profile is injected.
+      e.tegBoostedProfiles = {
+        'holder': const TegRollProfile(offenseAdvantagePercent: 20),
+        'ally': const TegRollProfile(offenseAdvantagePercent: 20),
+      };
+
+      e.tickEndOfTurnPassiveCounters(
+        activeTeamStates: [opponent],
+        inactiveTeamStates: [holder, ally],
+        activeTeamPool: TrionPool(current: 100),
+        inactiveTeamPool: TrionPool(current: 100),
+        activeTeamDealtDamage: true,
+      );
+
+      expect(draegor.regretRemainingTurns, 0, reason: 'Regret consumed');
+      // Took the TEG-boost path, not the TA fallback.
+      expect(ally.tempFlatBonuses, isEmpty,
+          reason: 'boost path, not the TA fallback');
+      expect(e.tegBoostTurnsRemaining('holder'), greaterThan(0));
+      expect(e.tegBoostTurnsRemaining('ally'), greaterThan(0));
+
+      // The boost decays each turn and eventually expires.
+      for (var i = 0; i < 5; i++) {
+        e.tickTegBoost();
+      }
+      expect(e.tegBoostTurnsRemaining('holder'), 0);
+      expect(e.tegBoostTurnsRemaining('ally'), 0);
+    });
   });
 
   // -------------------------------------------------------------------------

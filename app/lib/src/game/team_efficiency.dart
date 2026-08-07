@@ -60,6 +60,15 @@ TegRollProfile tegRollProfileFor(TegTier tier) {
   );
 }
 
+/// Draegor's "raise TEG 2 tiers" effect: the profile a team two tiers higher
+/// would have, or null when the team is already SS/SSS (Draegor then runs its
+/// fallback instead). The engine swaps to this profile while the boost lasts.
+TegRollProfile? tegBoostedProfileFor(TegTier tier) {
+  if (tier.index >= TegTier.ss.index) return null;
+  final boosted = (tier.index + 2).clamp(0, TegTier.sss.index);
+  return tegRollProfileFor(TegTier.values[boosted]);
+}
+
 /// The Team Efficiency Grade for one squad: how well tuned its loadouts are
 /// (not how powerful), scored from six weighted sub-scores. It drives
 /// cross-team Initiative (the higher-grade team resolves first when both
