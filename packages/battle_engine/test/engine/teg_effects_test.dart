@@ -88,7 +88,9 @@ void main() {
       a1.teammates = [a2];
       a2.teammates = [a1];
       final enemy = CharacterBattleState(testCharacter(
-          id: 'e', stats: testStats(maxHealth: 500, defense: 0, criticalChance: 0)))
+          id: 'e',
+          stats: testStats(
+              maxHealth: 500, defense: 0, armor: 0, criticalChance: 0)))
         ..teammates = [];
       return (a1: a1, a2: a2, enemy: enemy);
     }
