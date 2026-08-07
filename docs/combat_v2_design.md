@@ -139,10 +139,12 @@ risk/reward dial, not a strictly-better stat. All numbers below are
 first-pass and tunable (Phase H).
 
 **Effect 1 - Coordination (offensive advantage).** Per qualifying
-**offensive** d20 (attack to-hit and status-infliction rolls), the squad
-has a TEG-scaled chance to gain **advantage**. Engine hook: on success,
-`addAdvantage('teg')` on the attacker's `RollContext` before
-`resolveAttackRoll` / the opposed status roll.
+**offensive** d20 (attack to-hit and, by design, status-infliction rolls),
+the squad has a TEG-scaled chance to gain **advantage**. Engine hook (code):
+`TurnEngine._applyTegOffenseAdvantage` rolls the chance and calls
+`addAdvantage('teg_offense')` on the attacker's `RollContext` before
+`resolveAttackRoll`. Wired today on the attack to-hit roll only; the
+status-infliction roll site uses the same helper but is not yet wired.
 
 | TEG | D | C | B | A | S | SS | SSS |
 |---|---|---|---|---|---|---|---|
@@ -180,14 +182,16 @@ caps at 20%; SSS is 0%** and takes Effect 5 in its place.
 |---|---|---|---|---|---|---|---|
 | Trion refund | 0% | 4% | 8% | 12% | 16% | 20% | 0% (-> fx5) |
 
-**Effect 4 - Focus Fire / combo amplifier (pending the Combo Recognition
-system).** When the squad executes a **recognized combo**, the payoff gains
-advantage, its strength scaled by the combo and **hard-capped at 20%** (the
-universal advantage-chance ceiling; focus fire is how sub-SSS squads climb
-to it). This is deliberately **not** positional: it depends on the **Combo
-Recognition system** (new phase, section 12) to decide what counts as a real
-combo from world / story / character / perk / trigger / in-battle-state
-context. Marked **pending** until that phase lands.
+**Effect 4 - Focus Fire / combo amplifier (recognizer built; consumption not
+yet wired).** When the squad executes a **recognized combo**, the payoff
+gains advantage, its strength scaled by the combo and **hard-capped at 20%**
+(the universal advantage-chance ceiling; focus fire is how sub-SSS squads
+climb to it). This is deliberately **not** positional: it depends on the
+**Combo Recognition system** (Phase I, merged to main: action ledger +
+condition primitives + `ComboRecognizer` + Layer-1 generic catalog). The
+recognizer exists and is unit-tested; Effect 4's consumption of it (mapping a
+`RecognizedCombo`'s strength to an advantage chance, plus live ledger
+population during resolution) is **not yet built**.
 
 **Effect 5 - Crit Range Widener (SSS only).** Always-on at **SSS only**: the
 squad's attack rolls crit on a **natural 18-20** on the kept die (vs nat-20
@@ -581,6 +585,7 @@ retired tiebreak.
 
 | Phase | Status | Branch |
 |---|---|---|
+| Phase A: turn-queue resolution engine | done + merged to main: queue model with Trion-at-queue / refund-on-unqueue and cooldown-at-resolve; the 6-phase within-team resolution ordering (Team-Spirit-deviation tiebreak, then queue order); AI builds and resolves a queue through the same path; TEG computed + displayed; turn order = even 50-50 coin flip. (Its deliverables are also itemized in 13.1 "Built and working".) | merged to main (early branch, deleted) |
 | Phase B: reactive/counter engine + 19 counters | done + merged to main. The 13 active/reactive counters run inside `resolveAbilityUse`; the 6 passive counters are now fed by the app (see passive-counter integration row) and reactive expiry is ticked. All 19 work in-game. | `claude/phase-b-reactive-counters` (deleted) |
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
