@@ -173,25 +173,26 @@ rolls, not to counter resolution.
 |---|---|---|---|---|---|---|---|
 | Def adv chance | 20% | 16% | 12% | 9% | 6% | 3% | 0% |
 
-**Effect 3 - Synergy Refunds (Trion).** On a recognized **setup->payoff**
-combo (a payoff offensive ability landing on an enemy under a control/debuff
-status **an ally applied**), refund part of the payoff's Trion cost. **SS
-caps at 20%; SSS is 0%** and takes Effect 5 in its place.
+**Effect 3 - Synergy Refunds (Trion). BUILT (green on branch).** On a
+recognized **setup->payoff** combo (a payoff offensive ability landing on an
+enemy under a control/debuff status **an ally applied**), refund part of the
+payoff's Trion cost. **SS caps at 20%; SSS is 0%** and takes Effect 5 in its
+place. In code: the engine computes the refund at the payoff's resolution
+(`AbilityUseResult.trionRefund`) and the app credits the acting team's pool.
 
 | TEG | D | C | B | A | S | SS | SSS |
 |---|---|---|---|---|---|---|---|
 | Trion refund | 0% | 4% | 8% | 12% | 16% | 20% | 0% (-> fx5) |
 
-**Effect 4 - Focus Fire / combo amplifier (recognizer built; consumption not
-yet wired).** When the squad executes a **recognized combo**, the payoff
-gains advantage, its strength scaled by the combo and **hard-capped at 20%**
-(the universal advantage-chance ceiling; focus fire is how sub-SSS squads
-climb to it). This is deliberately **not** positional: it depends on the
-**Combo Recognition system** (Phase I, merged to main: action ledger +
-condition primitives + `ComboRecognizer` + Layer-1 generic catalog). The
-recognizer exists and is unit-tested; Effect 4's consumption of it (mapping a
-`RecognizedCombo`'s strength to an advantage chance, plus live ledger
-population during resolution) is **not yet built**.
+**Effect 4 - Focus Fire / combo amplifier. BUILT (green on branch).** When
+the squad executes a **recognized combo**, the payoff gains advantage, its
+strength scaled by the combo and **hard-capped at 20%** (the universal
+advantage-chance ceiling; focus fire is how sub-SSS squads climb to it). This
+is deliberately **not** positional: it consumes the **Combo Recognition
+system** (Phase I) over a live per-turn ledger. In code: before the payoff's
+attack roll the engine probes the recognizer against the ledger and, on a
+recognized combo, rolls a strength-scaled advantage chance
+(`comboAdvantagePercentPerStrength`, capped 20%) to grant advantage.
 
 **Effect 5 - Crit Range Widener (SSS only).** Always-on at **SSS only**: the
 squad's attack rolls crit on a **natural 18-20** on the kept die (vs nat-20
@@ -569,16 +570,16 @@ cross-team resolution-order tiebreak can never fire (two teams never resolve
 in the same pass). That tiebreak is retired. TEG's new role is the
 **combination amplifier**: five dice-advantage effects routed through the
 existing d20 / RollContext system, plus an inverse-TEG XP counterweight (full
-spec in section 5.2). **Effects 1/2/5 are built and merged to main**
-(coordination advantage, inverted Operator's Read advantage, SSS crit
-widener; injected per-team from the app-computed grade on the attack roll).
-Effects 3 and 4 (the remaining Phase J work) depend on the **Combo
-Recognition system (Phase I)** and are not built yet; the XP counterweight
-depends on the server-XP + accounts task (section 15). So TEG is no longer
-display-only: its roll-advantage and crit effects apply in-game. Turn order
-still stays a 50-50 coin flip. NOTE: Draegor's "raise TEG 2 tiers" now has a
-real effect target (it shifts the roll-advantage tables) but is not yet wired
-to it. Coldread's "seize" has been re-specced (section 6.2) and **built**: a
+spec in section 5.2). **All five effects are now built** (1/2/5 merged to
+main; 3/4 green on the branch): coordination + inverted Operator's Read
+advantage on every roll site, the SSS crit widener, Effect 4's recognized-
+combo payoff advantage over a live per-turn combo ledger, and Effect 3's
+setup->payoff Trion refund. Only the inverse-TEG XP counterweight remains,
+and it depends on the server-XP + accounts task (section 15). So TEG is no
+longer display-only: its roll-advantage, crit, combo, and refund effects
+apply in-game. Turn order still stays a 50-50 coin flip. NOTE: Draegor's
+"raise TEG 2 tiers" now has a real effect target (it shifts the roll-
+advantage tables) but is not yet wired to it. Coldread's "seize" has been re-specced (section 6.2) and **built**: a
 flat +2 to the whole squad's rolls for 1 turn, alternating with the Levy on
 successful reads (Levy first), self-contained and no longer dependent on the
 retired tiebreak.
@@ -594,8 +595,8 @@ retired tiebreak.
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
 | Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
-| Phase I: Combo Recognition system | I1-I3 done + merged to main: action ledger + condition primitives + recognizer + Layer-1 generic catalog, unit-tested. Live population + fx3/fx4 consumption land with Phase J Effects 3/4. Signature combos (I4) / authoring tooling (I5) later | `claude/tactical-combat-engine-5luk6z` |
-| Phase J: TEG mechanical effects (section 5.2) | in progress: Effects 1/2/5 (roll-advantage + SSS crit) done + merged to main, applied on the attack roll. Effects 3/4 (consume Phase I + live ledger population) next; fx1/fx2 still to wire on status-infliction + unique-attack rolls; XP on section 15.8 | `claude/tactical-combat-engine-5luk6z` |
+| Phase I: Combo Recognition system | I1-I4 done (I1-I3 merged; I4 green on branch): action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains). Live population wired. I5 authoring tooling is optional/deferred; the signature-combo roster grows as designer content | `claude/tactical-combat-engine-5luk6z` |
+| Phase J: TEG mechanical effects (section 5.2) | Effects 1-5 done (1/2/5 merged; 3/4 green on branch): fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund. Remaining: inverse-TEG XP (section 15.8), and Draegor's TEG-shift wiring | `claude/tactical-combat-engine-5luk6z` |
 
 ### 13.1 Build status (verified against code)
 
@@ -623,13 +624,15 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 - The 6 passive counters are now integrated (merged to main): fed from
   `play_session.dart` via `notifyAbilityResolved` / `notifyStatusInflicted` /
   `recordDamageDealt` / `checkSanctionedStrike`. Coldread's Seize is built.
-- Combo Recognition (Phase I1-I3, merged to main): action ledger,
-  condition primitives, recognizer, Layer-1 generic catalog. Unit-tested;
-  not yet populated during live resolution (that lands with Phase J
-  Effects 3/4).
-- TEG Effects 1/2/5 (Phase J, merged to main): per-team roll-advantage
-  (coordination + inverted Operator's Read) and the SSS crit widener,
-  injected from the app-computed grade and applied on the attack roll.
+- Combo Recognition (Phase I1-I4): action ledger, condition primitives
+  (structural + identity leaves), recognizer, Layer-1 generic catalog and
+  Layer-2 signature catalog (I1-I3 merged to main; I4 green on branch). The
+  ledger is populated live during resolution and cleared each turn.
+- TEG Effects 1-5 (Phase J; 1/2/5 merged, 3/4 green on branch): roll-
+  advantage (coordination + inverted Operator's Read) on all four roll
+  sites, the SSS crit widener, Effect 4's recognized-combo payoff advantage
+  over the live ledger, and Effect 3's setup->payoff Trion refund (engine
+  computes, app credits the team pool).
 - Phase C: all 17 unique behaviors, wired to equippable Triggers.
 - Phase D: active catalog balanced to exactly 20/20/20 (60 active).
 - Phase E so far (merged to main): Illusory Double charge-on-ally-death
@@ -637,20 +640,22 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 - One More Breath (survive-lethal enrich) is implemented in the engine.
 
 **Specced but NOT built (the real gaps), most important first:**
-1. **TEG Effects 3 & 4, and the rest of the fx1/fx2 wiring (Phase J).**
-   Effects 1/2/5 are built (above), but Effect 3 (setup->payoff Trion
-   refund) and Effect 4 (focus-fire advantage) are not - they need the
-   Phase I recognizer consumed and the combo ledger populated during live
-   resolution. fx1/fx2 also still need wiring on the status-infliction and
-   unique-attack roll sites (only the main attack roll is wired today).
-2. **Draegor's "raise TEG 2 tiers"** now has a defined effect under the new
-   model (it shifts the roll-advantage tables) but is unbuilt until Phase J;
-   it currently runs its fallback (double the highest-TA ally's TA).
-   (Coldread's Seize is now built - see above.)
-3. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
+1. **The inverse-TEG XP counterweight (Phase J).** The five in-combat TEG
+   effects are all built; the XP side (D +75% ... SSS +5%) is not, because it
+   needs server-authoritative XP + accounts (section 15). Until then TEG is a
+   pure in-combat dial with no post-battle counterweight.
+2. **Draegor's "raise TEG 2 tiers"** now has a real effect target (it would
+   shift the roll-advantage tables) but is not yet wired to it; it currently
+   runs its fallback (double the highest-TA ally's TA). (Coldread's Seize is
+   built - see above.)
+3. **Phase I5 (authoring tooling)** - optional, deferred: a design-time tool
+   that proposes signature combos from content data for human approval. The
+   I4 mechanism it would feed is in place; the signature roster otherwise
+   grows by hand.
+4. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
    debuffs). Permanently dropping an enemy Black Trigger's resonance grade
    needs a runtime-mutable `ResonanceGrid` (currently a const lookup).
-4. **Death Ledger trigger-swap** - the AoE-nullify works; the swap part is
+5. **Death Ledger trigger-swap** - the AoE-nullify works; the swap part is
    deferred (`reactive_effect.dart`).
 
 ## 14. Open / tunable items
