@@ -2,9 +2,11 @@ import 'dart:math';
 
 import 'package:battle_engine/battle_engine.dart';
 
+import 'account.dart';
 import 'battle_models.dart';
 import 'draft.dart';
 import 'team_efficiency.dart';
+import 'xp_ledger.dart';
 
 /// A legal ability use for one of the player's characters right now:
 /// the trigger itself plus everything the target picker needs.
@@ -275,6 +277,28 @@ class PlaySession {
 
   bool get isOver => battle.isOver;
   BattleOutcome get outcome => battle.outcome;
+
+  /// Awards battle XP for the finished battle to [account]'s player through
+  /// [ledger] (the player controls team A, so its Team Efficiency Grade drives
+  /// the inverse-TEG multiplier). Returns the award, or null if the battle
+  /// isn't over or nobody is signed in (including as a guest). Scaffold: the
+  /// stub ledger computes locally; a real ledger re-validates server-side.
+  Future<XpAward?> awardBattleXpTo(
+    XpLedger ledger,
+    AccountService account, {
+    int baseXp = 100,
+  }) async {
+    if (!isOver) return null;
+    final player = account.current;
+    if (player == null) return null;
+    return ledger.recordBattleResult(BattleResultReport.fromOutcome(
+      playerId: player.id,
+      baseXp: baseXp,
+      tier: teamAEfficiency.tier,
+      outcome: outcome,
+      playerIsTeamA: true,
+    ));
+  }
   int get roundNumber => battle.roundNumber;
   bool get isPlayerTurn => battle.isTeamATurn;
   int get teamATrion => battle.teamA.trionPool.current;
