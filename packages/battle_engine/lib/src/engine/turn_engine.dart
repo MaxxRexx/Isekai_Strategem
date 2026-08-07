@@ -1091,15 +1091,20 @@ class TurnEngine {
       }
 
       final appliedIds = <String>[];
+      // TEG Effect 1 (offense) on the causer's infliction rolls this use.
+      _applyTegOffenseAdvantage(advantageContext, attacker);
       for (final application in trigger.inflictedStatusEffects) {
+        // TEG Effect 2 (defense) on the target's resistance roll.
+        final resistContext =
+            target.rollContextFor(StatusRollTag.statusResistanceRoll);
+        _applyTegDefenseAdvantage(resistContext, target);
         final inflictionOutcome = statusEffectEngine.resolveInfliction(
           causerInfliction: stats.statusEffectInfliction,
           targetResistance: target
               .effectiveStats(fatConfig: fatConfig)
               .statusEffectResistance,
           causerRollContext: advantageContext,
-          targetRollContext:
-              target.rollContextFor(StatusRollTag.statusResistanceRoll),
+          targetRollContext: resistContext,
         );
         if (inflictionOutcome.applies) {
           // Soren-style "Weaken Resolve" perk: bonus duration when the
@@ -2185,12 +2190,19 @@ class TurnEngine {
     final advantageContext = _advantageContextAgainst(attacker, target);
     final attackerContext = _mergedContext(baseContext, advantageContext);
 
+    // TEG Effects 1/2/5 on the unique attack roll (same as the main path).
+    _applyTegOffenseAdvantage(attackerContext, attacker);
+    final tegDefenderContext = RollContext();
+    _applyTegDefenseAdvantage(tegDefenderContext, target);
+
     final outcome = combatEngine.resolveAttackRoll(
       attackerAttack: stats.attack,
       defenderDefense: target.effectiveStats(fatConfig: fatConfig).defense,
       attackerCriticalChancePercent:
           stats.criticalChance + bonuses.criticalChanceBonus,
       attackerContext: attackerContext,
+      defenderContext: tegDefenderContext,
+      maxCritThreshold: _tegFor(attacker).maxCritThreshold,
     );
 
     var damageDealt = 0;
@@ -2308,11 +2320,19 @@ class TurnEngine {
     // Riders resolve unconditionally too, since the shot always lands.
     final appliedIds = <String>[];
     final stats = attacker.effectiveStats(fatConfig: fatConfig);
+    // TEG Effect 1 (offense) on the causer's infliction rolls. Fresh context
+    // so non-TEG behavior is unchanged (this site passed none before).
+    final tegCauserContext = RollContext();
+    _applyTegOffenseAdvantage(tegCauserContext, attacker);
     for (final application in trigger.inflictedStatusEffects) {
+      final tegResistContext = RollContext();
+      _applyTegDefenseAdvantage(tegResistContext, target); // Effect 2
       final inflictionOutcome = statusEffectEngine.resolveInfliction(
         causerInfliction: stats.statusEffectInfliction,
         targetResistance:
             target.effectiveStats(fatConfig: fatConfig).statusEffectResistance,
+        causerRollContext: tegCauserContext,
+        targetRollContext: tegResistContext,
       );
       if (inflictionOutcome.applies) {
         final applied = statusEffectEngine.apply(
