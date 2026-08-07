@@ -245,6 +245,75 @@ class ComboCatalog {
         AllyUsedTriggerOnTarget({'cleave'}),
       ]),
     ),
+    ComboDefinition(
+      id: 'venom_reap',
+      name: 'Venom Reap',
+      flavor:
+          'Venom Needle leaves the target failing; Soul Siphon reaps the '
+          'weakened life for the caster.',
+      strength: 4,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'soul_siphon'}),
+        AllyUsedTriggerOnTarget({'venom_needle'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'snared_execution',
+      name: 'Snared Execution',
+      flavor:
+          'Root Snare locks the target to one motion; Shatterpoint lands on a '
+          'foe that cannot get out of the way.',
+      strength: 5,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'shatterpoint'}),
+        AllyUsedTriggerOnTarget({'root_snare'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'brittle_pierce',
+      name: 'Brittle Pierce',
+      flavor:
+          'Frost Lance leaves the target brittle with cold; Piercing Thrust '
+          'punches straight through.',
+      strength: 4,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'piercing_thrust'}),
+        AllyUsedTriggerOnTarget({'frost_lance'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'blinding_volley',
+      name: 'Blinding Volley',
+      flavor:
+          'A Flashbang Round robs the target of sight; Scattershot fills the '
+          'space they can no longer read.',
+      strength: 3,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'scattershot'}),
+        AllyUsedTriggerOnTarget({'flashbang_round'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'dread_shatter',
+      name: 'Dread Shatter',
+      flavor:
+          'Dread Gaze floods the target with terror; Mind Shatter cracks a '
+          'mind already coming apart.',
+      strength: 4,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'mind_shatter'}),
+        AllyUsedTriggerOnTarget({'dread_gaze'}),
+      ]),
+    ),
   ];
 
   /// The full recognizable catalog: generic (Layer 1) plus signature
