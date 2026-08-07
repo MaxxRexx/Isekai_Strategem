@@ -259,8 +259,8 @@ class _LoadoutBuilderPanelState extends State<LoadoutBuilderPanel> {
       descriptionWidget: BlackTriggerAbilityList(blackTrigger: bt),
       tags: ['${bt.equipCost} TRION'],
       extraTags: [_gradeTag(grade)],
-      buttonLabel: selected ? 'REMOVE' : 'SELECT',
-      // Select keeps the solid fill; remove switches to the open outline.
+      buttonLabel: selected ? 'UNEQUIP' : 'EQUIP',
+      // Equip keeps the solid fill; unequip switches to the open outline.
       filled: !selected,
       onPressed: locked
           ? null

@@ -114,9 +114,52 @@ String describePassiveEffect(PassiveEffect effect) {
   return bits.isEmpty ? 'No stat effect.' : '${bits.join('. ')}.';
 }
 
+/// Player-facing descriptions of the stateful passive-counter behaviours
+/// (these are logic, not flat stat mods, so [describePassiveEffect] alone
+/// would report "No stat effect"). See design section 6.2.
+const passiveCounterDescription = <PassiveCounterKind, String>{
+  PassiveCounterKind.draegor:
+      'Each ability you use builds Enmity; at 5 it becomes Regret. While '
+      'Regret is up, if an enemy chains 2+ abilities in a FAT turn, your '
+      "squad's Team Efficiency Grade rises 2 tiers for 2 turns (or, if "
+      'already SS+, your highest-Affinity ally’s Trion Affinity '
+      'doubles). Max 3 per battle.',
+  PassiveCounterKind.nullhymn:
+      'Builds Discord when an enemy uses a Black Trigger against your team '
+      'or inflicts a status on the holder. At 5 it discharges (twice per '
+      'battle): permanently drops the most-recently-active enemy Black '
+      'Trigger one resonance grade - or, if no enemy runs one, purges your '
+      "team's debuffs and reflects them onto whoever applied the most.",
+  PassiveCounterKind.reckoning:
+      'Builds Debt when an enemy crits your team or uses a 2+ cooldown '
+      'ability against it. At 6 it comes due: the worst offender’s '
+      'cooldowns are extended, their next attack is forced to a critical '
+      'miss, and your team levies their Trion.',
+  PassiveCounterKind.gravehour:
+      'At the end of each enemy turn, if they dealt no damage or left an '
+      'enemy at 30% HP or below, the holder makes a free, uncounterable '
+      'finisher on the lowest-HP enemy (who cannot be healed next turn). '
+      '3-turn cooldown.',
+  PassiveCounterKind.coldread:
+      'At the start of your turn, secretly marks an enemy. If they take a '
+      'damaging action you earn a reward that alternates each correct read '
+      '(Levy first): Levy their costliest action’s Trion, then Seize '
+      '(+2 to your whole squad’s rolls for 1 turn). A wrong read docks '
+      'your next Trion gain.',
+  PassiveCounterKind.ironvow:
+      'Each turn a random attack type is sanctioned (never last turn’s). '
+      'Attack with it for a Sanctioned Strike: unblockable, strips a buff, '
+      'and brands the target (repeating an ability two turns running lands '
+      'weakened). Cost: your other allies are left vulnerable to that type '
+      'until your next turn. 3 per battle.',
+};
+
 String describeTrigger(Trigger t) => switch (t) {
   ActiveTrigger a => describeActiveTrigger(a),
-  PassiveTrigger p => describePassiveEffect(p.effect),
+  PassiveTrigger p => p.counterKind != null
+      ? (passiveCounterDescription[p.counterKind!] ??
+          describePassiveEffect(p.effect))
+      : describePassiveEffect(p.effect),
 };
 
 /// The compact "what does this do" line for ability buttons.
