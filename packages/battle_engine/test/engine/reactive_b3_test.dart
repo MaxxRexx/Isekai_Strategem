@@ -287,6 +287,36 @@ void main() {
           reason: 'ledger consumed');
     });
 
+    test('signals the wielder to swap in the nullified AoE Trigger', () {
+      final attacker = makeChar(id: 'attacker', maxHealth: 200);
+      final defender = makeChar(id: 'defender', maxHealth: 200);
+      final marker = makeChar(id: 'marker', maxHealth: 200);
+      attacker.reactiveEffects.add(ReactiveEffect(
+        kind: ReactiveKind.nullifyAoe,
+        sourceCharacterId: 'marker',
+      ));
+
+      final e = engine();
+      e.characterRegistry = {
+        'attacker': attacker,
+        'defender': defender,
+        'marker': marker,
+      };
+      e.resolveAbilityUse(
+        attacker: attacker,
+        trigger: testTrigger(
+          id: 'enemy_aoe',
+          damage: damage,
+          attackSubtype: AttackSubtype.aoe,
+          targetCount: 3,
+        ),
+        targets: [defender],
+      );
+
+      expect(marker.deathLedgerSwapPending?.id, 'enemy_aoe',
+          reason: 'wielder is signalled to borrow the nullified AoE');
+    });
+
     test('does not fire against non-AoE attacks', () {
       final attacker = makeChar(id: 'attacker');
       final defender = makeChar(id: 'defender', maxHealth: 200);

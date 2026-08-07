@@ -57,6 +57,11 @@ class CharacterBattleState {
   /// Black Trigger to downgrade.
   int lastBlackTriggerUseOrder = 0;
 
+  /// Death Ledger: when this wielder's mark nullifies an enemy AoE, the engine
+  /// parks that AoE trigger here as a signal for the app to swap it into the
+  /// wielder's loadout for 2 turns. The app consumes and clears it.
+  ActiveTrigger? deathLedgerSwapPending;
+
   final List<StatusEffectInstance> statusEffects = [];
 
   /// Reactive/counter effects (wards, traps, marks) standing on this

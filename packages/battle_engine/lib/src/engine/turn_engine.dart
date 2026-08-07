@@ -844,12 +844,17 @@ class TurnEngine {
       }
     }
 
-    // Death Ledger: if the attacker has nullifyAoe and uses an AoE.
+    // Death Ledger: if the attacker has nullifyAoe and uses an AoE, nullify it
+    // and signal the wielder to swap the AoE Trigger into their loadout.
     if (trigger.attackSubtype == AttackSubtype.aoe) {
       final ledgerIndex = attacker.reactiveEffects
           .indexWhere((r) => r.kind == ReactiveKind.nullifyAoe);
       if (ledgerIndex >= 0) {
-        attacker.reactiveEffects.removeAt(ledgerIndex);
+        final reactive = attacker.reactiveEffects.removeAt(ledgerIndex);
+        final wielderId = reactive.sourceCharacterId;
+        if (wielderId != null) {
+          characterRegistry[wielderId]?.deathLedgerSwapPending = trigger;
+        }
         return true;
       }
     }

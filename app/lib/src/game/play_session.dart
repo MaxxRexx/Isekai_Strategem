@@ -621,18 +621,95 @@ class PlaySession {
         return a.compareTo(b);
       });
 
+    final actions = [
+      for (final i in order)
+        _resolveAction(
+          ordered[i].characterId,
+          triggerAt(i),
+          ordered[i].targetIds,
+        ),
+    ];
+    // Death Ledger: apply any AoE-swap the engine just signalled, then decay
+    // the acting team's existing swaps (reverting expired ones).
+    _applyPendingDeathLedgerSwaps();
+    _tickDeathLedgerSwaps(team);
     return LogRound(
       roundNumber: battle.roundNumber,
       team: team,
-      actions: [
-        for (final i in order)
-          _resolveAction(
-            ordered[i].characterId,
-            triggerAt(i),
-            ordered[i].targetIds,
-          ),
-      ],
+      actions: actions,
     );
+  }
+
+  // --- Death Ledger loadout swap (2-turn borrow of a nullified AoE) --------
+
+  /// Active Death Ledger swaps by wielder id: the borrowed AoE trigger id, the
+  /// trigger it displaced, the team's equipped map, and turns left before it
+  /// reverts.
+  final Map<String, ({
+    String swappedInId,
+    ActiveTrigger swappedOut,
+    Map<String, List<ActiveTrigger>> equipped,
+    int turnsRemaining,
+  })> _deathLedgerSwaps = {};
+
+  static const int _deathLedgerSwapTurns = 2;
+
+  /// Applies any pending Death Ledger swaps the engine parked on a wielder:
+  /// swap the borrowed AoE Trigger in for the wielder's nearest-Trion-cost
+  /// equipped Trigger.
+  void _applyPendingDeathLedgerSwaps() {
+    for (final state in battle.states.values) {
+      final aoe = state.deathLedgerSwapPending;
+      if (aoe == null) continue;
+      state.deathLedgerSwapPending = null;
+      final wielderId = state.character.id;
+      if (_deathLedgerSwaps.containsKey(wielderId)) continue; // one at a time
+      final onTeamA = battle.teamA.characters.any((c) => c.id == wielderId);
+      final equipped = onTeamA ? equippedA : equippedB;
+      final loadout = equipped[wielderId];
+      if (loadout == null || loadout.isEmpty) continue;
+      if (loadout.any((t) => t.id == aoe.id)) continue; // already owns it
+      // Nearest-Trion-cost Trigger (closest cost to the borrowed AoE).
+      loadout.sort((a, b) => (a.trionCost - aoe.trionCost)
+          .abs()
+          .compareTo((b.trionCost - aoe.trionCost).abs()));
+      final swappedOut = loadout.removeAt(0);
+      loadout.add(aoe);
+      _deathLedgerSwaps[wielderId] = (
+        swappedInId: aoe.id,
+        swappedOut: swappedOut,
+        equipped: equipped,
+        turnsRemaining: _deathLedgerSwapTurns,
+      );
+    }
+  }
+
+  /// Decays swaps whose wielder is on [team]; reverts any that expire.
+  void _tickDeathLedgerSwaps(String team) {
+    for (final wielderId in _deathLedgerSwaps.keys.toList()) {
+      final onTeamA = battle.teamA.characters.any((c) => c.id == wielderId);
+      if ((onTeamA ? 'A' : 'B') != team) continue;
+      final swap = _deathLedgerSwaps[wielderId]!;
+      final remaining = swap.turnsRemaining - 1;
+      if (remaining > 0) {
+        _deathLedgerSwaps[wielderId] = (
+          swappedInId: swap.swappedInId,
+          swappedOut: swap.swappedOut,
+          equipped: swap.equipped,
+          turnsRemaining: remaining,
+        );
+        continue;
+      }
+      // Revert: drop the borrowed AoE, restore the displaced Trigger.
+      final loadout = swap.equipped[wielderId];
+      if (loadout != null) {
+        loadout.removeWhere((t) => t.id == swap.swappedInId);
+        if (!loadout.any((t) => t.id == swap.swappedOut.id)) {
+          loadout.add(swap.swappedOut);
+        }
+      }
+      _deathLedgerSwaps.remove(wielderId);
+    }
   }
 
   /// Records the use and resolves one committed action, returning its log
