@@ -1,9 +1,9 @@
 # Combat v2: Queue Resolution, Counters, Uniques, and Team Efficiency Grade
 
-Status: approved design, pre-implementation. This document is the source of
-truth for the multi-phase combat rework. It supersedes ad-hoc chat design
-notes. Numbers marked "tunable" are proposals to be finalized during
-implementation.
+Status: approved design, implementation in progress (see section 13 for the
+live build status). This document is the source of truth for the multi-phase
+combat rework. It supersedes ad-hoc chat design notes. Numbers marked
+"tunable" are proposals to be finalized during implementation.
 
 ## 1. Goals
 
@@ -550,7 +550,7 @@ branch for the next phase.
 
 ## 13. Progress
 
-**DONE (green on branch): the 6 passive counters are integrated into the
+**DONE (merged to main): the 6 passive counters are integrated into the
 resolution loop and work in-game.** `play_session.dart`
 (`_resolveAction` / `useAbility`) now feeds `notifyAbilityResolved`,
 `notifyStatusInflicted`, `recordDamageDealt`, and `checkSanctionedStrike`,
