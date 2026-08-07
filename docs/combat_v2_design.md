@@ -559,34 +559,38 @@ re-specced Seize (alternating with the Levy, +2 to the squad's rolls for 1
 turn) is built too. So Draegor / Reckoning / Nullhymn / Ironvow now
 accumulate, Coldread reads correctly, and Gravehour no longer over-fires.
 
-**TEG mechanical role: DECIDED (designed, not yet built - Phase J).** We are
+**TEG mechanical role: DECIDED, partially built (Phase J).** We are
 KEEPING alternating resolution, under which TEG's originally-specced
 cross-team resolution-order tiebreak can never fire (two teams never resolve
 in the same pass). That tiebreak is retired. TEG's new role is the
 **combination amplifier**: five dice-advantage effects routed through the
 existing d20 / RollContext system, plus an inverse-TEG XP counterweight (full
-spec in section 5.2). Built by **Phase J**; Effects 3 and 4 depend on the
-**Combo Recognition system (Phase I)**; the XP counterweight depends on the
-server-XP + accounts task (section 15). Until Phase J lands, TEG remains
-display-only (plus Draegor's threshold read). Turn order stays a 50-50 coin
-flip. NOTE: Draegor's "raise TEG 2 tiers" now has a real effect again (it
-shifts the roll-advantage tables). Coldread's "seize" has been re-specced
-(section 6.2): a flat +2 to the whole squad's rolls for 1 turn, alternating
-with the Levy on successful reads (Levy first), so it is self-contained and
-no longer depends on the retired tiebreak.
+spec in section 5.2). **Effects 1/2/5 are built and merged to main**
+(coordination advantage, inverted Operator's Read advantage, SSS crit
+widener; injected per-team from the app-computed grade on the attack roll).
+Effects 3 and 4 (the remaining Phase J work) depend on the **Combo
+Recognition system (Phase I)** and are not built yet; the XP counterweight
+depends on the server-XP + accounts task (section 15). So TEG is no longer
+display-only: its roll-advantage and crit effects apply in-game. Turn order
+still stays a 50-50 coin flip. NOTE: Draegor's "raise TEG 2 tiers" now has a
+real effect target (it shifts the roll-advantage tables) but is not yet wired
+to it. Coldread's "seize" has been re-specced (section 6.2) and **built**: a
+flat +2 to the whole squad's rolls for 1 turn, alternating with the Levy on
+successful reads (Levy first), self-contained and no longer dependent on the
+retired tiebreak.
 
 | Phase | Status | Branch |
 |---|---|---|
-| Phase B: reactive/counter engine + 19 counters | engine done + merged to main. The 13 active/reactive counters work in-game (they run inside `resolveAbilityUse`). The 6 passive counters are NOT fed by the app - inert/misbehaving until integrated (see 13.1; immediate priority). | `claude/phase-b-reactive-counters` (deleted) |
+| Phase B: reactive/counter engine + 19 counters | done + merged to main. The 13 active/reactive counters run inside `resolveAbilityUse`; the 6 passive counters are now fed by the app (see passive-counter integration row) and reactive expiry is ticked. All 19 work in-game. | `claude/phase-b-reactive-counters` (deleted) |
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
-| Phase E: new-content wiring | in progress: the two deferred unique hooks (7.1) done + green on branch; Coldread "seize" + Nullhymn resonance still open (TEG tiebreak retired, superseded by Phases I/J) | `claude/tactical-combat-engine-5luk6z` |
+| Phase E: new-content wiring | in progress: the two deferred unique hooks (7.1) done + merged; Coldread "seize" now built + merged; Nullhymn resonance downgrade still open (TEG tiebreak retired, superseded by Phases I/J) | `claude/tactical-combat-engine-5luk6z` |
 | Phase F: remaining UI | not started | TBD |
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
-| Passive-counter integration (design 13.1 gap #1) | done + green on branch: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
-| Phase I: Combo Recognition system | I1-I3 done + green on branch: action ledger + condition primitives + recognizer + Layer-1 generic catalog, unit-tested. Live population + fx3/fx4 consumption land with Phase J. Signature combos (I4) / authoring tooling (I5) later | `claude/tactical-combat-engine-5luk6z` |
-| Phase J: TEG mechanical effects (section 5.2) | in progress: Effects 1/2/5 (self-contained roll-advantage + SSS crit) next; Effects 3/4 consume Phase I; XP on section 15.8 | `claude/tactical-combat-engine-5luk6z` |
+| Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
+| Phase I: Combo Recognition system | I1-I3 done + merged to main: action ledger + condition primitives + recognizer + Layer-1 generic catalog, unit-tested. Live population + fx3/fx4 consumption land with Phase J Effects 3/4. Signature combos (I4) / authoring tooling (I5) later | `claude/tactical-combat-engine-5luk6z` |
+| Phase J: TEG mechanical effects (section 5.2) | in progress: Effects 1/2/5 (roll-advantage + SSS crit) done + merged to main, applied on the attack roll. Effects 3/4 (consume Phase I + live ledger population) next; fx1/fx2 still to wire on status-infliction + unique-attack rolls; XP on section 15.8 | `claude/tactical-combat-engine-5luk6z` |
 
 ### 13.1 Build status (verified against code)
 
@@ -596,10 +600,10 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 
 - `packages/battle_engine/` - engine: combat resolution, counters, uniques,
   status effects, catalogs (triggers/black triggers/roster), AI, story
-  engine. 28 test files.
+  engine. 31 test files.
 - `app/` - Flutter app: the queue/resolution orchestration
   (`lib/src/game/play_session.dart`), TEG (`lib/src/game/team_efficiency.dart`),
-  draft/loadout/target selection, screens and widgets. 6 test files.
+  draft/loadout/target selection, screens and widgets. 7 test files.
 
 **Built and working:**
 - Turn + queue model with 6-phase within-team resolution ordering
@@ -611,25 +615,29 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
   work in-game - armed on your turn, fire when the opponent acts into them.
   Reactive expiry (`tickReactiveEffects`) is now ticked once per turn in
   `battle.startTurn`, so timed wards/traps/marks time out.
-- The 6 passive counters are now integrated (green on branch): fed from
+- The 6 passive counters are now integrated (merged to main): fed from
   `play_session.dart` via `notifyAbilityResolved` / `notifyStatusInflicted` /
   `recordDamageDealt` / `checkSanctionedStrike`. Coldread's Seize is built.
-- Combo Recognition (Phase I1-I3, green on branch): action ledger,
+- Combo Recognition (Phase I1-I3, merged to main): action ledger,
   condition primitives, recognizer, Layer-1 generic catalog. Unit-tested;
-  not yet populated during live resolution (that lands with Phase J).
+  not yet populated during live resolution (that lands with Phase J
+  Effects 3/4).
+- TEG Effects 1/2/5 (Phase J, merged to main): per-team roll-advantage
+  (coordination + inverted Operator's Read) and the SSS crit widener,
+  injected from the app-computed grade and applied on the attack roll.
 - Phase C: all 17 unique behaviors, wired to equippable Triggers.
 - Phase D: active catalog balanced to exactly 20/20/20 (60 active).
-- Phase E so far (on branch, green): Illusory Double charge-on-ally-death
+- Phase E so far (merged to main): Illusory Double charge-on-ally-death
   and Karmic Bind live link (Punish, one-way).
 - One More Breath (survive-lethal enrich) is implemented in the engine.
 
 **Specced but NOT built (the real gaps), most important first:**
-1. **TEG's mechanical effects (Phase J) are not built yet.** The recognizer
-   (Phase I) exists, but nothing consumes it and the roll-advantage / crit
-   effects are not wired. Next up: Effects 1/2/5 (self-contained per-team
-   advantage chance + SSS crit widening injected from the app-computed TEG),
-   then Effects 3/4 (consume the recognizer, plus live ledger population).
-   Until then TEG is still display-only in-game.
+1. **TEG Effects 3 & 4, and the rest of the fx1/fx2 wiring (Phase J).**
+   Effects 1/2/5 are built (above), but Effect 3 (setup->payoff Trion
+   refund) and Effect 4 (focus-fire advantage) are not - they need the
+   Phase I recognizer consumed and the combo ledger populated during live
+   resolution. fx1/fx2 also still need wiring on the status-infliction and
+   unique-attack roll sites (only the main attack roll is wired today).
 2. **Draegor's "raise TEG 2 tiers"** now has a defined effect under the new
    model (it shifts the roll-advantage tables) but is unbuilt until Phase J;
    it currently runs its fallback (double the highest-TA ally's TA).
