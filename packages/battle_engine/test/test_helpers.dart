@@ -76,6 +76,7 @@ Character testCharacter({
   Set<DamageType> damageResistances = const {},
   Set<String> statusInvulnerabilities = const {},
   CharacterPerk? perk,
+  BlackTrigger? blackTrigger,
 }) {
   return Character(
     id: id,
@@ -85,6 +86,7 @@ Character testCharacter({
     damageResistances: damageResistances,
     statusInvulnerabilities: statusInvulnerabilities,
     perk: perk,
+    blackTrigger: blackTrigger,
   );
 }
 

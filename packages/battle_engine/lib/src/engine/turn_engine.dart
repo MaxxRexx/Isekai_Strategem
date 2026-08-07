@@ -165,6 +165,10 @@ class TurnEngine {
   Map<String, TegRollProfile> tegBoostedProfiles = {};
   final Map<String, int> _tegBoostRemaining = {};
 
+  /// Monotonic counter stamping Black-Trigger-active uses (for Nullhymn's
+  /// "most-recently-active enemy Black Trigger" downgrade target).
+  int _btUseOrder = 0;
+
   TegRollProfile _tegFor(CharacterBattleState c) {
     if ((_tegBoostRemaining[c.character.id] ?? 0) > 0) {
       final boosted = tegBoostedProfiles[c.character.id];
@@ -951,6 +955,14 @@ class TurnEngine {
     Map<String, Object?>? statusEffectData,
     Map<String, Object?>? uniqueData,
   }) {
+    // Nullhymn recency: stamp Black-Trigger-active uses so a later discharge
+    // can downgrade the most-recently-active enemy Black Trigger.
+    if (attacker.character.blackTrigger?.activeAbilities
+            .any((t) => t.id == trigger.id) ??
+        false) {
+      attacker.lastBlackTriggerUseOrder = ++_btUseOrder;
+    }
+
     // Attacker-side reactive check: Deadfall/Death Ledger can counter the
     // ability entirely before it resolves.
     if (_checkAttackerReactives(attacker, trigger)) {
@@ -1470,7 +1482,13 @@ class TurnEngine {
     final blackTrigger = wielder.character.blackTrigger;
     if (blackTrigger == null) return 1.0;
     final grade = grid.lookup(wielder.character.type, blackTrigger.type);
-    return multipliers.multiplierFor(grade);
+    // Nullhymn can permanently drop this wielder's grade for the battle
+    // (A->B->C->D). Grades run d(0)..a(3), so a downgrade lowers the index,
+    // floored at D. The const grid stays intact; the step count is per state.
+    final downgraded = ResonanceGrade.values[
+        (grade.index - wielder.resonanceDowngradeSteps)
+            .clamp(0, ResonanceGrade.values.length - 1)];
+    return multipliers.multiplierFor(downgraded);
   }
 
   /// Scales a Black Trigger active ability's [baseCooldownTurns] by its
@@ -1892,9 +1910,21 @@ class TurnEngine {
     CharacterBattleState holder,
     List<CharacterBattleState> enemyTeamStates,
   ) {
-    // Resonance downgrade deferred to Phase E (ResonanceGrid is immutable).
-    // Fallback: purge all debuffs on holder's team and reflect the most
-    // prolific enemy's debuffs.
+    // Primary effect: if any living enemy runs a Black Trigger, the
+    // most-recently-active one permanently loses a resonance grade
+    // (A->B->C->D) for the rest of the battle.
+    final btEnemies = enemyTeamStates
+        .where((e) => e.isAlive && e.character.blackTrigger != null)
+        .toList();
+    if (btEnemies.isNotEmpty) {
+      btEnemies.sort((a, b) =>
+          b.lastBlackTriggerUseOrder.compareTo(a.lastBlackTriggerUseOrder));
+      btEnemies.first.resonanceDowngradeSteps++;
+      return;
+    }
+
+    // Fallback (no enemy Black Trigger): purge all debuffs on the holder's
+    // team and reflect the most prolific enemy's debuffs.
     final allies = [holder] + holder.teammates;
     final cat = StatusEffectCatalog.defaultCatalog;
 

@@ -197,6 +197,53 @@ void main() {
       expect(nullhymn.chargesUsed, 1);
     });
 
+    test('discharge downgrades the most-recently-active enemy Black Trigger',
+        () {
+      final holder = makeChar(id: 'holder');
+      holder.passiveCounters[PassiveCounterKind.nullhymn] =
+          PassiveCounterState(PassiveCounterKind.nullhymn);
+      wireTeam([holder]);
+
+      final bt = BlackTriggerCatalog.defaultCatalog.all
+          .firstWhere((b) => b.type == BlackTriggerType.attack);
+      final enemy = CharacterBattleState(testCharacter(
+          id: 'enemy', type: CharacterType.attack, blackTrigger: bt));
+      wireTeam([enemy]);
+
+      final e = engine();
+      // Attack x attack resonance is grade A before any downgrade.
+      expect(e.resonanceMultiplierFor(enemy),
+          ResonanceMultipliers.defaults.multiplierFor(ResonanceGrade.a));
+
+      final trigger = testTrigger(id: 'bt-attack', damage: damage);
+      for (var i = 0; i < 5; i++) {
+        e.notifyAbilityResolved(
+          attacker: enemy,
+          trigger: trigger,
+          result: AbilityUseResult(
+            attackerCharacterId: enemy.character.id,
+            triggerId: trigger.id,
+            targetResults: const [],
+          ),
+          defenderTeamStates: [holder],
+          isBlackTriggerAbility: true,
+        );
+      }
+
+      e.tickEndOfTurnPassiveCounters(
+        activeTeamStates: [enemy],
+        inactiveTeamStates: [holder],
+        activeTeamPool: TrionPool(current: 100),
+        inactiveTeamPool: TrionPool(current: 100),
+        activeTeamDealtDamage: true,
+      );
+
+      expect(enemy.resonanceDowngradeSteps, 1);
+      // Grade dropped A -> B, so the multiplier drops accordingly.
+      expect(e.resonanceMultiplierFor(enemy),
+          ResonanceMultipliers.defaults.multiplierFor(ResonanceGrade.b));
+    });
+
     test('discord from status infliction is deduped per status per turn', () {
       final holder = makeChar(id: 'holder');
       holder.passiveCounters[PassiveCounterKind.nullhymn] =

@@ -47,6 +47,16 @@ class CharacterBattleState {
   final Character character;
   int currentHealth;
 
+  /// Nullhymn: how many resonance grades this wielder's Black Trigger has been
+  /// permanently dropped this battle (A->B->C->D). Applied in
+  /// `TurnEngine.resonanceMultiplierFor`.
+  int resonanceDowngradeSteps = 0;
+
+  /// Monotonic stamp of the last time this character used a Black Trigger
+  /// active (0 = never). Lets Nullhymn pick the "most-recently-active" enemy
+  /// Black Trigger to downgrade.
+  int lastBlackTriggerUseOrder = 0;
+
   final List<StatusEffectInstance> statusEffects = [];
 
   /// Reactive/counter effects (wards, traps, marks) standing on this
