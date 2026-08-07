@@ -167,5 +167,11 @@ void main() {
           reason: 'no Frost Lance setup was played');
       expect(ids, contains('focus_fire'));
     });
+
+    test('the combo catalog has unique ids and a populated signature layer', () {
+      final ids = ComboCatalog.all.map((c) => c.id).toList();
+      expect(ids.toSet().length, ids.length, reason: 'no duplicate combo ids');
+      expect(ComboCatalog.signature.length, greaterThanOrEqualTo(9));
+    });
   });
 }

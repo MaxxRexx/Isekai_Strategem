@@ -163,6 +163,88 @@ class ComboCatalog {
         AllyStruckTarget(),
       ]),
     ),
+    ComboDefinition(
+      id: 'piercing_corrosion',
+      name: 'Piercing Corrosion',
+      flavor:
+          'Acid Spray eats through the target\'s guard; Piercing Thrust drives '
+          'clean through the softened plate.',
+      strength: 4,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'piercing_thrust'}),
+        AllyUsedTriggerOnTarget({'acid_spray'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'pinned_shot',
+      name: 'Pinned Shot',
+      flavor:
+          'Suppressing Fire nails the target in place; Longshot takes the '
+          'unhurried, guaranteed shot.',
+      strength: 4,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'longshot'}),
+        AllyUsedTriggerOnTarget({'suppressing_fire'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'mind_unravel',
+      name: 'Mind Unravel',
+      flavor:
+          'Mind Shatter splits the target\'s focus; Nightmare Pulse floods the '
+          'opening with terror.',
+      strength: 4,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'nightmare_pulse'}),
+        AllyUsedTriggerOnTarget({'mind_shatter'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'charmed_opening',
+      name: 'Charmed Opening',
+      flavor:
+          'Charm Whisper turns the target\'s guard aside; Twin Fang Strike '
+          'punishes the opening.',
+      strength: 4,
+      isSetupPayoff: true,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'twin_fang_strike'}),
+        AllyUsedTriggerOnTarget({'charm_whisper'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'flashfire',
+      name: 'Flashfire',
+      flavor:
+          'A Flashbang Round blinds the target an instant before Cinderburst '
+          'erupts - never saw it coming.',
+      strength: 3,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'cinderburst'}),
+        AllyUsedTriggerOnTarget({'flashbang_round'}),
+      ]),
+    ),
+    ComboDefinition(
+      id: 'opening_sweep',
+      name: 'Opening Sweep',
+      flavor:
+          'Cleave breaks the enemy\'s stance; Whirlwind Slash sweeps through '
+          'the whole opening.',
+      strength: 3,
+      condition: AllOf([
+        PayoffIsOffensive(),
+        PayoffUsesTrigger({'whirlwind_slash'}),
+        AllyUsedTriggerOnTarget({'cleave'}),
+      ]),
+    ),
   ];
 
   /// The full recognizable catalog: generic (Layer 1) plus signature
