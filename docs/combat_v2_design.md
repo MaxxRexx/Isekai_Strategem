@@ -590,7 +590,7 @@ retired tiebreak.
 | Phase B: reactive/counter engine + 19 counters | done + merged to main. The 13 active/reactive counters run inside `resolveAbilityUse`; the 6 passive counters are now fed by the app (see passive-counter integration row) and reactive expiry is ticked. All 19 work in-game. | `claude/phase-b-reactive-counters` (deleted) |
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
-| Phase E: new-content wiring | in progress: the two deferred unique hooks (7.1) done + merged; Coldread "seize" now built + merged; Nullhymn resonance downgrade still open (TEG tiebreak retired, superseded by Phases I/J) | `claude/tactical-combat-engine-5luk6z` |
+| Phase E: new-content wiring | done + merged: the two deferred unique hooks (7.1), Coldread "seize", Nullhymn's real resonance-grade downgrade (per-wielder step count on the const grid; targets the most-recently-active enemy BT), and Death Ledger's nullified-AoE loadout swap (engine signals; app borrows the AoE into the wielder's loadout for 2 turns, then reverts) | `claude/tactical-combat-engine-5luk6z` |
 | Phase F: remaining UI | not started | TBD |
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
@@ -640,16 +640,17 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 - One More Breath (survive-lethal enrich) is implemented in the engine.
 
 **Specced but NOT built (the real gaps), most important first:**
-1. **The inverse-TEG XP counterweight (Phase J).** The five in-combat TEG
-   effects are all built (and Draegor's TEG boost is wired); the XP side
-   (D +75% ... SSS +5%) is not, because it needs server-authoritative XP +
-   accounts (section 15). Until then TEG is a pure in-combat dial with no
-   post-battle counterweight.
-2. **Nullhymn's resonance downgrade** - fallback only (purge + reflect
-   debuffs). Permanently dropping an enemy Black Trigger's resonance grade
-   needs a runtime-mutable `ResonanceGrid` (currently a const lookup).
-3. **Death Ledger trigger-swap** - the AoE-nullify works; the swap part is
-   deferred (`reactive_effect.dart`).
+1. **The inverse-TEG XP counterweight's real backend (Phase J / section 15).**
+   The shared formula (D +75% ... SSS +5%) is built and tested
+   (`app/lib/src/game/battle_xp.dart`), and a client scaffold exists
+   (`account.dart` stress-free auth interfaces + `xp_ledger.dart` +
+   `PlaySession.awardBattleXpTo`), all behind local stubs. What remains is the
+   server-authoritative backend itself (accounts + XP ledger) - blocked on a
+   real Supabase/Firebase project + auth-provider setup.
+2. **Remaining UI (Phase F)** - clickable portraits / character detail, the
+   Mind's Eye reveal panel, the TEG six-sub-score display, surfacing the
+   currently-hidden stats, queue display + resolve beat, and a visible sign-in
+   flow + post-battle XP-award screen. Not started.
 
 ## 14. Open / tunable items
 
