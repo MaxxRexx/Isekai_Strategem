@@ -216,6 +216,9 @@ class Battle {
   }) {
     final team = activeTeam;
     activeTeamDealtDamageThisTurn = false;
+    // Combos never span turns under alternating resolution: start each turn
+    // with an empty combo ledger.
+    turnEngine.comboLedger.clearTurn();
     final isFirstTurnOfBattle = !_firstTurnHandicapApplied;
     _firstTurnHandicapApplied = true;
     final trionGain = turnEngine.resolveTeamTrionGain(team, states,

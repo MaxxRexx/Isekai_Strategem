@@ -73,4 +73,48 @@ void main() {
       expect(r.targetResults.single.attackRolls.single.isCriticalHit, isFalse);
     });
   });
+
+  group('TEG Effect 4 (combo advantage over the live ledger)', () {
+    // Two same-team attackers (matching team key) and a shared enemy.
+    ({
+      CharacterBattleState a1,
+      CharacterBattleState a2,
+      CharacterBattleState enemy
+    }) squad() {
+      final a1 = CharacterBattleState(
+          testCharacter(id: 'a1', stats: testStats(attack: 20, criticalChance: 0)));
+      final a2 = CharacterBattleState(
+          testCharacter(id: 'a2', stats: testStats(attack: 20, criticalChance: 0)));
+      a1.teammates = [a2];
+      a2.teammates = [a1];
+      final enemy = CharacterBattleState(testCharacter(
+          id: 'e', stats: testStats(maxHealth: 500, defense: 0, criticalChance: 0)))
+        ..teammates = [];
+      return (a1: a1, a2: a2, enemy: enemy);
+    }
+
+    final hit = testTrigger(damage: const DiceExpression(1, 4, flatBonus: 3));
+
+    test('a recognized focus-fire combo grants the follow-up advantage', () {
+      final s = squad();
+      final e = engineWith({}, fixed: 5)
+        ..comboRecognizer = ComboCatalog.defaultRecognizer;
+      // First attacker strikes the enemy: records the focus-fire setup.
+      e.resolveAbilityUse(attacker: s.a1, trigger: hit, targets: [s.enemy]);
+      // Second attacker follows up on the same enemy: focus_fire recognized,
+      // strength-1 advantage chance (7%) succeeds at rollPercent 6.
+      final r = e.resolveAbilityUse(attacker: s.a2, trigger: hit, targets: [s.enemy]);
+      expect(r.targetResults.single.attackRolls.single.attackerRoll.mode,
+          RollMode.advantage);
+    });
+
+    test('no recognizer injected means no combo advantage', () {
+      final s = squad();
+      final e = engineWith({}, fixed: 5); // comboRecognizer stays null
+      e.resolveAbilityUse(attacker: s.a1, trigger: hit, targets: [s.enemy]);
+      final r = e.resolveAbilityUse(attacker: s.a2, trigger: hit, targets: [s.enemy]);
+      expect(r.targetResults.single.attackRolls.single.attackerRoll.mode,
+          RollMode.normal);
+    });
+  });
 }

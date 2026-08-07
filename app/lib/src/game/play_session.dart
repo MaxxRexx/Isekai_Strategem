@@ -222,6 +222,11 @@ class PlaySession {
       for (final id in opponentCharacterIds) id: profileB,
     };
 
+    // TEG Effect 4 (combo advantage): enable the combo recognizer over the
+    // live action ledger. The ledger is populated during resolution and
+    // cleared each turn by the engine.
+    battle.turnEngine.comboRecognizer = ComboCatalog.defaultRecognizer;
+
     final session = PlaySession._(
       battle: battle,
       equippedA: teamADraft.equippedActiveTriggers,

@@ -6,11 +6,13 @@ import '../models/damage_type.dart';
 import '../models/passive_counter.dart';
 import '../models/reactive_effect.dart';
 import '../models/resonance.dart';
+import '../models/combo.dart';
 import '../models/status_effect.dart';
 import '../models/status_effect_catalog.dart';
 import '../models/team.dart';
 import '../models/teg_profile.dart';
 import '../models/trigger.dart';
+import 'combo_recognizer.dart';
 import '../models/trion.dart';
 import '../models/unique_behavior.dart';
 import '../util/dice.dart';
@@ -137,8 +139,66 @@ class TurnEngine {
   /// the TEG dice-advantage / crit-widen effects.
   Map<String, TegRollProfile> tegProfiles = {};
 
+  /// Combat-v2 Phase I/J: the per-turn combo action ledger (populated as
+  /// actions resolve, cleared at each turn boundary) and the recognizer that
+  /// reads it. The recognizer is injected by the Battle/app layer (like
+  /// [tegProfiles]); when null, TEG Effect 4 (combo advantage) and Effect 3
+  /// (setup->payoff refund) are simply disabled - the ledger still records.
+  final ComboLedger comboLedger = ComboLedger();
+  ComboRecognizer? comboRecognizer;
+
+  /// Advantage-chance granted per unit of recognized-combo strength (TEG
+  /// Effect 4), before the universal 20% cap. Tunable (Phase H).
+  static const int comboAdvantagePercentPerStrength = 7;
+
   TegRollProfile _tegFor(CharacterBattleState c) =>
       tegProfiles[c.character.id] ?? TegRollProfile.none;
+
+  /// A stable per-team key for the ledger: the sorted character ids of the
+  /// actor plus its teammates. Same for every member of a team, unique per
+  /// team in a battle, so the recognizer's same-team filter works without
+  /// the engine needing an explicit team id.
+  String _teamKeyFor(CharacterBattleState c) {
+    final ids = <String>[
+      c.character.id,
+      for (final t in c.teammates) t.character.id,
+    ]..sort();
+    return ids.join('|');
+  }
+
+  /// TEG Effect 4: if the current payoff against [target] completes a
+  /// recognized combo, roll the strength-scaled advantage chance (capped at
+  /// the universal 20%) and, on success, grant [ctx] advantage.
+  void _applyComboAdvantage(
+    RollContext ctx,
+    CharacterBattleState attacker,
+    ActiveTrigger trigger,
+    CharacterBattleState target,
+  ) {
+    final recognizer = comboRecognizer;
+    if (recognizer == null) return;
+    final probe = ComboLedgerEntry(
+      actorId: attacker.character.id,
+      teamId: _teamKeyFor(attacker),
+      triggerId: trigger.id,
+      originTag: trigger.originTag,
+      attackType: trigger.attackType,
+      attackSubtype: trigger.attackSubtype,
+      targetAffiliation: trigger.targetAffiliation,
+      targetIds: [target.character.id],
+      statusesApplied: const [],
+      dealtDamage: false,
+      sequence: 1 << 30, // above any recorded entry; excluded from priors
+    );
+    final combo = recognizer
+        .best(comboLedger.contextFor(probe, targetState: target));
+    if (combo == null) return;
+    final chance =
+        (combo.strength * comboAdvantagePercentPerStrength).clamp(0, 20);
+    if (chance > 0 && combatEngine.diceRoller.rollPercent() <= chance) {
+      ctx.addAdvantage('teg_combo');
+    }
+  }
 
   /// TEG Effect 1 (Coordination): with the actor's offense chance, grant
   /// [ctx] advantage on this offensive roll.
@@ -941,6 +1001,7 @@ class TurnEngine {
       // Operator's Read advantage on the defender's contest, and (at SSS)
       // the widened crit threshold. No-ops when no TEG profile is injected.
       _applyTegOffenseAdvantage(attackerContext, attacker);
+      _applyComboAdvantage(attackerContext, attacker, trigger, target);
       final tegDefenderContext = RollContext();
       _applyTegDefenseAdvantage(tegDefenderContext, target);
       final tegMaxCrit = _tegFor(attacker).maxCritThreshold;
@@ -1231,6 +1292,19 @@ class TurnEngine {
     if (trigger.armsReactive != null) {
       _armReactiveEffect(attacker, trigger, filteredTargets, reactiveData);
     }
+
+    // Combat-v2 Phase I/J: record this resolved action so a later same-team
+    // payoff can recognize a setup->payoff / focus-fire combo (Effects 3/4).
+    comboLedger.record(
+      actorId: attacker.character.id,
+      teamId: _teamKeyFor(attacker),
+      trigger: trigger,
+      targetIds: [for (final r in targetResults) r.targetCharacterId],
+      statusesApplied: [
+        for (final r in targetResults) ...r.statusEffectsApplied,
+      ],
+      dealtDamage: targetResults.any((r) => r.totalDamageDealt > 0),
+    );
 
     return AbilityUseResult(
       attackerCharacterId: attacker.character.id,
