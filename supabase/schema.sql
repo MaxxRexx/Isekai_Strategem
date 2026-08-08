@@ -164,10 +164,12 @@ begin
   insert into public.xp_ledger (player_id, base_xp, tier, awarded_xp, won, ended_at)
   values (v_uid, v_base, upper(p_tier), v_awarded, p_won, p_ended_at);
 
-  update public.accounts
-    set total_xp = total_xp + v_awarded, updated_at = now()
-    where id = v_uid
-    returning total_xp into v_total;
+  -- Alias the table so total_xp is unambiguous vs the RETURNS TABLE column of
+  -- the same name (else Postgres raises 42702 "column reference is ambiguous").
+  update public.accounts a
+    set total_xp = a.total_xp + v_awarded, updated_at = now()
+    where a.id = v_uid
+    returning a.total_xp into v_total;
 
   return query select v_base, v_awarded, v_total;
 end;
