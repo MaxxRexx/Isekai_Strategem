@@ -656,21 +656,30 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 - One More Breath (survive-lethal enrich) is implemented in the engine.
 
 **Specced but NOT built (the real gaps), most important first:**
-1. **The inverse-TEG XP counterweight's real backend (Phase J / section 15).**
-   The shared formula (D +75% ... SSS +5%) is built and tested
-   (`app/lib/src/game/battle_xp.dart`), and a client scaffold exists
-   (`account.dart` stress-free auth interfaces + `xp_ledger.dart` +
-   `PlaySession.awardBattleXpTo`), all behind local stubs. What remains is the
-   server-authoritative backend itself (accounts + XP ledger) - blocked on a
-   real Supabase/Firebase project + auth-provider setup.
-2. **Remaining UI (Phase F)** - partially done on branch. Built: the TEG
+1. **The inverse-TEG XP counterweight - backend wired, awaiting live setup
+   (Phase J / section 15).** The shared formula (D +75% ... SSS +5%) is built
+   and tested (`app/lib/src/game/battle_xp.dart`). The whole client integration
+   now exists behind the `AccountService` / `XpLedger` interfaces: Supabase is
+   chosen (project `zzsjkanssxhejhotbrca`), with `supabase_flutter` wired via a
+   `Services` locator that falls back to the local stubs when the backend is
+   unreachable. `SupabaseAccountService` (guest = anonymous, passwordless email,
+   Google/Apple OAuth, guest-upgrade keeps the id) and `SupabaseXpLedger` (calls
+   the authoritative `award_battle_xp` RPC) are done, plus the SQL schema
+   (`supabase/schema.sql`: tables + RLS + the server-side multiplier) and a
+   daily keep-alive workflow. What remains is the one-time Supabase dashboard
+   setup (`docs/supabase_setup.md`: run the SQL, enable anonymous/email/Google
+   providers, set redirect URLs, add the keep-alive GitHub secrets) and then
+   on-device runtime verification. Until that's done the app runs on the stubs.
+2. **Remaining UI (Phase F)** - mostly done on branch. Built: the TEG
    six-sub-score display, surfacing the currently-hidden stats, the Team Spirit
    live offense/sustain readout, the loadout-builder preview + EQUIP/UNEQUIP +
-   Randomize/Reset/Unequip-all pass, passive-counter descriptions, and the
+   Randomize/Reset/Unequip-all pass, passive-counter descriptions, the
    clickable-portrait detail panel with own-full vs enemy-public gating plus
    the Mind's Eye reveal (tappable ability chips over
-   `PlaySession.revealedEnemyIds`). Still to build: queue display + resolve
-   beat polish, and a visible sign-in flow + post-battle XP-award screen.
+   `PlaySession.revealedEnemyIds`), the sign-in flow (`AccountSheet`, opened
+   from the home header), and the post-battle XP-award readout (in the play-flow
+   outcome, with the inverse-TEG breakdown). Still to build: queue display +
+   resolve-beat polish.
 
 ## 14. Open / tunable items
 
