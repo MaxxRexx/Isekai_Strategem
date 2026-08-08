@@ -375,28 +375,68 @@ class CharacterStatRow extends StatelessWidget {
       ('INFLICT', '${stats.statusEffectInfliction}'),
       ('RESIST', '${stats.statusEffectResistance}'),
     ];
-    return Wrap(
-      spacing: 10,
-      runSpacing: 2,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final (label, value) in pairs)
-          Text.rich(
-            TextSpan(
-              children: [
+        Wrap(
+          spacing: 10,
+          runSpacing: 2,
+          children: [
+            for (final (label, value) in pairs)
+              Text.rich(
                 TextSpan(
-                  text: '$label ',
-                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                  children: [
+                    TextSpan(
+                      text: '$label ',
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 10,
+                      ),
+                    ),
+                    TextSpan(
+                      text: value,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ),
-                TextSpan(
-                  text: value,
-                  style: const TextStyle(color: Colors.white70, fontSize: 10),
-                ),
-              ],
+              ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Text(
+            teamSpiritEffectHint(stats.teamSpirit),
+            style: const TextStyle(
+              color: Palette.accent,
+              fontSize: 9.5,
+              fontStyle: FontStyle.italic,
             ),
           ),
+        ),
       ],
     );
   }
+}
+
+/// The live offense/sustain readout for a character's Team Spirit value.
+/// Below the midpoint (50) Team Spirit leans offensive (damage + crit),
+/// above it leans sustain (heal regen + FAT). See combat-v2 §10.
+String teamSpiritEffectHint(num teamSpirit) {
+  final bonuses = const TeamSpiritCurve().bonusesFor(teamSpirit);
+  final dmg = (bonuses.singleTargetDamageBonus * 100).round();
+  final crit = bonuses.criticalChanceBonus.round();
+  final regen = (bonuses.healthRegenBonus * 100).round();
+  final fat = bonuses.fatChanceBonus.round();
+  if (dmg <= 0 && crit <= 0 && regen <= 0 && fat <= 0) {
+    return 'Team Spirit: neutral (balanced).';
+  }
+  if (dmg > 0 || crit > 0) {
+    return 'Team Spirit: +$dmg% dmg, +$crit% crit (offense).';
+  }
+  return 'Team Spirit: +$regen% regen, +$fat% FAT (sustain).';
 }
 
 /// One roster-grid entry: a portrait tile plus name/role, the mockup's
