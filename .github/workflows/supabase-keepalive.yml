@@ -1,0 +1,35 @@
+name: Supabase keep-alive
+
+# Supabase free-tier projects pause after ~7 straight days of zero activity and
+# do NOT auto-wake. This job makes one lightweight request per day so the
+# inactivity clock never runs out and the backend stays available for players,
+# even during quiet stretches with no real traffic. Cost: $0, no credit card.
+#
+# Requires two repo secrets (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_URL       e.g. https://zzsjkanssxhejhotbrca.supabase.co
+#   SUPABASE_ANON_KEY  the publishable / anon key (public-safe)
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # 06:00 UTC daily
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the Data API
+        run: |
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
+            echo "SUPABASE_URL / SUPABASE_ANON_KEY secrets not set; skipping."
+            exit 0
+          fi
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/accounts?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          echo "Supabase responded with HTTP ${code}."
+          # Any HTTP response (even 401/empty) counts as project activity.
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
