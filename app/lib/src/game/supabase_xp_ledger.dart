@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
+import 'team_efficiency.dart';
 import 'xp_ledger.dart';
 
 /// Real [XpLedger] backed by Supabase (combat-v2 §5.2 / §15). Authoritative:

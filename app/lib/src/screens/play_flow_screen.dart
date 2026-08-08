@@ -15,6 +15,7 @@ import '../game/play_session.dart';
 import '../game/report.dart';
 import '../game/services.dart';
 import '../game/target_selection.dart';
+import '../game/team_efficiency.dart';
 import '../game/tutorial.dart';
 import '../game/xp_ledger.dart';
 import '../ui/notched.dart';
