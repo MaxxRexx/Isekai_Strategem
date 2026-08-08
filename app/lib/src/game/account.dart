@@ -66,10 +66,27 @@ class AuthResult {
   final PlayerAccount? account;
   final String? error;
 
-  const AuthResult.success(PlayerAccount this.account) : error = null;
-  const AuthResult.failure(String this.error) : account = null;
+  /// Set when the flow can't complete synchronously and continues out of band:
+  /// an OAuth redirect (web navigates away and returns) or a magic link sent to
+  /// the user's inbox. Carries a short human message for the UI to show; the
+  /// real account then arrives via [AccountService.changes].
+  final String? pending;
+
+  const AuthResult.success(PlayerAccount this.account)
+    : error = null,
+      pending = null;
+  const AuthResult.failure(String this.error)
+    : account = null,
+      pending = null;
+
+  /// A flow that will finish later (redirect / emailed link). [message] is
+  /// shown to the user (e.g. "Check your email for a sign-in link").
+  const AuthResult.awaiting(String this.pending)
+    : account = null,
+      error = null;
 
   bool get ok => account != null;
+  bool get isPending => pending != null;
 }
 
 /// The single entry point the app uses for accounts. Implementations must keep

@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
+import 'game/account.dart';
 import 'game/draft.dart';
 import 'game/loadout_selection.dart';
+import 'game/services.dart';
 import 'game/team_efficiency.dart';
 import 'quick_battle/quick_battle_screen.dart';
 import 'screens/guide_screen.dart';
@@ -12,6 +14,7 @@ import 'screens/play_flow_screen.dart';
 import 'screens/simulate_screen.dart';
 import 'ui/notched.dart';
 import 'ui/palette.dart';
+import 'widgets/account_sheet.dart';
 import 'widgets/loadout_builder_panel.dart';
 import 'widgets/loadout_budget_panel.dart';
 import 'widgets/player_panel.dart';
@@ -153,13 +156,39 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text(
-                  'ISEKAI STRATEGEM',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
+                Row(
+                  children: [
+                    const SizedBox(width: 44),
+                    Expanded(
+                      child: Text(
+                        'ISEKAI STRATEGEM',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                            ),
+                      ),
+                    ),
+                    StreamBuilder<PlayerAccount?>(
+                      stream: Services.instance.accountService.changes,
+                      initialData: Services.instance.accountService.current,
+                      builder: (context, snapshot) {
+                        final signedIn =
+                            snapshot.data != null && !snapshot.data!.isGuest;
+                        return IconButton(
+                          tooltip: 'Account',
+                          onPressed: () => AccountSheet.show(context),
+                          icon: Icon(
+                            signedIn
+                                ? Icons.account_circle
+                                : Icons.account_circle_outlined,
+                            color: signedIn ? Palette.accent : Colors.white54,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 selected == null

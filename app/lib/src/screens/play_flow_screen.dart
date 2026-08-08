@@ -8,16 +8,20 @@ import '../data/describe.dart';
 import '../data/flavor_text.dart';
 import '../data/placeholder_ranks.dart';
 import '../game/battle_models.dart';
+import '../game/battle_xp.dart';
 import '../game/draft.dart';
 import '../game/loadout_selection.dart';
 import '../game/play_session.dart';
 import '../game/report.dart';
+import '../game/services.dart';
 import '../game/target_selection.dart';
 import '../game/tutorial.dart';
+import '../game/xp_ledger.dart';
 import '../ui/notched.dart';
 import '../ui/palette.dart';
 import '../ui/rank.dart';
 import '../widgets/ability_slot.dart';
+import '../widgets/account_sheet.dart';
 import '../widgets/badges.dart';
 import '../widgets/fighter_row.dart';
 import '../widgets/loadout_builder_panel.dart';
@@ -111,6 +115,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   /// True while the turn is resolving (player queue + the AI's response),
   /// which briefly locks input in Play mode.
   bool _resolving = false;
+
+  /// The post-battle XP award (combat-v2 §15), computed once when a Play-mode
+  /// battle ends. Null until awarded (or if nobody is signed in).
+  XpAward? _xpAward;
+  bool _xpAwardInFlight = false;
 
   /// Whether the battle log dropdown is open. Owned here (not inside the
   /// log widget) so it survives turn-to-turn rebuilds and the queued-strip
@@ -276,6 +285,115 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       tutorial.fatUsesThisRound = 0;
       session.forceFat(step.characterId);
     }
+  }
+
+  /// Awards post-battle XP once, when a Play-mode battle has ended and someone
+  /// is signed in (including as a guest). Server-authoritative when the real
+  /// backend is live; the local stub otherwise. Safe to call repeatedly.
+  void _maybeAwardXp() {
+    final session = _session;
+    if (session == null || !session.isOver) return;
+    if (_tutorialActive || _xpAward != null || _xpAwardInFlight) return;
+    _xpAwardInFlight = true;
+    session
+        .awardBattleXpTo(
+          Services.instance.xpLedger,
+          Services.instance.accountService,
+        )
+        .then((award) {
+          if (!mounted) return;
+          setState(() {
+            _xpAward = award;
+            _xpAwardInFlight = false;
+          });
+        })
+        .catchError((_) {
+          if (mounted) setState(() => _xpAwardInFlight = false);
+        });
+  }
+
+  /// The post-battle XP line under the outcome banner. Shows the awarded XP
+  /// (with the inverse-TEG breakdown) when signed in, or a friendly prompt to
+  /// sign in and save progress when not.
+  Widget _xpAwardReadout() {
+    final award = _xpAward;
+    if (award != null) {
+      final tier = _session!.teamAEfficiency.tier;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Palette.gold.withValues(alpha: 0.08),
+            border: Border.all(color: Palette.gold.withValues(alpha: 0.5)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.star, color: Palette.gold, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    '+${award.awardedXp} XP',
+                    style: const TextStyle(
+                      color: Palette.gold,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${award.totalXp} total',
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Base ${award.baseXp}, ${tier.label}-grade bonus '
+                '+${battleXpBonusPercentFor(tier)}% (lower grade earns more).',
+                style: const TextStyle(color: Colors.white54, fontSize: 10.5),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_xpAwardInFlight) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Tallying XP...',
+              style: TextStyle(color: Colors.white54, fontSize: 11),
+            ),
+          ],
+        ),
+      );
+    }
+    if (Services.instance.accountService.current == null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => AccountSheet.show(context),
+            icon: const Icon(Icons.person_outline, size: 16),
+            label: const Text('Sign in to save your XP'),
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   void _pushPlayerAction(LogAction action) {
@@ -445,6 +563,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     });
     if (session.isOver) {
       setState(() => _resolving = false);
+      _maybeAwardXp();
       return;
     }
     final aiRound = await session.endTurnWithDelay(
@@ -456,6 +575,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       _resolving = false;
       _afterBattleStateChange();
     });
+    _maybeAwardXp();
   }
 
   Future<void> _confirmSurrender() async {
@@ -1155,6 +1275,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             note: 'Concluded in ${session.roundNumber} round(s).',
           ),
           const SizedBox(height: 8),
+          _xpAwardReadout(),
           Wrap(
             spacing: 8,
             runSpacing: 8,

@@ -35,6 +35,10 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Accounts + server-authoritative XP backend (combat-v2 §15). Public
+  # URL/publishable key live in lib/src/game/supabase_config.dart.
+  supabase_flutter: ^2.8.0
+
   battle_engine:
     path: ../packages/battle_engine
 
