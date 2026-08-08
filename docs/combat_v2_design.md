@@ -454,9 +454,14 @@ inverse-TEG battle XP scaling.
 - Clickable portraits (both teams) open the home-screen character detail
   panel. Your own characters: full detail. Opponent characters: public info
   only (type, base stats, perk, current HP, visible statuses, rank); equipped
-  loadout stays hidden unless Mind's Eye has revealed it. (NOT built)
+  loadout stays hidden unless Mind's Eye has revealed it. (done:
+  `_characterInfoPanel` gates on own vs enemy - own shows FULL INTEL with the
+  equipped loadout, enemy shows PUBLIC INTEL with base stats/perk/rank and a
+  hidden-loadout hint.)
 - Mind's Eye: populate a revealed enemy's abilities in their panel,
-  clickable, for the duration. (NOT built)
+  clickable, for the duration. (done: once `PlaySession.revealedEnemyIds`
+  includes the enemy, the panel lists their abilities as tappable chips that
+  open the ability description dialog.)
 - TEG display under Player Info with the six-sub-score breakdown on expand.
   (done: `TegBadge`, tap to expand six sub-scores + the live dice-advantage
   effects at that grade.)
@@ -602,7 +607,7 @@ retired tiebreak.
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
 | Phase E: new-content wiring | done + merged: the two deferred unique hooks (7.1), Coldread "seize", Nullhymn's real resonance-grade downgrade (per-wielder step count on the const grid; targets the most-recently-active enemy BT), and Death Ledger's nullified-AoE loadout swap (engine signals; app borrows the AoE into the wielder's loadout for 2 turns, then reverts) | `claude/tactical-combat-engine-5luk6z` |
-| Phase F: remaining UI | in progress (branch): done so far are the TEG badge (six-sub-score expand + live effects), surfacing the hidden stats, the Team Spirit live offense/sustain readout, the loadout-builder preview/EQUIP-UNEQUIP/Randomize-Reset-Unequip-all pass, and passive-counter descriptions. Remaining: clickable portraits with own-full / enemy-public gating, and the Mind's Eye reveal panel. | `claude/tactical-combat-engine-5luk6z` |
+| Phase F: remaining UI | in progress (branch): done are the TEG badge (six-sub-score expand + live effects), surfacing the hidden stats, the Team Spirit live offense/sustain readout, the loadout-builder preview/EQUIP-UNEQUIP/Randomize-Reset-Unequip-all pass, passive-counter descriptions, and the clickable-portrait detail panel with own-full / enemy-public gating plus the Mind's Eye reveal (tappable ability chips). Remaining: queue display + resolve beat polish and the visible sign-in / post-battle XP-award screens. | `claude/tactical-combat-engine-5luk6z` |
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
 | Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
@@ -661,10 +666,11 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 2. **Remaining UI (Phase F)** - partially done on branch. Built: the TEG
    six-sub-score display, surfacing the currently-hidden stats, the Team Spirit
    live offense/sustain readout, the loadout-builder preview + EQUIP/UNEQUIP +
-   Randomize/Reset/Unequip-all pass, and passive-counter descriptions. Still
-   to build: clickable portraits / character detail with own-full vs
-   enemy-public gating, the Mind's Eye reveal panel, queue display + resolve
-   beat, and a visible sign-in flow + post-battle XP-award screen.
+   Randomize/Reset/Unequip-all pass, passive-counter descriptions, and the
+   clickable-portrait detail panel with own-full vs enemy-public gating plus
+   the Mind's Eye reveal (tappable ability chips over
+   `PlaySession.revealedEnemyIds`). Still to build: queue display + resolve
+   beat polish, and a visible sign-in flow + post-battle XP-award screen.
 
 ## 14. Open / tunable items
 

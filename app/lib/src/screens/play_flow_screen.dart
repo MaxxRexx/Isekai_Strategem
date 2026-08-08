@@ -16,6 +16,7 @@ import '../game/target_selection.dart';
 import '../game/tutorial.dart';
 import '../ui/notched.dart';
 import '../ui/palette.dart';
+import '../ui/rank.dart';
 import '../widgets/ability_slot.dart';
 import '../widgets/badges.dart';
 import '../widgets/fighter_row.dart';
@@ -1826,76 +1827,277 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
 
   /// The portrait-preview state of the description panel: a tapped
   /// character's identity, health, flavor, and active status effects.
+  /// The clickable-portrait detail panel (combat-v2 §10). Your own fighters
+  /// show full intel (stats, perk, and the equipped loadout). Opponent
+  /// fighters show public intel only (type, base stats, perk, current HP,
+  /// visible statuses, account rank); their loadout stays hidden unless a
+  /// Mind's Eye has revealed it, at which point their abilities are listed.
   Widget _characterInfoPanel(String id) {
     final fighter = _fighterById(id);
     if (fighter == null) return const SizedBox.shrink();
+    final character = roster[id];
     final flavor = characterFlavor[id];
+    final isOwn = _session!.teamA.any((f) => f.id == id);
+    final revealed = isOwn || _session!.revealedEnemyIds.contains(id);
+    final loadout = isOwn ? _session!.loadoutsA[id] : _session!.loadoutsB[id];
     return _descPanel(
-      Row(
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PortraitTile(
-            characterId: id,
-            name: fighter.name,
-            type: fighter.type,
-            size: 48,
-            showRank: false,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PortraitTile(
+                characterId: id,
+                name: fighter.name,
+                type: fighter.type,
+                size: 48,
+                showRank: false,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        fighter.name.toUpperCase(),
-                        style: TextStyle(
-                          color: fighter.alive ? Colors.white : Colors.white38,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            fighter.name.toUpperCase(),
+                            style: TextStyle(
+                              color: fighter.alive
+                                  ? Colors.white
+                                  : Colors.white38,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${fighter.currentHealth}/${fighter.maxHealth} HP',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          typeLabel[fighter.type]!,
+                          style: const TextStyle(
+                            color: Palette.accent,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isOwn ? 'FULL INTEL' : 'PUBLIC INTEL',
+                          style: TextStyle(
+                            color: isOwn ? Palette.teamA : Palette.teamB,
+                            fontSize: 9,
+                            letterSpacing: 0.6,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!isOwn) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Rank ${(placeholderRanks[id] ?? opponentAccountRank).label}',
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 10,
                         ),
                       ),
-                    ),
-                    Text(
-                      '${fighter.currentHealth}/${fighter.maxHealth} HP',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  typeLabel[fighter.type]!,
-                  style: const TextStyle(color: Palette.accent, fontSize: 11),
-                ),
-                if (flavor != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    flavor,
-                    style: const TextStyle(color: Colors.white70, fontSize: 11),
-                  ),
-                ],
-                if (fighter.statusEffects.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 3,
-                    runSpacing: 3,
-                    children: [
-                      for (final s in fighter.statusEffects)
-                        StatusBadge(
-                          name: s.name,
-                          remainingTurns: s.remainingTurns,
-                        ),
-                    ],
-                  ),
-                ],
+              ),
+            ],
+          ),
+          if (character?.perk != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              character!.perk!.name,
+              style: const TextStyle(
+                color: Palette.gold,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              character.perk!.description,
+              style: const TextStyle(color: Colors.white54, fontSize: 10.5),
+            ),
+          ],
+          if (flavor != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              flavor,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 10.5,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+          if (character != null) ...[
+            const SizedBox(height: 8),
+            CharacterStatRow(stats: character.baseStats),
+          ],
+          if (fighter.statusEffects.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 3,
+              runSpacing: 3,
+              children: [
+                for (final s in fighter.statusEffects)
+                  StatusBadge(name: s.name, remainingTurns: s.remainingTurns),
               ],
             ),
+          ],
+          const SizedBox(height: 10),
+          _loadoutIntel(loadout, isOwn: isOwn, revealed: revealed),
+        ],
+      ),
+    );
+  }
+
+  /// The abilities readout inside the character detail panel. Own fighters
+  /// list their equipped Triggers outright; enemy fighters only list them
+  /// once Mind's Eye has revealed the loadout, otherwise a hidden-intel hint
+  /// stands in.
+  Widget _loadoutIntel(
+    Loadout? loadout, {
+    required bool isOwn,
+    required bool revealed,
+  }) {
+    final header = Text(
+      isOwn ? 'LOADOUT' : (revealed ? 'REVEALED LOADOUT' : 'LOADOUT'),
+      style: TextStyle(
+        color: revealed ? Colors.white38 : Palette.teamB,
+        fontSize: 9,
+        letterSpacing: 0.6,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+    if (!revealed) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 3),
+          const Text(
+            'Hidden. Reveal it with Mind\'s Eye.',
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: 10.5,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      );
+    }
+    final actives =
+        loadout?.triggers.whereType<ActiveTrigger>().toList() ??
+        const <ActiveTrigger>[];
+    final bt = loadout?.blackTrigger;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        header,
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          children: [
+            for (final t in actives)
+              _abilityChip(
+                t.name,
+                false,
+                onTap: () => _showAbilityDetail(t.name, describeTrigger(t)),
+              ),
+            if (bt != null)
+              _abilityChip(
+                bt.name,
+                true,
+                onTap: () => _showAbilityDetail(bt.name, _describeBlackTrigger(bt)),
+              ),
+            if (actives.isEmpty && bt == null)
+              const Text(
+                'No abilities equipped.',
+                style: TextStyle(color: Colors.white38, fontSize: 10.5),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _abilityChip(String label, bool isBlackTrigger, {VoidCallback? onTap}) {
+    final color = isBlackTrigger ? Palette.gold : Palette.accent;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          border: Border.all(color: color.withValues(alpha: 0.6)),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isBlackTrigger ? Palette.gold : Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (onTap != null) ...[
+              const SizedBox(width: 3),
+              Icon(Icons.info_outline, size: 11, color: color),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _describeBlackTrigger(BlackTrigger bt) {
+    final parts = <String>[bt.description];
+    if (bt.activeAbilities.isNotEmpty) {
+      parts.add(
+        'Abilities: ${bt.activeAbilities.map((a) => a.name).join(', ')}.',
+      );
+    }
+    return parts.join(' ');
+  }
+
+  void _showAbilityDetail(String name, String description) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Palette.panel,
+        title: Text(
+          name,
+          style: const TextStyle(color: Colors.white, fontSize: 15),
+        ),
+        content: Text(
+          description,
+          style: const TextStyle(color: Colors.white70, fontSize: 12.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
           ),
         ],
       ),

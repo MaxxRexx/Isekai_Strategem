@@ -383,6 +383,19 @@ class PlaySession {
     ];
   }
 
+  /// Enemy (team B) character ids whose loadout the player's team has
+  /// revealed via Mind's Eye. The reveal is stored per-wielder on the
+  /// revealing character's battle state, so the union across team A is the
+  /// set the battle UI may show the opponent's abilities for.
+  Set<String> get revealedEnemyIds {
+    final out = <String>{};
+    for (final c in battle.teamA.characters) {
+      final state = battle.states[c.id];
+      if (state != null) out.addAll(state.revealedEnemyIds);
+    }
+    return out;
+  }
+
   UseAbilityOutcome useAbility(
     String characterId,
     String triggerId,
