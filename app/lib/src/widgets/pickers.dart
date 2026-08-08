@@ -365,9 +365,15 @@ class CharacterStatRow extends StatelessWidget {
     final pairs = <(String, String)>[
       ('ATK', '${stats.attack}'),
       ('DEF', '${stats.defense}'),
+      ('ARMOR', '${stats.armor}'),
+      ('MAX HP', '${stats.maxHealth}'),
       ('CRIT', '${stats.criticalChance.round()}%'),
       ('FAT', '${stats.fatChance.round()}%'),
       ('TRION', '${stats.trionCapacity}'),
+      ('T.AFFINITY', '${stats.trionAffinity}'),
+      ('TEAM SPIRIT', '${stats.teamSpirit}'),
+      ('INFLICT', '${stats.statusEffectInfliction}'),
+      ('RESIST', '${stats.statusEffectResistance}'),
     ];
     return Wrap(
       spacing: 10,

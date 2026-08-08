@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'game/draft.dart';
 import 'game/loadout_selection.dart';
+import 'game/team_efficiency.dart';
 import 'quick_battle/quick_battle_screen.dart';
 import 'screens/guide_screen.dart';
 import 'screens/play_flow_screen.dart';
@@ -15,6 +16,7 @@ import 'widgets/loadout_builder_panel.dart';
 import 'widgets/loadout_budget_panel.dart';
 import 'widgets/player_panel.dart';
 import 'widgets/portrait_tile.dart';
+import 'widgets/teg_badge.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -198,6 +200,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                 const SizedBox(height: 16),
+                if (_squadIds.length == 3) ...[
+                  TegBadge(
+                    teg: computeTeamEfficiency(
+                      characterIds: _squadIds,
+                      loadouts: {
+                        for (final id in _squadIds)
+                          id: _selectionFor(id).toLoadout(id),
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 _ModeTabsRow(
                   onPlay: _squadReady ? _play : null,
                   onSimulate: () => Navigator.of(context).push(
