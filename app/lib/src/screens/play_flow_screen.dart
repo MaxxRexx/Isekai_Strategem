@@ -122,6 +122,11 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   XpAward? _xpAward;
   bool _xpAwardInFlight = false;
 
+  /// Diagnostic: the error message if the XP award failed (e.g. an RPC error
+  /// from the backend). Surfaced in the outcome readout so failures are visible
+  /// instead of silently swallowed.
+  String? _xpError;
+
   /// Whether the battle log dropdown is open. Owned here (not inside the
   /// log widget) so it survives turn-to-turn rebuilds and the queued-strip
   /// coming and going; only reset to closed when a new battle starts.
@@ -296,6 +301,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     if (session == null || !session.isOver) return;
     if (_tutorialActive || _xpAward != null || _xpAwardInFlight) return;
     _xpAwardInFlight = true;
+    _xpError = null;
     session
         .awardBattleXpTo(
           Services.instance.xpLedger,
@@ -306,10 +312,22 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           setState(() {
             _xpAward = award;
             _xpAwardInFlight = false;
+            // Backend live + signed in but no award means the call came back
+            // empty; make that visible rather than showing nothing.
+            if (award == null &&
+                Services.instance.backendLive &&
+                Services.instance.accountService.current != null) {
+              _xpError = 'No XP returned (backend reachable, signed in).';
+            }
           });
         })
-        .catchError((_) {
-          if (mounted) setState(() => _xpAwardInFlight = false);
+        .catchError((Object e) {
+          if (mounted) {
+            setState(() {
+              _xpAwardInFlight = false;
+              _xpError = '$e';
+            });
+          }
         });
   }
 
@@ -318,6 +336,38 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   /// sign in and save progress when not.
   Widget _xpAwardReadout() {
     final award = _xpAward;
+    if (_xpError != null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Palette.danger.withValues(alpha: 0.08),
+            border: Border.all(color: Palette.danger.withValues(alpha: 0.5)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'XP AWARD FAILED',
+                style: TextStyle(
+                  color: Palette.danger,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const SizedBox(height: 3),
+              SelectableText(
+                _xpError!,
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     if (award != null) {
       final tier = _session!.teamAEfficiency.tier;
       return Padding(
