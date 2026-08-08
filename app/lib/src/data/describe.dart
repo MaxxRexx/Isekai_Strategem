@@ -119,20 +119,23 @@ String describePassiveEffect(PassiveEffect effect) {
 /// would report "No stat effect"). See design section 6.2.
 const passiveCounterDescription = <PassiveCounterKind, String>{
   PassiveCounterKind.draegor:
-      'Each ability you use builds Enmity; at 5 it becomes Regret. While '
-      'Regret is up, if an enemy chains 2+ abilities in a FAT turn, your '
+      'Each ability you use builds a stack of Enmity; at 5 stacks it becomes '
+      'Regret. While Regret is up, if an enemy chains 2+ abilities in a FAT '
+      'turn, your '
       "squad's Team Efficiency Grade rises 2 tiers for 2 turns (or, if "
       'already SS+, your highest-Affinity ally’s Trion Affinity '
       'doubles). Max 3 per battle.',
   PassiveCounterKind.nullhymn:
-      'Builds Discord when an enemy uses a Black Trigger against your team '
-      'or inflicts a status on the holder. At 5 it discharges (twice per '
+      'Builds a stack of Discord when an enemy uses a Black Trigger against '
+      'your team or inflicts a status on the holder. At 5 stacks it '
+      'discharges (twice per '
       'battle): permanently drops the most-recently-active enemy Black '
       'Trigger one resonance grade - or, if no enemy runs one, purges your '
       "team's debuffs and reflects them onto whoever applied the most.",
   PassiveCounterKind.reckoning:
-      'Builds Debt when an enemy crits your team or uses a 2+ cooldown '
-      'ability against it. At 6 it comes due: the worst offender’s '
+      'Builds a stack of Debt when an enemy crits your team or uses a 2+ '
+      'cooldown ability against it. At 6 stacks it comes due: the worst '
+      'offender’s '
       'cooldowns are extended, their next attack is forced to a critical '
       'miss, and your team levies their Trion.',
   PassiveCounterKind.gravehour:
