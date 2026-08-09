@@ -308,7 +308,15 @@ class _LogLineState extends State<LogLine> {
           ),
         ),
         if (_expanded && hasBreakdown)
-          RollBreakdownView(action: action, target: t),
+          RollBreakdownView(
+            actorName: action.characterName,
+            abilityName: action.triggerName,
+            targetName: t.targetName,
+            rolls: t.rolls,
+            statusEffectsApplied: t.statusEffectsApplied,
+            healthAfter: t.healthAfter,
+            died: t.died,
+          ),
       ],
     );
   }
@@ -345,12 +353,22 @@ class _LogLineState extends State<LogLine> {
 /// you can tell a die roll (cyan) from a character stat (gold) from a total
 /// (white).
 class RollBreakdownView extends StatelessWidget {
-  final LogAction action;
-  final LogTargetResult target;
+  final String actorName;
+  final String abilityName;
+  final String targetName;
+  final List<LogRollBreakdown> rolls;
+  final List<String> statusEffectsApplied;
+  final int healthAfter;
+  final bool died;
   const RollBreakdownView({
     super.key,
-    required this.action,
-    required this.target,
+    required this.actorName,
+    required this.abilityName,
+    required this.targetName,
+    required this.rolls,
+    required this.statusEffectsApplied,
+    required this.healthAfter,
+    required this.died,
   });
 
   static const _body = TextStyle(
@@ -364,7 +382,6 @@ class RollBreakdownView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rolls = target.rolls;
     return Container(
       margin: const EdgeInsets.only(top: 2, bottom: 6),
       padding: const EdgeInsets.all(10),
@@ -379,10 +396,10 @@ class RollBreakdownView extends StatelessWidget {
             text: TextSpan(
               style: _body,
               children: [
-                TextSpan(text: action.characterName, style: _total),
+                TextSpan(text: actorName, style: _total),
                 const TextSpan(text: ' used '),
-                TextSpan(text: action.triggerName, style: _total),
-                TextSpan(text: ' on ${target.targetName}.'),
+                TextSpan(text: abilityName, style: _total),
+                TextSpan(text: ' on $targetName.'),
               ],
             ),
           ),
@@ -394,7 +411,7 @@ class RollBreakdownView extends StatelessWidget {
                 child: _rollBlock(rolls[i], rolls.length > 1 ? i + 1 : null),
               ),
           ],
-          if (target.statusEffectsApplied.isNotEmpty) ...[
+          if (statusEffectsApplied.isNotEmpty) ...[
             const SizedBox(height: 8),
             _statusSection(),
           ],
@@ -591,7 +608,7 @@ class RollBreakdownView extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        for (final name in target.statusEffectsApplied)
+        for (final name in statusEffectsApplied)
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: RichText(
@@ -615,10 +632,10 @@ class RollBreakdownView extends StatelessWidget {
         style: _body,
         children: [
           const TextSpan(text: 'Result: '),
-          TextSpan(text: target.targetName, style: _total),
+          TextSpan(text: targetName, style: _total),
           const TextSpan(text: ' is now at '),
-          TextSpan(text: '${target.healthAfter} HP', style: _total),
-          if (target.died)
+          TextSpan(text: '$healthAfter HP', style: _total),
+          if (died)
             const TextSpan(
               text: ' and is defeated.',
               style: TextStyle(color: Palette.danger, fontWeight: FontWeight.bold),

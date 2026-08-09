@@ -384,7 +384,16 @@ class _QuickLogLineState extends State<_QuickLogLine> {
               ),
           ],
         ),
-        if (_expanded && hasBreakdown) RollBreakdownView(rolls: t.rolls),
+        if (_expanded && hasBreakdown)
+          RollBreakdownView(
+            actorName: action.characterName,
+            abilityName: action.triggerName,
+            targetName: t.targetName,
+            rolls: t.rolls,
+            statusEffectsApplied: t.statusEffectsApplied,
+            healthAfter: t.healthAfter,
+            died: t.died,
+          ),
       ],
     );
   }
