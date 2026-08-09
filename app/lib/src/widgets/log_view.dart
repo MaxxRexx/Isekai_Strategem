@@ -1,5 +1,7 @@
+import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
+import '../data/describe.dart';
 import '../game/battle_models.dart';
 import '../ui/palette.dart';
 
@@ -47,8 +49,15 @@ class BattleLogView extends StatefulWidget {
 class _BattleLogViewState extends State<BattleLogView> {
   // Uncontrolled fallback state (used only when widget.open is null).
   late bool _internalOpen = widget.initiallyOpen;
+  final _scrollController = ScrollController();
 
   bool get _open => widget.open ?? _internalOpen;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _toggle() {
     if (widget.onToggle != null) {
@@ -122,13 +131,22 @@ class _BattleLogViewState extends State<BattleLogView> {
             const Divider(height: 1, color: Colors.white12),
             SizedBox(
               height: widget.bodyHeight,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: widget.rounds.length,
-                itemBuilder: (context, i) => RoundEntry(
-                  round: widget.rounds[i],
-                  teamAName: widget.teamAName,
-                  teamBName: widget.teamBName,
+              // An always-visible, chunky scrollbar so it's obvious the log
+              // scrolls (players were unsure earlier turns were even recorded).
+              child: Scrollbar(
+                controller: _scrollController,
+                thumbVisibility: true,
+                thickness: 8,
+                radius: const Radius.circular(4),
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(12, 12, 18, 12),
+                  itemCount: widget.rounds.length,
+                  itemBuilder: (context, i) => RoundEntry(
+                    round: widget.rounds[i],
+                    teamAName: widget.teamAName,
+                    teamBName: widget.teamBName,
+                  ),
                 ),
               ),
             ),
@@ -211,177 +229,145 @@ class _LogLineState extends State<LogLine> {
       if (t.hits - t.crits - t.misses > 0) '${t.hits - t.crits - t.misses} hit',
       if (t.misses > 0) '${t.misses} miss',
     ];
-    final hasBreakdown = t.rolls.isNotEmpty;
+    final hasBreakdown = t.rolls.isNotEmpty || t.statusEffectsApplied.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(fontSize: 12, color: Colors.white70),
-                  children: [
-                    TextSpan(
-                      text: action.characterName,
-                      style: TextStyle(
-                        color: widget.color,
-                        fontWeight: FontWeight.bold,
+        // The whole line is the tap target (not just a tiny chevron), so it's
+        // easy to open the details on a phone.
+        InkWell(
+          onTap: hasBreakdown
+              ? () => setState(() => _expanded = !_expanded)
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
                       ),
-                    ),
-                    if (action.fatTriggered)
-                      const TextSpan(
-                        text: ' [FAT]',
-                        style: TextStyle(
-                          color: Palette.warn,
-                          fontWeight: FontWeight.bold,
+                      children: [
+                        TextSpan(
+                          text: action.characterName,
+                          style: TextStyle(
+                            color: widget.color,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                    const TextSpan(text: ' uses '),
-                    TextSpan(
-                      text: action.triggerName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(text: ' on ${t.targetName}'),
-                    if (rollBits.isNotEmpty)
-                      TextSpan(text: ' (${rollBits.join(', ')})'),
-                    if (t.damage > 0)
-                      TextSpan(
-                        text: ' ${t.damage} dmg',
-                        style: const TextStyle(color: Palette.danger),
-                      ),
-                    if (t.statusEffectsApplied.isNotEmpty)
-                      TextSpan(
-                        text: ' [${t.statusEffectsApplied.join(', ')}]',
-                        style: const TextStyle(color: Palette.accent),
-                      ),
-                    TextSpan(text: ' -> HP ${t.healthAfter}'),
-                    if (t.died)
-                      const TextSpan(
-                        text: ' DEFEATED',
-                        style: TextStyle(
-                          color: Palette.danger,
-                          fontWeight: FontWeight.bold,
+                        if (action.fatTriggered)
+                          const TextSpan(
+                            text: ' [FAT]',
+                            style: TextStyle(
+                              color: Palette.warn,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        const TextSpan(text: ' uses '),
+                        TextSpan(
+                          text: action.triggerName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            if (hasBreakdown)
-              InkWell(
-                onTap: () => setState(() => _expanded = !_expanded),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Icon(
-                    _expanded ? Icons.expand_less : Icons.expand_more,
-                    size: 16,
-                    color: Colors.white38,
+                        TextSpan(text: ' on ${t.targetName}'),
+                        if (rollBits.isNotEmpty)
+                          TextSpan(text: ' (${rollBits.join(', ')})'),
+                        if (t.damage > 0)
+                          TextSpan(
+                            text: ' ${t.damage} dmg',
+                            style: const TextStyle(color: Palette.danger),
+                          ),
+                        if (t.statusEffectsApplied.isNotEmpty)
+                          TextSpan(
+                            text: ' [${t.statusEffectsApplied.join(', ')}]',
+                            style: const TextStyle(color: Palette.accent),
+                          ),
+                        TextSpan(text: ' -> HP ${t.healthAfter}'),
+                        if (t.died)
+                          const TextSpan(
+                            text: ' DEFEATED',
+                            style: TextStyle(
+                              color: Palette.danger,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-          ],
+                if (hasBreakdown) ...[
+                  const SizedBox(width: 6),
+                  _detailsAffordance(_expanded),
+                ],
+              ],
+            ),
+          ),
         ),
-        if (_expanded && hasBreakdown) RollBreakdownView(rolls: t.rolls),
+        if (_expanded && hasBreakdown)
+          RollBreakdownView(action: action, target: t),
       ],
     );
   }
+
+  /// A small pill that clearly reads as tappable ("Details ▾"), so players
+  /// know each line opens an explanation.
+  Widget _detailsAffordance(bool expanded) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: Palette.accent.withValues(alpha: 0.10),
+      border: Border.all(color: Palette.accent.withValues(alpha: 0.4)),
+      borderRadius: BorderRadius.circular(3),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          expanded ? 'Hide' : 'Details',
+          style: const TextStyle(color: Palette.accent, fontSize: 9.5),
+        ),
+        Icon(
+          expanded ? Icons.expand_less : Icons.expand_more,
+          size: 13,
+          color: Palette.accent,
+        ),
+      ],
+    ),
+  );
 }
 
-/// The exact roll-by-roll math behind one Battle Log line, revealed by its
-/// expand button - what actually decided a hit/crit/miss and how much
-/// damage it dealt.
+/// A plain-English explanation of one Battle Log line, revealed by tapping it:
+/// what happened, how the dice decided the hit, how the damage was built up
+/// step by step, and what any status effects do. Numbers are colour-coded so
+/// you can tell a die roll (cyan) from a character stat (gold) from a total
+/// (white).
 class RollBreakdownView extends StatelessWidget {
-  final List<LogRollBreakdown> rolls;
-  const RollBreakdownView({super.key, required this.rolls});
+  final LogAction action;
+  final LogTargetResult target;
+  const RollBreakdownView({
+    super.key,
+    required this.action,
+    required this.target,
+  });
 
-  String _outcomeLabel(LogRollBreakdown b) {
-    if (b.isCriticalMiss) return 'CRIT MISS';
-    if (b.isCriticalHit) return 'CRIT HIT';
-    return b.isHit ? 'HIT' : 'MISS';
-  }
-
-  Color _outcomeColor(LogRollBreakdown b) {
-    if (b.isCriticalMiss) return Palette.danger;
-    if (b.isCriticalHit) return Palette.good;
-    return b.isHit ? Palette.accent : Colors.white38;
-  }
-
-  /// The damage-formula trail as its own line: the Trigger's own damage
-  /// dice roll (entirely separate from the ATK/DEF roll above, which only
-  /// ever decides hit/miss/crit) through Team Spirit/crit/Armor/
-  /// resistance to the final number - each step only shown if it actually
-  /// applied, so a plain hit reads as just "roll = total = X dmg".
-  List<InlineSpan> _damageFormulaSpans(LogDamageDetail d) {
-    const stepStyle = TextStyle(color: Colors.white54);
-    const arrow = TextSpan(text: '  ->  ', style: stepStyle);
-
-    if (d.prevented) {
-      return const [
-        TextSpan(text: 'Damage roll: '),
-        TextSpan(
-          text: 'PREVENTED',
-          style: TextStyle(color: Palette.accent, fontWeight: FontWeight.bold),
-        ),
-      ];
-    }
-
-    final spans = <InlineSpan>[
-      TextSpan(text: 'Damage roll: ${d.diceDescribe} = ${d.diceTotal}'),
-    ];
-
-    final afterMultiplier = (d.diceTotal * d.preCritMultiplier).round();
-    if (d.preCritMultiplier != 1.0) {
-      spans.add(arrow);
-      spans.add(
-        TextSpan(
-          text: '×${d.preCritMultiplier.toStringAsFixed(2)} = $afterMultiplier',
-        ),
-      );
-    }
-
-    if (d.criticalHitApplied) {
-      spans.add(arrow);
-      spans.add(
-        TextSpan(
-          text:
-              'CRIT ×${d.criticalHitMultiplier.toStringAsFixed(0)} = '
-              '${d.afterCriticalHit}',
-          style: const TextStyle(color: Palette.good),
-        ),
-      );
-    }
-
-    spans.add(arrow);
-    spans.add(TextSpan(text: 'Armor −${d.armor} = ${d.afterArmor}'));
-
-    if (d.statusDamageTypeMultiplier != 1.0 || d.damageResistanceApplied) {
-      final combined =
-          d.statusDamageTypeMultiplier * (d.damageResistanceApplied ? 0.5 : 1);
-      spans.add(arrow);
-      spans.add(TextSpan(text: '×${combined.toStringAsFixed(2)}'));
-    }
-
-    spans.add(arrow);
-    spans.add(
-      TextSpan(
-        text: '${d.finalDamage} dmg',
-        style: const TextStyle(
-          color: Palette.danger,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-    return spans;
-  }
+  static const _body = TextStyle(
+    fontSize: 11.5,
+    color: Colors.white60,
+    height: 1.4,
+  );
+  static const _die = TextStyle(color: Palette.accent, fontWeight: FontWeight.w600);
+  static const _stat = TextStyle(color: Palette.gold, fontWeight: FontWeight.w600);
+  static const _total = TextStyle(color: Colors.white, fontWeight: FontWeight.bold);
 
   @override
   Widget build(BuildContext context) {
+    final rolls = target.rolls;
     return Container(
-      margin: const EdgeInsets.only(top: 4, bottom: 4),
-      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.only(top: 2, bottom: 6),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.25),
         border: const Border(left: BorderSide(color: Palette.accent, width: 2)),
@@ -389,54 +375,289 @@ class RollBreakdownView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (var i = 0; i < rolls.length; i++)
-            Padding(
-              padding: EdgeInsets.only(top: i > 0 ? 6 : 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white54,
-                        fontFeatures: [FontFeature.tabularFigures()],
-                      ),
-                      children: [
-                        if (rolls.length > 1) TextSpan(text: 'Roll ${i + 1}: '),
-                        TextSpan(text: 'ATK ${rolls[i].attackerRoll.describe}'),
-                        const TextSpan(text: '  vs  '),
-                        TextSpan(text: 'DEF ${rolls[i].defenderRoll.describe}'),
-                        const TextSpan(text: '  '),
-                        TextSpan(
-                          text: _outcomeLabel(rolls[i]),
-                          style: TextStyle(
-                            color: _outcomeColor(rolls[i]),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (rolls[i].damageDetail != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2, left: 8),
-                      child: RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.white54,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                          children: _damageFormulaSpans(rolls[i].damageDetail!),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+          RichText(
+            text: TextSpan(
+              style: _body,
+              children: [
+                TextSpan(text: action.characterName, style: _total),
+                const TextSpan(text: ' used '),
+                TextSpan(text: action.triggerName, style: _total),
+                TextSpan(text: ' on ${target.targetName}.'),
+              ],
             ),
+          ),
+          if (rolls.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            for (var i = 0; i < rolls.length; i++)
+              Padding(
+                padding: EdgeInsets.only(top: i > 0 ? 8 : 0),
+                child: _rollBlock(rolls[i], rolls.length > 1 ? i + 1 : null),
+              ),
+          ],
+          if (target.statusEffectsApplied.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _statusSection(),
+          ],
+          const SizedBox(height: 8),
+          _resultLine(),
         ],
       ),
     );
+  }
+
+  Widget _rollBlock(LogRollBreakdown b, int? index) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            if (index != null)
+              Text(
+                'Hit $index  ',
+                style: const TextStyle(color: Colors.white38, fontSize: 10.5),
+              ),
+            _outcomeChip(b),
+          ],
+        ),
+        const SizedBox(height: 3),
+        RichText(text: TextSpan(style: _body, children: _toHitSpans(b))),
+        if (b.damageDetail != null) ...[
+          const SizedBox(height: 3),
+          RichText(
+            text: TextSpan(style: _body, children: _damageSpans(b.damageDetail!)),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _outcomeChip(LogRollBreakdown b) {
+    final (label, color) = b.isCriticalMiss
+        ? ('CRITICAL MISS', Palette.danger)
+        : b.isCriticalHit
+        ? ('CRITICAL HIT', Palette.good)
+        : b.isHit
+        ? ('HIT', Palette.accent)
+        : ('MISS', Colors.white38);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 9.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+
+  InlineSpan _dieSpan(LogDiceRoll r) {
+    if (r.mode == RollMode.normal) {
+      return TextSpan(text: 'd20 rolled ${r.rawRolls.single}', style: _die);
+    }
+    final word = r.mode == RollMode.advantage ? 'advantage' : 'disadvantage';
+    return TextSpan(
+      children: [
+        TextSpan(text: 'd20 rolled ${r.rawRolls.join('/')}', style: _die),
+        TextSpan(
+          text: ' ($word, kept ${r.kept})',
+          style: const TextStyle(
+            color: Colors.white38,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<InlineSpan> _toHitSpans(LogRollBreakdown b) {
+    final a = b.attackerRoll;
+    final d = b.defenderRoll;
+    return [
+      const TextSpan(
+        text: 'To land, the attack roll has to beat the target’s defense '
+            'roll. ',
+      ),
+      const TextSpan(text: 'Attack: '),
+      _dieSpan(a),
+      const TextSpan(text: ' + Attack '),
+      TextSpan(text: '${a.modifier}', style: _stat),
+      const TextSpan(text: ' = '),
+      TextSpan(text: '${a.total}', style: _total),
+      const TextSpan(text: '.  Defense: '),
+      _dieSpan(d),
+      const TextSpan(text: ' + Defense '),
+      TextSpan(text: '${d.modifier}', style: _stat),
+      const TextSpan(text: ' = '),
+      TextSpan(text: '${d.total}', style: _total),
+      const TextSpan(text: '.  '),
+      TextSpan(
+        text: '${a.total} ${a.total >= d.total ? '≥' : '<'} ${d.total}',
+        style: _total,
+      ),
+      TextSpan(text: b.isHit ? ', so it lands.' : ', so it misses.'),
+      if (b.isCriticalHit)
+        const TextSpan(
+          text: ' The roll hit the critical range, so the damage is doubled.',
+          style: TextStyle(color: Palette.good),
+        ),
+      if (b.isCriticalMiss)
+        const TextSpan(
+          text: ' A critical miss — the attack fails outright.',
+          style: TextStyle(color: Palette.danger),
+        ),
+    ];
+  }
+
+  List<InlineSpan> _damageSpans(LogDamageDetail d) {
+    if (d.prevented) {
+      return const [
+        TextSpan(
+          text: 'Damage: fully prevented (blocked or warded), so 0 gets '
+              'through.',
+          style: TextStyle(color: Palette.accent),
+        ),
+      ];
+    }
+    final spans = <InlineSpan>[
+      const TextSpan(text: 'Damage starts from the ability’s own dice: '),
+      TextSpan(text: d.diceDescribe, style: _die),
+      const TextSpan(text: ' = '),
+      TextSpan(text: '${d.diceTotal}', style: _total),
+    ];
+    if (d.preCritMultiplier != 1.0) {
+      final after = (d.diceTotal * d.preCritMultiplier).round();
+      spans.addAll([
+        const TextSpan(text: '. Team Spirit / perk bonus '),
+        TextSpan(
+          text: '×${d.preCritMultiplier.toStringAsFixed(2)}',
+          style: _stat,
+        ),
+        const TextSpan(text: ' → '),
+        TextSpan(text: '$after', style: _total),
+      ]);
+    }
+    if (d.criticalHitApplied) {
+      spans.addAll([
+        TextSpan(
+          text: '. Critical hit ×${d.criticalHitMultiplier.toStringAsFixed(0)}',
+          style: const TextStyle(color: Palette.good),
+        ),
+        const TextSpan(text: ' → '),
+        TextSpan(text: '${d.afterCriticalHit}', style: _total),
+      ]);
+    }
+    spans.addAll([
+      const TextSpan(text: '. The target’s Armor '),
+      TextSpan(text: '${d.armor}', style: _stat),
+      const TextSpan(text: ' soaks some → '),
+      TextSpan(text: '${d.afterArmor}', style: _total),
+    ]);
+    if (d.statusDamageTypeMultiplier != 1.0 || d.damageResistanceApplied) {
+      final combined =
+          d.statusDamageTypeMultiplier * (d.damageResistanceApplied ? 0.5 : 1);
+      spans.addAll([
+        const TextSpan(text: '. Resistance / vulnerability '),
+        TextSpan(text: '×${combined.toStringAsFixed(2)}', style: _stat),
+      ]);
+    }
+    spans.addAll([
+      const TextSpan(text: '. Final: '),
+      TextSpan(
+        text: '${d.finalDamage} damage',
+        style: const TextStyle(color: Palette.danger, fontWeight: FontWeight.bold),
+      ),
+      const TextSpan(text: '.'),
+    ]);
+    return spans;
+  }
+
+  Widget _statusSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Status effects applied:',
+          style: TextStyle(
+            color: Palette.accent,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        for (final name in target.statusEffectsApplied)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: RichText(
+              text: TextSpan(
+                style: _body,
+                children: [
+                  TextSpan(text: '• $name', style: _total),
+                  if (_statusExplain(name).isNotEmpty)
+                    TextSpan(text: ' — ${_statusExplain(name)}'),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _resultLine() {
+    return RichText(
+      text: TextSpan(
+        style: _body,
+        children: [
+          const TextSpan(text: 'Result: '),
+          TextSpan(text: target.targetName, style: _total),
+          const TextSpan(text: ' is now at '),
+          TextSpan(text: '${target.healthAfter} HP', style: _total),
+          if (target.died)
+            const TextSpan(
+              text: ' and is defeated.',
+              style: TextStyle(color: Palette.danger, fontWeight: FontWeight.bold),
+            )
+          else
+            const TextSpan(text: '.'),
+        ],
+      ),
+    );
+  }
+
+  /// A short plain-language description of what a status effect does, built
+  /// from its mechanical definition (there is no authored prose to read).
+  String _statusExplain(String displayName) {
+    StatusEffectDefinition? def;
+    for (final d in StatusEffectCatalog.defaultCatalog.all) {
+      if (d.name == displayName) {
+        def = d;
+        break;
+      }
+    }
+    if (def == null) return '';
+    final bits = <String>[];
+    if (def.preventsActions) bits.add('the target can’t act');
+    for (final s in def.zeroedStats) {
+      bits.add('${statLabel[s] ?? s.name} drops to 0');
+    }
+    def.flatStatModifiers.forEach((stat, v) {
+      final n = v == v.roundToDouble() ? v.round().toString() : v.toString();
+      bits.add('${v > 0 ? '+' : ''}$n ${statLabel[stat] ?? stat.name}');
+    });
+    if (def.perRemainingTurnStatModifiers.isNotEmpty) {
+      bits.add('grows stronger each turn');
+    }
+    final dur = def.defaultDurationTurns;
+    if (bits.isEmpty) {
+      return dur != null ? 'lasts $dur turn${dur == 1 ? '' : 's'}' : '';
+    }
+    final tail = dur != null ? ' for $dur turn${dur == 1 ? '' : 's'}' : '';
+    return '${bits.join(', ')}$tail';
   }
 }
