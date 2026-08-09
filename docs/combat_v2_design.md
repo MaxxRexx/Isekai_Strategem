@@ -451,6 +451,13 @@ inverse-TEG battle XP scaling.
   before End Turn.
 - Resolve beat: End Turn plays the cosmetic "Resolving..." delay, then
   reveals results.
+- Battle log readability. (done) The whole event line is the tap target with a
+  "Details" pill; the scroll area has an always-visible scrollbar; the expanded
+  breakdown is plain-English (to-hit, step-by-step damage buildup, status-effect
+  explanations, result) with colour-coded numbers (die roll / stat / total /
+  damage); and character names, ability names, and target names are clickable
+  to open an info popup (character stats/perk/flavor, or the ability's
+  description). See `widgets/log_view.dart`.
 - Clickable portraits (both teams) open the home-screen character detail
   panel. Your own characters: full detail. Opponent characters: public info
   only (type, base stats, perk, current HP, visible statuses, rank); equipped
@@ -607,12 +614,12 @@ retired tiebreak.
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
 | Phase E: new-content wiring | done + merged: the two deferred unique hooks (7.1), Coldread "seize", Nullhymn's real resonance-grade downgrade (per-wielder step count on the const grid; targets the most-recently-active enemy BT), and Death Ledger's nullified-AoE loadout swap (engine signals; app borrows the AoE into the wielder's loadout for 2 turns, then reverts) | `claude/tactical-combat-engine-5luk6z` |
-| Phase F: remaining UI | in progress (branch): done are the TEG badge (six-sub-score expand + live effects), surfacing the hidden stats, the Team Spirit live offense/sustain readout, the loadout-builder preview/EQUIP-UNEQUIP/Randomize-Reset-Unequip-all pass, passive-counter descriptions, and the clickable-portrait detail panel with own-full / enemy-public gating plus the Mind's Eye reveal (tappable ability chips). Remaining: queue display + resolve beat polish and the visible sign-in / post-battle XP-award screens. | `claude/tactical-combat-engine-5luk6z` |
+| Phase F: remaining UI | mostly done + merged to main: TEG badge (six-sub-score expand + live effects), surfacing the hidden stats, the Team Spirit live offense/sustain readout, the loadout-builder preview/EQUIP-UNEQUIP/Randomize-Reset-Unequip-all pass, passive-counter descriptions, the clickable-portrait detail panel with own-full / enemy-public gating + Mind's Eye reveal, the sign-in flow (`AccountSheet`) + post-battle XP-award readout, and the battle-log rework (tap-anywhere-to-expand, always-visible scrollbar, plain-English breakdowns, clickable names/abilities → info popups). Remaining: queue display + resolve-beat polish. | `claude/tactical-combat-engine-5luk6z` |
 | Phase G: AI tuning | not started | TBD |
 | Phase H: balancing pass | not started (after all content phases) | TBD |
 | Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
 | Phase I: Combo Recognition system | I1-I5 done (I1-I3 merged; I4-I5 green on branch): action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains), live ledger population, and a design-time signature-combo proposer (`tool/propose_signature_combos.dart`). The signature roster grows as designer content | `claude/tactical-combat-engine-5luk6z` |
-| Phase J: TEG mechanical effects (section 5.2) | Effects 1-5 done (1/2/5 merged; 3/4 green on branch): fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund. Draegor's "raise TEG 2 tiers" now wired (shifts the roll-advantage tables). Remaining: inverse-TEG XP (section 15.8) | `claude/tactical-combat-engine-5luk6z` |
+| Phase J: TEG mechanical effects (section 5.2) | done + merged: Effects 1-5 (fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund), Draegor's "raise TEG 2 tiers" wired, and the inverse-TEG XP (section 15.8) now live server-side (see §15 row). | `claude/tactical-combat-engine-5luk6z` |
 
 ### 13.1 Build status (verified against code)
 
@@ -655,31 +662,31 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
   and Karmic Bind live link (Punish, one-way).
 - One More Breath (survive-lethal enrich) is implemented in the engine.
 
-**Specced but NOT built (the real gaps), most important first:**
-1. **The inverse-TEG XP counterweight - backend wired, awaiting live setup
-   (Phase J / section 15).** The shared formula (D +75% ... SSS +5%) is built
-   and tested (`app/lib/src/game/battle_xp.dart`). The whole client integration
-   now exists behind the `AccountService` / `XpLedger` interfaces: Supabase is
-   chosen (project `zzsjkanssxhejhotbrca`), with `supabase_flutter` wired via a
-   `Services` locator that falls back to the local stubs when the backend is
-   unreachable. `SupabaseAccountService` (guest = anonymous, passwordless email,
-   Google/Apple OAuth, guest-upgrade keeps the id) and `SupabaseXpLedger` (calls
-   the authoritative `award_battle_xp` RPC) are done, plus the SQL schema
-   (`supabase/schema.sql`: tables + RLS + the server-side multiplier) and a
-   daily keep-alive workflow. What remains is the one-time Supabase dashboard
-   setup (`docs/supabase_setup.md`: run the SQL, enable anonymous/email/Google
-   providers, set redirect URLs, add the keep-alive GitHub secrets) and then
-   on-device runtime verification. Until that's done the app runs on the stubs.
-2. **Remaining UI (Phase F)** - mostly done on branch. Built: the TEG
-   six-sub-score display, surfacing the currently-hidden stats, the Team Spirit
-   live offense/sustain readout, the loadout-builder preview + EQUIP/UNEQUIP +
-   Randomize/Reset/Unequip-all pass, passive-counter descriptions, the
-   clickable-portrait detail panel with own-full vs enemy-public gating plus
-   the Mind's Eye reveal (tappable ability chips over
-   `PlaySession.revealedEnemyIds`), the sign-in flow (`AccountSheet`, opened
-   from the home header), and the post-battle XP-award readout (in the play-flow
-   outcome, with the inverse-TEG breakdown). Still to build: queue display +
-   resolve-beat polish.
+**Now built since the earlier "gaps" list:**
+- **Accounts + server-authoritative XP (section 15) is LIVE.** The inverse-TEG
+  formula (D +75% ... SSS +5%) runs server-side in Supabase (project
+  `zzsjkanssxhejhotbrca`): `SupabaseAccountService` (guest = anonymous,
+  passwordless email, Google OAuth, guest-upgrade keeps the id) and
+  `SupabaseXpLedger` (authoritative `award_battle_xp` RPC), behind the
+  `AccountService`/`XpLedger` interfaces via a `Services` locator that falls
+  back to local stubs if the backend is unreachable. Schema + RLS
+  (`supabase/schema.sql`), daily keep-alive workflow, and dashboard setup
+  (`docs/supabase_setup.md`) are all in place and verified end-to-end on the
+  deployed build (guest sign-in -> battle -> XP awarded -> `xp_ledger` row).
+- **Most of Phase F UI** (see the Phase F row): TEG badge, hidden stats, Team
+  Spirit readout, loadout-builder pass, passive-counter text, clickable-portrait
+  detail panel + Mind's Eye, the `AccountSheet` sign-in flow, the post-battle
+  XP-award readout, and the battle-log rework (readability + clickable popups).
+
+**Still to build (the real remaining work), most important first:**
+1. **Trigger differentiation (`#balance`).** Several of the 60 active Triggers
+   are near-duplicates (reskins of the same 3-hit burst, etc.). Make each
+   mechanically distinct. This is the next content phase.
+2. **The last Phase F UI bits**: the queue display (show/allow un-queue of
+   pending actions) and resolve-beat polish.
+3. **Google sign-in branding polish** (optional): the consent screen shows the
+   Supabase callback domain; a custom domain (paid) is needed to fully rebrand.
+4. **Phases G/H** (AI tuning, balancing pass) once content is locked.
 
 ## 14. Open / tunable items
 

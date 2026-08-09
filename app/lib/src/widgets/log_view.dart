@@ -1,9 +1,13 @@
 import 'package:battle_engine/battle_engine.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../data/describe.dart';
-import '../game/battle_models.dart';
+import '../data/flavor_text.dart';
+import '../game/draft.dart';
 import '../ui/palette.dart';
+import '../game/battle_models.dart';
+import 'pickers.dart';
 
 /// The scrollable battle log: one block per team turn, one line per
 /// (action, target) pair, mirroring the HTML demo's log composition.
@@ -220,6 +224,108 @@ class LogLine extends StatefulWidget {
 class _LogLineState extends State<LogLine> {
   bool _expanded = false;
 
+  // Tap recognizers for the clickable names/ability in the line. They open an
+  // info popup and win the tap over the line's expand InkWell, so tapping a
+  // name shows its details while tapping elsewhere still toggles the breakdown.
+  late final _actorTap = TapGestureRecognizer()
+    ..onTap = () => _showCharacterInfo(widget.action.characterId);
+  late final _abilityTap = TapGestureRecognizer()
+    ..onTap = () =>
+        _showAbilityInfo(widget.action.triggerId, widget.action.triggerName);
+  late final _targetTap = TapGestureRecognizer()
+    ..onTap = () => _showCharacterInfo(widget.target.targetId);
+
+  @override
+  void dispose() {
+    _actorTap.dispose();
+    _abilityTap.dispose();
+    _targetTap.dispose();
+    super.dispose();
+  }
+
+  static const _linkUnderline = TextDecoration.underline;
+
+  void _showCharacterInfo(String characterId) {
+    final character = roster[characterId];
+    if (character == null) return;
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Palette.panel,
+        title: Text(
+          character.name,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${typeLabel[character.type] ?? ''}  ·  '
+                '${character.perk?.name ?? 'No perk'}',
+                style: const TextStyle(color: Palette.gold, fontSize: 12),
+              ),
+              if (character.perk != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  character.perk!.description,
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ],
+              if (characterFlavor[characterId] != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  characterFlavor[characterId]!,
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              CharacterStatRow(stats: character.baseStats),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAbilityInfo(String triggerId, String triggerName) {
+    final catalog = TriggerCatalog.defaultCatalog;
+    final description = catalog.contains(triggerId)
+        ? describeTrigger(catalog[triggerId])
+        : 'No details available.';
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Palette.panel,
+        title: Text(
+          triggerName,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        content: Text(
+          description,
+          style: const TextStyle(color: Colors.white70, fontSize: 12.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final action = widget.action;
@@ -258,7 +364,10 @@ class _LogLineState extends State<LogLine> {
                           style: TextStyle(
                             color: widget.color,
                             fontWeight: FontWeight.bold,
+                            decoration: _linkUnderline,
+                            decorationColor: widget.color,
                           ),
+                          recognizer: _actorTap,
                         ),
                         if (action.fatTriggered)
                           const TextSpan(
@@ -271,9 +380,22 @@ class _LogLineState extends State<LogLine> {
                         const TextSpan(text: ' uses '),
                         TextSpan(
                           text: action.triggerName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            decoration: _linkUnderline,
+                            decorationColor: Colors.white54,
+                          ),
+                          recognizer: _abilityTap,
                         ),
-                        TextSpan(text: ' on ${t.targetName}'),
+                        const TextSpan(text: ' on '),
+                        TextSpan(
+                          text: t.targetName,
+                          style: const TextStyle(
+                            decoration: _linkUnderline,
+                            decorationColor: Colors.white38,
+                          ),
+                          recognizer: _targetTap,
+                        ),
                         if (rollBits.isNotEmpty)
                           TextSpan(text: ' (${rollBits.join(', ')})'),
                         if (t.damage > 0)
