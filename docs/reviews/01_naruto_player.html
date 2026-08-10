@@ -1,0 +1,60 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="shared.css">
+<title>Isekai Strategem — Naruto-Arena Veteran Review</title></head>
+<body>
+<div class="cover">
+  <div class="kicker">Isekai Strategem · Player Design Review 1 of 4</div>
+  <h1>Through the eyes of a Naruto-Arena veteran</h1>
+  <p class="subtitle">"I've been laddering 3v3 chakra-management games for a decade. Does this reward planning, or does it roll dice at my combos?"</p>
+</div>
+
+<div class="verdict">
+  <div class="score"><div class="n">7.0</div><div class="l">Overall</div><div class="l2">Strong bones, RNG friction</div></div>
+  <div class="score"><div class="n">8.5</div><div class="l">Counter/Combo depth</div><div class="l2">Its best feature</div></div>
+  <div class="score"><div class="n">5.0</div><div class="l">Determinism</div><div class="l2">The d20 hurts</div></div>
+  <div class="score"><div class="n">6.0</div><div class="l">Resource economy</div><div class="l2">Shallower than chakra</div></div>
+</div>
+
+<h2>What I bring to the table</h2>
+<p>In Naruto-Arena the whole game <em class="term">is</em> the plan: three characters, four energy types trickling in, every skill a fixed cost and cooldown, and — critically — <strong>skills never miss.</strong> RNG lives only in which energy you draw. Skill expression is reading the opponent's cooldowns, baiting their invulnerability window, denying the energy they need for their kill turn, and chaining stuns so the target never acts. I judge a tactics game by one question: <strong>when my plan fails, was it my fault or the dice's?</strong></p>
+
+<h2>What this game gets right (and it's a lot)</h2>
+<p>The <em class="term">counter / reactive layer</em> is the most Naruto-Arena thing here, and it's excellent. Arming <code>predictive_parry</code> (dodge the next melee), <code>guardians_aegis</code> (guarded + braced), <code>numbing_toxin</code> (burst mitigation), or any of the 19 counters on your turn so they fire when the opponent commits into them — that is exactly the invuln/counter mind-game I live for. You're not just acting; you're <em>setting traps for their action economy</em>.</p>
+<p>The <em class="term">unique triggers</em> deepen it further. <code>vow_of_the_duel</code> (2× damage + a 2-turn stun on a bound target), <code>karmic_bind</code>, <code>echoing_doubt</code>, <code>isolation</code>, <code>mindsEye</code> reveal — these are the "signature jutsu" flavor, and the <em class="term">combo recognizer</em> that rewards setup→payoff chains is precisely the coordinated-team-nuke fantasy. This is genuinely better designed than most of the genre.</p>
+<div class="callout good"><span class="label">Verdict from my chair</span>The counter/unique/combo spine is A-tier and it's what would keep me on the ladder. The problems below are all fixable tuning, not broken design.</div>
+
+<h2>The dealbreaker culture-clash: the d20 to-hit roll</h2>
+<p>My combos can <strong>whiff.</strong> In Naruto-Arena a planned three-skill kill lands, period — the counterplay is invuln/reduction, not a coin flip. Here every attack rolls Attack-die vs Defense-die, so a lethal setup can simply miss. To a chakra-game vet that feels like the game undoing my planning with its own dice.</p>
+<p>What softens it — and this is important — is that in practice <strong>the die barely matters,</strong> because the flat stat modifiers dwarf the d20. A log line reads <code>ATK d20:18 + 26 = 44 vs DEF d20:6 + 11 = 29</code>. The <em>±20 of the die</em> is swamped by a <em>+26 vs +11</em> stat gap. So most attacks are near-auto-hits already. That's oddly reassuring to me — but it also means the roll is mostly <strong>theater</strong>: it adds a whiff-anxiety I dislike without adding real decisions. I'd rather you either commit to determinism (skills land; counters/invuln are the answer) or make the die actually swing outcomes. Right now it does neither cleanly.</p>
+
+<h2>Resource economy: close, but shallower than chakra</h2>
+<p>Trion is my chakra, and I like that abilities cost 10–30 and you bank a pool. But two things read as less deep than Naruto-Arena's four-energy puzzle:</p>
+<ul>
+<li><strong>It's one undifferentiated pool,</strong> not typed energy. In NA the tension is "I have the ninjutsu but not the taijutsu for my combo." Here any Trion pays for anything, so the denial/planning game is thinner. <code>sapped</code> (25% capacity drain) and <code>genjutsu_trapped</code> (15% drain) are the closest thing to energy-denial and I want <em>more</em> of that.</li>
+<li><strong>The gain is random</strong> (a tier roll for 10 / 20 / 35). NA's chakra gain is deterministic — one energy per living unit. Random income means my "next turn I can afford the finisher" math can just fail. For a planning-first player, income RNG is worse than combat RNG.</li>
+</ul>
+<div class="callout warn"><span class="label">What I'd ask for</span>Make Trion income deterministic (or a small, known range), and lean harder into Trion-denial as a counter axis. If income must be random, tie it tightly to the Trion Affinity stat so building for it is a real, reliable choice.</div>
+
+<h2>Tempo and cooldowns: where I smell the OP triggers</h2>
+<p>A tempo player's OP radar pings on <strong>low-cooldown, high-value, cheap</strong> tools — the ones that erase the cooldown puzzle. From the numbers, these stand out:</p>
+<table>
+<tr><th>Trigger</th><th>Why it breaks my tempo read</th><th>Rating</th></tr>
+<tr><td><code>whirlwind_slash</code></td><td>cd <strong>1</strong>, only 12 Trion, hits 3 targets, ~56 potential, now also applies <code>bleeding</code> (8/turn). A spammable, every-turn AoE with a DoT tacked on. Best damage-per-Trion in the game.</td><td class="rating op">OP</td></tr>
+<tr><td><code>twin_fang_strike</code></td><td>cd <strong>1</strong>, 10 Trion, ~44 single-target. No reason not to press it every turn — zero tempo decision.</td><td class="rating op">OP</td></tr>
+<tr><td><code>longshot</code></td><td>~104 potential single-target. That one-shots a 100-HP operator. A sniper deleting a unit through the d20-that-doesn't-matter is a feels-bad I'd exploit ruthlessly.</td><td class="rating op">OP</td></tr>
+<tr><td><code>cinderburst</code></td><td>64 AoE + <code>scorched</code> at 12/turn. The DoT alone is ~24 more per target over its life — huge on a 3-target hit.</td><td class="rating up">Strong</td></tr>
+</table>
+<p>Contrast with the pure-control trapper kit (<code>charm_whisper</code>, <code>mind_shatter</code>, <code>flashbang_round</code>) that deals little or no damage. In my world those are fine <em>if</em> the CC is worth a turn. <code>charmed</code> at 3 turns is a genuine lock; most other CC is 1–2 turns, which is healthy. What I <em>don't</em> see is <strong>diminishing returns on repeated CC</strong> — if two operators can chain stun/charm the same target, that's a perma-lock, the cardinal sin of chakra-arena PvP.</p>
+
+<h2>The FAT valve — I respect it</h2>
+<p>FAT (up to 3 abilities in a turn, then doubled cooldowns and halved Trion Affinity for a 3-turn lockout) is a clean burst-tempo trade, and the fact that <code>draegor</code> punishes an opponent who FAT-chains 2+ abilities is exactly the kind of "greed gets punished" counter I want. Good.</p>
+
+<h2>My bottom line as a Naruto-Arena vet</h2>
+<ol>
+<li><strong>Keep the counter/unique/combo spine — it's your identity and it's great.</strong></li>
+<li><strong>Resolve the d20 identity crisis.</strong> Either commit to determinism (my preference) or make the die swing real outcomes. The current "roll that doesn't matter but can still whiff" is the worst of both.</li>
+<li><strong>Deepen Trion:</strong> deterministic income, more denial tools, maybe a light energy-typing.</li>
+<li><strong>Nerf the cd-1 spam</strong> (<code>whirlwind_slash</code>, <code>twin_fang_strike</code>) and the <code>longshot</code> one-shot; add CC diminishing returns so no two operators can perma-lock a target.</li>
+</ol>
+<div class="footer">Persona review 1 of 4 · Lens: competitive 3v3 chakra-management PvP (Naruto-Arena lineage). Grounded in the live trigger catalog, status magnitudes, and Trion/FAT constants.</div>
+</body></html>

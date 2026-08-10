@@ -1,0 +1,64 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="shared.css">
+<title>Isekai Strategem — Tactics Player Review</title></head>
+<body>
+<div class="cover">
+  <div class="kicker">Isekai Strategem · Player Design Review 4 of 4</div>
+  <h1>Through the eyes of a modern tactics player</h1>
+  <p class="subtitle">"My reference points are XCOM, Into the Breach, Fire Emblem, Midnight Suns, Banner Saga. I want meaningful decisions with legible consequences."</p>
+</div>
+
+<div class="verdict">
+  <div class="score"><div class="n">6.5</div><div class="l">Overall</div><div class="l2">Great meta-layer, thin battlefield</div></div>
+  <div class="score"><div class="n">8.0</div><div class="l">Build / theorycraft</div><div class="l2">Deep and fun</div></div>
+  <div class="score"><div class="n">3.0</div><div class="l">Positioning</div><div class="l2">There is none</div></div>
+  <div class="score"><div class="n">4.0</div><div class="l">Variance control</div><div class="l2">Luck decides too much</div></div>
+</div>
+
+<h2>Let me set expectations honestly</h2>
+<p>When someone says "tactics," my brain loads a <strong>grid</strong>: cover, flanking, zones of control, line of sight, the agony of one tile. Isekai Strategem is not that. It's a <em>squad battler</em> — two lines of three trading turns, closer to Slay the Spire's combat or a party-based JRPG than to XCOM. That's a legitimate genre and it can be excellent. But measured against the tactics games I actually play, it's missing two of the pillars I come for, and it has one variance problem that undercuts the rest.</p>
+
+<h2>The meta-layer is genuinely strong</h2>
+<p>Where this game earns its "strategem" is <strong>before</strong> the battle and <strong>between</strong> the lines:</p>
+<ul>
+<li><strong>Loadout theorycraft.</strong> 60 triggers + 9 Black Triggers + perks + a Trion-capacity budget is a real build sandbox. I can spend an hour optimizing a squad. That's my favorite kind of homework.</li>
+<li><strong>Team Efficiency Grade as a risk/reward dial.</strong> A higher Grade gives dice advantages but <em>less</em> post-battle XP; a scrappy low Grade earns more. That inverse curve is a clever anti-snowball, straight out of the "rubber-band without cheating" playbook. I respect it a lot.</li>
+<li><strong>Queue + 6-phase resolution.</strong> You commit a turn's actions and they resolve in a fixed phase order (buffs → control → attacks, with a Team-Spirit tiebreak). That's a planning puzzle most battlers lack — a little bit of Into the Breach's "order of operations matters."</li>
+<li><strong>Counters and combos</strong> give me a reaction economy and setup→payoff lines to build around. Excellent.</li>
+</ul>
+<div class="callout good"><span class="label">Keep</span>The pre-battle build sandbox + TEG risk/reward + queue resolution are your tactical identity. Don't lose them.</div>
+
+<h2>Pillar gap #1: no positioning means half the genre is absent</h2>
+<p>Every decision in a tactics game ultimately routes through <em>space</em>: where I stand determines what I threaten and what threatens me. Here, "melee" vs "ranged" are flavor tags — nobody moves, nobody closes a gap, nobody holds an angle. So the entire family of decisions I love — flank or hold, split or group, bait an overextension — simply doesn't exist. You don't need a full XCOM grid, but you need <em>a</em> spatial axis (front/back rows, 3 lanes, or range bands) so that where an operator sits is a choice with consequences.</p>
+
+<h2>Pillar gap #2: initiative is a coin flip — in a lethal game</h2>
+<div class="callout bad"><span class="label">The variance that hurts most</span>Who acts first is decided by an <strong>even 50/50 coin flip</strong>. In a game where a single attack can delete a unit, first-turn is often the whole game — and it's pure luck. Modern tactics treats initiative as the <em>most</em> contested resource: Banner Saga's turn wheel, XCOM concealment/overwatch, Into the Breach's perfect turn order. Handing it to a coin toss is the least tactical decision the game makes.</div>
+<p>You already compute a Team Efficiency Grade — that's a natural, earned lever to influence initiative (or at least to weight the flip). Randomness here should be something I can <em>build against</em>, not a raw 50/50.</p>
+
+<h2>Pillar gap #3: variance compounds instead of being mitigated</h2>
+<p>Great tactics games are careful about <em>where</em> they put randomness. Into the Breach removes to-hit RNG entirely and gives perfect information. XCOM keeps hit% but lets you stack overwatch, flanks, and abilities to control it. This game stacks its randomness:</p>
+<table>
+<tr><th>Random layer</th><th>Effect</th><th>Mitigation available?</th></tr>
+<tr><td>Coin-flip initiative</td><td>Who acts first (often decisive)</td><td class="rating op">None</td></tr>
+<tr><td>d20 to-hit (×2, opposed)</td><td>Whiff chance on planned lines</td><td>Advantage exists, but muted</td></tr>
+<tr><td>Buildable crit (up to ~75%)</td><td>Doubles already-large hits</td><td>You can stack it — so can they</td></tr>
+<tr><td>Random Trion income tier</td><td>Whether you can afford the plan</td><td>Loosely, via Affinity</td></tr>
+</table>
+<p>None of these is fatal alone; together they mean a well-planned turn can lose to a coin flip + a lucky crit, and I can't fully insure against it. Tactics players will forgive hard fights; they won't forgive <em>feeling</em> that the dice, not the plan, decided it.</p>
+
+<h2>Information &amp; AI</h2>
+<p>Good instincts here: enemy loadouts are hidden (fog of war) and <code>Mind's Eye</code> is a tool to <em>pierce</em> it — that's a real tactical information layer, and the public-vs-hidden intel gating on the new clickable portraits is a nice touch. What I can't see is the enemy's <em>queued</em> actions, so planning against the AI is guesswork rather than the readable telegraph Into the Breach spoiled me on. And single-player tactics lives or dies on AI quality — the roadmap lists AI tuning as future work, so I'll reserve judgment, but a squad-builder with an exploitable AI loses its tension fast.</p>
+
+<h2>Build diversity is being eaten by outliers</h2>
+<p>My theorycraft is only fun if many builds are viable. A few triggers are efficient enough to be auto-includes and collapse the meta: <code>whirlwind_slash</code> (cd 1, 12 Trion, 3-target, +bleed — the best damage-per-Trion in the game), <code>twin_fang_strike</code> (cd 1 single-target spam), and <code>longshot</code> (a ~104-damage one-shot). When "just bring the efficient thing" wins, my build sandbox shrinks to one build. Tighten these to a damage-per-Trion-per-cooldown budget and the whole sandbox opens back up.</p>
+
+<h2>My tactics-player bottom line</h2>
+<ol>
+<li><strong>Own your genre.</strong> Either add a spatial pillar (rows/lanes/range bands) to become a real tactics game, or market as a squad-builder battler and double down on the build+queue meta.</li>
+<li><strong>Kill the coin-flip initiative.</strong> Make first-turn an earned, buildable outcome (TEG-weighted or drafted).</li>
+<li><strong>Consolidate randomness.</strong> Fewer, more controllable random layers; give me tools to insure a plan (guaranteed-hit floor, bounded crit).</li>
+<li><strong>Protect build diversity</strong> by budgeting the outlier triggers.</li>
+<li><strong>Telegraph more of the enemy's turn</strong> so planning beats guessing.</li>
+</ol>
+<div class="footer">Persona review 4 of 4 · Lens: modern tactics/strategy (XCOM, Into the Breach, Fire Emblem, Banner Saga, Midnight Suns). Grounded in the resolution model, initiative rule, TEG, and trigger economy.</div>
+</body></html>
