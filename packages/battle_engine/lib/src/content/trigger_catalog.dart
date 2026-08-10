@@ -59,9 +59,10 @@ class TriggerCatalog {
         rangeTag: RangeTag.melee,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.aoe,
-        targetCount: 3,
+        targetCount: 2,
         damageType: DamageType.slashing,
         damage: const DiceExpression(1, 6, flatBonus: 18),
+        inflictedStatusEffects: const [StatusEffectApplication('shattered_guard')],
       ),
       ActiveTrigger(
         id: 'suppressing_fire',
@@ -78,6 +79,7 @@ class TriggerCatalog {
         targetCount: 2,
         damageType: DamageType.piercing,
         damage: const DiceExpression(1, 4, flatBonus: 16),
+        inflictedStatusEffects: const [StatusEffectApplication('suppressed')],
       ),
       ActiveTrigger(
         id: 'shatterpoint',
@@ -196,6 +198,7 @@ class TriggerCatalog {
         targetCount: 3,
         damageType: DamageType.slashing,
         damage: const DiceExpression(1, 4, flatBonus: 16),
+        inflictedStatusEffects: const [StatusEffectApplication('bleeding')],
       ),
       ActiveTrigger(
         id: 'longshot',
@@ -223,9 +226,10 @@ class TriggerCatalog {
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         hitsPerUse: 4,
-        targetCount: 2,
+        targetCount: 3,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(1, 4, flatBonus: 6),
+        inflictedStatusEffects: const [StatusEffectApplication('slowed')],
       ),
       ActiveTrigger(
         id: 'flashbang_round',
@@ -285,7 +289,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.acid,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(1, 4, flatBonus: 10),
         inflictedStatusEffects: const [StatusEffectApplication('corroded')],
       ),
       ActiveTrigger(
@@ -299,9 +303,9 @@ class TriggerCatalog {
         rangeTag: RangeTag.ranged,
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.aoe,
-        targetCount: 3,
+        targetCount: 2,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(1, 6, flatBonus: 10),
         inflictedStatusEffects: const [StatusEffectApplication('terrified')],
       ),
       ActiveTrigger(
@@ -747,8 +751,8 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.acid,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
-        inflictedStatusEffects: const [StatusEffectApplication('corroded')],
+        damage: const DiceExpression(1, 4, flatBonus: 6),
+        inflictedStatusEffects: const [StatusEffectApplication('poisoned')],
       ),
       ActiveTrigger(
         id: 'cryo_burst',
@@ -799,6 +803,7 @@ class TriggerCatalog {
         targetCount: 1,
         damageType: DamageType.piercing,
         damage: const DiceExpression(1, 4, flatBonus: 14),
+        inflictedStatusEffects: const [StatusEffectApplication('bleeding')],
       ),
       ActiveTrigger(
         id: 'gatling_burst',
@@ -811,10 +816,11 @@ class TriggerCatalog {
         rangeTag: RangeTag.ranged,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
-        hitsPerUse: 4,
-        targetCount: 2,
+        hitsPerUse: 5,
+        targetCount: 1,
         damageType: DamageType.piercing,
         damage: const DiceExpression(1, 4, flatBonus: 8),
+        inflictedStatusEffects: const [StatusEffectApplication('exposed')],
       ),
       ActiveTrigger(
         id: 'split_shot',
@@ -897,7 +903,7 @@ class TriggerCatalog {
         targetCount: 3,
         damageType: DamageType.psychic,
         damage: const DiceExpression(1, 4, flatBonus: 8),
-        inflictedStatusEffects: const [StatusEffectApplication('terrified')],
+        inflictedStatusEffects: const [StatusEffectApplication('silenced')],
       ),
       ActiveTrigger(
         id: 'mind_fog',
