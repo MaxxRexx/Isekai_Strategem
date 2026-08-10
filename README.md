@@ -1,54 +1,71 @@
 # Isekai Strategem
 
-A turn-based 3v3 tactical combat game with a visual novel story mode, built in
-Flutter/Dart. Single-player only: rule-based AI opponent, no server, no
-network play.
+A turn-based 3v3 tactical squad battler built in Flutter and Dart. You draft a
+team of three characters, build each one a Loadout of abilities (Triggers), and
+fight another squad through a queue-and-resolve turn system until one side is
+wiped out. Its design borrows from World Trigger (Trion, Triggers, Black
+Triggers, and the Attacker / Shooter / Sniper / Trapper roles), Naruto (energy
+resource play and status effects), and tabletop Dungeons and Dragons (the
+20-sided-die to-hit engine, advantage and disadvantage, critical hits, and a
+large library of status conditions).
+
+A visual-novel story mode is planned but not yet built. This repository is the
+battle game plus its accounts and XP backend.
+
+## What is in the game right now
+
+- **Draft and Loadout building.** Pick 3 of 20 characters and equip each with
+  Triggers under a Trion budget (8 slots, exactly 4 active abilities).
+- **Full turn-based play.** Queue your actions, choose targets, and end the turn;
+  actions resolve through a fixed six-phase order. A rule-based AI opponent (five
+  skill classes) plays through the same system.
+- **Deep combat systems:** 60 Triggers, 10 Black Triggers, 62 status effects, a
+  reactive and passive counter system, 17 unique abilities, an 18-entry combo
+  recognizer, Full Arms Trigger burst turns, and a Team Efficiency Grade that
+  scores your build, grants dice advantages, and inversely scales your XP.
+- **Accounts and XP (online).** A Supabase backend provides stress-free sign-in
+  (guest, passwordless email, or Google) and server-authoritative XP, with a
+  local-only fallback so the game always runs.
+- **A readable battle log** with plain-English breakdowns and clickable
+  character and ability details.
+
+## Documentation
+
+- **[Complete Game Design Document](docs/game_design.md)** is the single, current,
+  plain-language explanation of every system and every piece of content (each
+  Trigger, Black Trigger ability, status effect, perk, counter, unique ability,
+  and combo), with all the numbers. A rendered PDF lives in
+  [`docs/reviews/`](docs/reviews).
+- [`docs/reviews/`](docs/reviews) also holds four player-persona design reviews
+  and a design-director synthesis of the game's balance.
+- [`docs/supabase_setup.md`](docs/supabase_setup.md) documents the accounts/XP
+  backend, and [`supabase/schema.sql`](supabase/schema.sql) is its database
+  schema.
+- [`docs/combat_v2_design.md`](docs/combat_v2_design.md) is the historical rework
+  spec and build tracker (superseded for reference purposes by the Game Design
+  Document above).
+
+Note: the older reference files under `packages/battle_engine/doc/` predate the
+combat rework and are out of date; use the Game Design Document instead.
 
 ## Architecture
 
-Two top-level modules, kept separate but sharing a save/state layer:
+Two layers, kept separate:
 
-- **Battle module** (`packages/battle_engine`): the combat engine - data
-  models, dice/roll utilities, and the rules engine (Trion gain, Full Arms
-  Trigger, combat resolution, status effects, turn orchestration). Pure Dart,
-  no Flutter dependency, fully unit tested. No UI.
-- **Story module**: dialogue, sprites, backgrounds, and choice-driven scene
-  scripts. Not yet scaffolded (comes after the battle engine).
-
-A story scene will be able to trigger a battle encounter (handing off which
-characters/teams are involved) and receive the outcome back to branch the
-story, via a simple event/callback interface - the two modules are not
-tightly coupled.
-
-## Packages
-
-- `packages/battle_engine` - the combat engine described above. See its
-  source for design notes on rules that were underspecified and required an
-  explicit (documented) interpretation.
-
-## App
-
-`app/` is the real Flutter application (currently web-enabled; other
-platforms can be added later with `flutter create --platforms=... .`). It
-depends on `packages/battle_engine` as a path dependency and calls it
-directly, no JSON/JS interop boundary like the browser demo below. So far it
-only has a Quick Battle screen (drafts two random AI-controlled squads and
-runs a full battle through the real engine) to prove the wiring end to end;
-squad drafting, a real Loadout builder UI, playing your own turns, and the
-Story module UI are still ahead.
-
-## Playing / rules
-
-See [`packages/battle_engine/doc`](packages/battle_engine/doc) for the
-player-facing guide (how to play, the character roster, Triggers/Black
-Triggers, status effects, and the 20 AI opponents), and
-[`packages/battle_engine/tool/web_demo`](packages/battle_engine/tool/web_demo)
-for a browser-playable Engagement Simulator built on the real engine (a
-standalone HTML demo, separate from the `app/` Flutter application above).
+- **Battle engine** (`packages/battle_engine`): pure Dart, no Flutter dependency,
+  fully unit tested. Data models, dice and roll utilities, and the rules engine
+  (Trion income, Full Arms Trigger, combat resolution, status effects, counters,
+  unique abilities, combo recognition, and turn orchestration).
+- **Flutter app** (`app/`): the playable game. It owns the queue-and-resolve
+  orchestration (`lib/src/game/play_session.dart`), the Team Efficiency Grade
+  (`lib/src/game/team_efficiency.dart`), draft, Loadout building, target
+  selection, all screens and widgets, and the Supabase accounts/XP integration
+  (`lib/src/game/services.dart` and friends). It depends on the battle engine as
+  a path dependency.
 
 ## Development
 
-The battle engine is a standalone Dart package:
+The battle engine (standalone Dart package):
 
 ```
 cd packages/battle_engine
@@ -65,8 +82,8 @@ flutter test
 flutter run -d chrome   # or another connected device
 ```
 
-No local machine is required to try the app, though. Every push to `main`
-or a `claude/**` branch that touches `app/` or `packages/` runs
-[`deploy-web.yml`](.github/workflows/deploy-web.yml), which tests, builds,
-and publishes the web app to GitHub Pages at
+No local machine is required to try the app. Every push to `main` or a
+`claude/**` branch that touches `app/` or `packages/` runs
+[`deploy-web.yml`](.github/workflows/deploy-web.yml), which runs the tests,
+builds the web app, and publishes it to GitHub Pages at
 <https://maxxrexx.github.io/Isekai_Strategem/>.

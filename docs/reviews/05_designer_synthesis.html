@@ -1,47 +1,47 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><link rel="stylesheet" href="shared.css">
-<title>Isekai Strategem — Design Director's Synthesis &amp; Solutions</title></head>
+<title>Isekai Strategem - Design Director's Synthesis &amp; Solutions</title></head>
 <body>
 <div class="cover">
-  <div class="kicker">Isekai Strategem · Design Director Report · Synthesis of Reviews 1–4</div>
+  <div class="kicker">Isekai Strategem · Design Director Report · Synthesis of Reviews 1-4</div>
   <h1>Design director's synthesis &amp; solution set</h1>
   <p class="subtitle">Reviewer background: systems &amp; combat design on party-scale RPG combat (BG3 lineage), 4X tactical battles (Age of Wonders 4), and large-scale real-time tactics (Total War: Warhammer 3).</p>
 </div>
 
 <h2>Executive diagnosis</h2>
-<p>I read the four player reviews and then went through the systems myself. Here is the headline, and it is genuinely encouraging: <strong>Isekai Strategem has a stronger systems-and-content foundation than most games at its stage, and a weaker combat-math and battlefield foundation than it needs.</strong> The counter engine, unique behaviors, combo recognizer, Team Efficiency Grade, and the queue/6-phase resolution are real, thoughtful, differentiated systems — the hard, creative part. What's underbuilt is the <em>arithmetic</em> the whole thing rests on, and the <em>battlefield</em> the whole thing happens in. Those are the cheap fixes, structurally — mostly re-tuning plus one or two systemic additions, not a rebuild.</p>
+<p>I read the four player reviews and then went through the systems myself. Here is the headline, and it is genuinely encouraging: <strong>Isekai Strategem has a stronger systems-and-content foundation than most games at its stage, and a weaker combat-math and battlefield foundation than it needs.</strong> The counter engine, unique behaviors, combo recognizer, Team Efficiency Grade, and the queue/6-phase resolution are real, thoughtful, differentiated systems - the hard, creative part. What's underbuilt is the <em>arithmetic</em> the whole thing rests on, and the <em>battlefield</em> the whole thing happens in. Those are the cheap fixes, structurally - mostly re-tuning plus one or two systemic additions, not a rebuild.</p>
 <div class="verdict">
-  <div class="score"><div class="n">A–</div><div class="l">Systems / content</div><div class="l2">Counters, uniques, TEG, combos</div></div>
+  <div class="score"><div class="n">A-</div><div class="l">Systems / content</div><div class="l2">Counters, uniques, TEG, combos</div></div>
   <div class="score"><div class="n">C</div><div class="l">Core combat math</div><div class="l2">Bounded accuracy absent</div></div>
-  <div class="score"><div class="n">C–</div><div class="l">Battlefield</div><div class="l2">No space, coin-flip initiative</div></div>
+  <div class="score"><div class="n">C-</div><div class="l">Battlefield</div><div class="l2">No space, coin-flip initiative</div></div>
   <div class="score"><div class="n">C+</div><div class="l">Tuning discipline</div><div class="l2">No status/trigger budget</div></div>
 </div>
 
 <h2>Where all four lenses agree</h2>
-<p>Independently, the Naruto-Arena vet, the D&amp;D vet, the World Trigger fan, and the tactics player converged on the same four faults. When four different audiences complain about the same thing, it isn't taste — it's design.</p>
+<p>Independently, the Naruto-Arena vet, the D&amp;D vet, the World Trigger fan, and the tactics player converged on the same four faults. When four different audiences complain about the same thing, it isn't taste - it's design.</p>
 <table>
 <tr><th>Converged fault</th><th>NA</th><th>D&amp;D</th><th>WT</th><th>Tactics</th></tr>
-<tr><td>The d20 doesn't decide anything (modifiers dwarf the die)</td><td>✔ "combos whiff yet the roll is theater"</td><td>✔ "no bounded accuracy — the die is decoration"</td><td>—</td><td>✔ "whiff without tension"</td></tr>
-<tr><td>No positioning / spatial decisions</td><td>—</td><td>—</td><td>✔ "WT is all about the map"</td><td>✔ "half the genre is absent"</td></tr>
-<tr><td>Initiative is a coin flip in a lethal game</td><td>—</td><td>—</td><td>✔ (via one-shots)</td><td>✔ "least tactical decision"</td></tr>
-<tr><td>Status / trigger power is un-budgeted (outliers)</td><td>✔ cd-1 spam</td><td>✔ crit &amp; condition math</td><td>—</td><td>✔ "outliers eat build diversity"</td></tr>
+<tr><td>The d20 doesn't decide anything (modifiers dwarf the die)</td><td>✔ "combos whiff yet the roll is theater"</td><td>✔ "no bounded accuracy - the die is decoration"</td><td> - </td><td>✔ "whiff without tension"</td></tr>
+<tr><td>No positioning / spatial decisions</td><td> - </td><td> - </td><td>✔ "WT is all about the map"</td><td>✔ "half the genre is absent"</td></tr>
+<tr><td>Initiative is a coin flip in a lethal game</td><td> - </td><td> - </td><td>✔ (via one-shots)</td><td>✔ "least tactical decision"</td></tr>
+<tr><td>Status / trigger power is un-budgeted (outliers)</td><td>✔ cd-1 spam</td><td>✔ crit &amp; condition math</td><td> - </td><td>✔ "outliers eat build diversity"</td></tr>
 </table>
 
-<h2>Problem 1 — Restore bounded accuracy (P0, the keystone fix)</h2>
-<p><strong>Diagnosis.</strong> Attack modifiers sit around +26 while Defense sits around +11; damage is dice-plus-a-huge-flat (<code>2d6+37</code>, <code>2d6+45</code>, <code>4d8+86</code>). A d20 swings ±19, but a 15-point pre-roll gap and a +45 flat mean the die contributes ~15% to to-hit and ~16% to damage. The game <em>looks</em> like a dice game and <em>plays</em> like deterministic arithmetic with a cosmetic roll — which is why advantage/disadvantage, crits, and the defender's roll all feel muted (D&amp;D review), and why planned lines still "whiff" without earning tension (NA/Tactics reviews).</p>
+<h2>Problem 1 - Restore bounded accuracy (P0, the keystone fix)</h2>
+<p><strong>Diagnosis.</strong> Attack modifiers sit around +26 while Defense sits around +11; damage is dice-plus-a-huge-flat (<code>2d6+37</code>, <code>2d6+45</code>, <code>4d8+86</code>). A d20 swings ±19, but a 15-point pre-roll gap and a +45 flat mean the die contributes ~15% to to-hit and ~16% to damage. The game <em>looks</em> like a dice game and <em>plays</em> like deterministic arithmetic with a cosmetic roll - which is why advantage/disadvantage, crits, and the defender's roll all feel muted (D&amp;D review), and why planned lines still "whiff" without earning tension (NA/Tactics reviews).</p>
 <p><strong>Why it's the keystone.</strong> Almost every other complaint is downstream. Fix the accuracy band and your existing advantage system, crit system, and to-hit tension all switch on for free. This is the BG3 lesson: 5e's bounded accuracy is <em>why</em> a d20 roll is dramatic at every level.</p>
 <div class="callout"><span class="label">Concrete solution</span>
-<strong>Compress the accuracy band ~3–4×.</strong> Target: the typical Attack−Defense modifier gap should fall <em>inside</em> the d20's range, so the roll is usually 40–60% of the outcome.
+<strong>Compress the accuracy band ~3-4×.</strong> Target: the typical Attack−Defense modifier gap should fall <em>inside</em> the d20's range, so the roll is usually 40-60% of the outcome.
 <ul>
 <li>Attack modifier range ≈ <strong>+4 … +14</strong>; Defense modifier range ≈ <strong>+2 … +12</strong> (from today's ~+26 / ~+11).</li>
-<li>Rebalance damage so <strong>dice ≈ 40–50% of average</strong>. E.g., <code>twin_fang_strike 2d6+37</code> (dice = 16% of 44) → <code>~5d6+21</code> (avg ≈ 38.5, dice ≈ 45%). Keep averages within ±10%; just move value from the flat bonus into more/bigger dice.</li>
-<li>Decide: <strong>static Defense (AC-style) or opposed rolls</strong>. I recommend static Defense — it halves variance and log noise and is what bounded accuracy assumes. Keep opposed only if you want a defender-side build axis, and only <em>after</em> compression.</li>
+<li>Rebalance damage so <strong>dice ≈ 40-50% of average</strong>. E.g., <code>twin_fang_strike 2d6+37</code> (dice = 16% of 44) → <code>~5d6+21</code> (avg ≈ 38.5, dice ≈ 45%). Keep averages within ±10%; just move value from the flat bonus into more/bigger dice.</li>
+<li>Decide: <strong>static Defense (AC-style) or opposed rolls</strong>. I recommend static Defense - it halves variance and log noise and is what bounded accuracy assumes. Keep opposed only if you want a defender-side build axis, and only <em>after</em> compression.</li>
 </ul>
 This is a spreadsheet pass over 60 triggers + stat blocks, not new code. It is the single highest-leverage change available.</div>
 
-<h2>Problem 2 — Add a spatial pillar (P1)</h2>
-<p><strong>Diagnosis.</strong> Two of four reviewers (and the genre) want <em>space</em>. "Melee/ranged" are currently inert tags. Without a positional axis, an entire decision family — engage/hold, group/split, protect the back line — doesn't exist, and the World Trigger fantasy (Attacker closing on a Sniper) can't be expressed.</p>
-<div class="callout"><span class="label">Concrete solution — you don't need a grid</span>
+<h2>Problem 2 - Add a spatial pillar (P1)</h2>
+<p><strong>Diagnosis.</strong> Two of four reviewers (and the genre) want <em>space</em>. "Melee/ranged" are currently inert tags. Without a positional axis, an entire decision family - engage/hold, group/split, protect the back line - doesn't exist, and the World Trigger fantasy (Attacker closing on a Sniper) can't be expressed.</p>
+<div class="callout"><span class="label">Concrete solution - you don't need a grid</span>
 Add a <strong>front/back row + range-band</strong> layer, the lightest thing that creates real decisions (see: Darkest Dungeon rank system, Banner Saga's line, TWWH3's front-line/artillery logic distilled):
 <ul>
 <li><strong>Rows:</strong> each squad has a Front and Back row (assign at draft, swap costs an action). Melee triggers hit the enemy Front row unless it's empty; Snipers/Shooters can reach the Back row. Front-row operators soak for the back.</li>
@@ -49,17 +49,17 @@ Add a <strong>front/back row + range-band</strong> layer, the lightest thing tha
 </ul>
 This reuses your existing melee/ranged tags as inputs and turns them into choices. It is the biggest <em>identity</em> upgrade you can make.</div>
 
-<h2>Problem 3 — Make initiative earned, and soften lethality (P1)</h2>
-<p><strong>Diagnosis.</strong> First-turn is decided by a 50/50 coin flip, and a single attack can delete a unit. The most decisive variable is pure luck — the antithesis of "strategem."</p>
+<h2>Problem 3 - Make initiative earned, and soften lethality (P1)</h2>
+<p><strong>Diagnosis.</strong> First-turn is decided by a 50/50 coin flip, and a single attack can delete a unit. The most decisive variable is pure luck - the antithesis of "strategem."</p>
 <div class="callout"><span class="label">Concrete solution</span>
 <ul>
-<li><strong>Weight initiative by an earned quantity.</strong> You already compute the Team Efficiency Grade; use it (or a Trion-Affinity/Team-Spirit composite) to bias the flip — e.g., the higher-Grade squad wins the opening ~65/35, or spends a resource to seize it. Randomness the player can <em>build against</em>, per the tactics review.</li>
-<li><strong>Add a downed-but-not-dead state ("Bail Out").</strong> A defeated operator drops to a Bailed state for 1–2 turns (out of the fight, can't be finished) instead of instantly gone. This directly answers the World Trigger fan, softens the one-shot problem, and converts matches from "delete race" to "attrition + objectives." It also makes going-second survivable, reducing the sting of the initiative flip.</li>
+<li><strong>Weight initiative by an earned quantity.</strong> You already compute the Team Efficiency Grade; use it (or a Trion-Affinity/Team-Spirit composite) to bias the flip - e.g., the higher-Grade squad wins the opening ~65/35, or spends a resource to seize it. Randomness the player can <em>build against</em>, per the tactics review.</li>
+<li><strong>Add a downed-but-not-dead state ("Bail Out").</strong> A defeated operator drops to a Bailed state for 1-2 turns (out of the fight, can't be finished) instead of instantly gone. This directly answers the World Trigger fan, softens the one-shot problem, and converts matches from "delete race" to "attrition + objectives." It also makes going-second survivable, reducing the sting of the initiative flip.</li>
 </ul></div>
 
-<h2>Problem 4 — Put status effects and triggers on explicit budgets (P1)</h2>
+<h2>Problem 4 - Put status effects and triggers on explicit budgets (P1)</h2>
 <p><strong>Diagnosis.</strong> The condition library is rich but un-costed: <code>marked</code> is +50% damage-taken for 1 turn, <code>exposed</code> +25% for 2, <code>petrified</code> <em>halves</em> damage for 2; DoTs range 8→12/turn with no rule; crit chance scales toward ~75%. Players can't intuit relative value, and the AI can't value them either. On the trigger side, a handful of outliers dominate.</p>
-<div class="callout"><span class="label">Solution A — a Status Point (SP) budget</span>
+<div class="callout"><span class="label">Solution A - a Status Point (SP) budget</span>
 Cost every status as <strong>SP = magnitude-weight × duration × targets</strong>, and cap the SP a single trigger may carry relative to its Trion cost. Illustrative weights (per target per turn):
 <table>
 <tr><th>Effect class</th><th>Example</th><th>SP / target-turn</th></tr>
@@ -67,30 +67,30 @@ Cost every status as <strong>SP = magnitude-weight × duration × targets</stron
 <tr><td>Damage-taken multiplier</td><td>marked, exposed (per +25%)</td><td>1.5</td></tr>
 <tr><td>DoT</td><td>bleeding/scorched (per 8 dmg)</td><td>1.2</td></tr>
 <tr><td>Stat swing</td><td>weakened, fatigued (per ~10%)</td><td>0.8</td></tr>
-<tr><td>Economy denial</td><td>sapped, silenced</td><td>1.0–1.5</td></tr>
+<tr><td>Economy denial</td><td>sapped, silenced</td><td>1.0-1.5</td></tr>
 </table>
-Then <code>marked</code> (+50% = 3.0 SP × 1 turn) and <code>exposed</code> (+25%×2 = 3.0 SP) land on the <em>same</em> budget — now they're intelligible and interchangeable, and a trigger applying a 3-target DoT is visibly "spending" 3× as much.</div>
-<div class="callout warn"><span class="label">Solution B — a Trigger Value budget (and re-cost the outliers)</span>
-Define <code>Value = (avg_damage + SP_value) ÷ Trion_cost</code>, then multiply by a <strong>cooldown factor</strong> (cd 1 = ×1.5, cd 2 = ×1.0, cd 3 = ×0.8) to price spam. Target a band (say 2.0–3.0 effective). Today's offenders, with fixes:
+Then <code>marked</code> (+50% = 3.0 SP × 1 turn) and <code>exposed</code> (+25%×2 = 3.0 SP) land on the <em>same</em> budget - now they're intelligible and interchangeable, and a trigger applying a 3-target DoT is visibly "spending" 3× as much.</div>
+<div class="callout warn"><span class="label">Solution B - a Trigger Value budget (and re-cost the outliers)</span>
+Define <code>Value = (avg_damage + SP_value) ÷ Trion_cost</code>, then multiply by a <strong>cooldown factor</strong> (cd 1 = ×1.5, cd 2 = ×1.0, cd 3 = ×0.8) to price spam. Target a band (say 2.0-3.0 effective). Today's offenders, with fixes:
 <table>
 <tr><th>Trigger</th><th>Problem</th><th>Fix</th></tr>
 <tr><td><code>whirlwind_slash</code></td><td>cd 1 + 12 Trion + 3-target + bleed = best value in game (my own over-buff)</td><td>Move to <strong>cd 2</strong> <em>or</em> drop the bleed; raise Trion to ~16.</td></tr>
-<tr><td><code>twin_fang_strike</code></td><td>cd 1, 10 Trion single-target spam — zero tempo decision</td><td><strong>cd 2</strong>, or make it the deliberate "opener" (First-Strike synergy) at higher cost.</td></tr>
+<tr><td><code>twin_fang_strike</code></td><td>cd 1, 10 Trion single-target spam - zero tempo decision</td><td><strong>cd 2</strong>, or make it the deliberate "opener" (First-Strike synergy) at higher cost.</td></tr>
 <tr><td><code>longshot</code></td><td>~104 potential one-shots a 100-HP unit through a die that doesn't matter</td><td>Cap single-hit lethality: reduce to ~70 potential, add a self-cost / 1-turn wind-up, or make it Far-band-only (ties to Problem 2).</td></tr>
 <tr><td><code>cinderburst</code></td><td>64 AoE + scorched 12/turn is a double-dip</td><td>Pick one axis: big AoE <em>or</em> strong DoT, not both at full value.</td></tr>
 </table></div>
 
-<h2>Problem 5 — Make Trion the beating heart it pretends to be (P2)</h2>
+<h2>Problem 5 - Make Trion the beating heart it pretends to be (P2)</h2>
 <p><strong>Diagnosis.</strong> Two reviewers noted Trion is thematically central but mechanically soft: income is a semi-random tier (10/20/35), most turns you cast once anyway, and capacity rarely bites.</p>
 <div class="callout"><span class="label">Concrete solution</span>
 <ul>
 <li><strong>Deterministic (or tight) income</strong> scaled hard by Trion Affinity, so building for economy is a reliable, expressive choice (Naruto-Arena's deterministic chakra is the north star).</li>
-<li><strong>Make capacity gate burst:</strong> FAT's 3-ability turn should be bounded by capacity, so high-Trion operators are the ones who can unleash — the World Trigger "Trion is destiny" fantasy.</li>
+<li><strong>Make capacity gate burst:</strong> FAT's 3-ability turn should be bounded by capacity, so high-Trion operators are the ones who can unleash - the World Trigger "Trion is destiny" fantasy.</li>
 <li><strong>Elevate denial as a counter axis:</strong> <code>sapped</code>/<code>genjutsu_trapped</code>/<code>silenced</code> become a real sub-game if income and capacity actually matter.</li>
 </ul></div>
 
-<h2>Problem 6 — Tutorialize the depth (P2)</h2>
-<p>The World Trigger fan is right that the game front-loads a d20 system, ~60 statuses, a six-sub-score Grade, and FAT before the first punch. The recent battle-log rework (plain-English breakdowns, clickable ability/character popups) is exactly the right instinct — extend it: a story/tutorial that introduces <em>one pillar per beat</em> (Trion → Triggers → squad → FAT → Grade), and word-based stat explanations everywhere (as the Team Spirit readout already does). Depth is an asset once it's learnable.</p>
+<h2>Problem 6 - Tutorialize the depth (P2)</h2>
+<p>The World Trigger fan is right that the game front-loads a d20 system, ~60 statuses, a six-sub-score Grade, and FAT before the first punch. The recent battle-log rework (plain-English breakdowns, clickable ability/character popups) is exactly the right instinct - extend it: a story/tutorial that introduces <em>one pillar per beat</em> (Trion → Triggers → squad → FAT → Grade), and word-based stat explanations everywhere (as the Team Spirit readout already does). Depth is an asset once it's learnable.</p>
 
 <h2>Prioritized roadmap</h2>
 <table>
@@ -98,13 +98,13 @@ Define <code>Value = (avg_damage + SP_value) ÷ Trion_cost</code>, then multiply
 <tr><td><strong>P0</strong></td><td>Bounded-accuracy re-tune (compress modifiers, move damage into dice, pick static vs opposed)</td><td>Med (spreadsheet)</td><td>Turns on advantage/crit/to-hit tension across the whole game</td></tr>
 <tr><td><strong>P0</strong></td><td>Cap crit chance (threshold ≥17) &amp; crit dice-only</td><td>Low</td><td>Removes the delete-lottery</td></tr>
 <tr><td><strong>P1</strong></td><td>Earned initiative (TEG-weighted) + Bail-Out downed state</td><td>Med</td><td>Removes the coin-flip; softens one-shots</td></tr>
-<tr><td><strong>P1</strong></td><td>Spatial pillar (rows or range bands)</td><td>Med–High</td><td>Adds the missing decision family &amp; the WT dance</td></tr>
+<tr><td><strong>P1</strong></td><td>Spatial pillar (rows or range bands)</td><td>Med-High</td><td>Adds the missing decision family &amp; the WT dance</td></tr>
 <tr><td><strong>P1</strong></td><td>Status Point + Trigger Value budgets; re-cost outliers</td><td>Med</td><td>Legibility, build diversity, AI can value effects</td></tr>
 <tr><td><strong>P2</strong></td><td>Deterministic Trion income; capacity-gated FAT; denial axis</td><td>Med</td><td>Makes the theme's core resource matter</td></tr>
 <tr><td><strong>P2</strong></td><td>Staged tutorialization of the pillars</td><td>Med</td><td>Converts depth from barrier to draw</td></tr>
 </table>
 
 <h2>Closing note to the team</h2>
-<p>Don't let the length of this list read as "the game is bad" — it isn't. You've built the expensive, creative layer (differentiated counters, uniques, combos, a genuinely clever risk/reward Grade, a real planning-phase resolution) that most projects never reach. The gaps the four audiences found are, almost entirely, <strong>tuning and two focused systemic additions</strong>. Fix bounded accuracy first (it's the keystone that lights up systems you already own), give the fight a <em>space</em> and an <em>earned</em> first move, and put your effects on a budget. Do those and you'll have converted a promising systems toy into a game all four of these very different players would keep playing.</p>
+<p>Don't let the length of this list read as "the game is bad" - it isn't. You've built the expensive, creative layer (differentiated counters, uniques, combos, a genuinely clever risk/reward Grade, a real planning-phase resolution) that most projects never reach. The gaps the four audiences found are, almost entirely, <strong>tuning and two focused systemic additions</strong>. Fix bounded accuracy first (it's the keystone that lights up systems you already own), give the fight a <em>space</em> and an <em>earned</em> first move, and put your effects on a budget. Do those and you'll have converted a promising systems toy into a game all four of these very different players would keep playing.</p>
 <div class="footer">Design Director synthesis · Grounded in the live catalog, constants, and the four persona reviews. References: bounded accuracy (BG3/5e), tightly-costed enchantments (Age of Wonders 4), positional roles &amp; front-line logic (Total War: Warhammer 3), controllable-RNG &amp; perfect-information tactics (XCOM, Into the Breach), rank/position combat (Darkest Dungeon), turn-order-as-resource (Banner Saga).</div>
 </body></html>

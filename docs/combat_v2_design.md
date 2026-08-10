@@ -619,7 +619,7 @@ retired tiebreak.
 | Phase H: balancing pass | not started (after all content phases) | TBD |
 | Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
 | Phase I: Combo Recognition system | I1-I5 done (I1-I3 merged; I4-I5 green on branch): action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains), live ledger population, and a design-time signature-combo proposer (`tool/propose_signature_combos.dart`). The signature roster grows as designer content | `claude/tactical-combat-engine-5luk6z` |
-| Phase J: TEG mechanical effects (section 5.2) | done + merged: Effects 1-5 (fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund), Draegor's "raise TEG 2 tiers" wired, and the inverse-TEG XP (section 15.8) now live server-side (see §15 row). | `claude/tactical-combat-engine-5luk6z` |
+| Phase J: TEG mechanical effects (section 5.2) | done + merged: Effects 1-5 (fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund), Draegor's "raise TEG 2 tiers" wired, and the inverse-TEG XP (section 15.8) now live server-side (see section 15 row). | `claude/tactical-combat-engine-5luk6z` |
 
 ### 13.1 Build status (verified against code)
 

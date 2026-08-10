@@ -1,6 +1,6 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><link rel="stylesheet" href="shared.css">
-<title>Isekai Strategem — D&D Veteran Review</title></head>
+<title>Isekai Strategem - D&D Veteran Review</title></head>
 <body>
 <div class="cover">
   <div class="kicker">Isekai Strategem · Player Design Review 2 of 4</div>
@@ -19,21 +19,21 @@
 <p>Contested d20 rolls, <em class="term">advantage/disadvantage</em> (roll two, keep best/worst), <em class="term">critical hits</em> that double damage, a status-infliction stat playing the role of a save DC vs a resistance stat, and a big library of conditions that map cleanly onto 5e (stunned, prone, blinded, charmed, poisoned, <code>exposed</code>≈vulnerable, <code>guarded</code>≈resistant, <code>frozen</code>≈paralyzed). A D&amp;D player is instantly at home. The battle log even shows the rolls. Good.</p>
 <p>And then I look at the actual numbers, and the tabletop-brain alarm goes off.</p>
 
-<h2>The core problem: no bounded accuracy — the die is decoration</h2>
-<p>5e's most important math decision is <strong>bounded accuracy</strong>: modifiers stay small (roughly +2 to +11 across 20 levels) so that the d20 — a swing of 20 — is always the loudest voice in the room. That's what makes rolling feel like it matters.</p>
+<h2>The core problem: no bounded accuracy - the die is decoration</h2>
+<p>5e's most important math decision is <strong>bounded accuracy</strong>: modifiers stay small (roughly +2 to +11 across 20 levels) so that the d20 - a swing of 20 - is always the loudest voice in the room. That's what makes rolling feel like it matters.</p>
 <p>This game does the opposite. Real values from the catalog and a live log line:</p>
 <div class="callout bad"><span class="label">The smoking gun</span>
 <code>ATK d20:18 + Attack 26 = 44 &nbsp; vs &nbsp; DEF d20:6 + Defense 11 = 29</code><br>
 The attacker's flat <strong>+26</strong> against the defender's <strong>+11</strong> is a 15-point gap before anyone rolls. A d20 swings ±~19, but with gaps this large, the outcome is decided by the <em>stat sheet</em>, not the dice. Attacks are effectively <strong>auto-hit or auto-miss</strong> depending on the matchup; the roll is theater.</div>
-<p>Damage is the same story: <code>twin_fang_strike</code> is <code>2d6+37</code>, <code>piercing_thrust</code> is <code>2d6+45</code>, <code>longshot</code> is <code>4d8+86</code>. The dice (a 2–12 or 4–32 spread) are rounding error next to +37 / +45 / +86. So the game <em>presents</em> as a dice game and <em>behaves</em> as deterministic arithmetic with a cosmetic d20. That's the worst of both worlds: the randomness anxiety of dice without the texture of dice mattering, and the predictability of arithmetic without the honesty of showing it.</p>
-<div class="callout warn"><span class="label">Consequence for my favorite toys</span>Because the die barely moves the needle, <strong>advantage/disadvantage barely matters either</strong> — re-rolling a d20 that contributes ~15% of the total is a shrug. You built a lovely advantage system and then made it almost irrelevant. Same for a defender's roll: two d20s that don't matter is just double the theater.</p></div>
+<p>Damage is the same story: <code>twin_fang_strike</code> is <code>2d6+37</code>, <code>piercing_thrust</code> is <code>2d6+45</code>, <code>longshot</code> is <code>4d8+86</code>. The dice (a 2-12 or 4-32 spread) are rounding error next to +37 / +45 / +86. So the game <em>presents</em> as a dice game and <em>behaves</em> as deterministic arithmetic with a cosmetic d20. That's the worst of both worlds: the randomness anxiety of dice without the texture of dice mattering, and the predictability of arithmetic without the honesty of showing it.</p>
+<div class="callout warn"><span class="label">Consequence for my favorite toys</span>Because the die barely moves the needle, <strong>advantage/disadvantage barely matters either</strong> - re-rolling a d20 that contributes ~15% of the total is a shrug. You built a lovely advantage system and then made it almost irrelevant. Same for a defender's roll: two d20s that don't matter is just double the theater.</p></div>
 
 <h2>Two d20s where D&amp;D uses one</h2>
-<p>5e rolls the attack die against a <em>static</em> AC. Here both attacker and defender roll a d20. Opposed rolls <strong>double the variance</strong> (a 2d20 spread) — which would normally make outcomes swingier, except your modifiers are so large that the variance is buried anyway. So the second roll adds computation and log noise without adding meaningful uncertainty. Pick one: static Defense (my recommendation, it's cleaner and it's what bounded accuracy assumes), or keep opposed rolls but shrink the modifiers so the dice can actually contest.</p>
+<p>5e rolls the attack die against a <em>static</em> AC. Here both attacker and defender roll a d20. Opposed rolls <strong>double the variance</strong> (a 2d20 spread) - which would normally make outcomes swingier, except your modifiers are so large that the variance is buried anyway. So the second roll adds computation and log noise without adding meaningful uncertainty. Pick one: static Defense (my recommendation, it's cleaner and it's what bounded accuracy assumes), or keep opposed rolls but shrink the modifiers so the dice can actually contest.</p>
 
 <h2>Critical hits: a buildable stat that can reach near-auto-crit</h2>
-<p>Crits double damage (<code>criticalHitDamageMultiplier = 2.0</code>) — fine, that's 5e. But crit chance here is a <em>buildable stat</em> that maps onto a widening die threshold: <code>thresholdAtMinChance = 20</code> down to <code>thresholdAtMaxChance = 5</code>. Read that carefully — at high crit chance you're critting on a natural <strong>5 or higher</strong>. That's up toward a <em>75% crit rate.</em></p>
-<p>In 5e, "improved critical" (crit on 19–20, a 10% rate) is already considered a strong feature you gate behind a subclass. A stat that scales to near-guaranteed crits, doubling a <code>2d6+45</code> into ~90, means the real game is "stack crit chance, delete a unit." Combine with a perk like <em class="term">Last Ace</em> (Kaito's crit chance <strong>doubles</strong> when he's the last one standing) and you get comeback swings that feel less like clutch play and more like a slot machine paying out.</p>
+<p>Crits double damage (<code>criticalHitDamageMultiplier = 2.0</code>) - fine, that's 5e. But crit chance here is a <em>buildable stat</em> that maps onto a widening die threshold: <code>thresholdAtMinChance = 20</code> down to <code>thresholdAtMaxChance = 5</code>. Read that carefully - at high crit chance you're critting on a natural <strong>5 or higher</strong>. That's up toward a <em>75% crit rate.</em></p>
+<p>In 5e, "improved critical" (crit on 19-20, a 10% rate) is already considered a strong feature you gate behind a subclass. A stat that scales to near-guaranteed crits, doubling a <code>2d6+45</code> into ~90, means the real game is "stack crit chance, delete a unit." Combine with a perk like <em class="term">Last Ace</em> (Kaito's crit chance <strong>doubles</strong> when he's the last one standing) and you get comeback swings that feel less like clutch play and more like a slot machine paying out.</p>
 <table>
 <tr><th>Mechanic</th><th>5e reference</th><th>This game</th><th>Read</th></tr>
 <tr><td>To-hit</td><td>d20 + small mod vs static AC</td><td>d20 + large mod vs d20 + large mod</td><td class="rating up">Die irrelevant</td></tr>
@@ -43,20 +43,20 @@ The attacker's flat <strong>+26</strong> against the defender's <strong>+11</str
 </table>
 
 <h2>Conditions: strong library, inconsistent "spell level"</h2>
-<p>The condition set is genuinely rich and mostly well-conceived. My tabletop instinct is to check whether effects are <em>costed consistently</em> — a designer's "spell level" budget — and here they aren't:</p>
+<p>The condition set is genuinely rich and mostly well-conceived. My tabletop instinct is to check whether effects are <em>costed consistently</em> - a designer's "spell level" budget - and here they aren't:</p>
 <ul>
-<li><code>marked</code>: +50% damage taken but only <strong>1 turn</strong>. <code>exposed</code>: +25% for <strong>2 turns</strong>. <code>petrified</code>: <em>halves</em> damage taken (a defensive condition!) for 2 turns. These three "damage-taken multipliers" don't sit on a shared curve — a player can't intuit their relative value.</li>
-<li>DoTs are all over the map: <code>bleeding</code> 8/turn, <code>scorched</code> and <code>necrotic_wound</code> <strong>12/turn</strong>, <code>poisoned</code> unspecified flat. On 100-HP units, 12/turn for 2–3 turns is 24–36 damage from a rider — often more than the attack that applied it.</li>
-<li>Hard CC durations are reasonable (<code>stunned</code> 1, <code>frozen</code> 1, <code>charmed</code> 3) but there's <strong>no diminishing-returns / immunity window</strong>, so stacking control from two sources can lock a unit out — the thing 5e prevents with concentration and save-each-turn.</li>
+<li><code>marked</code>: +50% damage taken but only <strong>1 turn</strong>. <code>exposed</code>: +25% for <strong>2 turns</strong>. <code>petrified</code>: <em>halves</em> damage taken (a defensive condition!) for 2 turns. These three "damage-taken multipliers" don't sit on a shared curve - a player can't intuit their relative value.</li>
+<li>DoTs are all over the map: <code>bleeding</code> 8/turn, <code>scorched</code> and <code>necrotic_wound</code> <strong>12/turn</strong>, <code>poisoned</code> unspecified flat. On 100-HP units, 12/turn for 2-3 turns is 24-36 damage from a rider - often more than the attack that applied it.</li>
+<li>Hard CC durations are reasonable (<code>stunned</code> 1, <code>frozen</code> 1, <code>charmed</code> 3) but there's <strong>no diminishing-returns / immunity window</strong>, so stacking control from two sources can lock a unit out - the thing 5e prevents with concentration and save-each-turn.</li>
 </ul>
 
 <h2>What I'd tell the DM (designer)</h2>
 <ol>
 <li><strong>Adopt bounded accuracy.</strong> Compress attack/defense modifiers into roughly a +2…+12 band and shrink flat damage bonuses so the dice carry real weight. This single change makes your advantage, crit, and to-hit systems all start mattering.</li>
 <li><strong>Go static-Defense</strong> (AC-style) or keep opposed rolls but only <em>after</em> compressing modifiers.</li>
-<li><strong>Cap crit chance</strong> (say, threshold no lower than 17–18 → ~15–20% max) and consider critting the <em>dice only</em>, not the flat bonus, so a crit is a spike, not a delete.</li>
-<li><strong>Put conditions on a points budget</strong> — a shared scale for damage-taken multipliers, DoT/turn, and CC duration — and add CC diminishing returns.</li>
+<li><strong>Cap crit chance</strong> (say, threshold no lower than 17-18 → ~15-20% max) and consider critting the <em>dice only</em>, not the flat bonus, so a crit is a spike, not a delete.</li>
+<li><strong>Put conditions on a points budget</strong> - a shared scale for damage-taken multipliers, DoT/turn, and CC duration - and add CC diminishing returns.</li>
 </ol>
-<div class="callout good"><span class="label">The good news</span>You already built the <em>hard part</em> — a coherent d20 vocabulary players understand. The fix is arithmetic, not architecture. Compress the modifiers and this becomes a genuinely satisfying tactical d20 game.</div>
+<div class="callout good"><span class="label">The good news</span>You already built the <em>hard part</em> - a coherent d20 vocabulary players understand. The fix is arithmetic, not architecture. Compress the modifiers and this becomes a genuinely satisfying tactical d20 game.</div>
 <div class="footer">Persona review 2 of 4 · Lens: tabletop 5e / d20-system literacy. Grounded in the catalog dice expressions, CriticalChanceConfig, and StatusEffectMagnitudes.</div>
 </body></html>

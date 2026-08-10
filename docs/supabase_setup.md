@@ -1,6 +1,6 @@
 # Supabase setup (accounts + XP backend)
 
-This is the one-time dashboard setup for the combat-v2 §15 accounts / XP
+This is the one-time dashboard setup for the combat-v2 section 15 accounts / XP
 backend. The app talks to Supabase only through the `AccountService` and
 `XpLedger` interfaces (`app/lib/src/game/account.dart`, `xp_ledger.dart`), so
 once this is done the real backend drops in behind the same call sites.
