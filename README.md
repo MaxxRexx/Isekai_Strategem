@@ -34,16 +34,16 @@ battle game plus its accounts and XP backend.
 - **[Complete Game Design Document](docs/game_design.md)** is the single, current,
   plain-language explanation of every system and every piece of content (each
   Trigger, Black Trigger ability, status effect, perk, counter, unique ability,
-  and combo), with all the numbers. A rendered PDF lives in
-  [`docs/reviews/`](docs/reviews).
-- [`docs/reviews/`](docs/reviews) also holds four player-persona design reviews
-  and a design-director synthesis of the game's balance.
+  and combo), with all the numbers. A rendered PDF sits next to it at
+  [`docs/Isekai_Strategem_Game_Design_Document.pdf`](docs/Isekai_Strategem_Game_Design_Document.pdf).
+- **[Current Development Status](docs/current_development_status.md)** shows what
+  is done, in progress, and still to do (with a status board at the top),
+  followed by the detailed combat-rework design and build tracker.
+- [`docs/reviews/`](docs/reviews) holds four player-persona design reviews and a
+  design-director synthesis of the game's balance.
 - [`docs/supabase_setup.md`](docs/supabase_setup.md) documents the accounts/XP
   backend, and [`supabase/schema.sql`](supabase/schema.sql) is its database
   schema.
-- [`docs/combat_v2_design.md`](docs/combat_v2_design.md) is the historical rework
-  spec and build tracker (superseded for reference purposes by the Game Design
-  Document above).
 
 Note: the older reference files under `packages/battle_engine/doc/` predate the
 combat rework and are out of date; use the Game Design Document instead.

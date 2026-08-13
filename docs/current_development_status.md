@@ -1,9 +1,63 @@
-# Combat v2: Queue Resolution, Counters, Uniques, and Team Efficiency Grade
+# Isekai Strategem: Current Development Status
 
-Status: approved design, implementation in progress (see section 13 for the
-live build status). This document is the source of truth for the multi-phase
-combat rework. It supersedes ad-hoc chat design notes. Numbers marked
-"tunable" are proposals to be finalized during implementation.
+This document tracks where the project is: what is done, what we are working on
+now, and what is still to do. The detailed design of the combat rework (which is
+what most of this project has been) follows in the sections below. For a plain
+explanation of the whole game itself, see
+[`game_design.md`](game_design.md).
+
+## Status at a glance
+
+| Done | Current priority | To do |
+|---|---|---|
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | Balance pass. Starting with the quick, safe wins (cap crit chance, re-cost the outlier Triggers), then the bounded-accuracy re-tune so the 20-sided die actually matters. | The rest of the balance pass: earned initiative (replace the coin flip), a spatial pillar (rows or range bands), points budgets for statuses and Triggers, steadier Trion income, and tutorializing the depth. |
+| Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
+| Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
+| Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
+| Balance step 1: the five near-duplicate ("reskin") Trigger clusters given distinct identities. | | Optional polish: a custom domain so Google sign-in shows the game name instead of the Supabase URL. |
+
+Progress by area:
+
+```
+Battle engine      ██████████ 100%   done
+Accounts and XP    ██████████ 100%   live and verified
+Phase F interface  ████████▒▒  85%   a couple of items left
+Balance pass       ██▒▒▒▒▒▒▒▒  15%   step 1 done, main pass next
+AI tuning          ▒▒▒▒▒▒▒▒▒▒   0%   not started
+Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
+```
+
+Pipeline (green is done, orange is in progress, grey is to do):
+
+```mermaid
+flowchart LR
+  classDef done fill:#2a9d5c,stroke:#1c6b3e,color:#ffffff
+  classDef now fill:#e08a2b,stroke:#a5641b,color:#ffffff
+  classDef todo fill:#d7dce6,stroke:#9aa5b8,color:#1a1f2b
+
+  ENG[Battle engine]:::done --> ACC[Accounts and XP]:::done --> UI[Phase F interface]:::done
+  UI --> BAL[Balance pass]:::now
+  BAL --> INIT[Initiative and spatial pillar]:::todo
+  BAL --> BUD[Status and Trigger budgets]:::todo
+  UI --> QUE[Queue display and resolve polish]:::todo
+  BAL --> AI[AI tuning]:::todo
+  AI --> STORY[Story mode]:::todo
+```
+
+---
+
+## About the sections below
+
+The rest of this document is the original combat-rework design spec and its
+detailed build tracker (the queue model, resolution order, counters, uniques,
+the Team Efficiency Grade, the build phases, and a per-phase status list in the
+Progress section). It remains the deeper reference behind the summary above.
+
+Numbers marked "tunable" are proposals to be finalized during balancing.
+
+---
+
+# Combat rework design and detailed build tracker
 
 ## 1. Goals
 

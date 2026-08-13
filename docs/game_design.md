@@ -7,8 +7,9 @@ every number that matters is given, and every piece of content (each Trigger,
 each Black Trigger ability, each status effect, each perk, each counter, each
 unique ability, each combo) is described so you know exactly what it does.
 
-This document replaces the older, partial notes. (`docs/combat_v2_design.md` is a
-build tracker for the combat rework, and the files under
+This document replaces the older, partial notes.
+(`docs/current_development_status.md` tracks what is done, in progress, and
+planned, plus the combat-rework design detail; the files under
 `packages/battle_engine/doc/` are from before that rework and are out of date.)
 
 **The short version.** Isekai Strategem is a turn-based fighting game where you
