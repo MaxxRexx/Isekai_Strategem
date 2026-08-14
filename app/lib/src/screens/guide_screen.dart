@@ -79,7 +79,7 @@ class _GuideScreenState extends State<GuideScreen>
           padding: EdgeInsets.only(bottom: 12),
           child: Text(
             'A condensed reference for everything below. The full write-up '
-            'lives in the repo\'s packages/battle_engine/doc folder.',
+            'lives in the repo\'s docs/game_design.md.',
             style: TextStyle(color: Colors.white54, fontSize: 12),
           ),
         ),

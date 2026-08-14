@@ -7,10 +7,10 @@ every number that matters is given, and every piece of content (each Trigger,
 each Black Trigger ability, each status effect, each perk, each counter, each
 unique ability, each combo) is described so you know exactly what it does.
 
-This document replaces the older, partial notes.
+This is the single source of truth for how the game works. If a rule is not in
+here, it is not documented anywhere else.
 (`docs/current_development_status.md` tracks what is done, in progress, and
-planned, plus the combat-rework design detail; the files under
-`packages/battle_engine/doc/` are from before that rework and are out of date.)
+planned, plus the combat-rework design detail.)
 
 **The short version.** Isekai Strategem is a turn-based fighting game where you
 build a team of three characters, give each one a set of abilities, and battle
@@ -31,19 +31,20 @@ advantage or disadvantage, critical hits, and a big list of status conditions).
 4. Stats: what each number means
 5. Team Spirit: the offense-or-sustain slider
 6. Trion: the resource you spend
-7. Triggers and Loadouts: building an ability set
+7. Triggers and Loadouts: building an ability set (category, attack type,
+   subtype, range, origin)
 8. Full Arms Trigger (FAT): your burst turn
 9. How a turn works: queue then resolve
 10. Resolution order: the six phases
-11. How an attack is decided: the dice math
+11. How an attack is decided: the dice math, and the damage types
 12. Status effects: the full list, explained
 13. Counters: reacting to the enemy
 14. Unique abilities: the signature moves
 15. Combos: rewarding setups
 16. Team Efficiency Grade: your build score
-17. Black Triggers: the ultimate gear
+17. Black Triggers: the ultimate gear, and Resonance
 18. Character perks: innate traits
-19. The AI opponent
+19. The AI opponent: 20 profiles across 5 skill classes
 20. Accounts and XP: the online part
 21. What is built so far
 - Appendix A: every Trigger, explained
@@ -230,12 +231,16 @@ Triggers you want (counters, stat boosts), all inside the Trion budget. Passive
 Triggers do not attack; they sit in your slots and do things automatically, like
 firing a counter or granting a stat.
 
-**What defines a Trigger.** Each active Trigger has: a name, a **category** (its
-role), an equip cost, a Trion cost, a cooldown in turns, whether it is melee or
-ranged, an **attack subtype** (single-target, burst, or area), a damage type,
-how much damage it rolls, how many targets it can hit, how many separate hits it
-makes, an optional heal, any status effects it applies, and sometimes a special
-unique or counter behavior.
+**What defines a Trigger.** Each active Trigger carries a name, an equip cost, a
+Trion cost, a cooldown in turns, how much damage it rolls, how many targets it
+can hit, how many separate hits it makes, an optional heal, any status effects it
+applies, and sometimes a special unique or counter behavior. On top of that it
+carries five **tags** that decide how it behaves and what can interact with it:
+its category, its attack type, its attack subtype, its range, and its origin.
+Those five are worth understanding properly, because most of the game's
+interactions key off them.
+
+### Category: what job the Trigger does
 
 The 60 active Triggers are grouped into five **categories** by their role, which
 line up with World Trigger's classes:
@@ -245,7 +250,80 @@ line up with World Trigger's classes:
 - **Sniper (3):** long-range specialists who land one big shot.
 - **Trapper (24):** control, damage-over-time, debuffs, and most of the unique
   abilities.
-- **Optional (20):** buffs, wards, self-help, and the reactive counters.
+- **Optional (8):** buffs, wards, self-help, and the reactive counters.
+
+### Attack type: melee, ranged, or psychic
+
+Every active Trigger is one of three **attack types**, and the catalog is
+deliberately balanced to exactly 20 of each:
+
+- **Melee (20):** physical attacks made up close. Blades, fists, impact.
+- **Ranged (20):** attacks made at a distance. Shots, grenades, thrown effects.
+- **Psychic (20):** attacks on the mind rather than the body. Fear, silence,
+  illusion, and most of the strangest abilities in the game.
+
+Psychic is its own type rather than a flavor of ranged, because it is the type
+that carries the mind-affecting statuses and the bulk of the unique abilities.
+
+### Attack subtype: how the attack lands
+
+The **subtype** is what actually decides how an attack resolves:
+
+- **Single (20 Triggers):** one target, one to-hit roll, one damage roll.
+- **Area, or AOE (15):** hits several targets at once (usually up to 3). Each
+  target gets its own to-hit roll and its own damage roll, so an area attack can
+  land on one enemy and miss another. Area attacks also **bypass** the counters
+  that only catch single-target attacks, like Mirror Ward.
+- **Burst (8):** several separate hits, each rolled independently. Careful here:
+  the hit count is **per target**, not shared out among them. Suppressing Fire
+  hits 3 times against *each* of up to 2 targets, so it makes 6 rolls in total.
+  Every hit rolls to-hit and damage on its own, which means Armor is subtracted
+  from each hit separately and a burst is weak against heavily armored targets.
+- **Unique (17):** a bespoke ability that writes its own rules. These do not
+  follow the standard hit-and-damage flow at all. See section 14.
+
+Not every combination exists. Melee has no bursts, and psychic has no bursts
+either, so the distribution across the 60 Triggers looks like this:
+
+| Attack type | Single | Area | Burst | Unique | Total |
+|---|--:|--:|--:|--:|--:|
+| Melee | 10 | 5 | 0 | 5 | 20 |
+| Ranged | 5 | 5 | 8 | 2 | 20 |
+| Psychic | 5 | 5 | 0 | 10 | 20 |
+| **Total** | **20** | **15** | **8** | **17** | **60** |
+
+### Range: near or far
+
+Separately from its attack type, each Trigger is tagged **melee** (20 Triggers)
+or **ranged** (40). This is the near-or-far tag, and it is not the same thing as
+the attack type: a psychic attack is still tagged as either melee or ranged
+range. Some statuses key off it specifically. Threatened and Blinded, for
+instance, penalize *ranged* attack rolls and leave melee alone, and Blinded also
+cuts the number of targets a ranged attack can reach.
+
+### Origin: what kind of power drives it
+
+Every Trigger has one of four **origin** tags, describing what sort of energy is
+behind it:
+
+- **Physical (23 Triggers):** raw body and weapon work.
+- **Energy (11):** Trion channelled directly, elemental blasts and wards.
+- **Afflict (6):** poison, venom, decay.
+- **Mental (20):** psychic pressure and illusion.
+
+Origin exists so that some abilities can shut down a whole *kind* of attack
+rather than a specific one. Seal of Severance locks a target out of one origin
+for 2 turns, which means every Trigger they own in that category becomes
+uncastable, and Foresight Counter works by naming an origin in advance and
+negating an attack that matches. Against those, a Loadout built entirely from
+one origin is fragile and a mixed one is resilient. This is a real reason to
+diversify.
+
+### Who a Trigger can be aimed at
+
+Finally, each Trigger targets **an opponent** (51 of the 60), **an ally** (3), or
+**only its user** (6). Ally and self Triggers are the buffs, heals, wards, and
+the reactive counters you arm on your own turn.
 
 Every single Trigger is listed with a plain description in Appendix A.
 
@@ -280,7 +358,10 @@ used to be pure luck, which was the one thing a player could not build toward;
 now the better-assembled squad is favoured for it, while the underdog still
 takes the opening turn better than one time in three. Going first is not free
 either: whoever moves first takes the lowest Trion income on that opening turn.
-There is a 15-second timer per turn.
+Each team turn is capped at a **15-second timer** to lock in your actions; if it
+runs out the turn is forfeited with nothing committed. A Black Trigger's World
+ability can change that limit for its team, which is exactly what Chrono Fragment
+does.
 
 On your turn:
 
@@ -366,6 +447,31 @@ it passes through a short chain of adjustments (the battle log shows every step)
 
 Burst abilities run this whole chain once per hit, and area abilities apply it to
 each target.
+
+### Damage types: what the damage is made of
+
+Every damaging Trigger deals one of **13 damage types**, grouped into three
+categories:
+
+| Category | Damage types |
+|---|---|
+| Physical | Bludgeoning, Piercing, Slashing |
+| Elemental | Acid, Cold, Fire, Lightning, Poison |
+| Magical and utility | Force, Radiant, Necrotic, Psychic, Thunder |
+
+The type matters because of step 5 above. A character can be **resistant** to a
+type (they take half damage from it), or a status effect can make them
+**vulnerable** to it (they take extra) or outright **immune**. Wet, for example,
+makes a target immune to Fire but vulnerable to both Lightning and Cold, so
+soaking someone changes which of your abilities you should be reaching for.
+Scorched makes them vulnerable to Fire, Chilled to Cold, Corroded to Acid, and
+Sickened to four damage types picked at random. Resistances can also come from a
+character's own make-up or from equipment: Bastion Frame's Hardened Shell passive
+grants resistance to Bludgeoning.
+
+The practical upshot is that a Loadout spread across several damage types is
+harder to wall off than one that leans on a single type, in the same way that a
+Loadout spread across several origins is harder to lock out.
 
 *Design note: this is where the balance pass did most of its work. Attack and
 Defense used to run 10-29 and 6-16, which put a 15-point gap on a typical attack
@@ -484,8 +590,9 @@ turns.
 - **Vow of the Duel:** two characters are bound in a duel: double damage passes
   between them, plus a 2-turn stun on the target.
 - **Forced Choice:** forced into a lose-lose decision for 1 turn.
-- **Karmic Bind:** a two-way link where damage is shared between the pair based on
-  Team Spirit, for 3 turns.
+- **Karmic Bind:** a one-way link for 3 turns: whenever the caster takes damage
+  or is healed, a Team-Spirit-scaled fraction of it is dealt to the bound enemy
+  as unavoidable damage.
 - **Called Shot:** one of the target's stats is reduced to zero for 2 turns.
 - **Mind's Eye:** the target's hidden Loadout is revealed to you for 3 turns.
 
@@ -586,8 +693,11 @@ status. There are 17 of them:
   falls; the decoy soaks a hit meant for you.
 - **Echoing Doubt:** plants a doubt so that acting against you backlashes for 20
   damage.
-- **Karmic Bind:** ties you and a target together so damage is shared based on your
-  Team Spirit values (between 25% and 60%).
+- **Karmic Bind:** binds you to one enemy for 3 turns. It punishes rather than
+  shares: every time *you* take damage or receive healing, a fraction of that
+  amount lands on them as unavoidable damage. The fraction is set by your Team
+  Spirit, from 25% at the low end to 60% at the high end, so a sustain-leaning
+  caster turns their own healing into a weapon.
 - **Unmaking:** a powerful unravelling debuff that strips the target down.
 
 ---
@@ -690,11 +800,38 @@ is what each one gives you:
   control.
 - **Gravebind (unique):** one active, One More Breath, a World-style effect that
   lets you survive, once per battle, a hit that would otherwise defeat you.
-- **Chrono Fragment (unique):** a time-themed unique piece.
+- **Chrono Fragment (unique):** a World ability that adds 5 seconds to its
+  wielder's team turn timer every turn. A tempo tool, not a combat one, and the
+  cheapest Black Trigger to equip at 30.
 
-How well a Black Trigger fits its wielder is measured by the Resonance Fit
-sub-score of the Team Efficiency Grade, and the enemy's Nullhymn counter can
-permanently weaken your Black Trigger.
+### Resonance: how well a Black Trigger suits its wielder
+
+Any character may equip any Black Trigger. Nothing blocks a Support character
+from picking up an attack-type Black Trigger. What changes is **Resonance**: a
+grade from A down to D, set by comparing the character's own type against the
+Black Trigger's type.
+
+| Your character's type | Attack BT | Defense BT | Support BT | Unique BT |
+|---|:--:|:--:|:--:|:--:|
+| **Attack** | A | B | C | A |
+| **Defense** | C | A | A | B |
+| **Support** | D | A | A | B |
+| **Unique** | B | B | B | B |
+
+The grade is a multiplier on everything that Black Trigger does: **A is 1.5x, B
+is 1.15x, C is 1.0x, and D is 0.85x**. It scales the Black Trigger's damage and
+healing, scales its passive and World-ability magnitudes, and divides its
+cooldowns, so a well-resonant Black Trigger both hits harder and comes back
+sooner.
+
+A mismatch is legal, just inefficient. A Support character running an attack-type
+Black Trigger sits at D and gets a weaker version of it, which is a real build if
+you want it, just a costly one. Unique characters are the generalists: they get B
+with everything, never brilliant and never bad.
+
+Resonance also feeds the Resonance Fit sub-score of the Team Efficiency Grade,
+and it is not permanent: the enemy's Nullhymn counter can knock your Black
+Trigger down a resonance grade for the rest of the battle.
 
 ---
 
@@ -706,37 +843,94 @@ Here is every perk and what it does:
 
 | Character (type) | Perk | What it does |
 |---|---|---|
-| Kaito Reyes (Attack) | Last Ace | His Critical Chance doubles while he is the last living member of his team. |
-| Vela Ashworth (Attack) | First Blood | Her first attack of the battle gains bonus Critical Chance. |
-| Dross (Attack) | Overwhelm | His area attacks deal bonus damage to a target that already has a debuff. |
-| Ren Kobayashi (Attack) | First Strike | He gets a flat Attack bonus on the first ability he uses each battle. |
-| Airi Tanaka (Attack) | Feint | The first attack made against her each battle is rolled with disadvantage. |
-| Marren Osei (Defense) | Bulwark | His Armor is doubled while any teammate is still alive. |
-| Ilona Vance (Defense) | Riposte | Whenever a melee attack against her misses, she gains a stacking Attack buff for her next turn. |
-| Bastian Cole (Defense) | Absorb | The first instance of damage he takes each battle is cut in half. |
-| Dorian Voss (Defense) | Immovable | He resists forced movement and displacement effects. |
-| Sable Whitlock (Defense) | Defensive anchor | Built around high Defense and Armor to hold the line. |
-| Priya Nakamura (Support) | Combat Medic | Her heal-over-time effects heal for more. |
-| Soren Talvik (Support) | Weaken Resolve | His debuffs hit harder against a target already carrying one of his other debuffs. |
-| Yuki Amaral (Support) | Devoted Aid | She adds 10% to all healing, from any source. |
-| Haru Ellison (Support) | Battery | A living Trion battery, with very high Trion Affinity (32) fueling the whole squad's income. |
-| Celestine Moreau (Support) | Warding Presence | Her ally-targeted buffs also grant the ally a Status Resistance bonus. |
-| Zheng Anders (Unique) | Foresight | Once per battle he can reroll one of his own attack rolls. |
-| Nadia Kessler (Unique) | Chain Reaction | Each additional ability she uses on a single FAT turn deals more than the last. |
-| Rurik Voss (Unique) | All or Nothing | A pure glass cannon (Attack 29, Defense 6): huge damage, very fragile. |
-| Mireille Song (Unique) | Decoy | Once per battle, an attack against her has a chance to simply miss, as if she was never there. |
+| Kaito Reyes (Attack) | Last Ace | His Critical Chance is **doubled** while he is the last living member of his team. |
+| Vela Ashworth (Attack) | First Blood | Her first attack of the battle gains **+25 Critical Chance**, but only if the target is at full health. |
+| Dross (Attack) | Overwhelm | His **area** attacks deal **25% more damage** to a target that already has a status effect on it. |
+| Ren Kobayashi (Attack) | First Strike | He gets **+2 Attack** on the first ability he uses each battle. |
+| Airi Tanaka (Attack) | Feint | The first attack made against her each battle is rolled with **disadvantage**. |
+| Marren Osei (Defense) | Bulwark | His Armor is **doubled** while any living teammate is below 25% health. |
+| Ilona Vance (Defense) | Riposte | Whenever a **melee** attack against her misses, she gains a stacking **+1 Attack** buff for her next turn. |
+| Bastian Cole (Defense) | Absorb | The first instance of damage he takes each battle is **cut in half**, on top of any other mitigation. |
+| Dorian Voss (Defense) | Immovable | He is **immune to anything that would reduce how many targets his ranged abilities can hit**, so Blinded cannot narrow his area attacks. |
+| Sable Whitlock (Defense) | Guardian's Instinct | **Once per battle** he can redirect an attack aimed at a living teammate onto himself instead. |
+| Priya Nakamura (Support) | Combat Medic | Her heal-over-time effects heal for **30% more** when applied to an ally below 50% health. |
+| Soren Talvik (Support) | Weaken Resolve | Status effects he inflicts last **1 turn longer** against a target already carrying one of his other debuffs. |
+| Yuki Amaral (Support) | Devoted Aid | She receives **10% bonus healing** from any source, including a drain Trigger that heals its user off someone else. |
+| Haru Ellison (Support) | Battery | While she is alive, her team's Trion gain roll gets a **positive modifier**, making bigger income turns more likely. |
+| Celestine Moreau (Support) | Warding Presence | Her ally-targeted buffs also grant that ally **+5 Status Resistance**. |
+| Zheng Anders (Unique) | Foresight | **Once per battle** he can reroll one of his own missed attack rolls. |
+| Nadia Kessler (Unique) | Chain Reaction | Each additional ability she uses on the same FAT turn deals **15% more** than the last. |
+| Rurik Voss (Unique) | All or Nothing | His outgoing damage **rises as his own health falls**, up to double at 0 health. Paired with the roster's highest Attack (14) and lowest Defense (2). |
+| Mireille Song (Unique) | Decoy | **Once per battle**, an attack against her has a **35% chance to simply miss**, as if she was never there. |
 | Tobias Renner (Unique) | Versatile | He gets a small bonus to whichever stat matches the category of the ability he last used. |
 
 ---
 
 ## 19. The AI opponent
 
-In single player you fight an **AI profile**, which comes in skill classes from
-Beginner up through Amateur, Intermediate, Professional, and Expert. The AI plans
-and resolves a full turn through the exact same system you do, with a short
-"thinking" pause before it commits, so the same rules apply to both sides.
-Teaching the AI to value the counters, uniques, and status effects well is a
-planned future task.
+In single player you fight an **AI profile**. The AI plans and resolves a full
+turn through the exact same system you do, with a short "thinking" pause before
+it commits, so the same rules apply to both sides. It also drafts its own
+Loadouts, using the same rules and budget you do.
+
+There are **20 profiles**, built from two independent dials: a skill class that
+sets *how well* the profile plays, and a strategic identity that sets *what it is
+trying to do*.
+
+**Skill class** controls execution. Every decision has a chance of being a
+"mistake", which means the AI falls back to a random legal choice instead of its
+intended one:
+
+| Skill class | Mistake chance | Weighs Defense and resistances | Looks ahead |
+|---|--:|:--:|:--:|
+| Beginner | 40% | No | No |
+| Amateur | 25% | No | No |
+| Intermediate | 12% | Yes | No |
+| Professional | 5% | Yes | No |
+| Expert | 2% | Yes | Yes, predicts whether a hit would actually secure a kill |
+
+**Strategic identity** controls intent: who it targets, which ability it reaches
+for, when it chains FAT, whether it wants a Black Trigger, and what it drafts.
+There are four identities per skill class.
+
+*Beginner.* **Button Masher** targets whoever is first in its list and fires
+whatever is off cooldown, with no evaluation at all. **The Turtle** hides behind
+self-buffs and passives to a fault and never chains FAT. **The Copycat** targets
+at random and simply mirrors whatever kind of move you used last. **The
+Berserker** chases raw damage with no target or resource discipline, fixating on
+whoever it last drew blood from.
+
+*Amateur.* **The Sharpshooter** overvalues ranged and burst options even when
+something weaker would serve better. **The Healer's Crutch** over-prioritizes
+healing even when finishing a kill would end the fight sooner. **The Momentum
+Chaser** chains every FAT proc on principle, productive or not. **The Grudge
+Holder** fixates on whichever enemy has dealt it the most damage so far,
+regardless of who is nearly dead.
+
+*Intermediate.* **The Executioner** piles the whole team onto one enemy until it
+dies, then retargets together. **The Afflictor** prioritizes landing statuses
+over raw damage. **The Blast Radius** reaches for area attacks whenever one is
+available, even against a single remaining target. **The Gambler** fires its
+Black Trigger the moment it can and equips one even when it resonates badly.
+
+*Professional.* **The Tactician** has the Executioner's focus plus real judgment,
+weighing Defense and resistances rather than just health. **The Controller**
+sequences a debuff before committing to a burst, so the setup buys something.
+**The Sweeper** focus-fires by default and only switches to area attacks once two
+or more enemies are actually in kill range together. **The Economist** spends
+extra FAT actions only for a kill or a clear tempo swing.
+
+*Expert.* **The Grandmaster** runs full lookahead, predicting whether a hit
+actually secures a kill before committing. **The Silent Blade** opens with debuff
+setup then unloads a maximized burst with near-perfect FAT timing. **The Wall**
+grinds you down with World abilities and stacked passives before turning
+aggressive. **The Prodigy** re-reads the board on every single ability choice
+rather than committing to one plan, which is the closest thing to a skilled human
+opponent.
+
+Teaching the AI to value the counters, uniques, and status effects well is still
+a planned task: it plays the core game properly but does not yet appreciate the
+newer systems.
 
 ---
 
@@ -835,7 +1029,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 - **Flashbang Round** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Blinded (much less accurate).
 - **Forced Choice** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: forces a lose-lose choice.
 - **Isolation** (costs 14 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: cuts the target off from allies.
-- **Karmic Bind** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: shares damage between you based on Team Spirit.
+- **Karmic Bind** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: damage you take or healing you receive is passed on to the bound enemy, scaled by Team Spirit.
 - **Mass Confusion** (costs 20 Trion, 2-turn cooldown). A ranged area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Silenced (cannot use abilities).
 - **Memory Theft** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: steals or copies an ability.
 - **Mind Fog** (costs 16 Trion, 2-turn cooldown). A ranged area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Blinded (much less accurate).
