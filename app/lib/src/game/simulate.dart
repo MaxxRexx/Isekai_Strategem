@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:battle_engine/battle_engine.dart';
 
 import 'battle_models.dart';
 import 'draft.dart';
+import 'team_efficiency.dart';
 
 class SimulationConfig {
   final List<String> teamAIds;
@@ -39,11 +38,23 @@ SimulationResult runSimulation(SimulationConfig config) {
   final teamAAi = ProfileDrivenAi(profileById(config.teamAProfileId));
   final teamBAi = ProfileDrivenAi(profileById(config.teamBProfileId));
 
+  // The opening turn is weighted by each squad's Team Efficiency Grade, the
+  // same rule the player-facing session uses (see `openingTurnChanceFor`).
+  final teamAEfficiency = computeTeamEfficiency(
+    characterIds: config.teamAIds,
+    loadouts: teamADraft.loadouts,
+  );
+  final teamBEfficiency = computeTeamEfficiency(
+    characterIds: config.teamBIds,
+    loadouts: teamBDraft.loadouts,
+  );
+
   final battle = Battle(
     teamA: teamADraft.team,
     teamB: teamBDraft.team,
     states: {...teamADraft.states, ...teamBDraft.states},
-    teamAGoesFirst: Random().nextBool(),
+    teamAGoesFirst:
+        rollsOpeningTurn(teamAEfficiency.tier, teamBEfficiency.tier),
   );
 
   final rounds = <LogRound>[];

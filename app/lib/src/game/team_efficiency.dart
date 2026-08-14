@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:battle_engine/battle_engine.dart';
 
 import 'draft.dart';
@@ -59,6 +61,39 @@ TegRollProfile tegRollProfileFor(TegTier tier) {
     trionRefundPercent: refund,
   );
 }
+
+/// How much of the opening turn a single tier of Team Efficiency Grade
+/// advantage is worth, and the ceiling on that advantage. Three tiers of
+/// separation gets you to the ceiling.
+const _openingTurnChancePerTier = 0.05;
+const _maxOpeningTurnChance = 0.65;
+
+/// The chance in [0, 1] that the squad graded [own] takes the opening turn
+/// against a squad graded [other].
+///
+/// Who moves first used to be a straight coin flip, which made the single
+/// most decisive variable in a lethal game the one thing a player could not
+/// build toward. It is now weighted by the Team Efficiency Grade, the one
+/// number that already measures how well a squad is put together: two evenly
+/// graded squads still flip a fair coin, and every tier of separation moves
+/// the odds five points, up to 65/35 at three tiers or more.
+///
+/// Deliberately not a guarantee. The underdog keeps a real chance of the
+/// opening move (35% at worst), so the grade tilts the fight rather than
+/// deciding it before anyone rolls, and the first-move Trion handicap (see
+/// `Battle.startTurn`) still means going first costs something.
+double openingTurnChanceFor(TegTier own, TegTier other) {
+  final tierGap = own.index - other.index;
+  final chance = 0.5 + tierGap * _openingTurnChancePerTier;
+  final ceiling = _maxOpeningTurnChance;
+  return chance.clamp(1 - ceiling, ceiling);
+}
+
+/// Rolls [openingTurnChanceFor] and returns whether the [own]-graded squad
+/// takes the opening turn. Takes a [Random] so callers (and tests) can seed
+/// it.
+bool rollsOpeningTurn(TegTier own, TegTier other, {Random? random}) =>
+    (random ?? Random()).nextDouble() < openingTurnChanceFor(own, other);
 
 /// Draegor's "raise TEG 2 tiers" effect: the profile a team two tiers higher
 /// would have, or null when the team is already SS/SSS (Draegor then runs its

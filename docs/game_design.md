@@ -273,8 +273,14 @@ enemy who chains 2 or more abilities on a FAT turn.
 ## 9. How a turn works: queue then resolve
 
 Turns **alternate** between the two squads. Who goes first at the very start of
-the battle is decided by an **even coin flip** (a 50/50 chance). There is a
-15-second timer per turn.
+the battle is **weighted by the Team Efficiency Grade**: two squads on the same
+grade flip a fair coin, and every grade of separation shifts the odds by 5
+points, up to 65/35 at three grades or more. Moving first in a game this lethal
+used to be pure luck, which was the one thing a player could not build toward;
+now the better-assembled squad is favoured for it, while the underdog still
+takes the opening turn better than one time in three. Going first is not free
+either: whoever moves first takes the lowest Trion income on that opening turn.
+There is a 15-second timer per turn.
 
 On your turn:
 

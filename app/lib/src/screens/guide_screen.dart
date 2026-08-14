@@ -142,7 +142,10 @@ class _GuideScreenState extends State<GuideScreen>
               'A round is one turn for each team. Teams alternate; the round counter increments once both sides have gone.',
             ),
             _Bullet(
-              'First-move handicap: whichever team acts first in the battle gets a reduced Trion gain roll on that single opening turn only, forced to the lowest tier.',
+              'Who moves first is earned, not flipped for. The opening turn is weighted by each squad\'s Team Efficiency Grade: two squads on the same grade are even, and every grade of separation shifts the odds 5 points, up to 65/35. A worse-graded squad still takes the opening move better than one time in three.',
+            ),
+            _Bullet(
+              'First-move handicap: whichever team acts first in the battle gets a reduced Trion gain roll on that single opening turn only, forced to the lowest tier. Moving first is an advantage you pay a little for.',
             ),
             _Plain(
               'At the start of your team\'s turn: your team rolls for Trion gain, status effects tick for each living member, and Full Arms Trigger (FAT) is rolled per character. Normally each character gets 1 ability use per turn; if FAT triggers for them, they get up to 3 instead.',
