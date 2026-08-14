@@ -34,19 +34,22 @@ class TriggerCatalog {
 
   factory TriggerCatalog.builtIn() {
     final triggers = <Trigger>[
+      // Re-costed in the balance pass: at cooldown 1 for 10 Trion this was
+      // pure single-target spam with no tempo decision behind it. Cooldown
+      // 2 makes using it a choice about which turn you want it on.
       ActiveTrigger(
         id: 'twin_fang_strike',
         name: 'Twin Fang Strike',
         category: TriggerCategory.attacker,
         equipCost: 20,
-        trionCost: 10,
-        cooldownTurns: 1,
+        trionCost: 15,
+        cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.melee,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.slashing,
-        damage: const DiceExpression(2, 6, flatBonus: 37),
+        damage: const DiceExpression(6, 6, flatBonus: 23),
       ),
       ActiveTrigger(
         id: 'cleave',
@@ -54,14 +57,14 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 24,
         trionCost: 15,
-        cooldownTurns: 1,
+        cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.melee,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.aoe,
         targetCount: 2,
         damageType: DamageType.slashing,
-        damage: const DiceExpression(1, 6, flatBonus: 18),
+        damage: const DiceExpression(3, 6, flatBonus: 11),
         inflictedStatusEffects: const [StatusEffectApplication('shattered_guard')],
       ),
       ActiveTrigger(
@@ -78,7 +81,7 @@ class TriggerCatalog {
         hitsPerUse: 3,
         targetCount: 2,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(1, 4, flatBonus: 16),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         inflictedStatusEffects: const [StatusEffectApplication('suppressed')],
       ),
       ActiveTrigger(
@@ -93,7 +96,7 @@ class TriggerCatalog {
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.acid,
-        damage: const DiceExpression(1, 6, flatBonus: 18),
+        damage: const DiceExpression(3, 6, flatBonus: 11),
         inflictedStatusEffects: const [StatusEffectApplication('corroded')],
       ),
       ActiveTrigger(
@@ -108,7 +111,7 @@ class TriggerCatalog {
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.poison,
-        damage: const DiceExpression(1, 4, flatBonus: 12),
+        damage: const DiceExpression(3, 4, flatBonus: 7),
         inflictedStatusEffects: const [StatusEffectApplication('poisoned')],
       ),
       ActiveTrigger(
@@ -123,7 +126,7 @@ class TriggerCatalog {
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         inflictedStatusEffects: const [StatusEffectApplication('terrified')],
       ),
       ActiveTrigger(
@@ -175,51 +178,60 @@ class TriggerCatalog {
         name: 'Piercing Thrust',
         category: TriggerCategory.attacker,
         equipCost: 22,
-        trionCost: 14,
-        cooldownTurns: 1,
+        trionCost: 18,
+        cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.melee,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(2, 6, flatBonus: 45),
+        damage: const DiceExpression(7, 6, flatBonus: 27),
       ),
+      // Re-costed in the balance pass: cooldown 1, 12 Trion, three targets
+      // and a bleed made this the best value in the catalog by a wide
+      // margin. Now cooldown 2 at 16 Trion, so the three-target bleed is a
+      // set-up you commit to rather than the default action every turn.
       ActiveTrigger(
         id: 'whirlwind_slash',
         name: 'Whirlwind Slash',
         category: TriggerCategory.attacker,
-        equipCost: 20,
-        trionCost: 12,
-        cooldownTurns: 1,
+        equipCost: 22,
+        trionCost: 16,
+        cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.melee,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.slashing,
-        damage: const DiceExpression(1, 4, flatBonus: 16),
+        damage: const DiceExpression(3, 4, flatBonus: 9),
         inflictedStatusEffects: const [StatusEffectApplication('bleeding')],
       ),
+      // Re-costed in the balance pass: 4d8+86 topped out at 118 against a
+      // 100-health operator, so a single Longshot could delete someone
+      // outright through a die roll that barely mattered. 4d8+38 keeps it
+      // the hardest single hit in the catalog (56 average) while capping
+      // its ceiling at 70, below the health of whoever it lands on.
       ActiveTrigger(
         id: 'longshot',
         name: 'Longshot',
         category: TriggerCategory.sniper,
-        equipCost: 34,
-        trionCost: 30,
+        equipCost: 30,
+        trionCost: 24,
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.ranged,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(4, 8, flatBonus: 86),
+        damage: const DiceExpression(6, 8, flatBonus: 29),
       ),
       ActiveTrigger(
         id: 'scattershot',
         name: 'Scattershot',
         category: TriggerCategory.shooter,
         equipCost: 26,
-        trionCost: 20,
+        trionCost: 22,
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.ranged,
@@ -228,7 +240,7 @@ class TriggerCatalog {
         hitsPerUse: 4,
         targetCount: 3,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(1, 4, flatBonus: 6),
+        damage: const DiceExpression(1, 4, flatBonus: 3),
         inflictedStatusEffects: const [StatusEffectApplication('slowed')],
       ),
       ActiveTrigger(
@@ -257,9 +269,14 @@ class TriggerCatalog {
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.cold,
-        damage: const DiceExpression(1, 6, flatBonus: 18),
+        damage: const DiceExpression(3, 6, flatBonus: 11),
         inflictedStatusEffects: const [StatusEffectApplication('chilled')],
       ),
+      // Re-costed in the balance pass: 64 damage across three targets plus
+      // a 12-per-turn burn on all three was two full payloads on one
+      // ability. It now picks one axis and keeps the burn, so the up-front
+      // hit is a third smaller and the damage arrives over time - which is
+      // also what makes it read differently from Frag Grenade.
       ActiveTrigger(
         id: 'cinderburst',
         name: 'Cinderburst',
@@ -273,7 +290,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.fire,
-        damage: const DiceExpression(1, 6, flatBonus: 18),
+        damage: const DiceExpression(3, 4, flatBonus: 7),
         inflictedStatusEffects: const [StatusEffectApplication('scorched')],
       ),
       ActiveTrigger(
@@ -289,7 +306,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.acid,
-        damage: const DiceExpression(1, 4, flatBonus: 10),
+        damage: const DiceExpression(2, 6, flatBonus: 6),
         inflictedStatusEffects: const [StatusEffectApplication('corroded')],
       ),
       ActiveTrigger(
@@ -305,7 +322,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 2,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 6, flatBonus: 10),
+        damage: const DiceExpression(2, 6, flatBonus: 7),
         inflictedStatusEffects: const [StatusEffectApplication('terrified')],
       ),
       ActiveTrigger(
@@ -320,7 +337,7 @@ class TriggerCatalog {
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 6, flatBonus: 18),
+        damage: const DiceExpression(3, 6, flatBonus: 11),
         healAmount: const DiceExpression(1, 4, flatBonus: -1),
         healsCasterInstead: true,
       ),
@@ -336,7 +353,7 @@ class TriggerCatalog {
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         inflictedStatusEffects: const [StatusEffectApplication('silenced')],
       ),
       ActiveTrigger(
@@ -414,7 +431,7 @@ class TriggerCatalog {
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.bludgeoning,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         inflictedStatusEffects: const [
           StatusEffectApplication('forced_repetition')
         ],
@@ -431,7 +448,7 @@ class TriggerCatalog {
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         armsReactive: ReactiveKind.nullifyAoe,
         armsReactiveDefaultTurns: 3,
       ),
@@ -447,7 +464,7 @@ class TriggerCatalog {
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         inflictedStatusEffects: const [StatusEffectApplication('misfire')],
       ),
       ActiveTrigger(
@@ -489,7 +506,7 @@ class TriggerCatalog {
         name: 'Shared Agony',
         category: TriggerCategory.attacker,
         equipCost: 24,
-        trionCost: 12,
+        trionCost: 14,
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.melee,
@@ -497,7 +514,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.sharedAgony,
         damageType: DamageType.necrotic,
-        damage: const DiceExpression(2, 6, flatBonus: 40),
+        damage: const DiceExpression(6, 6, flatBonus: 26),
       ),
       ActiveTrigger(
         id: 'grave_bargain',
@@ -552,7 +569,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.sunderArms,
         damageType: DamageType.slashing,
-        damage: const DiceExpression(2, 6, flatBonus: 30),
+        damage: const DiceExpression(5, 6, flatBonus: 19),
       ),
 
       // Ranged unique (2)
@@ -569,7 +586,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.curvingShot,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(2, 6, flatBonus: 30),
+        damage: const DiceExpression(5, 6, flatBonus: 19),
       ),
       ActiveTrigger(
         id: 'called_shot',
@@ -728,7 +745,7 @@ class TriggerCatalog {
         name: 'Frag Grenade',
         category: TriggerCategory.shooter,
         equipCost: 26,
-        trionCost: 18,
+        trionCost: 20,
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.ranged,
@@ -736,7 +753,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(1, 6, flatBonus: 16),
+        damage: const DiceExpression(3, 6, flatBonus: 9),
       ),
       ActiveTrigger(
         id: 'caustic_cloud',
@@ -751,7 +768,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.acid,
-        damage: const DiceExpression(1, 4, flatBonus: 6),
+        damage: const DiceExpression(2, 4, flatBonus: 4),
         inflictedStatusEffects: const [StatusEffectApplication('poisoned')],
       ),
       ActiveTrigger(
@@ -767,7 +784,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.cold,
-        damage: const DiceExpression(1, 6, flatBonus: 14),
+        damage: const DiceExpression(3, 4, flatBonus: 10),
         inflictedStatusEffects: const [StatusEffectApplication('chilled')],
       ),
       ActiveTrigger(
@@ -783,7 +800,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.thunder,
-        damage: const DiceExpression(1, 4, flatBonus: 10),
+        damage: const DiceExpression(2, 6, flatBonus: 6),
         inflictedStatusEffects: const [StatusEffectApplication('overwhelmed')],
       ),
 
@@ -802,7 +819,7 @@ class TriggerCatalog {
         hitsPerUse: 3,
         targetCount: 1,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(1, 4, flatBonus: 14),
+        damage: const DiceExpression(3, 4, flatBonus: 9),
         inflictedStatusEffects: const [StatusEffectApplication('bleeding')],
       ),
       ActiveTrigger(
@@ -819,7 +836,7 @@ class TriggerCatalog {
         hitsPerUse: 5,
         targetCount: 1,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         inflictedStatusEffects: const [StatusEffectApplication('exposed')],
       ),
       ActiveTrigger(
@@ -836,7 +853,7 @@ class TriggerCatalog {
         hitsPerUse: 2,
         targetCount: 2,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(1, 6, flatBonus: 10),
+        damage: const DiceExpression(2, 6, flatBonus: 7),
       ),
       ActiveTrigger(
         id: 'arc_volley',
@@ -852,7 +869,7 @@ class TriggerCatalog {
         hitsPerUse: 3,
         targetCount: 2,
         damageType: DamageType.lightning,
-        damage: const DiceExpression(1, 4, flatBonus: 10),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
       ),
       ActiveTrigger(
         id: 'pepper_shot',
@@ -868,7 +885,7 @@ class TriggerCatalog {
         hitsPerUse: 3,
         targetCount: 1,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(1, 4, flatBonus: 12),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
       ),
       ActiveTrigger(
         id: 'venom_spray',
@@ -884,7 +901,7 @@ class TriggerCatalog {
         hitsPerUse: 3,
         targetCount: 2,
         damageType: DamageType.poison,
-        damage: const DiceExpression(1, 4, flatBonus: 6),
+        damage: const DiceExpression(2, 4, flatBonus: 4),
         inflictedStatusEffects: const [StatusEffectApplication('poisoned')],
       ),
 
@@ -902,7 +919,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         inflictedStatusEffects: const [StatusEffectApplication('silenced')],
       ),
       ActiveTrigger(
@@ -918,7 +935,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         inflictedStatusEffects: const [StatusEffectApplication('blinded')],
       ),
       ActiveTrigger(
@@ -934,7 +951,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 4, flatBonus: 8),
+        damage: const DiceExpression(2, 4, flatBonus: 5),
         inflictedStatusEffects: const [StatusEffectApplication('silenced')],
       ),
       ActiveTrigger(
@@ -950,10 +967,15 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.psychic,
-        damage: const DiceExpression(1, 6, flatBonus: 12),
+        damage: const DiceExpression(3, 4, flatBonus: 8),
         inflictedStatusEffects: const [StatusEffectApplication('overwhelmed')],
       ),
 
+      // The two armor passives keep their Armor, which is flat damage
+      // reduction on a separate axis, but their Defense is trimmed to fit
+      // the compressed accuracy band: Defense spans 2-12 across the whole
+      // roster now, so +2 from a single piece of equipment was worth a
+      // fifth of that spread.
       PassiveTrigger(
         id: 'guardians_bulwark',
         name: "Guardian's Bulwark",
@@ -962,7 +984,7 @@ class TriggerCatalog {
         effect: const PassiveEffect(
           flatStatModifiers: {
             ModifiableStat.armor: 3,
-            ModifiableStat.defense: 2
+            ModifiableStat.defense: 1
           },
         ),
       ),
@@ -1001,7 +1023,7 @@ class TriggerCatalog {
         effect: const PassiveEffect(
           flatStatModifiers: {
             ModifiableStat.armor: 5,
-            ModifiableStat.defense: 4
+            ModifiableStat.defense: 2
           },
         ),
       ),

@@ -51,12 +51,18 @@ class LogDamageDetail {
   final int diceTotal;
 
   /// Combined Team Spirit/perk/status outgoing-damage multiplier applied
-  /// to [diceTotal] before critical doubling (1.0 if nothing applies).
+  /// to [diceTotal] before the critical bonus (1.0 if nothing applies).
   final double preCritMultiplier;
 
   final bool prevented;
   final bool criticalHitApplied;
   final double criticalHitMultiplier;
+
+  /// What the critical hit added on top: a crit rolls the ability's damage
+  /// dice a second time and leaves the flat bonus alone, so this is the
+  /// dice half of the roll again, not the whole number.
+  final int criticalBonusDamage;
+
   final int afterCriticalHit;
   final int armor;
   final int afterArmor;
@@ -72,6 +78,7 @@ class LogDamageDetail {
     required this.prevented,
     required this.criticalHitApplied,
     required this.criticalHitMultiplier,
+    required this.criticalBonusDamage,
     required this.afterCriticalHit,
     required this.armor,
     required this.afterArmor,
@@ -88,6 +95,7 @@ class LogDamageDetail {
     prevented: detail.breakdown.prevented,
     criticalHitApplied: detail.breakdown.criticalHitApplied,
     criticalHitMultiplier: detail.breakdown.criticalHitMultiplier,
+    criticalBonusDamage: detail.breakdown.criticalBonusDamage,
     afterCriticalHit: detail.breakdown.afterCriticalHit,
     armor: detail.breakdown.armor,
     afterArmor: detail.breakdown.afterArmor,

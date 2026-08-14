@@ -45,8 +45,11 @@ battle game plus its accounts and XP backend.
   backend, and [`supabase/schema.sql`](supabase/schema.sql) is its database
   schema.
 
-Note: the older reference files under `packages/battle_engine/doc/` predate the
-combat rework and are out of date; use the Game Design Document instead.
+Note: the Game Design Document is the single source of truth for the game's
+rules and content. The older per-topic reference files that used to sit under
+`packages/battle_engine/doc/` predated the combat rework, had drifted badly out
+of date, and have been removed; everything they covered now lives in
+`docs/game_design.md`.
 
 ## Architecture
 

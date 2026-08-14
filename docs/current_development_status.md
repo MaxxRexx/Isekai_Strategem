@@ -10,11 +10,11 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | Balance pass. Starting with the quick, safe wins (cap crit chance, re-cost the outlier Triggers), then the bounded-accuracy re-tune so the 20-sided die actually matters. | The rest of the balance pass: earned initiative (replace the coin flip), a spatial pillar (rows or range bands), points budgets for statuses and Triggers, steadier Trion income, and tutorializing the depth. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | Balance pass. The crit cap, the outlier re-costs, the P0 bounded-accuracy re-tune and earned initiative are done; next up is the spatial pillar. | The rest of the balance pass: a Bail-Out downed state (optional, awaiting a decision), a spatial pillar (rows or range bands), points budgets for statuses and Triggers, steadier Trion income, and tutorializing the depth. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
-| Balance step 1: the five near-duplicate ("reskin") Trigger clusters given distinct identities. | | Optional polish: a custom domain so Google sign-in shows the game name instead of the Supabase URL. |
+| Balance: the five near-duplicate ("reskin") Trigger clusters differentiated; critical hits capped at a natural 17 and doubling dice only; the four dominant Triggers re-costed; the P0 bounded-accuracy re-tune landed (Attack compressed to 4-14, Defense to 2-12, and every damage expression rebuilt to about half dice); and the opening turn is now earned, weighted by the Team Efficiency Grade instead of a coin flip. | | Optional polish: a custom domain so Google sign-in shows the game name instead of the Supabase URL. |
 
 Progress by area:
 
@@ -22,7 +22,7 @@ Progress by area:
 Battle engine      ██████████ 100%   done
 Accounts and XP    ██████████ 100%   live and verified
 Phase F interface  ████████▒▒  85%   a couple of items left
-Balance pass       ██▒▒▒▒▒▒▒▒  15%   step 1 done, main pass next
+Balance pass       ██████▒▒▒▒  60%   P0 + earned initiative done
 AI tuning          ▒▒▒▒▒▒▒▒▒▒   0%   not started
 Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
 ```
@@ -37,7 +37,7 @@ flowchart LR
 
   ENG[Battle engine]:::done --> ACC[Accounts and XP]:::done --> UI[Phase F interface]:::done
   UI --> BAL[Balance pass]:::now
-  BAL --> INIT[Initiative and spatial pillar]:::todo
+  BAL --> INIT[Spatial pillar]:::todo
   BAL --> BUD[Status and Trigger budgets]:::todo
   UI --> QUE[Queue display and resolve polish]:::todo
   BAL --> AI[AI tuning]:::todo
@@ -129,9 +129,13 @@ Phases:
   under alternating resolution, because the two teams never resolve in the
   same pass. The earlier design used TEG as a cross-team resolution-order
   tiebreak here; that has been **retired** (it can never fire). TEG's
-  mechanical role is now the dice-advantage effect set in section 5.2. Turn
-  order (who acts first) remains a separate, even 50-50 coin flip, not tied
-  to TEG or any stat.
+  mechanical role is now the dice-advantage effect set in section 5.2, plus
+  the earned-initiative weighting below. Turn order (who acts first) is no
+  longer an even coin flip: the balance pass replaced it with a
+  TEG-weighted roll (equal grades 50/50, 5 points per tier of separation,
+  capped at 65/35), so the opening move is something a squad builds toward
+  rather than something it is handed. See `openingTurnChanceFor` in
+  `app/lib/src/game/team_efficiency.dart`.
 - **Within a single team's own queue**, phase order governs; ties within a
   phase break by the acting character's **Team Spirit deviation from
   midpoint** (bigger commitment = higher initiative), then queue order. TEG
@@ -654,7 +658,8 @@ combo payoff advantage over a live per-turn combo ledger, and Effect 3's
 setup->payoff Trion refund. Only the inverse-TEG XP counterweight remains,
 and it depends on the server-XP + accounts task (section 15). So TEG is no
 longer display-only: its roll-advantage, crit, combo, and refund effects
-apply in-game. Turn order still stays a 50-50 coin flip. NOTE: Draegor's
+apply in-game. Turn order is now TEG-weighted rather than a coin flip (see
+section 3). NOTE: Draegor's
 "raise TEG 2 tiers" now has a real effect target (it shifts the roll-
 advantage tables) but is not yet wired to it. Coldread's "seize" has been re-specced (section 6.2) and **built**: a
 flat +2 to the whole squad's rolls for 1 turn, alternating with the Levy on
@@ -663,14 +668,14 @@ retired tiebreak.
 
 | Phase | Status | Branch |
 |---|---|---|
-| Phase A: turn-queue resolution engine | done + merged to main: queue model with Trion-at-queue / refund-on-unqueue and cooldown-at-resolve; the 6-phase within-team resolution ordering (Team-Spirit-deviation tiebreak, then queue order); AI builds and resolves a queue through the same path; TEG computed + displayed; turn order = even 50-50 coin flip. (Its deliverables are also itemized in 13.1 "Built and working".) | merged to main (early branch, deleted) |
+| Phase A: turn-queue resolution engine | done + merged to main: queue model with Trion-at-queue / refund-on-unqueue and cooldown-at-resolve; the 6-phase within-team resolution ordering (Team-Spirit-deviation tiebreak, then queue order); AI builds and resolves a queue through the same path; TEG computed + displayed. (Turn order shipped here as an even 50-50 coin flip; the balance pass has since made it TEG-weighted.) (Its deliverables are also itemized in 13.1 "Built and working".) | merged to main (early branch, deleted) |
 | Phase B: reactive/counter engine + 19 counters | done + merged to main. The 13 active/reactive counters run inside `resolveAbilityUse`; the 6 passive counters are now fed by the app (see passive-counter integration row) and reactive expiry is ticked. All 19 work in-game. | `claude/phase-b-reactive-counters` (deleted) |
 | Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
 | Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
 | Phase E: new-content wiring | done + merged: the two deferred unique hooks (7.1), Coldread "seize", Nullhymn's real resonance-grade downgrade (per-wielder step count on the const grid; targets the most-recently-active enemy BT), and Death Ledger's nullified-AoE loadout swap (engine signals; app borrows the AoE into the wielder's loadout for 2 turns, then reverts) | `claude/tactical-combat-engine-5luk6z` |
 | Phase F: remaining UI | mostly done + merged to main: TEG badge (six-sub-score expand + live effects), surfacing the hidden stats, the Team Spirit live offense/sustain readout, the loadout-builder preview/EQUIP-UNEQUIP/Randomize-Reset-Unequip-all pass, passive-counter descriptions, the clickable-portrait detail panel with own-full / enemy-public gating + Mind's Eye reveal, the sign-in flow (`AccountSheet`) + post-battle XP-award readout, and the battle-log rework (tap-anywhere-to-expand, always-visible scrollbar, plain-English breakdowns, clickable names/abilities → info popups). Remaining: queue display + resolve-beat polish. | `claude/tactical-combat-engine-5luk6z` |
 | Phase G: AI tuning | not started | TBD |
-| Phase H: balancing pass | not started (after all content phases) | TBD |
+| Phase H: balancing pass | in progress. Done: the five reskin Trigger clusters differentiated; critical hits capped at a natural 17 and doubling the damage dice only; the four dominant Triggers (Whirlwind Slash, Twin Fang Strike, Longshot, Cinderburst) re-costed; and the P0 bounded-accuracy re-tune, which compressed Attack to 4-14 and Defense to 2-12 and rebuilt every damage expression so roughly half the number comes from dice; and earned initiative, which replaced the opening coin flip with a Team-Efficiency-Grade-weighted roll (equal grades 50/50, 5 points per tier, capped at 65/35). `tool/balance_report.dart` prints the accuracy band, the per-Trigger dice share and value, and a batch of simulated battles. Remaining: the optional Bail-Out downed state (a design decision, not yet taken), a spatial pillar, status/Trigger point budgets, and the Trion economy. | `claude/balance-bounded-accuracy-ylhvao` |
 | Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
 | Phase I: Combo Recognition system | I1-I5 done (I1-I3 merged; I4-I5 green on branch): action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains), live ledger population, and a design-time signature-combo proposer (`tool/propose_signature_combos.dart`). The signature roster grows as designer content | `claude/tactical-combat-engine-5luk6z` |
 | Phase J: TEG mechanical effects (section 5.2) | done + merged: Effects 1-5 (fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund), Draegor's "raise TEG 2 tiers" wired, and the inverse-TEG XP (section 15.8) now live server-side (see section 15 row). | `claude/tactical-combat-engine-5luk6z` |
@@ -692,7 +697,8 @@ what exists vs. what is only specced. Two layers, dependency app -> engine
 - Turn + queue model with 6-phase within-team resolution ordering
   (`play_session.dart` `_resolvePlan`: phase, then Team Spirit deviation,
   then queue order). Trion spent at queue, refunded on unqueue.
-- Turn order (who acts first) = even 50-50 coin flip, not stat-tied.
+- Turn order (who acts first) = a TEG-weighted roll: equal grades are 50/50,
+  each tier of separation moves it 5 points, capped at 65/35.
 - TEG computed and displayed (six sub-scores, D-SSS). App layer only.
 - Phase B active/reactive counters (13): wired into `resolveAbilityUse` and
   work in-game - armed on your turn, fire when the opponent acts into them.

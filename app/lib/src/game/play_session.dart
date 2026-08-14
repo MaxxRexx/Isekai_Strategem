@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:battle_engine/battle_engine.dart';
 
 import 'account.dart';
@@ -131,13 +129,14 @@ class PlaySession {
   final ProfileDrivenAi aiB;
 
   /// Each squad's Team Efficiency Grade, computed once at battle start. The
-  /// higher grade wins cross-team Initiative (here, the opening turn).
+  /// higher grade is favoured for the opening turn (see
+  /// `openingTurnChanceFor`) and drives the in-battle dice effects.
   final TeamEfficiency teamAEfficiency;
   final TeamEfficiency teamBEfficiency;
 
-  /// Set when team B randomly won the opening move: its entire opening
-  /// turn, resolved before the session surfaces (the player's session
-  /// always begins on their own turn).
+  /// Set when team B won the opening move: its entire opening turn,
+  /// resolved before the session surfaces (the player's session always
+  /// begins on their own turn).
   LogRound? openingAiRound;
 
   /// Player actions committed this turn but not yet resolved (see [queue]/
@@ -197,13 +196,14 @@ class PlaySession {
       loadouts: teamBDraft.loadouts,
     );
 
-    // Who moves first is an even coin flip, independent of any stat or
-    // grade. (The Team Efficiency Grade is still computed and stored for
-    // later use, but it does not decide the opening turn.)
+    // Who moves first is weighted by the Team Efficiency Grade rather than
+    // decided by a fair coin: an evenly graded pair is still 50/50, and each
+    // tier of separation moves the odds 5 points up to 65/35. See
+    // `openingTurnChanceFor`.
     final teamAGoesFirst = switch (firstTurn) {
       'teamA' => true,
       'teamB' => false,
-      _ => Random().nextBool(),
+      _ => rollsOpeningTurn(teamAEfficiency.tier, teamBEfficiency.tier),
     };
 
     final battle = Battle(

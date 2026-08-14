@@ -40,11 +40,17 @@ class DamageBreakdown {
   final bool criticalHitApplied;
   final double criticalHitMultiplier;
 
-  /// baseDamage, doubled by [criticalHitMultiplier] if [criticalHitApplied]
-  /// (rounded for display - armor is subtracted from the unrounded value
-  /// internally, so this may be off by a fraction of 1 from that
-  /// subtraction's actual input; shown for a human-readable "x2" step,
-  /// not bit-for-bit reproduction of the internal float math).
+  /// Extra damage the critical hit added on top of [baseDamage] - 0 when
+  /// [criticalHitApplied] is false. A crit doubles the *dice* only (see
+  /// [CombatEngine.resolveDamageBreakdown]), so this is normally the
+  /// ability's rolled dice again rather than the whole base.
+  final int criticalBonusDamage;
+
+  /// baseDamage plus [criticalBonusDamage] (rounded for display - armor is
+  /// subtracted from the unrounded value internally, so this may be off by
+  /// a fraction of 1 from that subtraction's actual input; shown for a
+  /// human-readable crit step, not bit-for-bit reproduction of the
+  /// internal float math).
   final int afterCriticalHit;
 
   final int armor;
@@ -65,6 +71,7 @@ class DamageBreakdown {
     required this.baseDamage,
     required this.criticalHitApplied,
     required this.criticalHitMultiplier,
+    required this.criticalBonusDamage,
     required this.afterCriticalHit,
     required this.armor,
     required this.afterArmor,
@@ -125,7 +132,8 @@ class CombatEngine {
   /// which lowers the natural-roll threshold for a critical hit (see
   /// `criticalHitThreshold`); it defaults to 0, i.e. only a natural 20
   /// crits, matching the stat's own floor. A roll meeting that threshold
-  /// is a critical hit (auto-hit, double damage) regardless of totals; a
+  /// is a critical hit (auto-hit, doubled damage dice) regardless of
+  /// totals; a
   /// natural 1 is always a critical miss (auto-miss) - Critical Chance
   /// only ever raises the crit rate, it never touches critical misses.
   AttackRollOutcome resolveAttackRoll({
@@ -208,7 +216,7 @@ class CombatEngine {
   ///
   /// Order: World-ability damage prevention (fully negates the whole
   /// instance, consuming one charge, if [target] has any remaining) ->
-  /// critical doubling -> Armor (flat reduction, floor 0) -> combined
+  /// critical dice doubling -> Armor (flat reduction, floor 0) -> combined
   /// damage-type multiplier (status effect interactions like Wet, and
   /// static/passive-granted Damage Resistance, multiplied together in one
   /// step). Flat reduction before type-based multipliers, with
@@ -221,24 +229,45 @@ class CombatEngine {
     required DamageType damageType,
     required bool isCriticalHit,
     required CharacterBattleState target,
+    int? criticalDiceComponent,
   }) =>
       resolveDamageBreakdown(
         baseDamage: baseDamage,
         damageType: damageType,
         isCriticalHit: isCriticalHit,
         target: target,
+        criticalDiceComponent: criticalDiceComponent,
       ).finalDamage;
 
   /// Same pipeline as [resolveDamage], returning every intermediate step
   /// (see [DamageBreakdown]) instead of just the final number - what the
   /// Battle Log's roll-breakdown view uses to actually explain a hit's
   /// damage instead of presenting it as an unexplained number.
+  /// [criticalDiceComponent] is the portion of [baseDamage] that came from
+  /// the ability's own damage dice (already carrying whatever pre-crit
+  /// multipliers were applied to [baseDamage]). A critical hit doubles
+  /// *that* rather than the whole number, i.e. it rolls the damage dice
+  /// twice and leaves the flat bonus alone - the 5e/BG3 convention. Pass
+  /// null for damage that has no dice component to speak of (status ticks,
+  /// flat unique-behavior damage), in which case a crit falls back to
+  /// doubling the whole amount.
+  ///
+  /// Balance pass: doubling the whole number made a crit worth an entire
+  /// extra attack, because most of an ability's damage lived in its flat
+  /// bonus. Doubling only the dice keeps crits exciting without letting
+  /// one lucky die decide the match.
   DamageBreakdown resolveDamageBreakdown({
     required int baseDamage,
     required DamageType damageType,
     required bool isCriticalHit,
     required CharacterBattleState target,
+    int? criticalDiceComponent,
   }) {
+    final criticalBonus = isCriticalHit
+        ? (criticalDiceComponent ?? baseDamage) *
+            (config.criticalHitDamageMultiplier - 1)
+        : 0.0;
+
     final remainingPrevention = target.remainingDamagePreventionInstances;
     if (remainingPrevention != null && remainingPrevention > 0) {
       target.remainingDamagePreventionInstances = remainingPrevention - 1;
@@ -247,6 +276,7 @@ class CombatEngine {
         baseDamage: baseDamage,
         criticalHitApplied: isCriticalHit,
         criticalHitMultiplier: config.criticalHitDamageMultiplier,
+        criticalBonusDamage: criticalBonus.round(),
         afterCriticalHit: 0,
         armor: 0,
         afterArmor: 0,
@@ -256,9 +286,7 @@ class CombatEngine {
       );
     }
 
-    double damage = baseDamage.toDouble();
-
-    if (isCriticalHit) damage *= config.criticalHitDamageMultiplier;
+    double damage = baseDamage + criticalBonus;
     final afterCriticalHit = damage.round();
 
     final armor = target.effectiveStats().armor;
@@ -277,6 +305,7 @@ class CombatEngine {
       baseDamage: baseDamage,
       criticalHitApplied: isCriticalHit,
       criticalHitMultiplier: config.criticalHitDamageMultiplier,
+      criticalBonusDamage: criticalBonus.round(),
       afterCriticalHit: afterCriticalHit,
       armor: armor,
       afterArmor: afterArmor,

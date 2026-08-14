@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/draft.dart';
@@ -5,8 +7,9 @@ import 'package:isekai_strategem/src/game/loadout_selection.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
 import 'package:isekai_strategem/src/game/team_efficiency.dart';
 
-/// A5: the Team Efficiency Grade scoring model and its use as opening-turn
-/// (cross-team) Initiative.
+/// The Team Efficiency Grade scoring model, and its use as earned
+/// initiative: the grade weights which squad takes the opening turn, in
+/// place of the fair coin flip that used to decide it.
 void main() {
   Loadout loadout(String id, List<String> triggerIds) => Loadout(
     characterId: id,
@@ -125,5 +128,55 @@ void main() {
     // firstTurn: 'teamA' is honored deterministically, so the AI does not
     // take an opening turn.
     expect(session.openingAiRound, isNull);
+  });
+
+  group('earned initiative (the opening turn is weighted by grade)', () {
+    test('two evenly graded squads still flip a fair coin', () {
+      for (final tier in TegTier.values) {
+        expect(openingTurnChanceFor(tier, tier), 0.5,
+            reason: '$tier against itself should be even');
+      }
+    });
+
+    test('each tier of separation is worth five points, capped at 65/35', () {
+      expect(openingTurnChanceFor(TegTier.c, TegTier.d), closeTo(0.55, 1e-9));
+      expect(openingTurnChanceFor(TegTier.b, TegTier.d), closeTo(0.60, 1e-9));
+      expect(openingTurnChanceFor(TegTier.a, TegTier.d), closeTo(0.65, 1e-9));
+      // Beyond three tiers the advantage stops growing.
+      expect(openingTurnChanceFor(TegTier.sss, TegTier.d), closeTo(0.65, 1e-9));
+    });
+
+    test('the underdog always keeps a real chance of moving first', () {
+      for (final own in TegTier.values) {
+        for (final other in TegTier.values) {
+          final chance = openingTurnChanceFor(own, other);
+          expect(chance, greaterThanOrEqualTo(0.35));
+          expect(chance, lessThanOrEqualTo(0.65));
+        }
+      }
+    });
+
+    test('the two squads\' chances are complementary', () {
+      for (final own in TegTier.values) {
+        for (final other in TegTier.values) {
+          expect(
+            openingTurnChanceFor(own, other) +
+                openingTurnChanceFor(other, own),
+            closeTo(1.0, 1e-9),
+          );
+        }
+      }
+    });
+
+    test('rolling it out lands near the stated odds', () {
+      final random = Random(20260814);
+      var wins = 0;
+      const samples = 20000;
+      for (var i = 0; i < samples; i++) {
+        if (rollsOpeningTurn(TegTier.s, TegTier.c, random: random)) wins++;
+      }
+      // S over C is three tiers, so the ceiling: 65/35.
+      expect(wins / samples, closeTo(0.65, 0.02));
+    });
   });
 }

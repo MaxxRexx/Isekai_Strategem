@@ -42,14 +42,14 @@ class BlackTriggerCatalog {
             name: 'Ashbringer Slash',
             category: TriggerCategory.attacker,
             equipCost: 0,
-            trionCost: 18,
-            cooldownTurns: 1,
+            trionCost: 20,
+            cooldownTurns: 2,
             originTag: OriginTag.energy,
             rangeTag: RangeTag.melee,
             attackType: AttackType.melee,
             attackSubtype: AttackSubtype.single,
             damageType: DamageType.fire,
-            damage: const DiceExpression(2, 8, flatBonus: 51),
+            damage: const DiceExpression(6, 8, flatBonus: 33),
           ),
           ActiveTrigger(
             id: 'ashbringer_ranged',
@@ -63,7 +63,7 @@ class BlackTriggerCatalog {
             attackType: AttackType.ranged,
             attackSubtype: AttackSubtype.single,
             damageType: DamageType.fire,
-            damage: const DiceExpression(2, 10, flatBonus: 49),
+            damage: const DiceExpression(5, 10, flatBonus: 32),
           ),
           ActiveTrigger(
             id: 'ashbringer_seal',
@@ -77,7 +77,7 @@ class BlackTriggerCatalog {
             attackType: AttackType.melee,
             attackSubtype: AttackSubtype.single,
             damageType: DamageType.fire,
-            damage: const DiceExpression(1, 6, flatBonus: 18),
+            damage: const DiceExpression(3, 6, flatBonus: 11),
             inflictedStatusEffects: const [
               StatusEffectApplication('origin_lockout')
             ],
@@ -105,7 +105,7 @@ class BlackTriggerCatalog {
             hitsPerUse: 3,
             targetCount: 2,
             damageType: DamageType.force,
-            damage: const DiceExpression(1, 6, flatBonus: 22),
+            damage: const DiceExpression(2, 4, flatBonus: 6),
           ),
         ],
         passiveAbilities: const [
@@ -116,11 +116,14 @@ class BlackTriggerCatalog {
               flatStatModifiers: {ModifiableStat.criticalChance: 10},
             ),
           ),
+          // +6 Attack was a quarter of the old Attack spread; in the
+          // compressed band (4-14) it would have been worth more than the
+          // difference between a Support and an Attacker.
           BlackTriggerPassiveAbility(
             id: 'fracture_edge_offense',
             name: 'Sundering Focus',
             effect: PassiveEffect(
-              flatStatModifiers: {ModifiableStat.attack: 6},
+              flatStatModifiers: {ModifiableStat.attack: 3},
             ),
           ),
         ],
@@ -147,7 +150,7 @@ class BlackTriggerCatalog {
             attackSubtype: AttackSubtype.aoe,
             targetCount: 3,
             damageType: DamageType.radiant,
-            damage: const DiceExpression(3, 10, flatBonus: 90),
+            damage: const DiceExpression(3, 10, flatBonus: 20),
           ),
         ],
         passiveAbilities: const [
@@ -331,7 +334,7 @@ class BlackTriggerCatalog {
             attackType: AttackType.psychic,
             attackSubtype: AttackSubtype.single,
             damageType: DamageType.psychic,
-            damage: const DiceExpression(1, 6, flatBonus: 18),
+            damage: const DiceExpression(3, 6, flatBonus: 11),
             inflictedStatusEffects: const [
               StatusEffectApplication('overwhelmed')
             ],
@@ -348,7 +351,7 @@ class BlackTriggerCatalog {
             attackType: AttackType.psychic,
             attackSubtype: AttackSubtype.unique,
             damageType: DamageType.psychic,
-            damage: const DiceExpression(2, 8, flatBonus: 43),
+            damage: const DiceExpression(5, 8, flatBonus: 29),
           ),
           ActiveTrigger(
             id: 'paradox_shard_puppet',

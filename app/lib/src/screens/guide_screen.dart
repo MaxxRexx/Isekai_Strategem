@@ -79,7 +79,7 @@ class _GuideScreenState extends State<GuideScreen>
           padding: EdgeInsets.only(bottom: 12),
           child: Text(
             'A condensed reference for everything below. The full write-up '
-            'lives in the repo\'s packages/battle_engine/doc folder.',
+            'lives in the repo\'s docs/game_design.md.',
             style: TextStyle(color: Colors.white54, fontSize: 12),
           ),
         ),
@@ -142,7 +142,10 @@ class _GuideScreenState extends State<GuideScreen>
               'A round is one turn for each team. Teams alternate; the round counter increments once both sides have gone.',
             ),
             _Bullet(
-              'First-move handicap: whichever team acts first in the battle gets a reduced Trion gain roll on that single opening turn only, forced to the lowest tier.',
+              'Who moves first is earned, not flipped for. The opening turn is weighted by each squad\'s Team Efficiency Grade: two squads on the same grade are even, and every grade of separation shifts the odds 5 points, up to 65/35. A worse-graded squad still takes the opening move better than one time in three.',
+            ),
+            _Bullet(
+              'First-move handicap: whichever team acts first in the battle gets a reduced Trion gain roll on that single opening turn only, forced to the lowest tier. Moving first is an advantage you pay a little for.',
             ),
             _Plain(
               'At the start of your team\'s turn: your team rolls for Trion gain, status effects tick for each living member, and Full Arms Trigger (FAT) is rolled per character. Normally each character gets 1 ability use per turn; if FAT triggers for them, they get up to 3 instead.',
@@ -199,10 +202,16 @@ class _GuideScreenState extends State<GuideScreen>
           title: 'Combat Resolution',
           children: const [
             _Plain(
-              'An attack is an opposed roll: the attacker rolls d20 + Attack, the target rolls d20 + Defense. The attacker wins ties. A natural 1 on the attacker\'s die is always a critical miss (automatic failure, and inflicts a 1-turn penalty on the attacker). A roll at or above a threshold set by the attacker\'s Critical Chance is always a critical hit (automatic success, double damage).',
+              'An attack is an opposed roll: the attacker rolls d20 + Attack, the target rolls d20 + Defense. The attacker wins ties. A natural 1 on the attacker\'s die is always a critical miss (automatic failure, and inflicts a 1-turn penalty on the attacker). A roll at or above a threshold set by the attacker\'s Critical Chance is always a critical hit (automatic success, and the damage dice are rolled twice).',
             ),
             _Plain(
-              'Damage resolution order once a hit lands: critical doubling, then flat Armor reduction (floored at 0), then damage-type multiplier (status effects like Wet, or a granted Damage Resistance). A World ability\'s damage-prevention charge, if any remain, fully negates the whole instance before any of this.',
+              'A critical hit rolls the ability\'s damage dice a second time; the ability\'s flat damage bonus is not doubled. Even the best Critical Chance build only crits on a natural 17 or higher, so crits reward a good build without deciding matches on their own.',
+            ),
+            _Plain(
+              'Both sides roll the same die, so what decides a hit is the gap between the attacker\'s Attack and the target\'s Defense. Those numbers are kept deliberately close together (Attack 4 to 14, Defense 2 to 12) so that gap always fits inside the d20\'s range: a Support swinging at a tank lands about one attack in five, a glass cannon against another glass cannon lands about four in five, and everything else falls in between. The roll is never a formality, and a +2 from a buff or a piece of equipment is worth a real 10%.',
+            ),
+            _Plain(
+              'Damage resolution order once a hit lands: the critical dice bonus, then flat Armor reduction (floored at 0), then damage-type multiplier (status effects like Wet, or a granted Damage Resistance). A World ability\'s damage-prevention charge, if any remain, fully negates the whole instance before any of this.',
             ),
           ],
         ),
@@ -221,16 +230,16 @@ class _GuideScreenState extends State<GuideScreen>
               'TS (Team Spirit). A dual-direction stat, see above: below 50 boosts damage and Critical Chance, above 50 boosts Health Regeneration and FAT Chance.',
             ),
             _Bullet(
-              'ARM (Armor). Flat damage reduction, applied after critical doubling and before damage-type multipliers.',
+              'ARM (Armor). Flat damage reduction, applied after the critical dice bonus and before damage-type multipliers.',
             ),
             _Bullet(
-              'ATK (Attack). Added to the attacker\'s d20 roll during combat resolution.',
+              'ATK (Attack). Added to the attacker\'s d20 roll during combat resolution. It runs 4 to 14 across the roster.',
             ),
             _Bullet(
-              'DEF (Defense). Added to the defender\'s d20 roll during combat resolution.',
+              'DEF (Defense). Added to the defender\'s d20 roll during combat resolution. It runs 2 to 12 across the roster.',
             ),
             _Bullet(
-              'CRIT (Critical Chance). Raises the odds of a critical hit (automatic success, double damage). Higher values lower the natural roll needed to crit.',
+              'CRIT (Critical Chance). Raises the odds of a critical hit (automatic success, damage dice rolled twice). Higher values lower the natural roll needed to crit, from a natural 20 down to a natural 17 at the maximum.',
             ),
             _Bullet(
               'FAT (FAT Chance). Odds of Full Arms Trigger activating on a character\'s turn, allowing up to 3 ability uses instead of 1.',

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:battle_engine/battle_engine.dart';
 
 import '../game/draft.dart' show rollBreakdownsFor;
+import '../game/team_efficiency.dart';
 import 'quick_battle_result.dart';
 
 const _builder = LoadoutBuilder();
@@ -49,8 +50,14 @@ class _DraftedTeam {
   final Team team;
   final Map<String, CharacterBattleState> states;
   final Map<String, List<ActiveTrigger>> equippedActiveTriggers;
+  final Map<String, Loadout> loadouts;
 
-  const _DraftedTeam(this.team, this.states, this.equippedActiveTriggers);
+  const _DraftedTeam(
+    this.team,
+    this.states,
+    this.equippedActiveTriggers,
+    this.loadouts,
+  );
 
   factory _DraftedTeam.draft({
     required String teamId,
@@ -61,6 +68,7 @@ class _DraftedTeam {
     final team = Team(id: teamId, characters: characters);
     final states = <String, CharacterBattleState>{};
     final equipped = <String, List<ActiveTrigger>>{};
+    final loadouts = <String, Loadout>{};
 
     for (final character in characters) {
       final loadout = _builder.build(
@@ -74,9 +82,10 @@ class _DraftedTeam {
       equipped[character.id] = loadout.triggers
           .whereType<ActiveTrigger>()
           .toList();
+      loadouts[character.id] = loadout;
     }
 
-    return _DraftedTeam(team, states, equipped);
+    return _DraftedTeam(team, states, equipped, loadouts);
   }
 }
 
@@ -129,11 +138,26 @@ QuickBattleResult runQuickBattle({int maxRounds = 60}) {
   final teamAAi = ProfileDrivenAi(teamAProfile);
   final teamBAi = ProfileDrivenAi(teamBProfile);
 
+  // The opening turn is weighted by each squad's Team Efficiency Grade, the
+  // same rule the player-facing session uses (see `openingTurnChanceFor`).
+  final teamAEfficiency = computeTeamEfficiency(
+    characterIds: teamAIds,
+    loadouts: teamADraft.loadouts,
+  );
+  final teamBEfficiency = computeTeamEfficiency(
+    characterIds: teamBIds,
+    loadouts: teamBDraft.loadouts,
+  );
+
   final battle = Battle(
     teamA: teamADraft.team,
     teamB: teamBDraft.team,
     states: {...teamADraft.states, ...teamBDraft.states},
-    teamAGoesFirst: random.nextBool(),
+    teamAGoesFirst: rollsOpeningTurn(
+      teamAEfficiency.tier,
+      teamBEfficiency.tier,
+      random: random,
+    ),
   );
 
   final rounds = <QuickBattleRound>[];
