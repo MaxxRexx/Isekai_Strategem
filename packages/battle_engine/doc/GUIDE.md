@@ -138,7 +138,16 @@ maximize.
 ## Combat resolution
 
 An attack is an opposed roll: **attacker rolls d20 + Attack**, **target
-rolls d20 + Defense**. The attacker wins ties. A natural 1 on the
+rolls d20 + Defense**. Because both sides roll the same die, what decides
+a hit is the *gap* between the two modifiers, and the balance pass
+deliberately keeps that gap small: Attack runs 4-14 across the roster and
+Defense runs 2-12, so even the most lopsided matchup sits inside the
+d20's own range. A Support swinging at a tank lands about a fifth of the
+time and a glass cannon hitting another glass cannon lands about four
+times in five, with everything else in between. Anything that adds to
+either stat - a buff, a passive, an equipped modifier - should be sized
+against the die rather than against the old numbers: a flat +2 is already
+a 10% swing. The attacker wins ties. A natural 1 on the
 attacker's die is always a critical miss (automatic failure, and
 inflicts a 1-turn penalty on the attacker: -20% Defense, -20% Team
 Spirit). A roll at or above a threshold set by the attacker's effective

@@ -483,6 +483,11 @@ class UniqueConfig {
 
   // Martyr's End
   final double martyrsEndHpThreshold;
+
+  /// Unavoidable damage dealt to every living enemy. Trimmed from 80 in
+  /// the balance pass: 240 guaranteed damage across three targets was
+  /// more than twice what the biggest rolled area attack in the game can
+  /// expect, and it did not have to roll for any of it.
   final int martyrsEndDamage;
 
   // Vow of the Duel (durations in StatusEffectMagnitudes)
@@ -505,7 +510,7 @@ class UniqueConfig {
     this.sharedAgonyLinkedDamageMultiplier = 1.2,
     this.graveBargainHpSpendFraction = 0.25,
     this.martyrsEndHpThreshold = 0.25,
-    this.martyrsEndDamage = 80,
+    this.martyrsEndDamage = 50,
     this.dreadResonanceDamagePerCumulativeDamage = 0.15,
     this.dreadResonanceMinDamage = 5,
     this.illusoryDoubleStartingCharges = 1,

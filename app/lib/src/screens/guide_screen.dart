@@ -205,6 +205,9 @@ class _GuideScreenState extends State<GuideScreen>
               'A critical hit rolls the ability\'s damage dice a second time; the ability\'s flat damage bonus is not doubled. Even the best Critical Chance build only crits on a natural 17 or higher, so crits reward a good build without deciding matches on their own.',
             ),
             _Plain(
+              'Both sides roll the same die, so what decides a hit is the gap between the attacker\'s Attack and the target\'s Defense. Those numbers are kept deliberately close together (Attack 4 to 14, Defense 2 to 12) so that gap always fits inside the d20\'s range: a Support swinging at a tank lands about one attack in five, a glass cannon against another glass cannon lands about four in five, and everything else falls in between. The roll is never a formality, and a +2 from a buff or a piece of equipment is worth a real 10%.',
+            ),
+            _Plain(
               'Damage resolution order once a hit lands: the critical dice bonus, then flat Armor reduction (floored at 0), then damage-type multiplier (status effects like Wet, or a granted Damage Resistance). A World ability\'s damage-prevention charge, if any remain, fully negates the whole instance before any of this.',
             ),
           ],
@@ -227,10 +230,10 @@ class _GuideScreenState extends State<GuideScreen>
               'ARM (Armor). Flat damage reduction, applied after the critical dice bonus and before damage-type multipliers.',
             ),
             _Bullet(
-              'ATK (Attack). Added to the attacker\'s d20 roll during combat resolution.',
+              'ATK (Attack). Added to the attacker\'s d20 roll during combat resolution. It runs 4 to 14 across the roster.',
             ),
             _Bullet(
-              'DEF (Defense). Added to the defender\'s d20 roll during combat resolution.',
+              'DEF (Defense). Added to the defender\'s d20 roll during combat resolution. It runs 2 to 12 across the roster.',
             ),
             _Bullet(
               'CRIT (Critical Chance). Raises the odds of a critical hit (automatic success, damage dice rolled twice). Higher values lower the natural roll needed to crit, from a natural 20 down to a natural 17 at the maximum.',

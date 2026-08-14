@@ -11,6 +11,25 @@ import '../models/stats.dart';
 /// Black Trigger is for them (see `ResonanceGrid`), it never blocks
 /// equipping a mismatched one.
 ///
+/// ## The accuracy band
+///
+/// Attack runs 4-14 across the roster and Defense runs 2-12, deliberately
+/// narrow. An attack is an opposed d20 contest, so what decides a hit is
+/// the gap between the attacker's Attack and the defender's Defense, and
+/// keeping that gap inside the die's own range is what keeps the die
+/// meaningful. At these numbers the worst matchup in the roster (a
+/// Support attacking a tank) lands about a quarter of the time and the
+/// best (Rurik attacking another glass cannon) lands about four times in
+/// five, with everything else in between - so who attacks whom is a real
+/// decision and the roll is never a formality.
+///
+/// These were roughly two and a half times larger before the balance
+/// pass (Attack 10-29, Defense 6-16), which put a 15-point gap on a
+/// typical attack and pushed hit rates past 97%. Anything added to this
+/// band later - a stat buff, an equipment modifier, a status effect -
+/// should be sized against the d20, not against these numbers: a flat +2
+/// is already a 10% swing.
+///
 /// Note: [Character.blackTrigger] is a static field on the template
 /// (used by `TurnEngine.resonanceMultiplierFor`), separate from
 /// `Loadout.blackTrigger` (used for equip-cost/active-ability
@@ -52,8 +71,8 @@ class CharacterRoster {
           fatChance: 12,
           armor: 1,
           maxHealth: 100,
-          attack: 27,
-          defense: 8,
+          attack: 13,
+          defense: 4,
           statusEffectInfliction: 8,
           statusEffectResistance: 3,
         ),
@@ -78,8 +97,8 @@ class CharacterRoster {
           fatChance: 10,
           armor: 1,
           maxHealth: 100,
-          attack: 26,
-          defense: 7,
+          attack: 12,
+          defense: 3,
           statusEffectInfliction: 9,
           statusEffectResistance: 3,
         ),
@@ -103,8 +122,8 @@ class CharacterRoster {
           fatChance: 9,
           armor: 2,
           maxHealth: 100,
-          attack: 24,
-          defense: 9,
+          attack: 11,
+          defense: 5,
           statusEffectInfliction: 7,
           statusEffectResistance: 3,
         ),
@@ -129,8 +148,8 @@ class CharacterRoster {
           fatChance: 14,
           armor: 1,
           maxHealth: 100,
-          attack: 26,
-          defense: 8,
+          attack: 12,
+          defense: 4,
           statusEffectInfliction: 8,
           statusEffectResistance: 2,
         ),
@@ -140,7 +159,7 @@ class CharacterRoster {
           description:
               'Ren gets a flat Attack bonus on the first ability he uses '
               'each battle.',
-          firstTurnAttackBonus: 5,
+          firstTurnAttackBonus: 2,
         ),
       ),
       Character(
@@ -155,8 +174,8 @@ class CharacterRoster {
           fatChance: 11,
           armor: 1,
           maxHealth: 100,
-          attack: 22,
-          defense: 9,
+          attack: 10,
+          defense: 5,
           statusEffectInfliction: 9,
           statusEffectResistance: 4,
         ),
@@ -183,8 +202,8 @@ class CharacterRoster {
           fatChance: 7,
           armor: 3,
           maxHealth: 100,
-          attack: 12,
-          defense: 16,
+          attack: 5,
+          defense: 12,
           statusEffectInfliction: 5,
           statusEffectResistance: 6,
         ),
@@ -208,8 +227,8 @@ class CharacterRoster {
           fatChance: 8,
           armor: 2,
           maxHealth: 100,
-          attack: 17,
-          defense: 15,
+          attack: 8,
+          defense: 11,
           statusEffectInfliction: 6,
           statusEffectResistance: 6,
         ),
@@ -219,7 +238,7 @@ class CharacterRoster {
           description:
               'Whenever a melee attack against Ilona misses, she gains a '
               'stacking Attack buff for her next turn.',
-          attackStackBonusOnMeleeMissAgainstSelf: 3,
+          attackStackBonusOnMeleeMissAgainstSelf: 1,
         ),
       ),
       Character(
@@ -234,8 +253,8 @@ class CharacterRoster {
           fatChance: 7,
           armor: 3,
           maxHealth: 100,
-          attack: 14,
-          defense: 14,
+          attack: 6,
+          defense: 10,
           statusEffectInfliction: 5,
           statusEffectResistance: 7,
         ),
@@ -260,8 +279,8 @@ class CharacterRoster {
           fatChance: 8,
           armor: 2,
           maxHealth: 100,
-          attack: 15,
-          defense: 14,
+          attack: 7,
+          defense: 10,
           statusEffectInfliction: 5,
           statusEffectResistance: 5,
         ),
@@ -286,8 +305,8 @@ class CharacterRoster {
           fatChance: 8,
           armor: 3,
           maxHealth: 100,
-          attack: 14,
-          defense: 15,
+          attack: 6,
+          defense: 11,
           statusEffectInfliction: 5,
           statusEffectResistance: 6,
         ),
@@ -314,8 +333,8 @@ class CharacterRoster {
           fatChance: 9,
           armor: 1,
           maxHealth: 100,
-          attack: 10,
-          defense: 10,
+          attack: 4,
+          defense: 6,
           statusEffectInfliction: 10,
           statusEffectResistance: 5,
         ),
@@ -340,8 +359,8 @@ class CharacterRoster {
           fatChance: 9,
           armor: 1,
           maxHealth: 100,
-          attack: 12,
-          defense: 9,
+          attack: 5,
+          defense: 5,
           statusEffectInfliction: 16,
           statusEffectResistance: 5,
         ),
@@ -366,8 +385,8 @@ class CharacterRoster {
           fatChance: 8,
           armor: 2,
           maxHealth: 100,
-          attack: 10,
-          defense: 11,
+          attack: 4,
+          defense: 7,
           statusEffectInfliction: 9,
           statusEffectResistance: 6,
         ),
@@ -392,8 +411,8 @@ class CharacterRoster {
           fatChance: 9,
           armor: 1,
           maxHealth: 100,
-          attack: 10,
-          defense: 10,
+          attack: 4,
+          defense: 6,
           statusEffectInfliction: 8,
           statusEffectResistance: 5,
         ),
@@ -417,8 +436,8 @@ class CharacterRoster {
           fatChance: 8,
           armor: 2,
           maxHealth: 100,
-          attack: 10,
-          defense: 11,
+          attack: 4,
+          defense: 7,
           statusEffectInfliction: 10,
           statusEffectResistance: 6,
         ),
@@ -444,8 +463,8 @@ class CharacterRoster {
           fatChance: 12,
           armor: 1,
           maxHealth: 100,
-          attack: 19,
-          defense: 10,
+          attack: 9,
+          defense: 6,
           statusEffectInfliction: 12,
           statusEffectResistance: 5,
         ),
@@ -470,8 +489,8 @@ class CharacterRoster {
           fatChance: 16,
           armor: 1,
           maxHealth: 100,
-          attack: 22,
-          defense: 9,
+          attack: 10,
+          defense: 5,
           statusEffectInfliction: 9,
           statusEffectResistance: 4,
         ),
@@ -495,8 +514,8 @@ class CharacterRoster {
           fatChance: 13,
           armor: 1,
           maxHealth: 100,
-          attack: 29,
-          defense: 6,
+          attack: 14,
+          defense: 2,
           statusEffectInfliction: 7,
           statusEffectResistance: 2,
         ),
@@ -521,8 +540,8 @@ class CharacterRoster {
           fatChance: 11,
           armor: 1,
           maxHealth: 100,
-          attack: 19,
-          defense: 9,
+          attack: 9,
+          defense: 5,
           statusEffectInfliction: 9,
           statusEffectResistance: 5,
         ),
@@ -547,8 +566,8 @@ class CharacterRoster {
           fatChance: 11,
           armor: 1,
           maxHealth: 100,
-          attack: 19,
-          defense: 10,
+          attack: 9,
+          defense: 6,
           statusEffectInfliction: 10,
           statusEffectResistance: 4,
         ),

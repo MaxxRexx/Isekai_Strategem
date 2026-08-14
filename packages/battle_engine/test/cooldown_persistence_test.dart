@@ -23,11 +23,11 @@ class _NoFatRandom implements Random {
 /// ability through the opponent's turn AND the caster's own next turn.
 void main() {
   final roster = CharacterRoster.defaultRoster;
-  final ashbringer = BlackTriggerCatalog.defaultCatalog['ashbringer'];
+  final catalog = TriggerCatalog.defaultCatalog;
   final slash = // cooldownTurns: 1
-      ashbringer.activeAbilities.firstWhere((a) => a.id == 'ashbringer_melee');
+      catalog['frost_lance'] as ActiveTrigger;
   final volley = // cooldownTurns: 2
-      ashbringer.activeAbilities.firstWhere((a) => a.id == 'ashbringer_ranged');
+      catalog['twin_fang_strike'] as ActiveTrigger;
 
   Battle freshBattle() => Battle(
     // Deterministic FAT (never triggers) so a stray FAT proc can't clear the
@@ -71,10 +71,10 @@ void main() {
     vela.recordAbilityUse(slash);
     // The cooldown is not set until end of turn (Play mode spends Trion at
     // queue time but defers cooldowns to resolution/end of turn).
-    expect(vela.cooldowns['ashbringer_melee'] ?? 0, 0);
+    expect(vela.cooldowns['frost_lance'] ?? 0, 0);
 
     battle.endTurn(); // team A ends -> cooldown now applies.
-    expect(vela.cooldowns['ashbringer_melee'], 1);
+    expect(vela.cooldowns['frost_lance'], 1);
     expect(engine.canUseAbility(vela, slash), isFalse);
 
     // Opponent's turn passes; the caster is still on cooldown on its own
@@ -82,12 +82,12 @@ void main() {
     battle.startTurn(); // team B
     battle.endTurn();
     battle.startTurn(); // team A, the caster's next turn
-    expect(vela.cooldowns['ashbringer_melee'], 1);
+    expect(vela.cooldowns['frost_lance'], 1);
     expect(engine.canUseAbility(vela, slash), isFalse);
 
     // Only after ending that own turn does it clear.
     battle.endTurn();
-    expect(vela.cooldowns['ashbringer_melee'] ?? 0, 0);
+    expect(vela.cooldowns['frost_lance'] ?? 0, 0);
     battle.startTurn();
     expect(engine.canUseAbility(vela, slash), isTrue);
   });
@@ -100,14 +100,14 @@ void main() {
     battle.startTurn();
     vela.recordAbilityUse(volley);
     battle.endTurn();
-    expect(vela.cooldowns['ashbringer_ranged'], 2);
+    expect(vela.cooldowns['twin_fang_strike'], 2);
 
     advanceFullRound(battle); // caster's own turn ticks it once
-    expect(vela.cooldowns['ashbringer_ranged'], 1);
+    expect(vela.cooldowns['twin_fang_strike'], 1);
     expect(engine.canUseAbility(vela, volley), isFalse);
 
     advanceFullRound(battle);
-    expect(vela.cooldowns['ashbringer_ranged'] ?? 0, 0);
+    expect(vela.cooldowns['twin_fang_strike'] ?? 0, 0);
     battle.startTurn();
     expect(engine.canUseAbility(vela, volley), isTrue);
   });

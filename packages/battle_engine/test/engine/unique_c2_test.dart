@@ -267,9 +267,9 @@ void main() {
       expect(attacker.currentHealth, 0);
       expect(attacker.isAlive, isFalse);
 
-      // Default martyrsEndDamage is 80, force damage, armor 0.
-      expect(enemy1.currentHealth, 120);
-      expect(enemy2.currentHealth, 120);
+      // Default martyrsEndDamage is 50, force damage, armor 0.
+      expect(enemy1.currentHealth, 150);
+      expect(enemy2.currentHealth, 150);
 
       expect(result.targetResults, hasLength(2));
     });
@@ -335,7 +335,7 @@ void main() {
       );
 
       expect(attacker.currentHealth, 0);
-      expect(enemy.currentHealth, 120);
+      expect(enemy.currentHealth, 150);
     });
   });
 

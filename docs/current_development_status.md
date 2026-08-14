@@ -10,11 +10,11 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | Balance pass. Starting with the quick, safe wins (cap crit chance, re-cost the outlier Triggers), then the bounded-accuracy re-tune so the 20-sided die actually matters. | The rest of the balance pass: earned initiative (replace the coin flip), a spatial pillar (rows or range bands), points budgets for statuses and Triggers, steadier Trion income, and tutorializing the depth. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | Balance pass. The crit cap, the outlier re-costs and the P0 bounded-accuracy re-tune are done; next up is earned initiative. | The rest of the balance pass: earned initiative (replace the coin flip), a spatial pillar (rows or range bands), points budgets for statuses and Triggers, steadier Trion income, and tutorializing the depth. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
-| Balance step 1: the five near-duplicate ("reskin") Trigger clusters given distinct identities. | | Optional polish: a custom domain so Google sign-in shows the game name instead of the Supabase URL. |
+| Balance: the five near-duplicate ("reskin") Trigger clusters differentiated; critical hits capped at a natural 17 and doubling dice only; the four dominant Triggers re-costed; and the P0 bounded-accuracy re-tune landed (Attack compressed to 4-14, Defense to 2-12, and every damage expression rebuilt to about half dice). | | Optional polish: a custom domain so Google sign-in shows the game name instead of the Supabase URL. |
 
 Progress by area:
 
@@ -22,7 +22,7 @@ Progress by area:
 Battle engine      ██████████ 100%   done
 Accounts and XP    ██████████ 100%   live and verified
 Phase F interface  ████████▒▒  85%   a couple of items left
-Balance pass       ██▒▒▒▒▒▒▒▒  15%   step 1 done, main pass next
+Balance pass       █████▒▒▒▒▒  50%   P0 done, P1 next
 AI tuning          ▒▒▒▒▒▒▒▒▒▒   0%   not started
 Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
 ```
@@ -670,7 +670,7 @@ retired tiebreak.
 | Phase E: new-content wiring | done + merged: the two deferred unique hooks (7.1), Coldread "seize", Nullhymn's real resonance-grade downgrade (per-wielder step count on the const grid; targets the most-recently-active enemy BT), and Death Ledger's nullified-AoE loadout swap (engine signals; app borrows the AoE into the wielder's loadout for 2 turns, then reverts) | `claude/tactical-combat-engine-5luk6z` |
 | Phase F: remaining UI | mostly done + merged to main: TEG badge (six-sub-score expand + live effects), surfacing the hidden stats, the Team Spirit live offense/sustain readout, the loadout-builder preview/EQUIP-UNEQUIP/Randomize-Reset-Unequip-all pass, passive-counter descriptions, the clickable-portrait detail panel with own-full / enemy-public gating + Mind's Eye reveal, the sign-in flow (`AccountSheet`) + post-battle XP-award readout, and the battle-log rework (tap-anywhere-to-expand, always-visible scrollbar, plain-English breakdowns, clickable names/abilities → info popups). Remaining: queue display + resolve-beat polish. | `claude/tactical-combat-engine-5luk6z` |
 | Phase G: AI tuning | not started | TBD |
-| Phase H: balancing pass | not started (after all content phases) | TBD |
+| Phase H: balancing pass | in progress. Done: the five reskin Trigger clusters differentiated; critical hits capped at a natural 17 and doubling the damage dice only; the four dominant Triggers (Whirlwind Slash, Twin Fang Strike, Longshot, Cinderburst) re-costed; and the P0 bounded-accuracy re-tune, which compressed Attack to 4-14 and Defense to 2-12 and rebuilt every damage expression so roughly half the number comes from dice. `tool/balance_report.dart` prints the accuracy band, the per-Trigger dice share and value, and a batch of simulated battles. Remaining: earned initiative, a spatial pillar, status/Trigger point budgets, and the Trion economy. | `claude/balance-bounded-accuracy-ylhvao` |
 | Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
 | Phase I: Combo Recognition system | I1-I5 done (I1-I3 merged; I4-I5 green on branch): action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains), live ledger population, and a design-time signature-combo proposer (`tool/propose_signature_combos.dart`). The signature roster grows as designer content | `claude/tactical-combat-engine-5luk6z` |
 | Phase J: TEG mechanical effects (section 5.2) | done + merged: Effects 1-5 (fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund), Draegor's "raise TEG 2 tiers" wired, and the inverse-TEG XP (section 15.8) now live server-side (see section 15 row). | `claude/tactical-combat-engine-5luk6z` |

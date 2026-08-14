@@ -103,11 +103,11 @@ Every character belongs to one of four **types**, and the type tells you their
 job and the general shape of their stats. (The exact stats for all 20 characters
 are in Appendix B.)
 
-- **Attack (5 characters).** Front-line damage dealers. High Attack (roughly 22
-  to 27), low Defense, and low Team Spirit, which as you will see leans them
-  toward hitting hard. These are your glass cannons.
-- **Defense (5 characters).** Tanks. High Defense (roughly 14 to 16) and higher
-  Armor, so they soak hits and hold the line. They also carry more control tools.
+- **Attack (5 characters).** Front-line damage dealers. High Attack (10 to 13),
+  low Defense, and low Team Spirit, which as you will see leans them toward
+  hitting hard. These are your glass cannons.
+- **Defense (5 characters).** Tanks. High Defense (10 to 12) and higher Armor,
+  so they soak hits and hold the line. They also carry more control tools.
 - **Support (5 characters).** Healers and enablers. High Trion Affinity (so they
   fuel the team's resource) and high Team Spirit (so they lean toward sustaining
   the team), with low Attack. They keep everyone alive and topped up.
@@ -361,10 +361,16 @@ it passes through a short chain of adjustments (the battle log shows every step)
 Burst abilities run this whole chain once per hit, and area abilities apply it to
 each target.
 
-*Design note: the flat bonuses (Attack around 26, damage bonuses of +37 to +86)
-are still large enough that the 20-sided die barely changes the result. This is
-the "bounded accuracy" concern raised in the design reviews, and compressing
-those numbers is the next piece of the balance pass now in progress.*
+*Design note: this is where the balance pass did most of its work. Attack and
+Defense used to run 10-29 and 6-16, which put a 15-point gap on a typical attack
+and meant the die changed almost nothing: attacks landed over 90% of the time and
+the roll was decoration. Attack now runs 4-14 and Defense 2-12, so the gap
+between any two characters fits inside the die's own range and the roll decides
+a real share of the outcome. Damage was rebuilt the same way: abilities used to
+be a small die on a huge flat bonus (2d6+37, 4d8+86), and are now roughly half
+dice (6d6+23, 6d8+29), so the damage roll swings too. Across 200 simulated
+AI-versus-AI battles this moved the average hit rate to about 50% and roughly
+doubled how long a fight lasts, which is what the reviews were asking for.*
 
 ---
 
@@ -555,7 +561,7 @@ status. There are 17 of them:
   onto the other (at 1.2 times).
 - **Grave Bargain:** you spend a quarter of your own current Health to power up a
   strike.
-- **Martyr's End:** when you drop below 25% Health, you can detonate for 80 damage.
+- **Martyr's End:** when you drop below 25% Health, you can detonate for 50 damage.
 - **Vow of the Duel:** binds you and a target into a duel where double damage
   passes between you, and stuns them for 2 turns.
 - **Sunder Arms:** a heavy single-target blow that shreds the target's armor.
@@ -777,34 +783,34 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 
 ### Attacker Triggers (melee bruisers) (16)
 
-- **"Martyr's End"** (costs 10 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: detonates for 80 damage when you are below 25% Health.
+- **"Martyr's End"** (costs 10 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: detonates for 50 damage when you are below 25% Health.
 - **Cinderburst** (costs 18 Trion, 2-turn cooldown). A melee area fire attack dealing about 15 damage to each of up to 3 enemies. Applies Scorched (12 burn damage per turn).
-- **Cleave** (costs 15 Trion, 1-turn cooldown). A melee area slashing attack dealing about 22 damage to each of up to 2 enemies. Applies Shattered Guard (guard broken, weaker defense).
+- **Cleave** (costs 15 Trion, 2-turn cooldown). A melee area slashing attack dealing about 22 damage to each of up to 2 enemies. Applies Shattered Guard (guard broken, weaker defense).
 - **Cryo Burst** (costs 18 Trion, 2-turn cooldown). A ranged area cold attack dealing about 18 damage to each of up to 3 enemies. Applies Chilled (attack sinks each turn).
 - **Dread Resonance** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: hits harder the more damage the target has taken.
 - **Dread Wave** (costs 18 Trion, 2-turn cooldown). A ranged area psychic attack dealing about 16 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
 - **Frost Lance** (costs 14 Trion, 1-turn cooldown). A ranged single-target cold attack dealing about 22 damage. Applies Chilled (attack sinks each turn).
 - **Grave Bargain** (costs 8 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: spends 25% of your own Health to power the strike.
-- **Piercing Thrust** (costs 14 Trion, 1-turn cooldown). A melee single-target piercing attack dealing about 52 damage.
+- **Piercing Thrust** (costs 18 Trion, 2-turn cooldown). A melee single-target piercing attack dealing about 52 damage.
 - **Predictive Parry** (costs 20 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: dodges the next single-target melee attack.
-- **Shared Agony** (costs 12 Trion, 2-turn cooldown). A melee unique necrotic attack dealing about 47 damage. Signature effect: links two enemies so damage bleeds between them.
+- **Shared Agony** (costs 14 Trion, 2-turn cooldown). A melee unique necrotic attack dealing about 47 damage. Signature effect: links two enemies so damage bleeds between them.
 - **Soul Siphon** (costs 16 Trion, 2-turn cooldown). A ranged single-target psychic attack dealing about 22 damage.
 - **Sunder Arms** (costs 16 Trion, 3-turn cooldown). A melee unique slashing attack dealing about 37 damage. Signature effect: shreds the target armor.
-- **Twin Fang Strike** (costs 12 Trion, 2-turn cooldown). A melee single-target slashing attack dealing about 44 damage.
+- **Twin Fang Strike** (costs 15 Trion, 2-turn cooldown). A melee single-target slashing attack dealing about 44 damage.
 - **Vow of the Duel** (costs 15 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: binds a duel: double damage between you plus a 2-turn stun.
-- **Whirlwind Slash** (costs 16 Trion, 2-turn cooldown). A melee area slashing attack dealing about 18 damage to each of up to 3 enemies. Applies Bleeding (8 damage per turn).
+- **Whirlwind Slash** (costs 16 Trion, 2-turn cooldown). A melee area slashing attack dealing about 17 damage to each of up to 3 enemies. Applies Bleeding (8 damage per turn).
 
 ### Shooter Triggers (ranged volume) (9)
 
-- **Arc Volley** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst lightning attack dealing about 12 damage per hit across 3 hits split over 2 targets.
-- **Frag Grenade** (costs 18 Trion, 2-turn cooldown). A ranged area piercing attack dealing about 20 damage to each of up to 3 enemies.
+- **Arc Volley** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst lightning attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets.
+- **Frag Grenade** (costs 20 Trion, 2-turn cooldown). A ranged area piercing attack dealing about 20 damage to each of up to 3 enemies.
 - **Gatling Burst** (costs 24 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 10 damage per hit across 5 hits. Applies Exposed (takes +25% damage).
-- **Pepper Shot** (costs 16 Trion, 1-turn cooldown). A ranged rapid burst piercing attack dealing about 14 damage per hit across 3 hits.
-- **Rapid Fire** (costs 18 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 16 damage per hit across 3 hits. Applies Bleeding (8 damage per turn).
-- **Scattershot** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 8 damage per hit across 4 hits split over 3 targets. Applies Slowed (defense sinks each turn).
-- **Split Shot** (costs 18 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 14 damage per hit across 2 hits split over 2 targets.
-- **Suppressing Fire** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 18 damage per hit across 3 hits split over 2 targets. Applies Suppressed (worse at applying statuses).
-- **Thunderclap Round** (costs 18 Trion, 2-turn cooldown). A ranged area thunder attack dealing about 12 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
+- **Pepper Shot** (costs 16 Trion, 1-turn cooldown). A ranged rapid burst piercing attack dealing about 10 damage per hit across 3 hits.
+- **Rapid Fire** (costs 18 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 17 damage per hit across 3 hits. Applies Bleeding (8 damage per turn).
+- **Scattershot** (costs 22 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 6 damage per hit across 4 hits on each of up to 3 targets. Applies Slowed (defense sinks each turn).
+- **Split Shot** (costs 18 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 14 damage per hit across 2 hits on each of up to 2 targets.
+- **Suppressing Fire** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets. Applies Suppressed (worse at applying statuses).
+- **Thunderclap Round** (costs 18 Trion, 2-turn cooldown). A ranged area thunder attack dealing about 13 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
 
 ### Sniper Triggers (long-range big hits) (3)
 
@@ -814,8 +820,8 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 
 ### Trapper Triggers (control and debuffs) (24)
 
-- **Acid Spray** (costs 16 Trion, 2-turn cooldown). A melee area acid attack dealing about 12 damage to each of up to 3 enemies. Applies Corroded (-3 armor).
-- **Caustic Cloud** (costs 16 Trion, 2-turn cooldown). A ranged area acid attack dealing about 8 damage to each of up to 3 enemies. Applies Poisoned (damage each turn).
+- **Acid Spray** (costs 16 Trion, 2-turn cooldown). A melee area acid attack dealing about 13 damage to each of up to 3 enemies. Applies Corroded (-3 armor).
+- **Caustic Cloud** (costs 16 Trion, 2-turn cooldown). A ranged area acid attack dealing about 9 damage to each of up to 3 enemies. Applies Poisoned (damage each turn).
 - **Charm Whisper** (costs 20 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Charmed (turned against their team).
 - **Death Ledger** (costs 18 Trion, 2-turn cooldown). A ranged single-target piercing attack dealing about 10 damage. Counter: nullifies an incoming area attack.
 - **Dread Gaze** (costs 14 Trion, 1-turn cooldown). A ranged single-target psychic attack dealing about 10 damage. Applies Terrified (too afraid to fight well).
@@ -836,8 +842,8 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 - **Sensory Swap** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: swaps a targeting link between two enemies.
 - **Shatterpoint** (costs 12 Trion, 1-turn cooldown). A melee single-target acid attack dealing about 22 damage. Applies Corroded (-3 armor).
 - **Unmaking** (costs 18 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: a heavy unravelling debuff.
-- **Venom Needle** (costs 12 Trion, 1-turn cooldown). A ranged single-target poison attack dealing about 14 damage. Applies Poisoned (damage each turn).
-- **Venom Spray** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst poison attack dealing about 8 damage per hit across 3 hits split over 2 targets. Applies Poisoned (damage each turn).
+- **Venom Needle** (costs 12 Trion, 1-turn cooldown). A ranged single-target poison attack dealing about 15 damage. Applies Poisoned (damage each turn).
+- **Venom Spray** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst poison attack dealing about 9 damage per hit across 3 hits on each of up to 2 targets. Applies Poisoned (damage each turn).
 
 ### Optional Triggers (buffs, wards, counters) (8)
 
@@ -855,26 +861,26 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 
 | Character | Type | Attack | Defense | Armor | Health | Trion Cap | Trion Aff | Team Spirit | Crit | FAT | Perk |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|
-| Kaito Reyes | attack | 27 | 8 | 1 | 100 | 110 | 20 | 35 | 15 | 12 | Last Ace |
-| Vela Ashworth | attack | 26 | 7 | 1 | 100 | 105 | 18 | 40 | 12 | 10 | First Blood |
-| Dross | attack | 24 | 9 | 2 | 100 | 115 | 16 | 35 | 6 | 9 | Overwhelm |
-| Ren Kobayashi | attack | 26 | 8 | 1 | 100 | 100 | 22 | 30 | 10 | 14 | First Strike |
-| Airi Tanaka | attack | 22 | 9 | 1 | 100 | 100 | 20 | 45 | 13 | 11 | Feint |
-| Marren Osei | defense | 12 | 16 | 3 | 100 | 120 | 16 | 55 | 3 | 7 | Bulwark |
-| Ilona Vance | defense | 17 | 15 | 2 | 100 | 110 | 18 | 50 | 5 | 8 | Riposte |
-| Bastian Cole | defense | 14 | 14 | 3 | 100 | 115 | 16 | 50 | 3 | 7 | Absorb |
-| Dorian Voss | defense | 15 | 14 | 2 | 100 | 110 | 18 | 48 | 4 | 8 | Immovable |
-| Sable Whitlock | defense | 14 | 15 | 3 | 100 | 115 | 18 | 55 | 4 | 8 | - |
-| Priya Nakamura | support | 10 | 10 | 1 | 100 | 105 | 24 | 65 | 4 | 9 | Combat Medic |
-| Soren Talvik | support | 12 | 9 | 1 | 100 | 105 | 20 | 60 | 5 | 9 | Weaken Resolve |
-| Yuki Amaral | support | 10 | 11 | 2 | 100 | 105 | 22 | 70 | 4 | 8 | Devoted Aid |
-| Haru Ellison | support | 10 | 10 | 1 | 100 | 130 | 32 | 60 | 4 | 9 | Battery |
-| Celestine Moreau | support | 10 | 11 | 2 | 100 | 110 | 20 | 62 | 4 | 8 | Warding Presence |
-| Zheng Anders | unique | 19 | 10 | 1 | 100 | 105 | 24 | 45 | 8 | 12 | Foresight |
-| Nadia Kessler | unique | 22 | 9 | 1 | 100 | 100 | 20 | 40 | 9 | 16 | Chain Reaction |
-| Rurik Voss | unique | 29 | 6 | 1 | 100 | 100 | 18 | 30 | 14 | 13 | All or Nothing |
-| Mireille Song | unique | 19 | 9 | 1 | 100 | 100 | 20 | 45 | 8 | 11 | Decoy |
-| Tobias Renner | unique | 19 | 10 | 1 | 100 | 105 | 20 | 45 | 7 | 11 | Versatile |
+| Kaito Reyes | attack | 13 | 4 | 1 | 100 | 110 | 20 | 35 | 15 | 12 | Last Ace |
+| Vela Ashworth | attack | 12 | 3 | 1 | 100 | 105 | 18 | 40 | 12 | 10 | First Blood |
+| Dross | attack | 11 | 5 | 2 | 100 | 115 | 16 | 35 | 6 | 9 | Overwhelm |
+| Ren Kobayashi | attack | 12 | 4 | 1 | 100 | 100 | 22 | 30 | 10 | 14 | First Strike |
+| Airi Tanaka | attack | 10 | 5 | 1 | 100 | 100 | 20 | 45 | 13 | 11 | Feint |
+| Marren Osei | defense | 5 | 12 | 3 | 100 | 120 | 16 | 55 | 3 | 7 | Bulwark |
+| Ilona Vance | defense | 8 | 11 | 2 | 100 | 110 | 18 | 50 | 5 | 8 | Riposte |
+| Bastian Cole | defense | 6 | 10 | 3 | 100 | 115 | 16 | 50 | 3 | 7 | Absorb |
+| Dorian Voss | defense | 7 | 10 | 2 | 100 | 110 | 18 | 48 | 4 | 8 | Immovable |
+| Sable Whitlock | defense | 6 | 11 | 3 | 100 | 115 | 18 | 55 | 4 | 8 | - |
+| Priya Nakamura | support | 4 | 6 | 1 | 100 | 105 | 24 | 65 | 4 | 9 | Combat Medic |
+| Soren Talvik | support | 5 | 5 | 1 | 100 | 105 | 20 | 60 | 5 | 9 | Weaken Resolve |
+| Yuki Amaral | support | 4 | 7 | 2 | 100 | 105 | 22 | 70 | 4 | 8 | Devoted Aid |
+| Haru Ellison | support | 4 | 6 | 1 | 100 | 130 | 32 | 60 | 4 | 9 | Battery |
+| Celestine Moreau | support | 4 | 7 | 2 | 100 | 110 | 20 | 62 | 4 | 8 | Warding Presence |
+| Zheng Anders | unique | 9 | 6 | 1 | 100 | 105 | 24 | 45 | 8 | 12 | Foresight |
+| Nadia Kessler | unique | 10 | 5 | 1 | 100 | 100 | 20 | 40 | 9 | 16 | Chain Reaction |
+| Rurik Voss | unique | 14 | 2 | 1 | 100 | 100 | 18 | 30 | 14 | 13 | All or Nothing |
+| Mireille Song | unique | 9 | 5 | 1 | 100 | 100 | 20 | 45 | 8 | 11 | Decoy |
+| Tobias Renner | unique | 9 | 6 | 1 | 100 | 105 | 20 | 45 | 7 | 11 | Versatile |
 
 
 ## Appendix C: Status effect magnitudes
@@ -940,7 +946,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 | criticalMissDefensePenaltyPct | 0.20 |
 | criticalMissTeamSpiritPenaltyPct | 0.20 |
 | thresholdAtMinChance | 20 |
-| thresholdAtMaxChance | 5 |
+| thresholdAtMaxChance | 17 |
 | minChancePercent | 0 |
 | maxChancePercent | 90 |
 
@@ -978,7 +984,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 | sharedAgonyLinkedDamageMultiplier | 1.2 |
 | graveBargainHpSpendFraction | 0.25 |
 | martyrsEndHpThreshold | 0.25 |
-| martyrsEndDamage | 80 |
+| martyrsEndDamage | 50 |
 | dreadResonanceDamagePerCumulativeDamage | 0.15 |
 | dreadResonanceMinDamage | 5 |
 | illusoryDoubleStartingCharges | 1 |

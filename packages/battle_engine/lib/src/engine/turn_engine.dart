@@ -778,13 +778,14 @@ class TurnEngine {
   }
 
   /// Resolves a free counter-hit from [attacker] against [target] using
-  /// standard Twin Fang Strike damage (2d6+37 slashing).
+  /// standard Twin Fang Strike damage (6d6+23 slashing) - kept in step
+  /// with the catalog entry Predictive Parry hangs off.
   void _resolveCounterHit(
     CharacterBattleState attacker,
     CharacterBattleState target,
   ) {
     final counterDamageRoll =
-        const DiceExpression(2, 6, flatBonus: 37).roll(combatEngine.diceRoller);
+        const DiceExpression(6, 6, flatBonus: 23).roll(combatEngine.diceRoller);
     _applyDamage(
       target: target,
       baseDamage: counterDamageRoll,
@@ -840,7 +841,7 @@ class TurnEngine {
           .indexWhere((r) => r.kind == ReactiveKind.trapOnAction);
       if (trapIndex >= 0) {
         attacker.reactiveEffects.removeAt(trapIndex);
-        final trapDamage = const DiceExpression(2, 8, flatBonus: 25)
+        final trapDamage = const DiceExpression(4, 8, flatBonus: 16)
             .roll(combatEngine.diceRoller);
         _applyDamage(
           target: attacker,
