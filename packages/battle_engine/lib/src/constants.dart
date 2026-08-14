@@ -365,8 +365,16 @@ class CombatConfig {
 /// would make every attack roll fixed). It maps *linearly* onto the
 /// natural die threshold that counts as a crit: at [minChancePercent] only
 /// a natural [thresholdAtMinChance] (20) crits; at [maxChancePercent] a
-/// natural [thresholdAtMaxChance] (5) or higher crits. See
+/// natural [thresholdAtMaxChance] (17) or higher crits. See
 /// `CombatEngine.criticalHitThreshold`.
+///
+/// Balance pass: [thresholdAtMaxChance] used to be 5, which let a
+/// well-built attacker crit on 4 rolls in 5 and turned every fight into a
+/// delete lottery. The floor is now 17, so the very best crit build crits
+/// on a natural 17-20 (20% of rolls) and the baseline is a natural 20
+/// (5%). Critical Chance is a real but bounded dial, in line with the
+/// crit rates a d20 game can carry without the die deciding matches on
+/// its own.
 class CriticalChanceConfig {
   final double minChancePercent;
   final double maxChancePercent;
@@ -377,7 +385,7 @@ class CriticalChanceConfig {
     this.minChancePercent = 0,
     this.maxChancePercent = 90,
     this.thresholdAtMinChance = 20,
-    this.thresholdAtMaxChance = 5,
+    this.thresholdAtMaxChance = 17,
   });
 
   static const CriticalChanceConfig defaults = CriticalChanceConfig();

@@ -12,15 +12,27 @@ void main() {
       expect(engine.criticalHitThreshold(0), 20);
     });
 
-    test('90% Critical Chance requires only a natural 5 or higher', () {
+    test('90% Critical Chance still requires a natural 17 or higher', () {
       final engine = CombatEngine();
-      expect(engine.criticalHitThreshold(90), 5);
+      expect(engine.criticalHitThreshold(90), 17);
     });
 
     test('scales linearly between the endpoints', () {
       final engine = CombatEngine();
-      expect(engine.criticalHitThreshold(30), 15);
-      expect(engine.criticalHitThreshold(60), 10);
+      expect(engine.criticalHitThreshold(30), 19);
+      expect(engine.criticalHitThreshold(60), 18);
+    });
+
+    test('the crit rate is capped at 20% of rolls however high the stat', () {
+      final engine = CombatEngine();
+      // 17-20 on a d20 is 4 faces in 20. Nothing the Critical Chance stat
+      // can reach may push the threshold below that.
+      for (var chance = 0; chance <= 200; chance += 5) {
+        expect(
+          engine.criticalHitThreshold(chance.toDouble()),
+          greaterThanOrEqualTo(17),
+        );
+      }
     });
 
     test('is monotonically non-increasing as Critical Chance rises', () {
@@ -36,7 +48,7 @@ void main() {
     test('clamps input outside the configured 0-90 range', () {
       final engine = CombatEngine();
       expect(engine.criticalHitThreshold(-50), 20);
-      expect(engine.criticalHitThreshold(1000), 5);
+      expect(engine.criticalHitThreshold(1000), 17);
     });
 
     test('a custom config is a drop-in replacement', () {
@@ -131,10 +143,10 @@ void main() {
       }
 
       final noCritChance = critCount(0); // only nat 20 -> ~5%
-      final maxCritChance = critCount(90); // nat 5+ -> ~80%
+      final maxCritChance = critCount(90); // nat 17+ -> ~20%
       expect(maxCritChance, greaterThan(noCritChance));
       expect(noCritChance / samples, closeTo(0.05, 0.03));
-      expect(maxCritChance / samples, closeTo(0.80, 0.05));
+      expect(maxCritChance / samples, closeTo(0.20, 0.05));
     });
 
     test('Critical Chance never affects critical misses (still nat 1 only)',
@@ -164,7 +176,7 @@ void main() {
         defenderDefense: 5,
         attackerCriticalChancePercent: 90,
       );
-      expect(outcomes.every((o) => o.criticalHitThreshold == 5), isTrue);
+      expect(outcomes.every((o) => o.criticalHitThreshold == 17), isTrue);
       expect(outcomes.any((o) => o.isCriticalHit), isTrue);
     });
   });
@@ -206,23 +218,56 @@ void main() {
   });
 
   group('CombatEngine.resolveDamage', () {
-    test('critical hits double damage', () {
+    test('a critical hit doubles only the dice half of the damage', () {
       final engine = CombatEngine();
       final target =
           CharacterBattleState(testCharacter(stats: testStats(armor: 0)));
+      // A 30-damage hit made of 12 dice plus an 18 flat bonus.
       final normal = engine.resolveDamage(
-        baseDamage: 10,
+        baseDamage: 30,
         damageType: DamageType.slashing,
         isCriticalHit: false,
         target: target,
+        criticalDiceComponent: 12,
       );
+      final crit = engine.resolveDamage(
+        baseDamage: 30,
+        damageType: DamageType.slashing,
+        isCriticalHit: true,
+        target: target,
+        criticalDiceComponent: 12,
+      );
+      expect(normal, 30);
+      expect(crit, 42); // 30 + the 12 dice again, not 60
+    });
+
+    test('damage with no dice behind it still doubles whole on a crit', () {
+      final engine = CombatEngine();
+      final target =
+          CharacterBattleState(testCharacter(stats: testStats(armor: 0)));
       final crit = engine.resolveDamage(
         baseDamage: 10,
         damageType: DamageType.slashing,
         isCriticalHit: true,
         target: target,
       );
-      expect(crit, normal * 2);
+      expect(crit, 20);
+    });
+
+    test('the breakdown reports what the crit added', () {
+      final engine = CombatEngine();
+      final target =
+          CharacterBattleState(testCharacter(stats: testStats(armor: 0)));
+      final breakdown = engine.resolveDamageBreakdown(
+        baseDamage: 44,
+        damageType: DamageType.slashing,
+        isCriticalHit: true,
+        target: target,
+        criticalDiceComponent: 21,
+      );
+      expect(breakdown.criticalBonusDamage, 21);
+      expect(breakdown.afterCriticalHit, 65);
+      expect(breakdown.finalDamage, 65);
     });
 
     test('Armor reduces damage flatly, floored at 0', () {

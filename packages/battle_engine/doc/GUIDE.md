@@ -142,12 +142,18 @@ rolls d20 + Defense**. The attacker wins ties. A natural 1 on the
 attacker's die is always a critical miss (automatic failure, and
 inflicts a 1-turn penalty on the attacker: -20% Defense, -20% Team
 Spirit). A roll at or above a threshold set by the attacker's effective
-Critical Chance is always a critical hit (automatic success, double
-damage) - higher Critical Chance lowers the natural roll needed, from a
-natural 20 at 0% Critical Chance down to a natural 5 at 90%+.
+Critical Chance is always a critical hit (automatic success, damage dice
+rolled twice) - higher Critical Chance lowers the natural roll needed,
+from a natural 20 at 0% Critical Chance down to a natural 17 at 90%+.
+That floor of 17 caps the crit rate at 20% of rolls no matter how much
+Critical Chance a build stacks.
 
-Damage resolution order once a hit lands: **critical doubling** -> **flat
-Armor reduction** (floored at 0) -> **damage-type multiplier** (status
+A crit doubles the **dice** only: the ability's damage dice are rolled a
+second time and its flat bonus is left alone, so a crit is a strong
+bonus rather than a whole extra attack.
+
+Damage resolution order once a hit lands: **critical dice bonus** ->
+**flat Armor reduction** (floored at 0) -> **damage-type multiplier** (status
 effects like Wet, or a granted Damage Resistance, which halves the
 instance). A World ability's damage-prevention charge (if any remain)
 fully negates the whole instance before any of this, consuming one

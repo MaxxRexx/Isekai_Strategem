@@ -685,11 +685,12 @@ class RollBreakdownView extends StatelessWidget {
     }
     if (d.criticalHitApplied) {
       spans.addAll([
-        TextSpan(
-          text: '. Critical hit ×${d.criticalHitMultiplier.toStringAsFixed(0)}',
-          style: const TextStyle(color: Palette.good),
+        const TextSpan(
+          text: '. Critical hit: the damage dice are rolled again for ',
+          style: TextStyle(color: Palette.good),
         ),
-        const TextSpan(text: ' → '),
+        TextSpan(text: '+${d.criticalBonusDamage}', style: _die),
+        const TextSpan(text: ' (the flat bonus is not doubled) → '),
         TextSpan(text: '${d.afterCriticalHit}', style: _total),
       ]);
     }

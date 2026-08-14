@@ -34,13 +34,16 @@ class TriggerCatalog {
 
   factory TriggerCatalog.builtIn() {
     final triggers = <Trigger>[
+      // Re-costed in the balance pass: at cooldown 1 for 10 Trion this was
+      // pure single-target spam with no tempo decision behind it. Cooldown
+      // 2 makes using it a choice about which turn you want it on.
       ActiveTrigger(
         id: 'twin_fang_strike',
         name: 'Twin Fang Strike',
         category: TriggerCategory.attacker,
         equipCost: 20,
-        trionCost: 10,
-        cooldownTurns: 1,
+        trionCost: 12,
+        cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.melee,
         attackType: AttackType.melee,
@@ -184,13 +187,17 @@ class TriggerCatalog {
         damageType: DamageType.piercing,
         damage: const DiceExpression(2, 6, flatBonus: 45),
       ),
+      // Re-costed in the balance pass: cooldown 1, 12 Trion, three targets
+      // and a bleed made this the best value in the catalog by a wide
+      // margin. Now cooldown 2 at 16 Trion, so the three-target bleed is a
+      // set-up you commit to rather than the default action every turn.
       ActiveTrigger(
         id: 'whirlwind_slash',
         name: 'Whirlwind Slash',
         category: TriggerCategory.attacker,
-        equipCost: 20,
-        trionCost: 12,
-        cooldownTurns: 1,
+        equipCost: 22,
+        trionCost: 16,
+        cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.melee,
         attackType: AttackType.melee,
@@ -200,19 +207,24 @@ class TriggerCatalog {
         damage: const DiceExpression(1, 4, flatBonus: 16),
         inflictedStatusEffects: const [StatusEffectApplication('bleeding')],
       ),
+      // Re-costed in the balance pass: 4d8+86 topped out at 118 against a
+      // 100-health operator, so a single Longshot could delete someone
+      // outright through a die roll that barely mattered. 4d8+38 keeps it
+      // the hardest single hit in the catalog (56 average) while capping
+      // its ceiling at 70, below the health of whoever it lands on.
       ActiveTrigger(
         id: 'longshot',
         name: 'Longshot',
         category: TriggerCategory.sniper,
-        equipCost: 34,
-        trionCost: 30,
+        equipCost: 30,
+        trionCost: 24,
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.ranged,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.piercing,
-        damage: const DiceExpression(4, 8, flatBonus: 86),
+        damage: const DiceExpression(4, 8, flatBonus: 38),
       ),
       ActiveTrigger(
         id: 'scattershot',
@@ -260,6 +272,11 @@ class TriggerCatalog {
         damage: const DiceExpression(1, 6, flatBonus: 18),
         inflictedStatusEffects: const [StatusEffectApplication('chilled')],
       ),
+      // Re-costed in the balance pass: 64 damage across three targets plus
+      // a 12-per-turn burn on all three was two full payloads on one
+      // ability. It now picks one axis and keeps the burn, so the up-front
+      // hit is a third smaller and the damage arrives over time - which is
+      // also what makes it read differently from Frag Grenade.
       ActiveTrigger(
         id: 'cinderburst',
         name: 'Cinderburst',
@@ -273,7 +290,7 @@ class TriggerCatalog {
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
         damageType: DamageType.fire,
-        damage: const DiceExpression(1, 6, flatBonus: 18),
+        damage: const DiceExpression(1, 6, flatBonus: 11),
         inflictedStatusEffects: const [StatusEffectApplication('scorched')],
       ),
       ActiveTrigger(

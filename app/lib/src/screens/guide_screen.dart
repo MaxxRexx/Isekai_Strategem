@@ -199,10 +199,13 @@ class _GuideScreenState extends State<GuideScreen>
           title: 'Combat Resolution',
           children: const [
             _Plain(
-              'An attack is an opposed roll: the attacker rolls d20 + Attack, the target rolls d20 + Defense. The attacker wins ties. A natural 1 on the attacker\'s die is always a critical miss (automatic failure, and inflicts a 1-turn penalty on the attacker). A roll at or above a threshold set by the attacker\'s Critical Chance is always a critical hit (automatic success, double damage).',
+              'An attack is an opposed roll: the attacker rolls d20 + Attack, the target rolls d20 + Defense. The attacker wins ties. A natural 1 on the attacker\'s die is always a critical miss (automatic failure, and inflicts a 1-turn penalty on the attacker). A roll at or above a threshold set by the attacker\'s Critical Chance is always a critical hit (automatic success, and the damage dice are rolled twice).',
             ),
             _Plain(
-              'Damage resolution order once a hit lands: critical doubling, then flat Armor reduction (floored at 0), then damage-type multiplier (status effects like Wet, or a granted Damage Resistance). A World ability\'s damage-prevention charge, if any remain, fully negates the whole instance before any of this.',
+              'A critical hit rolls the ability\'s damage dice a second time; the ability\'s flat damage bonus is not doubled. Even the best Critical Chance build only crits on a natural 17 or higher, so crits reward a good build without deciding matches on their own.',
+            ),
+            _Plain(
+              'Damage resolution order once a hit lands: the critical dice bonus, then flat Armor reduction (floored at 0), then damage-type multiplier (status effects like Wet, or a granted Damage Resistance). A World ability\'s damage-prevention charge, if any remain, fully negates the whole instance before any of this.',
             ),
           ],
         ),
@@ -221,7 +224,7 @@ class _GuideScreenState extends State<GuideScreen>
               'TS (Team Spirit). A dual-direction stat, see above: below 50 boosts damage and Critical Chance, above 50 boosts Health Regeneration and FAT Chance.',
             ),
             _Bullet(
-              'ARM (Armor). Flat damage reduction, applied after critical doubling and before damage-type multipliers.',
+              'ARM (Armor). Flat damage reduction, applied after the critical dice bonus and before damage-type multipliers.',
             ),
             _Bullet(
               'ATK (Attack). Added to the attacker\'s d20 roll during combat resolution.',
@@ -230,7 +233,7 @@ class _GuideScreenState extends State<GuideScreen>
               'DEF (Defense). Added to the defender\'s d20 roll during combat resolution.',
             ),
             _Bullet(
-              'CRIT (Critical Chance). Raises the odds of a critical hit (automatic success, double damage). Higher values lower the natural roll needed to crit.',
+              'CRIT (Critical Chance). Raises the odds of a critical hit (automatic success, damage dice rolled twice). Higher values lower the natural roll needed to crit, from a natural 20 down to a natural 17 at the maximum.',
             ),
             _Bullet(
               'FAT (FAT Chance). Odds of Full Arms Trigger activating on a character\'s turn, allowing up to 3 ability uses instead of 1.',

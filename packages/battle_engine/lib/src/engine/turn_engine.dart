@@ -426,12 +426,19 @@ class TurnEngine {
   /// damage this number" reads this rather than just the health delta,
   /// since Bastian's Absorb perk and the survive-lethal clamp below can
   /// still adjust the actual health lost after this math runs.
+  ///
+  /// [criticalDiceComponent] is the dice-only half of [baseDamage], which
+  /// is what a critical hit doubles (see
+  /// `CombatEngine.resolveDamageBreakdown`). Damage with no dice behind it
+  /// - status ticks, flat unique-behavior damage, trap damage - leaves it
+  /// null; those sites never crit anyway.
   DamageBreakdown _applyDamage({
     required CharacterBattleState target,
     required int baseDamage,
     required DamageType damageType,
     required bool isCriticalHit,
     CharacterBattleState? damageSource,
+    int? criticalDiceComponent,
   }) {
     final healthBeforeDamage = target.currentHealth;
     final breakdown = combatEngine.resolveDamageBreakdown(
@@ -439,6 +446,7 @@ class TurnEngine {
       damageType: damageType,
       isCriticalHit: isCriticalHit,
       target: target,
+      criticalDiceComponent: criticalDiceComponent,
     );
     var damage = breakdown.finalDamage;
 
@@ -1187,6 +1195,11 @@ class TurnEngine {
             perkMultiplier *
             interdictMultiplier;
         final adjustedBaseDamage = (baseDamage * preCritMultiplier).round();
+        // A crit doubles the dice, not the flat bonus, so the dice half of
+        // the roll is scaled by the same pre-crit multiplier and handed
+        // down as the amount a crit repeats.
+        final diceOnly = diceRoll?.rawRolls.fold<int>(0, (a, b) => a + b) ?? 0;
+        final adjustedDiceDamage = (diceOnly * preCritMultiplier).round();
         final healthBefore = target.currentHealth;
         final breakdown = _applyDamage(
           target: target,
@@ -1194,6 +1207,7 @@ class TurnEngine {
           damageType: trigger.damageType!,
           isCriticalHit: outcome.isCriticalHit,
           damageSource: attacker,
+          criticalDiceComponent: adjustedDiceDamage,
         );
         if (diceRoll != null) {
           damageDetail = HitDamageDetail(
@@ -2409,11 +2423,13 @@ class TurnEngine {
     } else if (outcome.isHit) {
       // Deal damage.
       if (trigger.damageType != null) {
-        final damageRoll = trigger.damage?.roll(combatEngine.diceRoller) ?? 0;
+        final damageRoll = trigger.damage?.rollDetailed(combatEngine.diceRoller);
         final preCritMultiplier =
             (1 + bonuses.singleTargetDamageBonus) *
             attacker.outgoingDamageMultiplier();
-        final adjustedBase = (damageRoll * preCritMultiplier).round();
+        final adjustedBase = ((damageRoll?.total ?? 0) * preCritMultiplier)
+            .round();
+        final diceOnly = damageRoll?.rawRolls.fold<int>(0, (a, b) => a + b) ?? 0;
         final healthBefore = target.currentHealth;
         _applyDamage(
           target: target,
@@ -2421,6 +2437,7 @@ class TurnEngine {
           damageType: trigger.damageType!,
           isCriticalHit: outcome.isCriticalHit,
           damageSource: attacker,
+          criticalDiceComponent: (diceOnly * preCritMultiplier).round(),
         );
         damageDealt = healthBefore - target.currentHealth;
         if (damageDealt > 0) {

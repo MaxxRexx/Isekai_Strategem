@@ -143,8 +143,9 @@ what each one actually does in plain terms:
 - **Team Spirit.** A slider from 0 to 100 (explained in the next section). Below
   50 it makes you more offensive, above 50 it makes you better at sustaining.
 - **Critical Chance.** The chance that an attack becomes a critical hit, which
-  doubles its damage. Mechanically, more Critical Chance widens the range of dice
-  rolls that count as a crit.
+  rolls the ability's damage dice a second time. Mechanically, more Critical
+  Chance widens the range of dice rolls that count as a crit, down to a natural
+  17 at the very most.
 - **FAT Chance.** The chance that Full Arms Trigger activates on your turn, which
   lets that character use up to three abilities in one turn instead of one.
 - **Status Infliction.** How good you are at making your status effects stick when
@@ -337,10 +338,12 @@ it **hits**, then a completely separate roll for **how much damage** it does.
 
 **Critical hits.** A hit becomes a **critical hit** when the attacker's raw die
 lands in the critical range. With no Critical Chance you only crit on a natural
-20; as Critical Chance climbs, the range widens (at maximum it can crit on a
-natural 5 or higher). A critical hit **doubles the damage**. A **critical miss**
-(a very low roll) even penalizes the attacker, dropping their Defense and Team
-Spirit by 20% for one turn.
+20; as Critical Chance climbs, the range widens, but only as far as a natural 17
+even at the maximum, so the best possible crit build still crits on one roll in
+five. A critical hit **rolls the ability's damage dice a second time** (the flat
+damage bonus is not doubled). A **critical miss** (a very low roll) even
+penalizes the attacker, dropping their Defense and Team Spirit by 20% for one
+turn.
 
 **Step two, the damage roll.** This is a fresh roll on the Trigger's own dice, and
 it passes through a short chain of adjustments (the battle log shows every step):
@@ -348,7 +351,8 @@ it passes through a short chain of adjustments (the battle log shows every step)
 1. Start with the **dice total** (the Trigger rolls its dice, like two 6-sided
    dice plus a flat bonus).
 2. Multiply by any **outgoing-damage bonus** from Team Spirit, perks, or statuses.
-3. If it was a critical hit, **double** it.
+3. If it was a critical hit, roll the ability's damage dice again and add them
+   (the flat bonus is not doubled).
 4. Subtract the target's **Armor**.
 5. Apply any **resistance or vulnerability** (a resisted damage type is halved; a
    status like Exposed increases it).
@@ -357,10 +361,10 @@ it passes through a short chain of adjustments (the battle log shows every step)
 Burst abilities run this whole chain once per hit, and area abilities apply it to
 each target.
 
-*Design note: right now the flat bonuses (Attack around 26, damage bonuses of +37
-to +86) are so large that the 20-sided die barely changes the result. This is the
-"bounded accuracy" concern raised in the design reviews and is the top candidate
-for a future rebalance.*
+*Design note: the flat bonuses (Attack around 26, damage bonuses of +37 to +86)
+are still large enough that the 20-sided die barely changes the result. This is
+the "bounded accuracy" concern raised in the design reviews, and compressing
+those numbers is the next piece of the balance pass now in progress.*
 
 ---
 
@@ -757,9 +761,12 @@ always runs.
   for a plain-English breakdown, and tap names or abilities to read them). Still to
   come: showing the pending queue during a turn, and polishing the resolve pause.
 - **Balance:** the five near-duplicate Trigger pairs have been given distinct
-  identities. A larger balance pass (the dice math, initiative, and a points
-  budget for statuses and Triggers) is written up in the design reviews and is the
-  next big task.
+  identities, critical hits have been capped and now double only the damage dice,
+  and the four Triggers that dominated the catalog (Whirlwind Slash, Twin Fang
+  Strike, Longshot, Cinderburst) have been re-costed. The rest of the balance pass
+  (compressing the dice math, initiative, a spatial layer, and a points budget for
+  statuses and Triggers) is written up in the design reviews and is the next big
+  task.
 
 ---
 
@@ -771,7 +778,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 ### Attacker Triggers (melee bruisers) (16)
 
 - **"Martyr's End"** (costs 10 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: detonates for 80 damage when you are below 25% Health.
-- **Cinderburst** (costs 18 Trion, 2-turn cooldown). A melee area fire attack dealing about 22 damage to each of up to 3 enemies. Applies Scorched (12 burn damage per turn).
+- **Cinderburst** (costs 18 Trion, 2-turn cooldown). A melee area fire attack dealing about 15 damage to each of up to 3 enemies. Applies Scorched (12 burn damage per turn).
 - **Cleave** (costs 15 Trion, 1-turn cooldown). A melee area slashing attack dealing about 22 damage to each of up to 2 enemies. Applies Shattered Guard (guard broken, weaker defense).
 - **Cryo Burst** (costs 18 Trion, 2-turn cooldown). A ranged area cold attack dealing about 18 damage to each of up to 3 enemies. Applies Chilled (attack sinks each turn).
 - **Dread Resonance** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: hits harder the more damage the target has taken.
@@ -783,9 +790,9 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 - **Shared Agony** (costs 12 Trion, 2-turn cooldown). A melee unique necrotic attack dealing about 47 damage. Signature effect: links two enemies so damage bleeds between them.
 - **Soul Siphon** (costs 16 Trion, 2-turn cooldown). A ranged single-target psychic attack dealing about 22 damage.
 - **Sunder Arms** (costs 16 Trion, 3-turn cooldown). A melee unique slashing attack dealing about 37 damage. Signature effect: shreds the target armor.
-- **Twin Fang Strike** (costs 10 Trion, 1-turn cooldown). A melee single-target slashing attack dealing about 44 damage.
+- **Twin Fang Strike** (costs 12 Trion, 2-turn cooldown). A melee single-target slashing attack dealing about 44 damage.
 - **Vow of the Duel** (costs 15 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: binds a duel: double damage between you plus a 2-turn stun.
-- **Whirlwind Slash** (costs 12 Trion, 1-turn cooldown). A melee area slashing attack dealing about 18 damage to each of up to 3 enemies. Applies Bleeding (8 damage per turn).
+- **Whirlwind Slash** (costs 16 Trion, 2-turn cooldown). A melee area slashing attack dealing about 18 damage to each of up to 3 enemies. Applies Bleeding (8 damage per turn).
 
 ### Shooter Triggers (ranged volume) (9)
 
@@ -803,7 +810,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 
 - **Called Shot** (costs 16 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: zeroes one of the target stats.
 - **Curving Shot** (costs 18 Trion, 2-turn cooldown). A ranged unique piercing attack dealing about 37 damage. Signature effect: curves past cover and defense.
-- **Longshot** (costs 30 Trion, 2-turn cooldown). A ranged single-target piercing attack dealing about 104 damage.
+- **Longshot** (costs 24 Trion, 2-turn cooldown). A ranged single-target piercing attack dealing about 56 damage.
 
 ### Trapper Triggers (control and debuffs) (24)
 
