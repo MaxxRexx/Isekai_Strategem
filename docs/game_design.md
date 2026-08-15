@@ -1010,13 +1010,20 @@ always runs.
   sign-in flow, the post-battle XP screen, and the rebuilt battle log (tap any line
   for a plain-English breakdown, and tap names or abilities to read them). Still to
   come: showing the pending queue during a turn, and polishing the resolve pause.
-- **Balance:** the five near-duplicate Trigger pairs have been given distinct
-  identities, critical hits have been capped and now double only the damage dice,
-  and the four Triggers that dominated the catalog (Whirlwind Slash, Twin Fang
-  Strike, Longshot, Cinderburst) have been re-costed. The rest of the balance pass
-  (compressing the dice math, initiative, a spatial layer, and a points budget for
-  statuses and Triggers) is written up in the design reviews and is the next big
-  task.
+- **Balance:** most of the pass is done. The five near-duplicate Trigger pairs
+  have distinct identities. Critical hits are capped at a natural 17 and double
+  only the damage dice. The four Triggers that dominated the catalog (Whirlwind
+  Slash, Twin Fang Strike, Longshot, Cinderburst) are re-costed. Bounded accuracy
+  is restored: Attack runs 4-14 and Defense 2-12, and every damage expression is
+  about half dice, so the 20-sided die decides a real share of every attack. The
+  opening turn is earned rather than flipped for, weighted by the Team Efficiency
+  Grade. And the range tag became three real bands, Close, Mid and Long, 20
+  Triggers each, with every attack type present in every band.
+- **Still to come on balance:** a "Bail Out" downed state instead of instant
+  defeat (a design decision that has not been taken yet), the spatial pillar that
+  would make your range band a position you actually manage, explicit points
+  budgets for status effects and Triggers, and a steadier Trion economy. All of it
+  is written up in the design reviews under `docs/reviews/`.
 
 ---
 
