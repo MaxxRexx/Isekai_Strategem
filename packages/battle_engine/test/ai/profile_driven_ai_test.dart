@@ -374,31 +374,31 @@ void main() {
     });
 
     test(
-        'The Sharpshooter overvalues a Ranged option in battle, not just '
+        'The Sharpshooter overvalues an at-range option in battle, not just '
         'when drafting a Loadout', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
 
       final ai = ProfileDrivenAi(AiProfile.theSharpshooter,
           random: const _FixedDoubleRandom(1.0));
-      final melee = testTrigger(
-        id: 'melee',
-        rangeTag: RangeTag.melee,
+      final close = testTrigger(
+        id: 'close',
+        rangeTag: RangeTag.close,
         damage: const DiceExpression(0, 1, flatBonus: 10),
       );
-      final ranged = testTrigger(
-        id: 'ranged',
-        rangeTag: RangeTag.ranged,
+      final long = testTrigger(
+        id: 'long',
+        rangeTag: RangeTag.long,
         damage: const DiceExpression(0, 1, flatBonus: 10),
       );
 
       final results = ai.takeTurn(battle, equippedActiveTriggers: {
-        'a-1': [melee, ranged],
+        'a-1': [close, long],
         'a-2': [],
         'a-3': [],
       });
 
-      expect(results.single.triggerId, 'ranged');
+      expect(results.single.triggerId, 'long');
     });
 
     test(

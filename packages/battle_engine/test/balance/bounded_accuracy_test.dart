@@ -103,6 +103,48 @@ void main() {
     });
   });
 
+  group('range bands', () {
+    test('the catalog is split evenly across the three bands', () {
+      final byBand = <RangeTag, int>{};
+      for (final t in catalog.activeTriggers) {
+        byBand[t.rangeTag] = (byBand[t.rangeTag] ?? 0) + 1;
+      }
+      expect(byBand[RangeTag.close], 20);
+      expect(byBand[RangeTag.mid], 20);
+      expect(byBand[RangeTag.long], 20);
+    });
+
+    test('a melee-type Trigger is always Close Range', () {
+      for (final t in catalog.activeTriggers) {
+        if (t.attackType != AttackType.melee) continue;
+        expect(t.rangeTag, RangeTag.close,
+            reason: '${t.id} is a melee attack, so it has to be in contact');
+      }
+    });
+
+    test('the band is not just a restatement of the attack type', () {
+      // This is the failure the band was rescued from: when every non-melee
+      // Trigger sat in one bucket, the tag was perfectly derivable from the
+      // attack type and carried nothing of its own. Both ranged and psychic
+      // must therefore straddle mid and long.
+      for (final type in [AttackType.ranged, AttackType.psychic]) {
+        final bands = catalog.activeTriggers
+            .where((t) => t.attackType == type)
+            .map((t) => t.rangeTag)
+            .toSet();
+        expect(bands.length, greaterThan(1),
+            reason: 'every $type Trigger sits in the same band, which makes '
+                'the band redundant with the attack type');
+      }
+    });
+
+    test('everything but Close Range counts as being at a distance', () {
+      expect(RangeTag.close.isAtRange, isFalse);
+      expect(RangeTag.mid.isAtRange, isTrue);
+      expect(RangeTag.long.isAtRange, isTrue);
+    });
+  });
+
   group('critical hits', () {
     test('the crit threshold never drops below a natural 17', () {
       final engine = CombatEngine();

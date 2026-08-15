@@ -49,7 +49,7 @@ String describeActiveTrigger(
 }) {
   final catalog = statusCatalog ?? StatusEffectCatalog.defaultCatalog;
   final parts = <String>[];
-  final rangeWord = t.rangeTag == RangeTag.ranged ? 'Ranged' : 'Melee';
+  final rangeWord = t.rangeTag.label;
   if (t.attackSubtype == AttackSubtype.aoe) {
     parts.add('$rangeWord attack, hits all ${t.targetCount} targets at once.');
   } else if (t.attackSubtype == AttackSubtype.burst) {

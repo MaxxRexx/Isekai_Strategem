@@ -132,6 +132,27 @@ class _GuideScreenState extends State<GuideScreen>
           ],
         ),
         _section(
+          icon: GameIcons.ranged,
+          title: 'Attack Type and Range Band',
+          children: const [
+            _Plain(
+              'These are two different tags and it is worth keeping them apart. The ATTACK TYPE is what kind of attack it is: Melee, Ranged, or Psychic, 20 Triggers each. The RANGE BAND is how far away it works: Close Range, Mid Range, or Long Range, also 20 each.',
+            ),
+            _Bullet(
+              'Close Range (20). Contact work: blades, fists, wards you place on someone beside you. Every Melee-type Trigger sits here.',
+            ),
+            _Bullet(
+              'Mid Range (20). Sustained fire, poisons and traps you set nearby, and the intimate psychic effects that need you close enough to be heard.',
+            ),
+            _Bullet(
+              'Long Range (20). Sniper work, thrown and area ordnance, and the broad psychic waves that wash over a whole squad.',
+            ),
+            _Plain(
+              'The band matters because several effects only touch attacks made at a distance. Threatened and Blinded penalize the rolls of Mid and Long Range attacks and leave Close Range alone, Blinded also cuts how many targets they can reach, and Frozen Tempo sabotages the cooldowns of anyone who attacks it from range.',
+            ),
+          ],
+        ),
+        _section(
           icon: GameIcons.burst,
           title: 'Turn Structure',
           children: const [
@@ -331,7 +352,7 @@ class _GuideScreenState extends State<GuideScreen>
             icon: TriggerIcon(trigger: t, size: 14),
             title: t.name,
             meta: t is ActiveTrigger
-                ? '${t.category.name} - ${t.rangeTag.name} - ${t.attackSubtype.name}'
+                ? '${t.category.name} - ${t.rangeTag.label} - ${t.attackSubtype.name}'
                 : '${t.category.name} - passive',
             body: describeTrigger(t),
           ),

@@ -98,7 +98,7 @@ ActiveTrigger testTrigger({
   int trionCost = 5,
   int cooldownTurns = 2,
   OriginTag originTag = OriginTag.physical,
-  RangeTag rangeTag = RangeTag.melee,
+  RangeTag rangeTag = RangeTag.close,
   AttackType attackType = AttackType.melee,
   AttackSubtype attackSubtype = AttackSubtype.single,
   int hitsPerUse = 1,

@@ -84,7 +84,7 @@ void main() {
     // lighting up all three enemies.
     final rangedAoe = actives.firstWhere(
       (t) =>
-          t.attackSubtype == AttackSubtype.aoe && t.rangeTag == RangeTag.ranged,
+          t.attackSubtype == AttackSubtype.aoe && t.rangeTag == RangeTag.long,
     );
     final auto = autoSelectedTargets(rangedAoe, caster, opponents, 2);
     expect(auto.length, 2);

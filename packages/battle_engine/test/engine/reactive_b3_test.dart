@@ -45,7 +45,7 @@ void main() {
       final trigger = testTrigger(
         id: 'ranged-shot',
         damage: damage,
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackType: AttackType.ranged,
         cooldownTurns: 2,
       );

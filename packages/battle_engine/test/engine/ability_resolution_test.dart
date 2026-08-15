@@ -263,7 +263,7 @@ void main() {
       final targetA = CharacterBattleState(testCharacter(id: 'a'));
       final targetB = CharacterBattleState(testCharacter(id: 'b'));
       final trigger = testTrigger(
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         hitsPerUse: 5,
@@ -292,7 +292,7 @@ void main() {
       final targets = List.generate(
           3, (i) => CharacterBattleState(testCharacter(id: 'target-$i')));
       final trigger = testTrigger(
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         hitsPerUse: 2,
@@ -347,7 +347,7 @@ void main() {
       final burstTarget = CharacterBattleState(
           testCharacter(id: 'burst', stats: testStats(armor: 0)));
       final burstTrigger = testTrigger(
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         hitsPerUse: 1,
@@ -371,7 +371,7 @@ void main() {
       engine.statusEffectEngine.apply(attacker, 'blinded');
 
       final rangedTrigger = testTrigger(
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
@@ -379,7 +379,7 @@ void main() {
       expect(engine.maxRangedTargets(attacker, rangedTrigger), 2);
 
       final floorTrigger = testTrigger(
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.single,
         targetCount: 1,
@@ -409,7 +409,7 @@ void main() {
       final targets = List.generate(
           3, (i) => CharacterBattleState(testCharacter(id: 'target-$i')));
       final trigger = testTrigger(
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,

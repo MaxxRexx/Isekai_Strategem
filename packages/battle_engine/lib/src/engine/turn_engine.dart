@@ -589,7 +589,7 @@ class TurnEngine {
   /// target list; [resolveAbilityUse] also defensively clamps to it.
   int maxRangedTargets(CharacterBattleState attacker, ActiveTrigger trigger,
       {StatusEffectCatalog? catalog}) {
-    if (trigger.rangeTag != RangeTag.ranged) return trigger.targetCount;
+    if (!trigger.rangeTag.isAtRange) return trigger.targetCount;
     if (attacker.character.perk?.immuneToTargetCountReduction == true) {
       return trigger.targetCount;
     }
@@ -661,7 +661,7 @@ class TurnEngine {
         .disadvantageSources) {
       context.addDisadvantage(source);
     }
-    if (trigger.rangeTag == RangeTag.ranged) {
+    if (trigger.rangeTag.isAtRange) {
       for (final source in attacker
           .rollContextFor(StatusRollTag.rangedAttackRoll)
           .disadvantageSources) {
@@ -1362,7 +1362,7 @@ class TurnEngine {
     for (final target in clampedTargets) {
       final saboIdx = target.reactiveEffects
           .indexWhere((r) => r.kind == ReactiveKind.cooldownSabotage);
-      if (saboIdx >= 0 && trigger.rangeTag == RangeTag.ranged) {
+      if (saboIdx >= 0 && trigger.rangeTag.isAtRange) {
         final hits = hitsByTargetId[target.character.id];
         final anyHit = hits != null && hits.any((h) => h.outcome.isHit);
         if (anyHit) {

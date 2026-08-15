@@ -144,7 +144,7 @@ class RuleBasedAi {
 
     if (legal.isEmpty) return const [];
 
-    final maxTargets = trigger.rangeTag == RangeTag.ranged
+    final maxTargets = trigger.rangeTag.isAtRange
         ? engine.maxRangedTargets(attacker, trigger)
         : trigger.targetCount;
 

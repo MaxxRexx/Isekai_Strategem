@@ -38,7 +38,7 @@ void main() {
 
       final trigger = testTrigger(
         attackType: AttackType.ranged,
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.curvingShot,
         damage: _flat10,
@@ -74,7 +74,7 @@ void main() {
 
       final trigger = testTrigger(
         attackType: AttackType.ranged,
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.curvingShot,
         damage: _flat10,
@@ -103,7 +103,7 @@ void main() {
 
       final trigger = testTrigger(
         attackType: AttackType.ranged,
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.calledShot,
         includeDamage: false,
@@ -135,7 +135,7 @@ void main() {
 
       final trigger = testTrigger(
         attackType: AttackType.ranged,
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.calledShot,
         includeDamage: false,
@@ -164,7 +164,7 @@ void main() {
 
       final trigger = testTrigger(
         attackType: AttackType.ranged,
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.calledShot,
         includeDamage: false,

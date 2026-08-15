@@ -38,8 +38,10 @@ class LoadoutBuilder {
     final tags = <String>{};
     if (trigger.attackSubtype == AttackSubtype.aoe) tags.add('aoe');
     if (trigger.attackSubtype == AttackSubtype.burst) tags.add('burst');
-    if (trigger.rangeTag == RangeTag.ranged) tags.add('ranged');
-    if (trigger.rangeTag == RangeTag.melee) tags.add('melee');
+    // Both the specific band and an umbrella tag, so a profile can prefer
+    // "anything at range" (the Sharpshooter) or a single band.
+    tags.add(trigger.rangeTag.name);
+    if (trigger.rangeTag.isAtRange) tags.add('at_range');
     if (trigger.targetAffiliation == TargetAffiliation.opponent &&
         trigger.inflictedStatusEffects.isNotEmpty) {
       tags.add('debuff');

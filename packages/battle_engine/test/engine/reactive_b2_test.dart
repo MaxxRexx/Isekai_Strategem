@@ -168,7 +168,7 @@ void main() {
         attacker: attacker,
         trigger: testTrigger(
           damage: damage,
-          rangeTag: RangeTag.ranged,
+          rangeTag: RangeTag.long,
           attackType: AttackType.ranged,
         ),
         targets: [defender],
@@ -305,7 +305,7 @@ void main() {
         trigger: testTrigger(
           damage: damage,
           attackType: AttackType.ranged,
-          rangeTag: RangeTag.ranged,
+          rangeTag: RangeTag.long,
           attackSubtype: AttackSubtype.burst,
           hitsPerUse: 3,
           targetCount: 1,

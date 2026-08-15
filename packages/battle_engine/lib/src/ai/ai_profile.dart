@@ -205,7 +205,7 @@ class AiProfile {
     targetPriority: AiTargetPriority.lowestHealth,
     abilityPriority: AiAbilityPriority.highestDamage,
     fatPolicy: AiFatPolicy.alwaysChain,
-    preferredTriggerTags: {'ranged', 'burst'},
+    preferredTriggerTags: {'at_range', 'burst'},
   );
 
   static const theHealersCrutch = AiProfile(

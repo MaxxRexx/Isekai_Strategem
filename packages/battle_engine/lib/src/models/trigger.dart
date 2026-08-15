@@ -13,7 +13,45 @@ enum TriggerCategory { attacker, shooter, sniper, trapper, optional }
 /// rules) independent of its damage type.
 enum OriginTag { physical, energy, afflict, mental }
 
-enum RangeTag { melee, ranged }
+/// How far away a Trigger operates: the band the wielder has to be in to
+/// use it.
+///
+/// Deliberately named apart from [AttackType], which also has melee and
+/// ranged members but answers a different question. [AttackType] is *what
+/// kind of attack this is* (a blade, a shot, or a psychic assault);
+/// [RangeTag] is *how far away it reaches*. A psychic attack still sits in
+/// one of these bands, and two Triggers of the same attack type can sit in
+/// different ones.
+///
+/// [mid] was added in the balance pass. Before it the catalog only had
+/// near and far, and every non-melee Trigger was lumped into far, which
+/// made this tag perfectly derivable from the attack type and therefore
+/// carrying no information of its own. The catalog is now split 20 / 20 /
+/// 20 across the three bands by what each ability actually does, so the
+/// band is a real property.
+///
+/// Mechanically [mid] and [long] behave identically today: everything that
+/// keys off "is this attack made at a distance" uses [isAtRange], which is
+/// true for both. The band only becomes a decision of its own once the
+/// spatial pillar lands.
+enum RangeTag { close, mid, long }
+
+extension RangeTagReach on RangeTag {
+  /// True for anything not made in contact. Every rule that cares about
+  /// attacking from a distance - Threatened's and Blinded's penalties to
+  /// ranged rolls, Blinded's cut to how many targets a ranged attack can
+  /// reach, Frozen Tempo's cooldown sabotage - keys off this rather than
+  /// naming a specific band, so adding or re-banding Triggers never
+  /// silently changes which of them those rules apply to.
+  bool get isAtRange => this != RangeTag.close;
+
+  /// Player-facing name of the band.
+  String get label => switch (this) {
+        RangeTag.close => 'Close Range',
+        RangeTag.mid => 'Mid Range',
+        RangeTag.long => 'Long Range',
+      };
+}
 
 /// Attack type tag. `psychic` is intentionally distinct from `melee`
 /// /`ranged` per the design (Psychic Attack: Unique, Single, AoE) rather

@@ -456,7 +456,7 @@ class ProfileDrivenAi {
           engine, attacker, trigger, legal, predictedHealth);
     }
 
-    final maxTargets = trigger.rangeTag == RangeTag.ranged
+    final maxTargets = trigger.rangeTag.isAtRange
         ? engine.maxRangedTargets(attacker, trigger)
         : trigger.targetCount;
     return legal.take(maxTargets).toList();
