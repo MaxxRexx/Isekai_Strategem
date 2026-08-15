@@ -292,14 +292,58 @@ either, so the distribution across the 60 Triggers looks like this:
 | Psychic | 5 | 5 | 0 | 10 | 20 |
 | **Total** | **20** | **15** | **8** | **17** | **60** |
 
-### Range: near or far
+### Range band: how far away it works
 
-Separately from its attack type, each Trigger is tagged **melee** (20 Triggers)
-or **ranged** (40). This is the near-or-far tag, and it is not the same thing as
-the attack type: a psychic attack is still tagged as either melee or ranged
-range. Some statuses key off it specifically. Threatened and Blinded, for
-instance, penalize *ranged* attack rolls and leave melee alone, and Blinded also
-cuts the number of targets a ranged attack can reach.
+Separately from its attack type, each Trigger sits in one of three **range
+bands**, 20 Triggers each:
+
+- **Close Range (20):** you have to be right there. Contact work.
+- **Mid Range (20):** the middle distance. You can see them clearly and reach
+  them, but you are not on top of each other.
+- **Long Range (20):** across the field.
+
+**These bands are not the same thing as the attack type**, and the names are
+deliberately different so the two do not get mixed up. Attack type answers *what
+kind of attack is this*; the band answers *how far away can you be when you use
+it*. Those are genuinely independent questions, and **every attack type appears
+in every band**:
+
+| Attack type | Close | Mid | Long | Total |
+|---|--:|--:|--:|--:|
+| Melee | 12 | 5 | 3 | 20 |
+| Ranged | 3 | 8 | 9 | 20 |
+| Psychic | 5 | 7 | 8 | 20 |
+| **Total** | **20** | **20** | **20** | **60** |
+
+The interesting entries are the ones that break the obvious pattern:
+
+- **Melee at Long Range.** Piercing Thrust is a committed lunge that crosses the
+  gap to land, so you start it from a distance even though it ends with a blade
+  in someone. Rally Cry is a shout, and a shout carries across the field.
+  Martyr's End is a detonation that reaches every enemy there is.
+- **Ranged at Close Range.** Scattershot is a scattergun: devastating point-blank
+  and useless at any distance. Pepper Shot and Venom Spray are the same idea, a
+  spread with no carry.
+- **Psychic at Close Range.** Charm Whisper only works at whispering distance.
+  Soul Siphon needs a hand on them, Memory Theft needs to reach into a mind you
+  are touching, Karmic Bind needs contact to tie the knot, and Sensory Swap needs
+  hold of both people at once.
+
+The band matters because several effects only touch attacks made **at a
+distance**, which means Mid and Long together. Threatened and Blinded penalize
+those attack rolls and leave Close Range alone, Blinded also cuts how many
+targets they can reach, and Frozen Tempo sabotages the cooldowns of anyone who
+attacks its holder from range. So a Close Range build is quietly resistant to a
+whole family of debuffs, and that is now a real reason to take a point-blank
+scattergun over a rifle.
+
+*Design note: this used to be a two-value near/far tag, and every non-melee
+Trigger was lumped into "ranged". That made the tag perfectly predictable from
+the attack type, so it carried no information of its own. It is now three bands
+assigned per ability by what that ability actually is, which is why the grid
+above has no empty cells. Mid and Long still behave identically, since every rule
+that reads the band asks only "is this at a distance"; the band becomes a
+decision in its own right when the spatial pillar from the design reviews lands.*
 
 ### Origin: what kind of power drives it
 
@@ -984,66 +1028,66 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 ### Attacker Triggers (melee bruisers) (16)
 
 - **"Martyr's End"** (costs 10 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: detonates for 50 damage when you are below 25% Health.
-- **Cinderburst** (costs 18 Trion, 2-turn cooldown). A melee area fire attack dealing about 15 damage to each of up to 3 enemies. Applies Scorched (12 burn damage per turn).
-- **Cleave** (costs 15 Trion, 2-turn cooldown). A melee area slashing attack dealing about 22 damage to each of up to 2 enemies. Applies Shattered Guard (guard broken, weaker defense).
-- **Cryo Burst** (costs 18 Trion, 2-turn cooldown). A ranged area cold attack dealing about 18 damage to each of up to 3 enemies. Applies Chilled (attack sinks each turn).
+- **Cinderburst** (costs 18 Trion, 2-turn cooldown). A close-range area fire attack dealing about 15 damage to each of up to 3 enemies. Applies Scorched (12 burn damage per turn).
+- **Cleave** (costs 15 Trion, 2-turn cooldown). A close-range area slashing attack dealing about 22 damage to each of up to 2 enemies. Applies Shattered Guard (guard broken, weaker defense).
+- **Cryo Burst** (costs 18 Trion, 2-turn cooldown). A long-range area cold attack dealing about 18 damage to each of up to 3 enemies. Applies Chilled (attack sinks each turn).
 - **Dread Resonance** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: hits harder the more damage the target has taken.
-- **Dread Wave** (costs 18 Trion, 2-turn cooldown). A ranged area psychic attack dealing about 16 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
-- **Frost Lance** (costs 14 Trion, 1-turn cooldown). A ranged single-target cold attack dealing about 22 damage. Applies Chilled (attack sinks each turn).
+- **Dread Wave** (costs 18 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 16 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
+- **Frost Lance** (costs 14 Trion, 1-turn cooldown). A mid-range single-target cold attack dealing about 22 damage. Applies Chilled (attack sinks each turn).
 - **Grave Bargain** (costs 8 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: spends 25% of your own Health to power the strike.
-- **Piercing Thrust** (costs 18 Trion, 2-turn cooldown). A melee single-target piercing attack dealing about 52 damage.
+- **Piercing Thrust** (costs 18 Trion, 2-turn cooldown). A long-range single-target piercing attack dealing about 52 damage.
 - **Predictive Parry** (costs 20 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: dodges the next single-target melee attack.
-- **Shared Agony** (costs 14 Trion, 2-turn cooldown). A melee unique necrotic attack dealing about 47 damage. Signature effect: links two enemies so damage bleeds between them.
-- **Soul Siphon** (costs 16 Trion, 2-turn cooldown). A ranged single-target psychic attack dealing about 22 damage.
-- **Sunder Arms** (costs 16 Trion, 3-turn cooldown). A melee unique slashing attack dealing about 37 damage. Signature effect: shreds the target armor.
-- **Twin Fang Strike** (costs 15 Trion, 2-turn cooldown). A melee single-target slashing attack dealing about 44 damage.
+- **Shared Agony** (costs 14 Trion, 2-turn cooldown). A mid-range unique necrotic attack dealing about 47 damage. Signature effect: links two enemies so damage bleeds between them.
+- **Soul Siphon** (costs 16 Trion, 2-turn cooldown). A close-range single-target psychic attack dealing about 22 damage.
+- **Sunder Arms** (costs 16 Trion, 3-turn cooldown). A close-range unique slashing attack dealing about 37 damage. Signature effect: shreds the target armor.
+- **Twin Fang Strike** (costs 15 Trion, 2-turn cooldown). A close-range single-target slashing attack dealing about 44 damage.
 - **Vow of the Duel** (costs 15 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: binds a duel: double damage between you plus a 2-turn stun.
-- **Whirlwind Slash** (costs 16 Trion, 2-turn cooldown). A melee area slashing attack dealing about 17 damage to each of up to 3 enemies. Applies Bleeding (8 damage per turn).
+- **Whirlwind Slash** (costs 16 Trion, 2-turn cooldown). A close-range area slashing attack dealing about 17 damage to each of up to 3 enemies. Applies Bleeding (8 damage per turn).
 
 ### Shooter Triggers (ranged volume) (9)
 
-- **Arc Volley** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst lightning attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets.
-- **Frag Grenade** (costs 20 Trion, 2-turn cooldown). A ranged area piercing attack dealing about 20 damage to each of up to 3 enemies.
-- **Gatling Burst** (costs 24 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 10 damage per hit across 5 hits. Applies Exposed (takes +25% damage).
-- **Pepper Shot** (costs 16 Trion, 1-turn cooldown). A ranged rapid burst piercing attack dealing about 10 damage per hit across 3 hits.
-- **Rapid Fire** (costs 18 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 17 damage per hit across 3 hits. Applies Bleeding (8 damage per turn).
-- **Scattershot** (costs 22 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 6 damage per hit across 4 hits on each of up to 3 targets. Applies Slowed (defense sinks each turn).
-- **Split Shot** (costs 18 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 14 damage per hit across 2 hits on each of up to 2 targets.
-- **Suppressing Fire** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst piercing attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets. Applies Suppressed (worse at applying statuses).
-- **Thunderclap Round** (costs 18 Trion, 2-turn cooldown). A ranged area thunder attack dealing about 13 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
+- **Arc Volley** (costs 20 Trion, 2-turn cooldown). A mid-range rapid burst lightning attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets.
+- **Frag Grenade** (costs 20 Trion, 2-turn cooldown). A long-range area piercing attack dealing about 20 damage to each of up to 3 enemies.
+- **Gatling Burst** (costs 24 Trion, 2-turn cooldown). A mid-range rapid burst piercing attack dealing about 10 damage per hit across 5 hits. Applies Exposed (takes +25% damage).
+- **Pepper Shot** (costs 16 Trion, 1-turn cooldown). A close-range rapid burst piercing attack dealing about 10 damage per hit across 3 hits.
+- **Rapid Fire** (costs 18 Trion, 2-turn cooldown). A mid-range rapid burst piercing attack dealing about 17 damage per hit across 3 hits. Applies Bleeding (8 damage per turn).
+- **Scattershot** (costs 22 Trion, 2-turn cooldown). A close-range rapid burst piercing attack dealing about 6 damage per hit across 4 hits on each of up to 3 targets. Applies Slowed (defense sinks each turn).
+- **Split Shot** (costs 18 Trion, 2-turn cooldown). A long-range rapid burst piercing attack dealing about 14 damage per hit across 2 hits on each of up to 2 targets.
+- **Suppressing Fire** (costs 20 Trion, 2-turn cooldown). A long-range rapid burst piercing attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets. Applies Suppressed (worse at applying statuses).
+- **Thunderclap Round** (costs 18 Trion, 2-turn cooldown). A long-range area thunder attack dealing about 13 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
 
 ### Sniper Triggers (long-range big hits) (3)
 
 - **Called Shot** (costs 16 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: zeroes one of the target stats.
-- **Curving Shot** (costs 18 Trion, 2-turn cooldown). A ranged unique piercing attack dealing about 37 damage. Signature effect: curves past cover and defense.
-- **Longshot** (costs 24 Trion, 2-turn cooldown). A ranged single-target piercing attack dealing about 56 damage.
+- **Curving Shot** (costs 18 Trion, 2-turn cooldown). A long-range unique piercing attack dealing about 37 damage. Signature effect: curves past cover and defense.
+- **Longshot** (costs 24 Trion, 2-turn cooldown). A long-range single-target piercing attack dealing about 56 damage.
 
 ### Trapper Triggers (control and debuffs) (24)
 
-- **Acid Spray** (costs 16 Trion, 2-turn cooldown). A melee area acid attack dealing about 13 damage to each of up to 3 enemies. Applies Corroded (-3 armor).
-- **Caustic Cloud** (costs 16 Trion, 2-turn cooldown). A ranged area acid attack dealing about 9 damage to each of up to 3 enemies. Applies Poisoned (damage each turn).
+- **Acid Spray** (costs 16 Trion, 2-turn cooldown). A mid-range area acid attack dealing about 13 damage to each of up to 3 enemies. Applies Corroded (-3 armor).
+- **Caustic Cloud** (costs 16 Trion, 2-turn cooldown). A long-range area acid attack dealing about 9 damage to each of up to 3 enemies. Applies Poisoned (damage each turn).
 - **Charm Whisper** (costs 20 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Charmed (turned against their team).
-- **Death Ledger** (costs 18 Trion, 2-turn cooldown). A ranged single-target piercing attack dealing about 10 damage. Counter: nullifies an incoming area attack.
-- **Dread Gaze** (costs 14 Trion, 1-turn cooldown). A ranged single-target psychic attack dealing about 10 damage. Applies Terrified (too afraid to fight well).
+- **Death Ledger** (costs 18 Trion, 2-turn cooldown). A mid-range single-target piercing attack dealing about 10 damage. Counter: nullifies an incoming area attack.
+- **Dread Gaze** (costs 14 Trion, 1-turn cooldown). A mid-range single-target psychic attack dealing about 10 damage. Applies Terrified (too afraid to fight well).
 - **Echoing Doubt** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: backlashes for 20 if acted against.
 - **Flashbang Round** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Blinded (much less accurate).
 - **Forced Choice** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: forces a lose-lose choice.
 - **Isolation** (costs 14 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: cuts the target off from allies.
 - **Karmic Bind** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: damage you take or healing you receive is passed on to the bound enemy, scaled by Team Spirit.
-- **Mass Confusion** (costs 20 Trion, 2-turn cooldown). A ranged area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Silenced (cannot use abilities).
+- **Mass Confusion** (costs 20 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Silenced (cannot use abilities).
 - **Memory Theft** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: steals or copies an ability.
-- **Mind Fog** (costs 16 Trion, 2-turn cooldown). A ranged area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Blinded (much less accurate).
-- **Mind Shatter** (costs 18 Trion, 2-turn cooldown). A ranged single-target psychic attack dealing about 10 damage. Applies Silenced (cannot use abilities).
-- **Nightmare Pulse** (costs 18 Trion, 2-turn cooldown). A ranged area psychic attack dealing about 14 damage to each of up to 2 enemies. Applies Terrified (too afraid to fight well).
+- **Mind Fog** (costs 16 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Blinded (much less accurate).
+- **Mind Shatter** (costs 18 Trion, 2-turn cooldown). A mid-range single-target psychic attack dealing about 10 damage. Applies Silenced (cannot use abilities).
+- **Nightmare Pulse** (costs 18 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 14 damage to each of up to 2 enemies. Applies Terrified (too afraid to fight well).
 - **Numbing Toxin** (costs 20 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: reduces incoming burst damage.
-- **Psychic Scream** (costs 18 Trion, 2-turn cooldown). A ranged area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Silenced (cannot use abilities).
-- **Root Snare** (costs 18 Trion, 2-turn cooldown). A ranged single-target bludgeoning attack dealing about 10 damage. Applies Forced Repetition (stuck repeating an action).
-- **Scramble** (costs 20 Trion, 2-turn cooldown). A ranged single-target psychic attack dealing about 10 damage. Applies Misfire (50% chance actions fail).
+- **Psychic Scream** (costs 18 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Silenced (cannot use abilities).
+- **Root Snare** (costs 18 Trion, 2-turn cooldown). A mid-range single-target bludgeoning attack dealing about 10 damage. Applies Forced Repetition (stuck repeating an action).
+- **Scramble** (costs 20 Trion, 2-turn cooldown). A mid-range single-target psychic attack dealing about 10 damage. Applies Misfire (50% chance actions fail).
 - **Sensory Swap** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: swaps a targeting link between two enemies.
-- **Shatterpoint** (costs 12 Trion, 1-turn cooldown). A melee single-target acid attack dealing about 22 damage. Applies Corroded (-3 armor).
+- **Shatterpoint** (costs 12 Trion, 1-turn cooldown). A close-range single-target acid attack dealing about 22 damage. Applies Corroded (-3 armor).
 - **Unmaking** (costs 18 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: a heavy unravelling debuff.
-- **Venom Needle** (costs 12 Trion, 1-turn cooldown). A ranged single-target poison attack dealing about 15 damage. Applies Poisoned (damage each turn).
-- **Venom Spray** (costs 20 Trion, 2-turn cooldown). A ranged rapid burst poison attack dealing about 9 damage per hit across 3 hits on each of up to 2 targets. Applies Poisoned (damage each turn).
+- **Venom Needle** (costs 12 Trion, 1-turn cooldown). A mid-range single-target poison attack dealing about 15 damage. Applies Poisoned (damage each turn).
+- **Venom Spray** (costs 20 Trion, 2-turn cooldown). A close-range rapid burst poison attack dealing about 9 damage per hit across 3 hits on each of up to 2 targets. Applies Poisoned (damage each turn).
 
 ### Optional Triggers (buffs, wards, counters) (8)
 

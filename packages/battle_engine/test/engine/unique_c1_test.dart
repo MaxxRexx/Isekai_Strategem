@@ -261,8 +261,8 @@ void main() {
         };
 
         final rangeTag = attackType == AttackType.ranged
-            ? RangeTag.ranged
-            : RangeTag.melee;
+            ? RangeTag.long
+            : RangeTag.close;
 
         final trigger = testTrigger(
           attackType: attackType,

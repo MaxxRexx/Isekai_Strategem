@@ -655,7 +655,7 @@ void main() {
       final rangedTrigger = testTrigger(
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.single,
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         damage: const DiceExpression(1, 6),
       );
 

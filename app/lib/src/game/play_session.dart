@@ -342,7 +342,7 @@ class PlaySession {
             )
             .map((t) => t.character.id)
             .toList();
-        maxTargets = trigger.rangeTag == RangeTag.ranged
+        maxTargets = trigger.rangeTag.isAtRange
             ? engine.maxRangedTargets(state, trigger)
             : trigger.targetCount;
       }

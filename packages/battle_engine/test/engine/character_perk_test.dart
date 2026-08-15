@@ -85,7 +85,7 @@ void main() {
       battle.turnEngine.statusEffectEngine.apply(state, 'blinded');
 
       final trigger = testTrigger(
-        rangeTag: RangeTag.ranged,
+        rangeTag: RangeTag.long,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         targetCount: 3,

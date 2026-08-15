@@ -132,6 +132,27 @@ class _GuideScreenState extends State<GuideScreen>
           ],
         ),
         _section(
+          icon: GameIcons.ranged,
+          title: 'Attack Type and Range Band',
+          children: const [
+            _Plain(
+              'These are two different tags and it is worth keeping them apart. The ATTACK TYPE is what kind of attack it is: Melee, Ranged, or Psychic, 20 Triggers each. The RANGE BAND is how far away you can be when you use it: Close, Mid, or Long Range, also 20 each. Every attack type appears in every band.',
+            ),
+            _Bullet(
+              'Close Range (20). You have to be right there. Mostly blades and fists, but also the point-blank shots (Scattershot, Pepper Shot) and the psychic effects that need contact (Charm Whisper, Soul Siphon, Memory Theft).',
+            ),
+            _Bullet(
+              'Mid Range (20). You can see them clearly and reach them without being on top of each other. Sustained fire, poisons and traps you set nearby, and the psychic effects that only need eye contact.',
+            ),
+            _Bullet(
+              'Long Range (20). Across the field. Sniper work, thrown and area ordnance, the broad psychic waves, and the melee moves that cross the gap to land: Piercing Thrust is a lunge, Rally Cry is a shout that carries, Martyr\'s End reaches everyone.',
+            ),
+            _Plain(
+              'The band matters because several effects only touch attacks made at a distance. Threatened and Blinded penalize the rolls of Mid and Long Range attacks and leave Close Range alone, Blinded also cuts how many targets they can reach, and Frozen Tempo sabotages the cooldowns of anyone who attacks it from range. A Close Range build is quietly resistant to that whole family of debuffs.',
+            ),
+          ],
+        ),
+        _section(
           icon: GameIcons.burst,
           title: 'Turn Structure',
           children: const [
@@ -331,7 +352,7 @@ class _GuideScreenState extends State<GuideScreen>
             icon: TriggerIcon(trigger: t, size: 14),
             title: t.name,
             meta: t is ActiveTrigger
-                ? '${t.category.name} - ${t.rangeTag.name} - ${t.attackSubtype.name}'
+                ? '${t.category.name} - ${t.rangeTag.label} - ${t.attackSubtype.name}'
                 : '${t.category.name} - passive',
             body: describeTrigger(t),
           ),

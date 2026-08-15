@@ -103,6 +103,53 @@ void main() {
     });
   });
 
+  group('range bands', () {
+    test('the catalog is split evenly across the three bands', () {
+      final byBand = <RangeTag, int>{};
+      for (final t in catalog.activeTriggers) {
+        byBand[t.rangeTag] = (byBand[t.rangeTag] ?? 0) + 1;
+      }
+      expect(byBand[RangeTag.close], 20);
+      expect(byBand[RangeTag.mid], 20);
+      expect(byBand[RangeTag.long], 20);
+    });
+
+    test('every attack type spans all three bands', () {
+      // This is the failure the band was rescued from: when it was
+      // derivable from the attack type it carried nothing of its own. A
+      // melee attack can be a lunge that crosses the gap, a ranged one can
+      // be a point-blank scattergun, and a psychic one can need contact -
+      // so no attack type may sit entirely in one band.
+      for (final type in AttackType.values) {
+        final bands = catalog.activeTriggers
+            .where((t) => t.attackType == type)
+            .map((t) => t.rangeTag)
+            .toSet();
+        expect(bands, hasLength(RangeTag.values.length),
+            reason: '$type Triggers only occupy $bands, which makes the '
+                'band partly redundant with the attack type');
+      }
+    });
+
+    test('no cell of the type-by-band grid is empty', () {
+      for (final type in AttackType.values) {
+        for (final band in RangeTag.values) {
+          final count = catalog.activeTriggers
+              .where((t) => t.attackType == type && t.rangeTag == band)
+              .length;
+          expect(count, greaterThan(0),
+              reason: 'there is no $type Trigger at $band range');
+        }
+      }
+    });
+
+    test('everything but Close Range counts as being at a distance', () {
+      expect(RangeTag.close.isAtRange, isFalse);
+      expect(RangeTag.mid.isAtRange, isTrue);
+      expect(RangeTag.long.isAtRange, isTrue);
+    });
+  });
+
   group('critical hits', () {
     test('the crit threshold never drops below a natural 17', () {
       final engine = CombatEngine();
