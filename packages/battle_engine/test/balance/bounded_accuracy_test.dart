@@ -114,27 +114,32 @@ void main() {
       expect(byBand[RangeTag.long], 20);
     });
 
-    test('a melee-type Trigger is always Close Range', () {
-      for (final t in catalog.activeTriggers) {
-        if (t.attackType != AttackType.melee) continue;
-        expect(t.rangeTag, RangeTag.close,
-            reason: '${t.id} is a melee attack, so it has to be in contact');
-      }
-    });
-
-    test('the band is not just a restatement of the attack type', () {
-      // This is the failure the band was rescued from: when every non-melee
-      // Trigger sat in one bucket, the tag was perfectly derivable from the
-      // attack type and carried nothing of its own. Both ranged and psychic
-      // must therefore straddle mid and long.
-      for (final type in [AttackType.ranged, AttackType.psychic]) {
+    test('every attack type spans all three bands', () {
+      // This is the failure the band was rescued from: when it was
+      // derivable from the attack type it carried nothing of its own. A
+      // melee attack can be a lunge that crosses the gap, a ranged one can
+      // be a point-blank scattergun, and a psychic one can need contact -
+      // so no attack type may sit entirely in one band.
+      for (final type in AttackType.values) {
         final bands = catalog.activeTriggers
             .where((t) => t.attackType == type)
             .map((t) => t.rangeTag)
             .toSet();
-        expect(bands.length, greaterThan(1),
-            reason: 'every $type Trigger sits in the same band, which makes '
-                'the band redundant with the attack type');
+        expect(bands, hasLength(RangeTag.values.length),
+            reason: '$type Triggers only occupy $bands, which makes the '
+                'band partly redundant with the attack type');
+      }
+    });
+
+    test('no cell of the type-by-band grid is empty', () {
+      for (final type in AttackType.values) {
+        for (final band in RangeTag.values) {
+          final count = catalog.activeTriggers
+              .where((t) => t.attackType == type && t.rangeTag == band)
+              .length;
+          expect(count, greaterThan(0),
+              reason: 'there is no $type Trigger at $band range');
+        }
       }
     });
 

@@ -17,13 +17,16 @@ import '../util/dice.dart';
 ///  - **Attack type**: 20 melee / 20 ranged / 20 psychic. Includes the 17
 ///    Unique-subtype Triggers (5 melee, 2 ranged, 10 psychic) that wire
 ///    the Phase C unique behaviors.
-///  - **Range band** ([RangeTag]): 20 close / 20 mid / 20 long. Every
-///    melee-type Trigger is close, since a blade needs contact, but the
-///    other two types are spread across mid and long by what each ability
-///    actually does rather than by its type - ranged splits 8 mid / 12
-///    long and psychic splits 12 mid / 8 long. Keep it that way: the band
-///    was a dead tag for as long as it was derivable from the attack
-///    type.
+///  - **Range band** ([RangeTag]): 20 close / 20 mid / 20 long, and
+///    critically, **every attack type spans all three bands**. The band
+///    answers where the wielder has to be, which is a different question
+///    from what kind of attack it is: Piercing Thrust is a melee lunge
+///    that crosses the gap (long), Scattershot is a point-blank scattergun
+///    (close), Charm Whisper is a psychic effect that needs whispering
+///    distance (close). The full grid is melee 12/5/3, ranged 3/8/9 and
+///    psychic 5/7/8 across close/mid/long. Keep every cell of that grid
+///    populated: the band was a dead tag for as long as it was derivable
+///    from the attack type.
 class TriggerCatalog {
   final Map<String, Trigger> _byId;
 
@@ -147,7 +150,7 @@ class TriggerCatalog {
         trionCost: 20,
         cooldownTurns: 2,
         originTag: OriginTag.mental,
-        rangeTag: RangeTag.mid,
+        rangeTag: RangeTag.close,
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.single,
         inflictedStatusEffects: const [StatusEffectApplication('charmed')],
@@ -162,7 +165,7 @@ class TriggerCatalog {
         trionCost: 14,
         cooldownTurns: 2,
         originTag: OriginTag.energy,
-        rangeTag: RangeTag.close,
+        rangeTag: RangeTag.long,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
@@ -191,7 +194,7 @@ class TriggerCatalog {
         trionCost: 18,
         cooldownTurns: 2,
         originTag: OriginTag.physical,
-        rangeTag: RangeTag.close,
+        rangeTag: RangeTag.long,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.piercing,
@@ -244,7 +247,7 @@ class TriggerCatalog {
         trionCost: 22,
         cooldownTurns: 2,
         originTag: OriginTag.physical,
-        rangeTag: RangeTag.long,
+        rangeTag: RangeTag.close,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         hitsPerUse: 4,
@@ -261,7 +264,7 @@ class TriggerCatalog {
         trionCost: 18,
         cooldownTurns: 2,
         originTag: OriginTag.energy,
-        rangeTag: RangeTag.long,
+        rangeTag: RangeTag.mid,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
@@ -311,7 +314,7 @@ class TriggerCatalog {
         trionCost: 16,
         cooldownTurns: 2,
         originTag: OriginTag.physical,
-        rangeTag: RangeTag.close,
+        rangeTag: RangeTag.mid,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
@@ -343,7 +346,7 @@ class TriggerCatalog {
         trionCost: 16,
         cooldownTurns: 2,
         originTag: OriginTag.mental,
-        rangeTag: RangeTag.mid,
+        rangeTag: RangeTag.close,
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.single,
         damageType: DamageType.psychic,
@@ -391,7 +394,7 @@ class TriggerCatalog {
         trionCost: 16,
         cooldownTurns: 2,
         originTag: OriginTag.energy,
-        rangeTag: RangeTag.close,
+        rangeTag: RangeTag.mid,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.single,
         targetAffiliation: TargetAffiliation.ally,
@@ -519,7 +522,7 @@ class TriggerCatalog {
         trionCost: 14,
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
-        rangeTag: RangeTag.close,
+        rangeTag: RangeTag.mid,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.sharedAgony,
@@ -534,7 +537,7 @@ class TriggerCatalog {
         trionCost: 8,
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
-        rangeTag: RangeTag.close,
+        rangeTag: RangeTag.mid,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.graveBargain,
@@ -547,7 +550,7 @@ class TriggerCatalog {
         trionCost: 10,
         cooldownTurns: 4,
         originTag: OriginTag.energy,
-        rangeTag: RangeTag.close,
+        rangeTag: RangeTag.long,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.martyrsEnd,
@@ -561,7 +564,7 @@ class TriggerCatalog {
         trionCost: 15,
         cooldownTurns: 3,
         originTag: OriginTag.physical,
-        rangeTag: RangeTag.close,
+        rangeTag: RangeTag.mid,
         attackType: AttackType.melee,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.vowOfTheDuel,
@@ -647,7 +650,7 @@ class TriggerCatalog {
         trionCost: 16,
         cooldownTurns: 3,
         originTag: OriginTag.mental,
-        rangeTag: RangeTag.mid,
+        rangeTag: RangeTag.close,
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.memoryTheft,
@@ -660,7 +663,7 @@ class TriggerCatalog {
         trionCost: 14,
         cooldownTurns: 2,
         originTag: OriginTag.mental,
-        rangeTag: RangeTag.mid,
+        rangeTag: RangeTag.close,
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.sensorySwap,
@@ -728,7 +731,7 @@ class TriggerCatalog {
         trionCost: 16,
         cooldownTurns: 3,
         originTag: OriginTag.mental,
-        rangeTag: RangeTag.mid,
+        rangeTag: RangeTag.close,
         attackType: AttackType.psychic,
         attackSubtype: AttackSubtype.unique,
         uniqueBehavior: UniqueBehavior.karmicBind,
@@ -873,7 +876,7 @@ class TriggerCatalog {
         trionCost: 20,
         cooldownTurns: 2,
         originTag: OriginTag.energy,
-        rangeTag: RangeTag.long,
+        rangeTag: RangeTag.mid,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         hitsPerUse: 3,
@@ -889,7 +892,7 @@ class TriggerCatalog {
         trionCost: 16,
         cooldownTurns: 1,
         originTag: OriginTag.physical,
-        rangeTag: RangeTag.mid,
+        rangeTag: RangeTag.close,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         hitsPerUse: 3,
@@ -905,7 +908,7 @@ class TriggerCatalog {
         trionCost: 20,
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
-        rangeTag: RangeTag.mid,
+        rangeTag: RangeTag.close,
         attackType: AttackType.ranged,
         attackSubtype: AttackSubtype.burst,
         hitsPerUse: 3,
