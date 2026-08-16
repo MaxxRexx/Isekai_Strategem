@@ -10,7 +10,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | Items #1, #2 and #3 are designed and awaiting sign-off (see the work queue below). No code starts until all three are approved. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is the owner's, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 63 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | #1 range bands. #1, #2 and #3 are designed, audited against the code and approved; work runs in queue order from here. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is the owner's, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -33,9 +33,9 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 
 | # | Item | State |
 |---|---|---|
-| 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4. Reposition costs your action. Plus area attacks hitting one position, traps carrying a band, zone lock, and protection needing proximity. | Designed, awaiting sign-off |
-| 2 | **Bail Out.** Not a revive: World Trigger's Bail Out removes the operator from the engagement. Proposed as a one-turn Bailing Out window plus Trion Salvage on the way out, with "Refuse to Bail" held back as an equippable. | Designed, awaiting sign-off |
-| 3 | **Both budgets, plus the tooltip fix.** Status Points price effects and feed into the Trigger Value formula, so the two compose rather than compete. Tooltip duration becomes a 2-10 second setting under the volume slider, dismissed by tapping elsewhere. | Designed, awaiting sign-off |
+| 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4. Reposition costs your action and resolves in the Arm phase, with range checked against projected position so move-then-strike works on a FAT turn. Plus area attacks hitting one position (which turns them into an aimed choice), traps carrying a band, zone lock, and protection needing proximity. | Approved, in progress |
+| 2 | **Bail Out, contested.** Not a revive: the operator leaves the engagement. A one-turn Bailing Out window where the body stays **targetable**; left alone it is recalled and the squad gets Trion Salvage (20% of base Trion Capacity), but an enemy hit destroys it instead, denying the Salvage and giving the attacker a smaller gain. Refuse to Bail is pre-declared, armed like the existing counters. | Approved, queued |
+| 3 | **Both budgets, plus the tooltip fix.** Status Points price effects and feed into the Trigger Value formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
 | 4 | **Trion economy.** Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. | Queued |
 | 5 | **Healing is too weak.** Wellspring Surge averages 5.5, Soul Siphon's drain heals 1.5 and Radiant Blessing 1 a turn, all against 100 health. Folds into #4. | Queued |
 | 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. | Queued |
@@ -46,6 +46,28 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 11 | "Close" overloaded as a dialog button label. | Closed, not an issue |
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued |
+
+### What the pre-build code audit changed
+
+The designs were checked against the code before any of them was built, which
+caught five things worth recording:
+
+- **Bail Out's window was inert.** As first written the body could not act, be
+  targeted or be healed, so neither player made a decision, and it would have
+  made three existing perks ambiguous for a turn. It is now contested (see #2).
+- **Trion Salvage had no base to be a share of.** Trion Capacity is a per
+  character Loadout budget spent at draft time; in battle there is only the
+  squad's shared pool. Salvage is a share of *base* Capacity, and 20% rather
+  than 30%, because 30% of a typical 110 exceeds a whole High income turn.
+- **Ability legality is checked at queue time**, so range has to be evaluated
+  against projected position (current plus any queued Reposition) or move then
+  strike would be impossible and the FAT engage plan would not work.
+- **Area attacks currently auto-select every legal target.** Making them hit one
+  position turns them into an aimed choice, which is a change to the target
+  picker as well as the engine.
+- **`isAlive` is simply health above zero and thirty-eight places read it**, so a
+  targetable bailing body needs one narrow exception in damaging-ability target
+  selection, not a general "still alive" state.
 
 Pipeline (green is done, orange is in progress, grey is to do):
 
