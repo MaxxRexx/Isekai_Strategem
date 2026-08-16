@@ -27,6 +27,18 @@ AI tuning          ▒▒▒▒▒▒▒▒▒▒   0%   not started
 Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
 ```
 
+## Abbreviations
+
+- **TEG**, Team Efficiency Grade: the D to SSS score for how well a squad is put
+  together, with its in-battle dice effects and inverse XP.
+- **FAT**, Full Arms Trigger: the burst turn that grants up to three ability uses
+  instead of one.
+- **SPTV**, Status Points and Trigger Value: the two-part pricing rule from item
+  #3. SP prices an effect by magnitude times duration times targets; TV prices a
+  whole ability as (damage + SP) divided by Trion cost, adjusted for cooldown. SP
+  is an input to TV, so they compose. Anything carrying a magnitude, a duration
+  or a target count is in SPTV's scope, including reactive and trap durations.
+
 ## The work queue
 
 Agreed running order. Items are referred to by these numbers everywhere else.
@@ -35,7 +47,7 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 |---|---|---|
 | 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. **Done so far:** the position model and distance rules, range gating inside resolution, Reposition with zone lock, starting positions derived from each Loadout's bands, an idle-AI reposition fallback on both AI paths, area attacks catching one position, traps remembering the band and place they were laid, and guard redirects needing proximity. **Left:** projected position when queueing, the interface rail and out-of-range reason, and real positional judgement in the AI. | In progress |
 | 2 | **Bail Out, contested.** Not a revive: the operator leaves the engagement. A one-turn Bailing Out window where the body stays **targetable**; left alone it is recalled and the squad gets Trion Salvage (20% of base Trion Capacity), but an enemy hit destroys it instead, denying the Salvage and giving the attacker a smaller gain. Refuse to Bail is pre-declared, armed like the existing counters. | Approved, queued |
-| 3 | **Both budgets, plus the tooltip fix.** Status Points price effects and feed into the Trigger Value formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
+| 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 63 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
 | 4 | **Trion economy.** Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. | Queued |
 | 5 | **Healing is too weak.** Wellspring Surge averages 5.5, Soul Siphon's drain heals 1.5 and Radiant Blessing 1 a turn, all against 100 health. Folds into #4. | Queued |
 | 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. | Queued |

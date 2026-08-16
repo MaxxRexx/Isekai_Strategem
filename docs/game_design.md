@@ -36,7 +36,7 @@ advantage or disadvantage, critical hits, and a big list of status conditions).
 8. Full Arms Trigger (FAT): your burst turn
 9. How a turn works: queue then resolve
 10. Resolution order: the six phases
-11. How an attack is decided: the dice math, and the damage types
+11. How an attack is decided: the dice math, damage types, and SPTV
 12. Status effects: the full list, explained
 13. Counters: reacting to the enemy
 14. Unique abilities: the signature moves
@@ -376,7 +376,9 @@ your squad together makes you a target; spreading out is a genuine defence.
 
 **Traps remember where they were laid.** A trap records the position it was armed
 from and its own band, and only fires if the enemy is inside that band when they
-act. Setting one is a bet on where they will be standing two turns from now.
+act. Setting one is a bet on where they will be standing for as long as it lasts.
+How long that is is a per-ability number, and those numbers are unpriced
+first-pass values awaiting the SPTV pass (see below).
 
 **Some things need you to be close.** Root Snare pins its target in place as well
 as locking their ability, so a Trapper decides where the fight happens. Sable's
@@ -536,6 +538,26 @@ it passes through a short chain of adjustments (the battle log shows every step)
 
 Burst abilities run this whole chain once per hit, and area abilities apply it to
 each target.
+
+### SPTV: the Status Point and Trigger Value budget
+
+**SPTV** is the shorthand for the two-part pricing rule that keeps content
+honest, and it is used throughout these documents:
+
+- **SP, Status Points**, prices an *effect*. How strong it is, multiplied by how
+  long it lasts, multiplied by how many targets it hits. A stun costs more than a
+  small attack penalty; two turns costs twice one turn; three targets cost three
+  times one.
+- **TV, Trigger Value**, prices a *whole ability*. It adds the damage and the SP
+  together, divides by the Trion cost, and adjusts for cooldown, because an
+  ability you can use every turn is worth more than the same one every third
+  turn.
+
+The two compose rather than compete: SP is an input to TV. Anything with a
+magnitude, a duration or a target count is in SPTV's scope, which includes the
+status effects, the Trigger costs and cooldowns, and the durations on the
+reactive counters and traps. Numbers that have not been through SPTV yet are
+first-pass values chosen by eye, and this document says so where that is true.
 
 ### Damage types: what the damage is made of
 

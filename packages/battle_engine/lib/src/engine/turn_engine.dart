@@ -1642,9 +1642,14 @@ class TurnEngine {
 
     // A trap is laid at a place, in a band. It records where the wielder
     // was standing and how far that ability reaches, so it can later ask
-    // whether the enemy walked into it or acted from safely outside. This
-    // is what turns "will they be in range of my trap in two turns" into a
-    // real question the player has to answer.
+    // whether the enemy walked into it or acted from safely outside. That
+    // turns "will they still be in range when this fires" into a real
+    // question rather than a formality.
+    //
+    // How long it stays armed is the ability's own armsReactiveDefaultTurns,
+    // untouched here. Those are Phase B first-pass values chosen by eye and
+    // are in scope for the SPTV pass (item #3), which prices duration
+    // alongside magnitude and target count.
     holder.reactiveEffects.add(ReactiveEffect(
       kind: kind,
       sourceCharacterId: caster.character.id,

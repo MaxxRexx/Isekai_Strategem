@@ -264,7 +264,12 @@ void main() {
   group('protection needs proximity', () {
     test('a guardian too far away cannot step in front of an ally', () {
       final roster = CharacterRoster.defaultRoster;
+      // Deterministic dice: without this the attack can simply miss and the
+      // test becomes a coin flip on whether the protectee took damage.
       final battle = Battle(
+        turnEngine: TurnEngine(
+          combatEngine: CombatEngine(diceRoller: DiceRoller(FixedRandom(19))),
+        ),
         teamA: Team(id: 'a', characters: [
           roster['kaito_reyes'],
           roster['vela_ashworth'],
@@ -306,7 +311,12 @@ void main() {
 
     test('a guardian standing with the ally does intercept', () {
       final roster = CharacterRoster.defaultRoster;
+      // Deterministic dice: without this the attack can simply miss and the
+      // test becomes a coin flip on whether the protectee took damage.
       final battle = Battle(
+        turnEngine: TurnEngine(
+          combatEngine: CombatEngine(diceRoller: DiceRoller(FixedRandom(19))),
+        ),
         teamA: Team(id: 'a', characters: [
           roster['kaito_reyes'],
           roster['vela_ashworth'],
