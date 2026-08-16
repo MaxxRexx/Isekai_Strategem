@@ -10,7 +10,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 63 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | #1 range bands. #1, #2 and #3 are designed, audited against the code and approved; work runs in queue order from here. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is the owner's, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 63 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | #2 Bail Out. #1 (range bands) is complete; #1, #2 and #3 are designed, audited against the code and approved, and work runs in queue order from here. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is the owner's, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -45,10 +45,10 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 
 | # | Item | State |
 |---|---|---|
-| 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. **Done so far:** the position model and distance rules, range gating inside resolution, Reposition with zone lock, starting positions derived from each Loadout's bands, an idle-AI reposition fallback on both AI paths, area attacks catching one position, traps remembering the band and place they were laid, and guard redirects needing proximity. **Left:** projected position when queueing, the interface rail and out-of-range reason, and real positional judgement in the AI. | In progress |
+| 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the battlefield lane diagram and per-character move strip with an out-of-range reason on every dark ability, and AI positional judgement on both AI paths. | Done |
 | 2 | **Bail Out, contested.** Not a revive: the operator leaves the engagement. A one-turn Bailing Out window where the body stays **targetable**; left alone it is recalled and the squad gets Trion Salvage (20% of base Trion Capacity), but an enemy hit destroys it instead, denying the Salvage and giving the attacker a smaller gain. Refuse to Bail is pre-declared, armed like the existing counters. | Approved, queued |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 63 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
-| 4 | **Trion economy.** Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. | Queued |
+| 4 | **Trion economy.** Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Now also carries a pacing correction: teaching the AI to respect range bands stopped it spending Trion on shots the engine dropped, and 200 simulated battles fell from a median of 16 rounds to 13 (p25 11, p75 17, p90 23). Every action landing is the right behaviour; the fights being a little short of the 15-20 target is an economy number, so it is re-tuned here rather than by walking the AI back. | Queued |
 | 5 | **Healing is too weak.** Wellspring Surge averages 5.5, Soul Siphon's drain heals 1.5 and Radiant Blessing 1 a turn, all against 100 health. Folds into #4. | Queued |
 | 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. | Queued |
 | 7 | **AI tuning (Phase G).** Teach the AI to value counters, uniques and statuses, and to play positions once #1 lands. | Queued |
@@ -73,10 +73,21 @@ caught five things worth recording:
   than 30%, because 30% of a typical 110 exceeds a whole High income turn.
 - **Ability legality is checked at queue time**, so range has to be evaluated
   against projected position (current plus any queued Reposition) or move then
-  strike would be impossible and the FAT engage plan would not work.
+  strike would be impossible and the FAT engage plan would not work. Built that
+  way, and building it turned up two more: the interface's own legal-target
+  list applied no range filter at all (it called `canTarget` with no trigger,
+  and skipped it entirely for ally-targeted abilities), and the AI's target
+  selection did the same, so the opponent was spending Trion on abilities the
+  engine then dropped at resolution.
 - **Area attacks currently auto-select every legal target.** Making them hit one
   position turns them into an aimed choice, which is a change to the target
   picker as well as the engine.
+- **The randomized-playthrough self-test never resolved its queue.** It queued
+  actions and called `endTurn`, which does not resolve them, so the simulated
+  player landed zero hits across all 30 battles and every "playthrough" was
+  really the AI beating up a statue. Found because the range work made the
+  resulting stalls visible. Fixed; 360 probe battles across six seeds now
+  conclude with no stalls.
 - **`isAlive` is simply health above zero and thirty-eight places read it**, so a
   targetable bailing body needs one narrow exception in damaging-ability target
   selection, not a general "still alive" state.

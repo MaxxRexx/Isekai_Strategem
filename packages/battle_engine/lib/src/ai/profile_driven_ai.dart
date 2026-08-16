@@ -3,6 +3,7 @@ import 'dart:math';
 import '../engine/battle.dart';
 import '../engine/character_battle_state.dart';
 import '../engine/turn_engine.dart';
+import '../models/battle_position.dart';
 import '../models/team.dart';
 import '../models/trigger.dart';
 import 'ai_profile.dart';
@@ -19,11 +20,21 @@ class AiPlannedAction {
   final String triggerId;
   final List<String> targetIds;
 
+  /// Set only on a planned Reposition ([triggerId] is [repositionActionId]):
+  /// the line this step moves to. Null for every ability.
+  final BattlePosition? destination;
+
   const AiPlannedAction({
     required this.characterId,
     required this.triggerId,
     required this.targetIds,
+    this.destination,
   });
+
+  /// Whether this entry is a move rather than an ability use. Moves carry no
+  /// Trion cost and resolve ahead of every ability, so the caller has to be
+  /// able to tell them apart.
+  bool get isReposition => triggerId == repositionActionId;
 }
 
 /// Plays one [AiProfile]'s strategy for a [Battle]'s active team: which
@@ -58,6 +69,18 @@ class ProfileDrivenAi {
 
       final triggers = equippedActiveTriggers[character.id] ?? const [];
       if (triggers.isEmpty) continue;
+
+      // Decide the step before swinging, so a character who closes the gap
+      // can still act this turn (see [_planStep]).
+      final step = _planStep(
+        engine,
+        state,
+        triggers,
+        battle.inactiveTeamStates,
+        engine.fatEngine.maxAbilitiesThisTurn(state) -
+            state.abilitiesUsedThisTurnCount,
+      );
+      if (step != null) engine.reposition(state, step);
 
       final unusableThisTurn = <String>{};
       while (true) {
@@ -139,6 +162,11 @@ class ProfileDrivenAi {
     };
     var trionBudget = battle.activeTeamPool.current;
     final usesPerChar = <String, int>{};
+    // Where each character will be standing once the plan's moves resolve.
+    // Everything after a planned move is chosen against this, not against the
+    // live position, so the AI can close the gap and swing in one turn just
+    // like the player can.
+    final plannedPositions = <String, BattlePosition>{};
 
     for (final character in battle.activeTeam.characters) {
       final state = battle.states[character.id]!;
@@ -146,6 +174,25 @@ class ProfileDrivenAi {
 
       final triggers = equippedActiveTriggers[character.id] ?? const [];
       if (triggers.isEmpty) continue;
+
+      final step = _planStep(
+        engine,
+        state,
+        triggers,
+        battle.inactiveTeamStates,
+        engine.fatEngine.maxAbilitiesThisTurn(state) -
+            state.abilitiesUsedThisTurnCount,
+      );
+      if (step != null) {
+        plannedPositions[character.id] = step;
+        usesPerChar[character.id] = (usesPerChar[character.id] ?? 0) + 1;
+        plan.add(AiPlannedAction(
+          characterId: character.id,
+          triggerId: repositionActionId,
+          targetIds: const [],
+          destination: step,
+        ));
+      }
 
       final unusableThisTurn = <String>{};
       while (true) {
@@ -169,6 +216,7 @@ class ProfileDrivenAi {
           battle,
           config,
           predictedHealth: predictedHealth,
+          fromPosition: plannedPositions[character.id],
         );
         if (targets.isEmpty) {
           unusableThisTurn.add(trigger.id);
@@ -199,6 +247,45 @@ class ProfileDrivenAi {
     }
 
     return plan;
+  }
+
+  /// The step this character should take before acting, or null to stand pat.
+  ///
+  /// Two cases, and only two:
+  ///
+  /// A character who can reach **nothing** moves. Standing still forfeits the
+  /// turn outright, so any move is better, and two stranded squads would
+  /// otherwise never finish the battle.
+  ///
+  /// A character with a **spare** ability use moves when a step brings more of
+  /// their Loadout to bear. There the move costs tempo rather than the whole
+  /// turn, which is a trade worth making.
+  ///
+  /// A character with one action and something to do keeps the action. Paying
+  /// an entire turn to improve the next one is a bad trade, and an AI that
+  /// made it would read as indecisive rather than clever.
+  BattlePosition? _planStep(
+    TurnEngine engine,
+    CharacterBattleState state,
+    List<ActiveTrigger> triggers,
+    List<CharacterBattleState> opponents,
+    int usesAvailable,
+  ) {
+    if (usesAvailable <= 0) return null;
+    final destination = engine.suggestReposition(
+      state,
+      triggers,
+      opponents,
+      from: state.position,
+    );
+    if (destination == null) return null;
+    final reachNow = engine.reachableAbilityCount(
+      state,
+      state.position,
+      triggers,
+      opponents,
+    );
+    return reachNow == 0 || usesAvailable > 1 ? destination : null;
   }
 
   bool _isMistake(AiSkillClassConfig config) =>
@@ -400,6 +487,7 @@ class ProfileDrivenAi {
     Battle battle,
     AiSkillClassConfig config, {
     Map<String, int>? predictedHealth,
+    BattlePosition? fromPosition,
   }) {
     if (trigger.targetAffiliation == TargetAffiliation.self) {
       return [attacker];
@@ -409,11 +497,14 @@ class ProfileDrivenAi {
         ? battle.inactiveTeam.characters.map((c) => battle.states[c.id]!)
         : battle.activeTeam.characters.map((c) => battle.states[c.id]!);
 
+    // The range band is part of legality, on ally-targeted abilities as much
+    // as opponent-targeted ones. Without it the AI picks targets the engine
+    // then silently drops at resolution, which spends Trion on nothing.
     final legal = pool
         .where((t) =>
             _aliveOf(t, predictedHealth) &&
-            (trigger.targetAffiliation != TargetAffiliation.opponent ||
-                engine.canTarget(attacker, t)))
+            engine.canTarget(attacker, t,
+                trigger: trigger, fromPosition: fromPosition))
         .toList();
     if (legal.isEmpty) return const [];
 

@@ -127,6 +127,7 @@ FighterSnapshot fighterSnapshot(CharacterBattleState s) => FighterSnapshot(
   maxHealth: s.effectiveStats().maxHealth,
   alive: s.isAlive,
   fatTriggered: s.fatTriggeredThisTurn,
+  position: s.position,
   statusEffects: [
     for (final i in s.statusEffects)
       StatusBadgeInfo(

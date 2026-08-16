@@ -14,6 +14,12 @@ String _logLines(List<LogRound> rounds, String Function(String team) teamName) {
       continue;
     }
     for (final action in round.actions) {
+      if (action.targets.isEmpty) {
+        // A move has no target to roll against, but leaving it out of the
+        // report would hide why an attack landed (or did not) the turn after.
+        buf.writeln('  ${action.characterName}: ${action.triggerName}');
+        continue;
+      }
       for (final t in action.targets) {
         final bits = <String>[
           if (t.crits > 0) '${t.crits} crit',

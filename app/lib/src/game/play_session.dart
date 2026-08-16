@@ -821,7 +821,8 @@ class PlaySession {
           characterId: queued.characterId,
           characterName: state.character.name,
           triggerId: repositionActionId,
-          triggerName: 'Reposition to ${queued.destination!.label}',
+          triggerName: 'Reposition to the '
+              '${queued.destination!.label.toLowerCase()} line',
           fatTriggered: state.fatTriggeredThisTurn,
           targets: const [],
         ),
@@ -849,13 +850,14 @@ class PlaySession {
     );
   }
 
-  /// Moves any AI character the plan left idle.
+  /// Safety net for any AI character the plan left doing nothing at all.
   ///
-  /// Planning picks abilities, and an ability the character cannot reach
-  /// with simply never makes the plan, so a squad standing at the wrong
-  /// distance would plan nothing and stand still. Repositioning them keeps
-  /// a bad position a tempo cost rather than a skipped turn, and stops two
-  /// stranded squads from never finishing the battle.
+  /// Planning already decides its own moves (see `ProfileDrivenAi.planTurn`),
+  /// so this normally finds nobody. It still earns its place: a character can
+  /// end up with no planned action for reasons planning does not treat as a
+  /// positional problem (an exhausted Trion budget, everything on cooldown),
+  /// and a squad that plans nothing and stands still would drag the battle out
+  /// forever.
   void _repositionIdleAi(List<AiPlannedAction> plan) {
     final acted = plan.map((a) => a.characterId).toSet();
     for (final character in battle.teamB.characters) {
@@ -878,25 +880,52 @@ class PlaySession {
   /// uses. Trion was budgeted during planning but not spent, so it is spent
   /// here as the plan is committed.
   LogRound resolveAiPlan(List<AiPlannedAction> plan) {
+    // Arm phase, exactly as for the player's queue: planned moves resolve
+    // ahead of every ability, which is what the AI's target choices assume.
+    final moves = <LogAction>[];
+    for (final a in plan) {
+      if (!a.isReposition) continue;
+      final state = battle.states[a.characterId]!;
+      if (!battle.turnEngine.reposition(state, a.destination!)) continue;
+      moves.add(
+        LogAction(
+          characterId: a.characterId,
+          characterName: state.character.name,
+          triggerId: repositionActionId,
+          triggerName: 'Reposition to the '
+              '${a.destination!.label.toLowerCase()} line',
+          fatTriggered: state.fatTriggeredThisTurn,
+          targets: const [],
+        ),
+      );
+    }
+
     final pool = battle.teamB.trionPool;
     for (final a in plan) {
+      if (a.isReposition) continue; // moves are free in Trion
       final state = battle.states[a.characterId]!;
       final trigger = equippedB[a.characterId]!.firstWhere(
         (t) => t.id == a.triggerId,
       );
       pool.trySpend((trigger.trionCost * state.trionCostMultiplier()).round());
     }
-    return _resolvePlan(
+    final round = _resolvePlan(
       [
         for (final a in plan)
-          (
-            characterId: a.characterId,
-            triggerId: a.triggerId,
-            targetIds: a.targetIds,
-          ),
+          if (!a.isReposition)
+            (
+              characterId: a.characterId,
+              triggerId: a.triggerId,
+              targetIds: a.targetIds,
+            ),
       ],
       equipped: equippedB,
       team: 'B',
+    );
+    return LogRound(
+      roundNumber: round.roundNumber,
+      team: round.team,
+      actions: [...moves, ...round.actions],
     );
   }
 

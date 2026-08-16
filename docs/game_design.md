@@ -368,7 +368,37 @@ bear has nothing to do with handing a heal to the person beside you.
 ability use for that turn, so closing the gap competes with attacking. It costs
 no Trion. A FAT turn, which grants up to three actions, is therefore the turn you
 can move *and* strike. A character can always Reposition even when nothing else
-is legal, so a bad position costs you tempo but never your whole turn.
+is legal, so a bad position costs you tempo but never your whole turn. A
+zone-lock effect (Forced Repetition) is the exception: it pins you where you
+stand.
+
+**You plan against where you will be, not where you are.** Moves resolve before
+every ability in the turn, in the arm phase (section 8). So the moment you queue
+a step, the whole turn is judged from the destination: abilities that were out of
+band light up, abilities that needed the old distance go dark, and the target
+picker offers exactly what the new line can reach. Un-queueing the step takes the
+strikes that depended on it back out of the queue and refunds them, rather than
+letting them resolve into thin air.
+
+That is what makes the four questions the pillar was built for answerable at the
+moment of decision rather than a turn late:
+
+- *Am I in range to do this?* The ability is lit or it is dark, and a dark one
+  says which band it needs and what distance that band covers.
+- *Am I in their attack range?* The lane diagram stacks both squads, your back
+  line at the top and theirs at the bottom, so the gap on screen is the distance
+  the bands are measured in.
+- *Am I in range to receive buffs and healing?* Ally range uses only the maximum,
+  so it is the spread of your own squad that decides, and the diagram shows it.
+- *Will they be in range of my trap in two turns?* The trap keeps its band and
+  the line it was armed from, so the bet is readable off the same picture.
+
+**The opponent plays the same board.** The AI aims only at what its bands
+actually reach, and it moves on two rules: a character who can reach nothing
+steps towards the band it needs, and a character with an ability use to spare
+spends one on the step that brings more of its Loadout to bear. A character with
+one action and something worth doing keeps the action, because paying a whole
+turn to improve the next one is a bad trade.
 
 **Area attacks catch a position, not a squad.** An area ability hits everyone
 standing with the target you aimed at, and nobody standing elsewhere. Bunching
@@ -448,7 +478,8 @@ now the better-assembled squad is favoured for it, while the underdog still
 takes the opening turn better than one time in three. Going first is not free
 either: whoever moves first takes the lowest Trion income on that opening turn.
 On your turn each living character may either use an ability or
-**Reposition** one step (see section 7). Each team turn is capped at a
+**Reposition** one step (see section 7); a move counts against the same per-turn
+ability limit, so a FAT turn is what buys you both. Each team turn is capped at a
 **15-second timer** to lock in your actions; if it
 runs out the turn is forfeited with nothing committed. A Black Trigger's World
 ability can change that limit for its team, which is exactly what Chrono Fragment
@@ -462,9 +493,12 @@ On your turn:
    the Trion back. Cooldowns, on the other hand, only start once the action
    actually resolves.
 2. **The game keeps you honest.** It only lets you queue legal actions (you can
-   afford them, they are off cooldown, they have valid targets, and you have not
-   exceeded your per-turn ability limit, which is 1 normally or up to 3 on a FAT
-   turn).
+   afford them, they are off cooldown, they have a valid target **inside their
+   range band**, and you have not exceeded your per-turn ability limit, which is
+   1 normally or up to 3 on a FAT turn). Range is measured from the position
+   your queued moves will have put you in, so a step you have queued already
+   counts. An ability you cannot use says why, and out of range says which band
+   it needs.
 3. **You end the turn.** Your queued actions now resolve in a set order (next
    section), the results are shown after a brief "Resolving..." pause, and then
    the AI takes its turn through the exact same process.
@@ -480,7 +514,10 @@ When your turn resolves, your queued actions do **not** simply go in the order y
 picked them. They are sorted into a fixed **phase order** so that setups happen
 before payoffs. The phases are:
 
-1. Pre-emptive and reactive setup (arming counters and traps).
+1. **Movement and setup**: every Reposition queued this turn, then arming
+   counters and traps. Moves going first is what makes move-then-strike work,
+   and it is why the queue judges range against where a character will be
+   standing rather than where they are.
 2. **Buffs** (boosting yourself or an ally, putting up wards).
 3. **Control** (debuffs that do not deal damage, like stuns and slows).
 4. **Attacks** (anything that deals damage).

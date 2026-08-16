@@ -24,6 +24,7 @@ import '../ui/rank.dart';
 import '../widgets/ability_slot.dart';
 import '../widgets/account_sheet.dart';
 import '../widgets/badges.dart';
+import '../widgets/battlefield_rail.dart';
 import '../widgets/fighter_row.dart';
 import '../widgets/loadout_builder_panel.dart';
 import '../widgets/loadout_budget_panel.dart';
@@ -1295,7 +1296,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            const Expanded(flex: 26, child: SizedBox()),
+            Expanded(flex: 26, child: _battlefieldRail(session)),
             const SizedBox(width: 10),
             Expanded(
               flex: 26,
@@ -1400,6 +1401,46 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
+  /// The lane diagram between the two squad panels. It draws the projected
+  /// positions rather than the live ones, so a queued move shows up the
+  /// moment it is queued, and shades the enemy lines the selected ability
+  /// can actually reach from there.
+  Widget _battlefieldRail(PlaySession session) {
+    final selected = _selectedAction;
+    return BattlefieldRail(
+      teamA: session.teamA,
+      teamB: session.teamB,
+      projected: {
+        for (final f in session.teamA) f.id: session.projectedPositionOf(f.id),
+      },
+      focusedId: _selectedCharacterId,
+      reachFrom: selected == null || _selectedCharacterId == null
+          ? null
+          : session.projectedPositionOf(_selectedCharacterId!),
+      reachBand: selected?.trigger.rangeTag,
+    );
+  }
+
+  /// Queues one step for [characterId] and refreshes the screen. Failures
+  /// surface as a snack bar rather than silently doing nothing, because the
+  /// stepper only offers steps it believes are legal, so a rejection means
+  /// something changed underneath.
+  void _stepTo(String characterId, BattlePosition destination) {
+    final result = _session!.queueReposition(characterId, destination);
+    if (!result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.error ?? 'That move is not available.')),
+      );
+      return;
+    }
+    setState(() {
+      // A move can put the selected ability out of band, so drop the
+      // selection rather than leave a target picker pointing at nothing.
+      _clearSelection();
+      _afterBattleStateChange();
+    });
+  }
+
   /// One living player fighter's row: portrait/HP/status on the left, and
   /// (unlike the opponent's compact panel) its legal ability icons inline
   /// on the right, feeding the single shared bottom action bar below.
@@ -1467,6 +1508,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                         SizedBox(width: 6),
                         FatBadge(),
                       ],
+                      const SizedBox(width: 10),
+                      if (fighter.alive && !_tutorialActive)
+                        _positionStepper(fighter, session),
                     ],
                   ),
                   if (fighter.statusEffects.isNotEmpty)
@@ -1513,6 +1557,19 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
+  /// The Front/Middle/Back strip beside a fighter's name. It reads and writes
+  /// the projected position, so tapping twice in one turn walks two lines
+  /// (each step costing an ability use), and the strip keeps up.
+  Widget _positionStepper(FighterSnapshot fighter, PlaySession session) {
+    final projected = session.projectedPositionOf(fighter.id);
+    return PositionStepper(
+      current: projected,
+      legal: session.legalRepositionsFor(fighter.id).toSet(),
+      pending: projected != fighter.position,
+      onStep: _resolving ? null : (to) => _stepTo(fighter.id, to),
+    );
+  }
+
   bool _abilityEnabled(
     TutorialBattleStep? step,
     String fighterId,
@@ -1544,12 +1601,18 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         tutorialStep?.triggerId == t.id &&
         tutorialStep?.characterId == fighter.id;
     final String tooltip;
-    if (display.cooldownRemaining > 0) {
+    if (display.blockedByRange) {
+      // The one blocked state the player can fix on the spot, so it says how.
+      tooltip =
+          '${t.name}: ${t.rangeTag.label} reaches distance '
+          '${t.rangeTag.windowLabel}, and nothing is standing there. '
+          'Reposition to close or open the gap.';
+    } else if (display.cooldownRemaining > 0) {
       tooltip =
           '${t.name}: on cooldown for ${display.cooldownRemaining} '
           'more turn(s).';
     } else if (action == null) {
-      tooltip = '${t.name}: not usable right now.';
+      tooltip = '${t.name}: ${display.blockedReason ?? 'not usable right now'}.';
     } else if (!action.affordable) {
       tooltip = '${t.name}: not enough Trion this turn.';
     } else {
@@ -1610,18 +1673,27 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   }
 
   Widget _queuedRow(int index, QueuedAction q, Map<String, String> names) {
-    final trigger = _session!.equippedA[q.characterId]!.firstWhere(
-      (t) => t.id == q.triggerId,
-    );
-    final targetLabel = q.targetIds.map((id) => names[id] ?? id).join(', ');
+    final String label;
+    if (q.isReposition) {
+      // A queued move has no trigger to look up, and it resolves ahead of
+      // every ability, so it says so rather than reading like just another
+      // line in click order.
+      label = 'move to the ${q.destination!.label.toLowerCase()} line (first)';
+    } else {
+      final trigger = _session!.equippedA[q.characterId]!.firstWhere(
+        (t) => t.id == q.triggerId,
+      );
+      final targetLabel = q.targetIds.map((id) => names[id] ?? id).join(', ');
+      label =
+          '${trigger.name}${targetLabel.isEmpty ? '' : ' -> $targetLabel'}';
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              '${names[q.characterId] ?? q.characterId}: ${trigger.name}'
-              '${targetLabel.isEmpty ? '' : ' -> $targetLabel'}',
+              '${names[q.characterId] ?? q.characterId}: $label',
               style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ),

@@ -689,8 +689,9 @@ class TurnEngine {
     if (!canRepositionAtAll(state)) return null;
     if (from == null && !fatEngine.canUseAnotherAbility(state)) return null;
     final origin = from ?? state.position;
+    final staying = reachableAbilityCount(state, origin, triggers, opponents);
     BattlePosition? best;
-    var bestCount = reachableAbilityCount(state, origin, triggers, opponents);
+    var bestCount = staying;
     for (final destination in origin.adjacent) {
       final count =
           reachableAbilityCount(state, destination, triggers, opponents);
@@ -699,7 +700,55 @@ class TurnEngine {
         best = destination;
       }
     }
+    if (best != null || staying > 0) return best;
+
+    // Nothing reachable from here, and no single step fixes that either. A
+    // strict-improvement test can never fire from that position, so a
+    // character stranded two steps out would stand still forever. Walk
+    // towards the band instead: whichever step shrinks the gap to the nearest
+    // band edge, so the second step arrives.
+    final here = _bandShortfall(origin, triggers, opponents);
+    var bestShortfall = here;
+    for (final destination in origin.adjacent) {
+      final shortfall = _bandShortfall(destination, triggers, opponents);
+      if (shortfall < bestShortfall) {
+        bestShortfall = shortfall;
+        best = destination;
+      }
+    }
     return best;
+  }
+
+  /// How far out of band this position is, summed over the opponent-targeted
+  /// [triggers]: for each one, how many steps the nearest enemy is outside its
+  /// window (0 when it already reaches). Lower is closer to being useful.
+  ///
+  /// Only meaningful as a comparison between neighbouring positions, which is
+  /// the one thing [suggestReposition] uses it for.
+  int _bandShortfall(
+    BattlePosition from,
+    List<ActiveTrigger> triggers,
+    List<CharacterBattleState> opponents,
+  ) {
+    final living = opponents.where((o) => o.isAlive).toList();
+    if (living.isEmpty) return 0;
+    var total = 0;
+    for (final trigger in triggers) {
+      if (trigger.targetAffiliation != TargetAffiliation.opponent) continue;
+      var closest = BattleDistance.maxEnemyDistance + 1;
+      for (final opponent in living) {
+        final distance =
+            BattleDistance.betweenEnemies(from, opponent.position);
+        final gap = distance < trigger.rangeTag.minDistance
+            ? trigger.rangeTag.minDistance - distance
+            : distance > trigger.rangeTag.maxDistance
+                ? distance - trigger.rangeTag.maxDistance
+                : 0;
+        if (gap < closest) closest = gap;
+      }
+      total += closest;
+    }
+    return total;
   }
 
   /// Whether [a] and [b] are on the same side. Read off the `teammates`
