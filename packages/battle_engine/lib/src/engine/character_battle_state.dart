@@ -1,4 +1,5 @@
 import '../constants.dart';
+import '../models/battle_position.dart';
 import '../models/character.dart';
 import '../models/damage_type.dart';
 import '../models/passive_counter.dart';
@@ -46,6 +47,15 @@ class TempFlatBonus {
 class CharacterBattleState {
   final Character character;
   int currentHealth;
+
+  /// Where this character is standing (see [BattlePosition]). Chosen at
+  /// draft time and changed in battle by the Reposition action, which
+  /// costs the character their ability use for that turn.
+  ///
+  /// Defaults to Middle so a battle built without positions (an older test,
+  /// a standalone engine harness) behaves sensibly: at Middle against
+  /// Middle the distance is 2, which Mid and Long both reach.
+  BattlePosition position;
 
   /// Nullhymn: how many resonance grades this wielder's Black Trigger has been
   /// permanently dropped this battle (A->B->C->D). Applied in
@@ -204,6 +214,7 @@ class CharacterBattleState {
     List<PassiveEffect> equippedPassiveEffects = const [],
     List<String> equippedTriggerIds = const [],
     WorldAbilityEffect? worldAbility,
+    this.position = BattlePosition.middle,
   })  : currentHealth = character.baseStats.maxHealth,
         equippedPassiveEffects = equippedPassiveEffects,
         equippedTriggerIds = equippedTriggerIds,

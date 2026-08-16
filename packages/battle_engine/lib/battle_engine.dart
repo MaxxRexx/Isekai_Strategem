@@ -15,6 +15,7 @@ export 'src/content/combo_catalog.dart';
 export 'src/content/trigger_catalog.dart';
 
 // Models
+export 'src/models/battle_position.dart';
 export 'src/models/black_trigger.dart';
 export 'src/models/character.dart';
 export 'src/models/character_perk.dart';

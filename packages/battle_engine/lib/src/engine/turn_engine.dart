@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../constants.dart';
+import '../models/battle_position.dart';
 import '../models/character_type.dart';
 import '../models/damage_type.dart';
 import '../models/passive_counter.dart';
@@ -606,8 +607,49 @@ class TurnEngine {
   /// so this checks [attacker]'s own active effects, not [target]'s).
   /// Callers (AI/UI) should consult this before building a target list;
   /// [resolveAbilityUse] also defensively filters against it.
+  /// Whether [a] and [b] are on the same side. Read off the `teammates`
+  /// wiring the Battle constructor sets up; a character counts as their own
+  /// ally so self-targeting takes the same path.
+  bool areAllies(CharacterBattleState a, CharacterBattleState b) =>
+      identical(a, b) || a.teammates.contains(b);
+
+  /// How far apart [a] and [b] are standing right now.
+  ///
+  /// Allies subtract and enemies add (see [BattleDistance]), because the two
+  /// squads face each other across a gap: hanging back moves you away from
+  /// the enemy but towards your own back line.
+  int distanceBetween(CharacterBattleState a, CharacterBattleState b) =>
+      areAllies(a, b)
+          ? BattleDistance.betweenAllies(a.position, b.position)
+          : BattleDistance.betweenEnemies(a.position, b.position);
+
+  /// Whether [trigger]'s range band reaches [target] from where [attacker]
+  /// is standing.
+  ///
+  /// Self-targeted abilities always reach: you are always at your own
+  /// position, whatever band the ability carries.
+  bool canReach(
+    CharacterBattleState attacker,
+    CharacterBattleState target,
+    ActiveTrigger trigger,
+  ) {
+    if (identical(attacker, target)) return true;
+    if (trigger.targetAffiliation == TargetAffiliation.self) return true;
+    return trigger.rangeTag.reaches(distanceBetween(attacker, target));
+  }
+
+  /// Whether [attacker] may target [target] at all right now: false if
+  /// [attacker] is Charmed by [target] (a charmed character cannot target
+  /// their own charmer - the restriction lives on the charmed character,
+  /// so this checks [attacker]'s own active effects, not [target]'s).
+  ///
+  /// Pass [trigger] to also apply the range band: an ability only reaches a
+  /// target inside its window (see [canReach]). Callers that have no
+  /// particular ability in mind may leave it null and get the old
+  /// ability-agnostic answer.
   bool canTarget(CharacterBattleState attacker, CharacterBattleState target,
-      {StatusEffectCatalog? catalog}) {
+      {StatusEffectCatalog? catalog, ActiveTrigger? trigger}) {
+    if (trigger != null && !canReach(attacker, target, trigger)) return false;
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
     for (final instance in attacker.statusEffects) {
       final def = cat[instance.definitionId];
