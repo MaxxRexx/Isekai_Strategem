@@ -21,7 +21,13 @@ void main() {
     final charIds = roster.all.map((c) => c.id).toList();
     final profileIds = AiProfile.all.map((p) => p.id).toList();
     const teamSize = 3;
-    const turnCap = 80;
+    // Raised from 80 when positions landed. Manoeuvring genuinely
+    // lengthens a fight, and a defensive matchup where both squads spend
+    // turns repositioning can legitimately run past 80 turns without being
+    // stuck. This is a soft-lock detector, not a pacing assertion: pacing
+    // is measured properly by tool/balance_report.dart, which reports a
+    // median of 16 rounds against a 15-20 design target.
+    const turnCap = 200;
 
     final anomalies = <String>[];
 

@@ -124,6 +124,12 @@ class _SingleHitResult {
 /// future rule-based AI module or story-triggered scripted battle) - this
 /// engine only answers "is this legal / what does this cost / what's the
 /// result", not "what should happen".
+/// Keys a trap uses to remember where it was laid and how far it reaches.
+/// Private to the engine: a trap's band is engine bookkeeping, not part of
+/// the [ReactiveEffect] contract callers write against.
+const String _trapBandKey = '__trapBand';
+const String _trapArmedStepKey = '__trapArmedStep';
+
 class TurnEngine {
   final TrionGainEngine trionGainEngine;
   final FatEngine fatEngine;
@@ -837,6 +843,12 @@ class TurnEngine {
         continue;
       }
       if (teammate.perkChargeUsed) continue;
+      // Protection needs proximity: you cannot step in front of someone you
+      // are not standing near. A bodyguard has to actually be there.
+      if (BattleDistance.betweenAllies(teammate.position, target.position) >
+          1) {
+        continue;
+      }
       teammate.consumePerkChargeIfAvailable();
       return teammate;
     }
@@ -974,14 +986,31 @@ class TurnEngine {
   /// Checks attacker-side reactive effects (Deadfall, Death Ledger) before
   /// ability resolution. Returns true if the ability is countered (should
   /// not resolve). Deadfall deals trap damage to the attacker.
+  /// Whether [effect] can still reach [holder], the enemy it was set on,
+  /// from where it was armed.
+  ///
+  /// A trap armed before positions existed, or by a caller that did not
+  /// record them, carries no band and always fires - so older content and
+  /// test fixtures behave exactly as they did.
+  bool _trapStillReaches(ReactiveEffect effect, CharacterBattleState holder) {
+    final band = effect.data[_trapBandKey];
+    final armedStep = effect.data[_trapArmedStepKey];
+    if (band is! String || armedStep is! int) return true;
+    final tag = RangeTag.values.firstWhere(
+      (t) => t.name == band,
+      orElse: () => RangeTag.mid,
+    );
+    return tag.reaches(armedStep + holder.position.step);
+  }
+
   bool _checkAttackerReactives(
     CharacterBattleState attacker,
     ActiveTrigger trigger,
   ) {
     // Deadfall: if the attacker has trapOnAction and uses a damaging ability.
     if (trigger.damageType != null) {
-      final trapIndex = attacker.reactiveEffects
-          .indexWhere((r) => r.kind == ReactiveKind.trapOnAction);
+      final trapIndex = attacker.reactiveEffects.indexWhere((r) =>
+          r.kind == ReactiveKind.trapOnAction && _trapStillReaches(r, attacker));
       if (trapIndex >= 0) {
         attacker.reactiveEffects.removeAt(trapIndex);
         final trapDamage = const DiceExpression(4, 8, flatBonus: 16)
@@ -1142,8 +1171,22 @@ class TurnEngine {
     final maxTargets = maxRangedTargets(attacker, trigger);
     var filteredTargets = targets
         .where((t) => canTarget(attacker, t, trigger: trigger))
-        .take(maxTargets)
         .toList();
+
+    // An area attack catches one position, not any three bodies on the
+    // field. The first surviving target is the one being aimed at, and
+    // everyone standing with them is caught; anyone at another position is
+    // not. This is what makes stacking a squad dangerous and spreading out
+    // a real defence, and it is the half of the change that gives the
+    // opponent a reason to want you clumped together.
+    if (trigger.attackSubtype == AttackSubtype.aoe &&
+        filteredTargets.isNotEmpty) {
+      final aimedAt = filteredTargets.first.position;
+      filteredTargets =
+          filteredTargets.where((t) => t.position == aimedAt).toList();
+    }
+
+    filteredTargets = filteredTargets.take(maxTargets).toList();
 
     // Misfire redirect: if attacker has the misfire status, some targets
     // may be redirected to the attacker's own allies.
@@ -1597,10 +1640,19 @@ class TurnEngine {
       holder = originalTargets.isNotEmpty ? originalTargets.first : caster;
     }
 
+    // A trap is laid at a place, in a band. It records where the wielder
+    // was standing and how far that ability reaches, so it can later ask
+    // whether the enemy walked into it or acted from safely outside. This
+    // is what turns "will they be in range of my trap in two turns" into a
+    // real question the player has to answer.
     holder.reactiveEffects.add(ReactiveEffect(
       kind: kind,
       sourceCharacterId: caster.character.id,
-      data: reactiveData,
+      data: {
+        ...?reactiveData,
+        _trapBandKey: trigger.rangeTag.name,
+        _trapArmedStepKey: caster.position.step,
+      },
       remainingTurns: trigger.armsReactiveDefaultTurns,
     ));
 

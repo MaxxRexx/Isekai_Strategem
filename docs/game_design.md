@@ -337,13 +337,56 @@ attacks its holder from range. So a Close Range build is quietly resistant to a
 whole family of debuffs, and that is now a real reason to take a point-blank
 scattergun over a rifle.
 
-*Design note: this used to be a two-value near/far tag, and every non-melee
-Trigger was lumped into "ranged". That made the tag perfectly predictable from
-the attack type, so it carried no information of its own. It is now three bands
-assigned per ability by what that ability actually is, which is why the grid
-above has no empty cells. Mid and Long still behave identically, since every rule
-that reads the band asks only "is this at a distance"; the band becomes a
-decision in its own right when the spatial pillar from the design reviews lands.*
+### Position: where each character is standing
+
+The bands are not just labels on abilities. Each character occupies a
+**position** on the battlefield, and the band decides what they can reach from
+there.
+
+- Every character stands at **Front**, **Middle** or **Back**, worth 0, 1 and 2.
+  Their starting position comes from the bands their own Loadout carries: a
+  Close Range kit starts at the Front, a sniper's kit at the Back.
+- **Distance to an enemy is the two positions added**, because the squads face
+  each other across a gap. Your Front against their Back is 0 + 2 = 2.
+- **Distance to an ally is the two positions subtracted**, because you are on the
+  same side. Your Front and your own Back are 2 apart.
+- An ability works if the distance falls inside its band's window: **Close
+  reaches 0 to 1, Mid reaches 1 to 3, Long reaches 2 to 4**.
+
+The minimums are the important half. A sniper caught in a scrum at distance 0 or
+1 genuinely has no shot, which is what stops standing at the back being free.
+Against an ally only the maximum applies, since needing room to bring a weapon to
+bear has nothing to do with handing a heal to the person beside you.
+
+| You are at | Their Front | Their Middle | Their Back |
+|---|---|---|---|
+| **Front** | 0, Close only | 1, Close or Mid | 2, Mid or Long |
+| **Middle** | 1, Close or Mid | 2, Mid or Long | 3, Mid or Long |
+| **Back** | 2, Mid or Long | 3, Mid or Long | 4, Long only |
+
+**Moving.** **Reposition** shifts a character one step and costs them their
+ability use for that turn, so closing the gap competes with attacking. It costs
+no Trion. A FAT turn, which grants up to three actions, is therefore the turn you
+can move *and* strike. A character can always Reposition even when nothing else
+is legal, so a bad position costs you tempo but never your whole turn.
+
+**Area attacks catch a position, not a squad.** An area ability hits everyone
+standing with the target you aimed at, and nobody standing elsewhere. Bunching
+your squad together makes you a target; spreading out is a genuine defence.
+
+**Traps remember where they were laid.** A trap records the position it was armed
+from and its own band, and only fires if the enemy is inside that band when they
+act. Setting one is a bet on where they will be standing two turns from now.
+
+**Some things need you to be close.** Root Snare pins its target in place as well
+as locking their ability, so a Trapper decides where the fight happens. Sable's
+Guardian's Instinct only intercepts an attack on someone he is standing with or
+next to, because a bodyguard has to actually be there.
+
+*Design note: the band used to be a two-value near/far tag, and every non-melee
+Trigger was lumped into "ranged", which made it perfectly predictable from the
+attack type and therefore empty of information. It became three bands assigned
+per ability, and then the positional layer above gave those bands teeth.*
 
 ### Origin: what kind of power drives it
 
@@ -402,7 +445,9 @@ used to be pure luck, which was the one thing a player could not build toward;
 now the better-assembled squad is favoured for it, while the underdog still
 takes the opening turn better than one time in three. Going first is not free
 either: whoever moves first takes the lowest Trion income on that opening turn.
-Each team turn is capped at a **15-second timer** to lock in your actions; if it
+On your turn each living character may either use an ability or
+**Reposition** one step (see section 7). Each team turn is capped at a
+**15-second timer** to lock in your actions; if it
 runs out the turn is forfeited with nothing committed. A Black Trigger's World
 ability can change that limit for its team, which is exactly what Chrono Fragment
 does.

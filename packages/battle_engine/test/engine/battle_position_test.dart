@@ -166,4 +166,180 @@ void main() {
           reason: 'given the ability, the band applies');
     });
   });
+
+  group('area attacks catch a position, not any three bodies', () {
+    // Both squads need real teammate wiring for the ally/enemy split, so
+    // these go through a Battle rather than bare states.
+    Battle twoSquads() {
+      final roster = CharacterRoster.defaultRoster;
+      return Battle(
+        teamA: Team(id: 'a', characters: [
+          roster['kaito_reyes'],
+          roster['vela_ashworth'],
+          roster['dross'],
+        ]),
+        teamB: Team(id: 'b', characters: [
+          roster['marren_osei'],
+          roster['ilona_vance'],
+          roster['bastian_cole'],
+        ]),
+      );
+    }
+
+    test('only enemies standing with the aimed-at target are caught', () {
+      final battle = twoSquads();
+      final attacker = battle.states['kaito_reyes']!
+        ..position = BattlePosition.front;
+      final together1 = battle.states['marren_osei']!
+        ..position = BattlePosition.front;
+      final together2 = battle.states['ilona_vance']!
+        ..position = BattlePosition.front;
+      final apart = battle.states['bastian_cole']!
+        ..position = BattlePosition.back;
+
+      final blast = testTrigger(
+        id: 'blast',
+        rangeTag: RangeTag.close,
+        attackSubtype: AttackSubtype.aoe,
+        targetCount: 3,
+        damage: const DiceExpression(1, 4, flatBonus: 40),
+      );
+
+      final result = battle.turnEngine.resolveAbilityUse(
+        attacker: attacker,
+        trigger: blast,
+        targets: [together1, together2, apart],
+      );
+
+      final hit = result.targetResults.map((r) => r.targetCharacterId).toSet();
+      expect(hit, containsAll(['marren_osei', 'ilona_vance']));
+      expect(hit, isNot(contains('bastian_cole')),
+          reason: 'someone standing somewhere else is not in the blast');
+    });
+
+    test('spreading out is a real defence against area damage', () {
+      final clumped = twoSquads();
+      final spread = twoSquads();
+      final blast = testTrigger(
+        id: 'blast',
+        rangeTag: RangeTag.close,
+        attackSubtype: AttackSubtype.aoe,
+        targetCount: 3,
+        damage: const DiceExpression(1, 4, flatBonus: 40),
+      );
+
+      int caught(Battle battle, List<BattlePosition> enemyPositions) {
+        final attacker = battle.states['kaito_reyes']!
+          ..position = BattlePosition.front;
+        final enemies = ['marren_osei', 'ilona_vance', 'bastian_cole'];
+        for (var i = 0; i < enemies.length; i++) {
+          battle.states[enemies[i]]!.position = enemyPositions[i];
+        }
+        return battle.turnEngine
+            .resolveAbilityUse(
+              attacker: attacker,
+              trigger: blast,
+              targets: enemies.map((e) => battle.states[e]!).toList(),
+            )
+            .targetResults
+            .length;
+      }
+
+      final clumpedCount = caught(clumped, [
+        BattlePosition.front,
+        BattlePosition.front,
+        BattlePosition.front,
+      ]);
+      final spreadCount = caught(spread, [
+        BattlePosition.front,
+        BattlePosition.middle,
+        BattlePosition.back,
+      ]);
+      expect(clumpedCount, 3);
+      expect(spreadCount, 1);
+      expect(spreadCount, lessThan(clumpedCount));
+    });
+  });
+
+  group('protection needs proximity', () {
+    test('a guardian too far away cannot step in front of an ally', () {
+      final roster = CharacterRoster.defaultRoster;
+      final battle = Battle(
+        teamA: Team(id: 'a', characters: [
+          roster['kaito_reyes'],
+          roster['vela_ashworth'],
+          roster['dross'],
+        ]),
+        teamB: Team(id: 'b', characters: [
+          roster['sable_whitlock'],
+          roster['marren_osei'],
+          roster['ilona_vance'],
+        ]),
+      );
+      final attacker = battle.states['kaito_reyes']!
+        ..position = BattlePosition.front;
+      final guardian = battle.states['sable_whitlock']!
+        ..position = BattlePosition.back;
+      final protectee = battle.states['marren_osei']!
+        ..position = BattlePosition.front;
+
+      // Close Range, because attacker and protectee are both at Front and
+      // that is distance 0, which only Close reaches.
+      final hit = testTrigger(
+        id: 'hit',
+        rangeTag: RangeTag.close,
+        damage: const DiceExpression(1, 4, flatBonus: 30),
+      );
+      battle.turnEngine.resolveAbilityUse(
+        attacker: attacker,
+        trigger: hit,
+        targets: [protectee],
+      );
+
+      expect(guardian.currentHealth, guardian.character.baseStats.maxHealth,
+          reason: 'Sable is two positions away and cannot intercept');
+      expect(protectee.currentHealth,
+          lessThan(protectee.character.baseStats.maxHealth));
+      expect(guardian.perkChargeUsed, isFalse,
+          reason: 'a redirect that cannot happen must not burn the charge');
+    });
+
+    test('a guardian standing with the ally does intercept', () {
+      final roster = CharacterRoster.defaultRoster;
+      final battle = Battle(
+        teamA: Team(id: 'a', characters: [
+          roster['kaito_reyes'],
+          roster['vela_ashworth'],
+          roster['dross'],
+        ]),
+        teamB: Team(id: 'b', characters: [
+          roster['sable_whitlock'],
+          roster['marren_osei'],
+          roster['ilona_vance'],
+        ]),
+      );
+      final attacker = battle.states['kaito_reyes']!
+        ..position = BattlePosition.front;
+      final guardian = battle.states['sable_whitlock']!
+        ..position = BattlePosition.front;
+      final protectee = battle.states['marren_osei']!
+        ..position = BattlePosition.front;
+
+      final hit = testTrigger(
+        id: 'hit',
+        rangeTag: RangeTag.close,
+        damage: const DiceExpression(1, 4, flatBonus: 30),
+      );
+      battle.turnEngine.resolveAbilityUse(
+        attacker: attacker,
+        trigger: hit,
+        targets: [protectee],
+      );
+
+      expect(guardian.currentHealth,
+          lessThan(guardian.character.baseStats.maxHealth),
+          reason: 'Sable is standing right there and takes it instead');
+      expect(protectee.currentHealth, protectee.character.baseStats.maxHealth);
+    });
+  });
 }
