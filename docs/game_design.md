@@ -621,6 +621,16 @@ The practical upshot is that a Loadout spread across several damage types is
 harder to wall off than one that leans on a single type, in the same way that a
 Loadout spread across several origins is harder to lock out.
 
+**How long a fight should last: 8 to 20 rounds.** That is the pacing target the
+combat numbers are tuned against, and it is deliberately a band rather than a
+point. Eight rounds is a decisive engagement where one squad reads the matchup
+and closes it out; twenty is a grind between two well-assembled squads trading
+positions and status effects. A fight that ends much under eight means somebody
+was deleted before they got to play, and one that runs much over twenty means
+nobody's damage is keeping up with the healing and the Trion. Both ends are
+balance bugs, and `tool/balance_report.dart` reports the distribution over 200
+simulated battles so the band can be checked rather than assumed.
+
 *Design note: this is where the balance pass did most of its work. Attack and
 Defense used to run 10-29 and 6-16, which put a 15-point gap on a typical attack
 and meant the die changed almost nothing: attacks landed over 90% of the time and

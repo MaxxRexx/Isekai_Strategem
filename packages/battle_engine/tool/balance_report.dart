@@ -284,6 +284,17 @@ void reportSimulation({int battles = 200}) {
       'median ${percentile(0.5)}, p75 ${percentile(0.75)}, '
       'p90 ${percentile(0.90)}, max ${rounds.last} '
       '(mean ${mean.toStringAsFixed(1)})');
+  // The design target is a band, 8 to 20 rounds (design section 11): under it
+  // somebody was deleted before they got to play, over it nobody's damage is
+  // keeping up. Judge it on the middle of the distribution, since the tails
+  // are matchups rather than pacing.
+  const targetLow = 8;
+  const targetHigh = 20;
+  final inBand = rounds.where((r) => r >= targetLow && r <= targetHigh).length;
+  final median = percentile(0.5);
+  print('Pacing target $targetLow-$targetHigh rounds: '
+      'median $median (${median < targetLow ? 'FAST' : median > targetHigh ? 'SLOW' : 'in band'}), '
+      '${pct(inBand / rounds.length)} of battles inside the band');
   print('Unresolved after 400 turns: $unresolved');
   print('Attack rolls: $attackRolls, '
       'hit rate ${pct(attackHits / attackRolls)}, '

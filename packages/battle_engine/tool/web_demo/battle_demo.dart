@@ -135,7 +135,7 @@ Map<String, dynamic> _characterStateSummary(CharacterBattleState s) => {
 /// battle that hasn't concluded by then reports `concluded: false` rather
 /// than looping forever). With the current draft magnitude tuning (100
 /// flat max health, damage/heal/cooldown/Attack/Trion Affinity scaled for
-/// a 15-20 round conclusion target), battles typically conclude well
+/// an 8-20 round conclusion target), battles typically conclude well
 /// under this cap - it's a generous safety margin, not the expected case.
 Map<String, dynamic> _runBattle({
   required _DraftedTeam teamADraft,

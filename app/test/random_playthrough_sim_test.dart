@@ -26,7 +26,7 @@ void main() {
     // turns repositioning can legitimately run past 80 turns without being
     // stuck. This is a soft-lock detector, not a pacing assertion: pacing
     // is measured properly by tool/balance_report.dart, which reports a
-    // median of 16 rounds against a 15-20 design target.
+    // median well inside the 8-20 design target.
     const turnCap = 200;
 
     final anomalies = <String>[];

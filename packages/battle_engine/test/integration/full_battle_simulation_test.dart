@@ -228,10 +228,10 @@ void main() {
 
     test(
         'a full round-robin of every AiProfile mirrored against itself '
-        'concludes within the 15-20 round design target', () {
+        'concludes within the 8-20 round design target', () {
       // With the draft magnitude tuning that replaced item 5's original
       // numbers (100 flat max health, damage/heal/cooldown/Attack/Trion
-      // Affinity scaling to hit a 15-20 round conclusion target), even the
+      // Affinity scaling to hit an 8-20 round conclusion target), even the
       // most extreme sustain-heavy mirror (The Healer's Crutch vs itself,
       // once the slowest matchup by a wide margin) now typically concludes
       // in well under 20 rounds - so this asserts a real conclusion, not
