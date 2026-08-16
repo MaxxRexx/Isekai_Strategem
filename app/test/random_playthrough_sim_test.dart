@@ -71,7 +71,15 @@ void main() {
                 .legalActionsFor(c)
                 .where((a) => a.affordable && a.legalTargetIds.isNotEmpty)
                 .toList();
-            if (legal.isEmpty) continue;
+            if (legal.isEmpty) {
+              // Nothing in range (or nothing affordable): move, the way a
+              // player looking at a grayed-out bar would. Standing still
+              // instead is what a stranded squad does, and two stranded
+              // squads never finish the battle.
+              final step = s.suggestRepositionFor(c);
+              if (step != null) s.queueReposition(c, step);
+              continue;
+            }
             final pick = legal[rng.nextInt(legal.length)];
             final want = pick.maxTargets.clamp(1, pick.legalTargetIds.length);
             final targets = (List.of(pick.legalTargetIds)..shuffle(rng))
@@ -79,6 +87,12 @@ void main() {
                 .toList();
             s.queue(c, pick.trigger.id, targets);
           }
+          // Resolve before ending the turn, the way the battle screen does.
+          // endTurn does not do it: without this the queue carries over,
+          // every re-queue is rejected as a duplicate, and the "player" never
+          // lands a single hit - which is how this harness ran until the
+          // range work made the resulting stalls visible.
+          s.resolveQueue();
           s.endTurn();
           _checkInvariants(s, '$label t$turns', anomalies);
         }

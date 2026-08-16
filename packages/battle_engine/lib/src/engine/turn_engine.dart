@@ -607,12 +607,6 @@ class TurnEngine {
     return trigger.targetCount > 1 ? trigger.targetCount - 1 : 1;
   }
 
-  /// Whether [attacker] may target [target] at all right now: false if
-  /// [attacker] is Charmed by [target] (a charmed character cannot target
-  /// their own charmer - the restriction lives on the charmed character,
-  /// so this checks [attacker]'s own active effects, not [target]'s).
-  /// Callers (AI/UI) should consult this before building a target list;
-  /// [resolveAbilityUse] also defensively filters against it.
   /// Whether [state] may Reposition to [destination] right now.
   ///
   /// Reposition is one step along the line, and it costs the character
@@ -624,12 +618,22 @@ class TurnEngine {
   /// must still be able to move, or a bad position would leave them with no
   /// move at all, which is a punishment rather than a decision.
   bool canReposition(CharacterBattleState state, BattlePosition destination) {
-    if (!state.isAlive) return false;
-    if (state.isActionPrevented()) return false;
-    if (state.isRepositionPrevented()) return false;
+    if (!canRepositionAtAll(state)) return false;
     if (!fatEngine.canUseAnotherAbility(state)) return false;
     return state.position.adjacent.contains(destination);
   }
+
+  /// Whether nothing about [state] itself forbids moving: they are alive,
+  /// not action-locked, and not pinned by a zone-lock effect.
+  ///
+  /// Split out of [canReposition] for the player's queue, which validates a
+  /// move against a *projected* position and counts ability uses against what
+  /// is already queued rather than against what has already resolved. Those
+  /// two checks belong to the queue; these three belong to the character.
+  bool canRepositionAtAll(CharacterBattleState state) =>
+      state.isAlive &&
+      !state.isActionPrevented() &&
+      !state.isRepositionPrevented();
 
   /// Moves [state] one step to [destination], spending their action for the
   /// turn. Returns false and changes nothing if the move is not legal.
@@ -671,17 +675,23 @@ class TurnEngine {
   /// whose whole Loadout is out of range would otherwise stand there doing
   /// nothing, and if both squads were in that state the battle would never
   /// end.
+  ///
+  /// [from] measures the step from somewhere other than where the character
+  /// is standing, for a caller planning against a projected position (the
+  /// player's queue). Such a caller counts ability uses against what it has
+  /// queued, so the use check is skipped when [from] is given.
   BattlePosition? suggestReposition(
     CharacterBattleState state,
     List<ActiveTrigger> triggers,
-    List<CharacterBattleState> opponents,
-  ) {
-    final staying =
-        reachableAbilityCount(state, state.position, triggers, opponents);
+    List<CharacterBattleState> opponents, {
+    BattlePosition? from,
+  }) {
+    if (!canRepositionAtAll(state)) return null;
+    if (from == null && !fatEngine.canUseAnotherAbility(state)) return null;
+    final origin = from ?? state.position;
     BattlePosition? best;
-    var bestCount = staying;
-    for (final destination in state.position.adjacent) {
-      if (!canReposition(state, destination)) continue;
+    var bestCount = reachableAbilityCount(state, origin, triggers, opponents);
+    for (final destination in origin.adjacent) {
       final count =
           reachableAbilityCount(state, destination, triggers, opponents);
       if (count > bestCount) {
@@ -723,13 +733,25 @@ class TurnEngine {
   /// none of that is true of handing a heal or a ward to the person next to
   /// you. Without this carve-out a Mid-band heal could not reach an ally
   /// standing in the same position, which is absurd on its face.
+  ///
+  /// [fromPosition] overrides where the attacker is measured from, and
+  /// [targetPosition] where the target is. Both exist for planning against a
+  /// position nobody is standing in yet: the player's queue resolves every
+  /// Reposition before any ability, so the UI has to judge range against
+  /// where the character *will* be, not where they are (see
+  /// `PlaySession.projectedPositionOf`). Omit them for the live answer.
   bool canReach(
     CharacterBattleState attacker,
     CharacterBattleState target,
-    ActiveTrigger trigger,
-  ) {
+    ActiveTrigger trigger, {
+    BattlePosition? fromPosition,
+    BattlePosition? targetPosition,
+  }) {
     if (identical(attacker, target)) return true;
     if (trigger.targetAffiliation == TargetAffiliation.self) return true;
+
+    final from = fromPosition ?? attacker.position;
+    final to = targetPosition ?? target.position;
 
     // Which side the target is on comes from what the ability is *for*,
     // not from the `teammates` wiring, which only the Battle constructor
@@ -737,12 +759,10 @@ class TurnEngine {
     // ally-targeted ability is aimed at an ally by definition.
     final towardsAlly = trigger.targetAffiliation != TargetAffiliation.opponent;
     if (towardsAlly) {
-      final distance =
-          BattleDistance.betweenAllies(attacker.position, target.position);
+      final distance = BattleDistance.betweenAllies(from, to);
       return distance <= trigger.rangeTag.maxDistance;
     }
-    return trigger.rangeTag
-        .reaches(BattleDistance.betweenEnemies(attacker.position, target.position));
+    return trigger.rangeTag.reaches(BattleDistance.betweenEnemies(from, to));
   }
 
   /// Whether [attacker] may target [target] at all right now: false if
@@ -753,10 +773,18 @@ class TurnEngine {
   /// Pass [trigger] to also apply the range band: an ability only reaches a
   /// target inside its window (see [canReach]). Callers that have no
   /// particular ability in mind may leave it null and get the old
-  /// ability-agnostic answer.
+  /// ability-agnostic answer. [fromPosition]/[targetPosition] are passed
+  /// straight through to [canReach] for planning against projected positions.
   bool canTarget(CharacterBattleState attacker, CharacterBattleState target,
-      {StatusEffectCatalog? catalog, ActiveTrigger? trigger}) {
-    if (trigger != null && !canReach(attacker, target, trigger)) return false;
+      {StatusEffectCatalog? catalog,
+      ActiveTrigger? trigger,
+      BattlePosition? fromPosition,
+      BattlePosition? targetPosition}) {
+    if (trigger != null &&
+        !canReach(attacker, target, trigger,
+            fromPosition: fromPosition, targetPosition: targetPosition)) {
+      return false;
+    }
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
     for (final instance in attacker.statusEffects) {
       final def = cat[instance.definitionId];

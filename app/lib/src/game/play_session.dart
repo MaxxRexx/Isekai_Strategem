@@ -22,6 +22,11 @@ class LegalAction {
     required this.actualTrionCost,
     required this.affordable,
   });
+
+  /// Whether anything is standing inside this ability's range band right
+  /// now. False means the ability is off cooldown and paid for but has
+  /// nobody to point at, which is a positioning problem, not a resource one.
+  bool get hasTargets => legalTargetIds.isNotEmpty;
 }
 
 /// One of a character's equipped Active Triggers, shown in the battle UI
@@ -41,13 +46,30 @@ class AbilityDisplay {
   /// e.g. insufficient Trion or an action-preventing status effect).
   final int cooldownRemaining;
 
+  /// Short player-facing phrase explaining why this ability cannot be used
+  /// right now, or null when it can. The battle screen shows this under a
+  /// grayed-out ability so "why not?" never needs guessing - out of range in
+  /// particular is a fixable problem, and the player can only fix it if the
+  /// UI says so.
+  final String? blockedReason;
+
   const AbilityDisplay({
     required this.trigger,
     required this.legalAction,
     required this.cooldownRemaining,
+    this.blockedReason,
   });
 
-  bool get usable => legalAction != null && legalAction!.affordable;
+  bool get usable =>
+      legalAction != null &&
+      legalAction!.affordable &&
+      legalAction!.hasTargets;
+
+  /// True when the only thing stopping this ability is where its owner is
+  /// standing: it is off cooldown, affordable, and simply has nothing inside
+  /// its band. That is the cue to offer a Reposition.
+  bool get blockedByRange =>
+      legalAction != null && legalAction!.affordable && !legalAction!.hasTargets;
 }
 
 class UseAbilityOutcome {
@@ -74,12 +96,20 @@ class QueuedAction {
   /// un-queueing refunds the exact amount.
   final int trionSpent;
 
+  /// Set only on a queued Reposition ([triggerId] is [repositionActionId]):
+  /// the square this step moves to. Null for every ability.
+  final BattlePosition? destination;
+
   QueuedAction({
     required this.characterId,
     required this.triggerId,
     required this.targetIds,
     required this.trionSpent,
+    this.destination,
   });
+
+  /// Whether this queued entry is a move rather than an ability use.
+  bool get isReposition => triggerId == repositionActionId;
 }
 
 /// Result of trying to [PlaySession.queue] an action.
@@ -95,9 +125,11 @@ class QueueOutcome {
 /// setup/buff lands before the attack that benefits from it, controls land
 /// before attacks, and heals land after damage. Within a phase, ties break
 /// by Team Spirit deviation then queue order (see [PlaySession.resolveQueue]).
-// arm and cleanup carry no content yet (reactive/trap abilities arrive in a
-// later phase); keeping them fixes the phase ordinals so that content slots
-// in without renumbering.
+// arm carries the turn's Repositions, resolved before any ability so that
+// move-then-strike works and range can be planned against where a character
+// will be standing. cleanup carries no content yet (reactive/trap abilities
+// arrive in a later phase); keeping it fixes the phase ordinals so that
+// content slots in without renumbering.
 // ignore: unused_field
 enum _ResolutionPhase { arm, buffs, control, attacks, heals, cleanup }
 
@@ -313,6 +345,76 @@ class PlaySession {
       fighterSnapshot(battle.states[c.id]!),
   ];
 
+  /// Where [characterId] will be standing once this turn's queue resolves:
+  /// their current position, stepped by every Reposition they have queued.
+  ///
+  /// Repositions resolve in the arm phase, ahead of every ability, so this -
+  /// not the live position - is what the player is planning from. Judging
+  /// range against the live position instead would make move-then-strike
+  /// impossible, and closing the gap to swing in the same turn is the whole
+  /// point of the positional pillar.
+  ///
+  /// Enemies never have queued entries, so for them this is just where they
+  /// are standing, which is what makes it safe to call on any character.
+  BattlePosition projectedPositionOf(String characterId) {
+    var position =
+        battle.states[characterId]?.position ?? BattlePosition.middle;
+    for (final queued in _queue) {
+      if (queued.characterId == characterId && queued.destination != null) {
+        position = queued.destination!;
+      }
+    }
+    return position;
+  }
+
+  /// The squares [characterId] could still step to this turn, given what they
+  /// have already queued. Empty when they are pinned, action-locked, or out
+  /// of ability uses.
+  List<BattlePosition> legalRepositionsFor(String characterId) {
+    if (!battle.isTeamATurn) return const [];
+    final state = battle.states[characterId];
+    if (state == null) return const [];
+    final engine = battle.turnEngine;
+    if (!engine.canRepositionAtAll(state)) return const [];
+    if (!_hasUsesLeft(state)) return const [];
+    return projectedPositionOf(characterId).adjacent;
+  }
+
+  /// Whether [state] has an ability use left this turn once everything
+  /// already queued is counted. The engine only records uses at resolution,
+  /// so the queue has to do this accounting itself.
+  bool _hasUsesLeft(CharacterBattleState state) {
+    final maxUses = battle.turnEngine.fatEngine.maxAbilitiesThisTurn(state);
+    return state.abilitiesUsedThisTurnCount +
+            queuedCountFor(state.character.id) <
+        maxUses;
+  }
+
+  /// Every character on the given ability's target side that it can legally
+  /// be pointed at, measured from the projected positions on both ends.
+  List<String> _legalTargetIdsFor(
+    CharacterBattleState state,
+    ActiveTrigger trigger,
+  ) {
+    final engine = battle.turnEngine;
+    final from = projectedPositionOf(state.character.id);
+    final pool = trigger.targetAffiliation == TargetAffiliation.opponent
+        ? battle.teamB.characters.map((c) => battle.states[c.id]!)
+        : battle.teamA.characters.map((c) => battle.states[c.id]!);
+    return [
+      for (final t in pool)
+        if (t.isAlive &&
+            engine.canTarget(
+              state,
+              t,
+              trigger: trigger,
+              fromPosition: from,
+              targetPosition: projectedPositionOf(t.character.id),
+            ))
+          t.character.id,
+    ];
+  }
+
   /// Only meaningful during the player's own turn, for one of their own
   /// living characters; returns an empty list otherwise.
   List<LegalAction> legalActionsFor(String characterId) {
@@ -330,18 +432,7 @@ class PlaySession {
         legalTargetIds = [characterId];
         maxTargets = 1;
       } else {
-        final pool = trigger.targetAffiliation == TargetAffiliation.opponent
-            ? battle.teamB.characters.map((c) => battle.states[c.id]!)
-            : battle.teamA.characters.map((c) => battle.states[c.id]!);
-        legalTargetIds = pool
-            .where(
-              (t) =>
-                  t.isAlive &&
-                  (trigger.targetAffiliation != TargetAffiliation.opponent ||
-                      engine.canTarget(state, t)),
-            )
-            .map((t) => t.character.id)
-            .toList();
+        legalTargetIds = _legalTargetIdsFor(state, trigger);
         maxTargets = trigger.rangeTag.isAtRange
             ? engine.maxRangedTargets(state, trigger)
             : trigger.targetCount;
@@ -375,12 +466,46 @@ class PlaySession {
     };
     return [
       for (final trigger in equippedA[characterId] ?? const <ActiveTrigger>[])
-        AbilityDisplay(
-          trigger: trigger,
-          legalAction: legalById[trigger.id],
-          cooldownRemaining: state.cooldowns[trigger.id] ?? 0,
-        ),
+        () {
+          final legal = legalById[trigger.id];
+          final cooldown = state.cooldowns[trigger.id] ?? 0;
+          return AbilityDisplay(
+            trigger: trigger,
+            legalAction: legal,
+            cooldownRemaining: cooldown,
+            blockedReason: _blockedReasonFor(state, trigger, legal, cooldown),
+          );
+        }(),
     ];
+  }
+
+  /// The one reason worth showing the player for an unusable ability, most
+  /// specific first. Null when the ability is usable.
+  String? _blockedReasonFor(
+    CharacterBattleState state,
+    ActiveTrigger trigger,
+    LegalAction? legal,
+    int cooldown,
+  ) {
+    if (legal == null) {
+      if (cooldown > 0) {
+        return 'On cooldown ($cooldown ${cooldown == 1 ? 'turn' : 'turns'})';
+      }
+      if (state.isActionPrevented()) return 'Cannot act';
+      return 'Unavailable';
+    }
+    if (!legal.hasTargets) {
+      // Say the band and the window, so the fix (step forward or back) is
+      // readable off the message rather than needing the rules in front of
+      // you.
+      return 'Nothing in ${trigger.rangeTag.label} '
+          '(distance ${trigger.rangeTag.windowLabel})';
+    }
+    if (!legal.affordable) {
+      return 'Needs ${legal.actualTrionCost} Trion';
+    }
+    if (!_hasUsesLeft(state)) return 'No uses left this turn';
+    return null;
   }
 
   /// Enemy (team B) character ids whose loadout the player's team has
@@ -492,10 +617,21 @@ class PlaySession {
     // The engine only records ability uses (and so enforces the per-turn
     // FAT limit) at resolution, so enforce that limit here against what is
     // already queued plus anything already resolved this turn.
-    final maxUses = engine.fatEngine.maxAbilitiesThisTurn(state);
-    if (state.abilitiesUsedThisTurnCount + queuedCountFor(characterId) >=
-        maxUses) {
+    if (!_hasUsesLeft(state)) {
       return const QueueOutcome.failure('No ability uses left this turn.');
+    }
+    // Range is judged against projected positions (see
+    // [projectedPositionOf]), so a Reposition queued earlier this turn
+    // already counts. Without this the engine would accept the action and
+    // then silently drop the target at resolution.
+    if (trigger.targetAffiliation != TargetAffiliation.self) {
+      final reachable = _legalTargetIdsFor(state, trigger).toSet();
+      if (targetIds.any((id) => !reachable.contains(id))) {
+        return QueueOutcome.failure(
+          'Out of ${trigger.rangeTag.label} '
+          '(distance ${trigger.rangeTag.windowLabel}).',
+        );
+      }
     }
     final cost = (trigger.trionCost * state.trionCostMultiplier()).round();
     if (!battle.teamA.trionPool.trySpend(cost)) {
@@ -536,22 +672,117 @@ class PlaySession {
     )) {
       return false;
     }
-    final maxUses = engine.fatEngine.maxAbilitiesThisTurn(state);
-    if (state.abilitiesUsedThisTurnCount + queuedCountFor(characterId) >=
-        maxUses) {
+    if (!_hasUsesLeft(state)) return false;
+    if (trigger.targetAffiliation != TargetAffiliation.self &&
+        _legalTargetIdsFor(state, trigger).isEmpty) {
       return false;
     }
     final cost = (trigger.trionCost * state.trionCostMultiplier()).round();
     return cost <= battle.teamA.trionPool.current;
   }
 
+  /// Commits one step of movement to the turn queue. Movement is free in
+  /// Trion but costs the character one of their ability uses for the turn,
+  /// so closing the gap competes with attacking rather than being a bonus.
+  ///
+  /// Queued Repositions resolve first (the arm phase), which is what lets a
+  /// character move and then strike in the same turn: everything queued
+  /// afterwards is validated against the projected position.
+  QueueOutcome queueReposition(String characterId, BattlePosition destination) {
+    if (!battle.isTeamATurn) {
+      return const QueueOutcome.failure('It is not your turn.');
+    }
+    final state = battle.states[characterId];
+    if (state == null || !state.isAlive) {
+      return const QueueOutcome.failure('That character cannot act.');
+    }
+    final engine = battle.turnEngine;
+    if (!engine.canRepositionAtAll(state)) {
+      return const QueueOutcome.failure('That character cannot move.');
+    }
+    if (!_hasUsesLeft(state)) {
+      return const QueueOutcome.failure('No ability uses left this turn.');
+    }
+    if (!projectedPositionOf(characterId).adjacent.contains(destination)) {
+      return const QueueOutcome.failure('That is not one step away.');
+    }
+    _queue.add(
+      QueuedAction(
+        characterId: characterId,
+        triggerId: repositionActionId,
+        targetIds: const [],
+        trionSpent: 0,
+        destination: destination,
+      ),
+    );
+    return const QueueOutcome.ok();
+  }
+
+  /// Mirrors [queueReposition]'s checks so the UI can gray out a square that
+  /// would just be rejected.
+  bool canQueueReposition(String characterId, BattlePosition destination) =>
+      legalRepositionsFor(characterId).contains(destination);
+
+  /// The step [characterId] should take to bring more of their Loadout into
+  /// range, or null when standing still is at least as good. Measured from
+  /// the projected position, so moves already queued this turn count.
+  ///
+  /// This is the hint behind the battle screen's move prompt, and the same
+  /// judgement the AI uses for its own squad. It answers "am I in range to do
+  /// anything?" without the player counting squares.
+  BattlePosition? suggestRepositionFor(String characterId) {
+    if (!battle.isTeamATurn) return null;
+    final state = battle.states[characterId];
+    if (state == null || !state.isAlive) return null;
+    if (!_hasUsesLeft(state)) return null;
+    return battle.turnEngine.suggestReposition(
+      state,
+      equippedA[characterId] ?? const [],
+      [for (final c in battle.teamB.characters) battle.states[c.id]!],
+      from: projectedPositionOf(characterId),
+    );
+  }
+
   /// Removes the queued action at [index] and refunds its Trion. Returns
   /// false if [index] is out of range.
+  ///
+  /// Removing a Reposition also drops (and refunds) any ability that
+  /// character queued afterwards which no longer reaches its targets from
+  /// the position they will now end up in. Leaving those queued would let
+  /// the player commit Trion to an attack that quietly fizzles at
+  /// resolution, which is the worst of the options available.
   bool unqueue(int index) {
     if (index < 0 || index >= _queue.length) return false;
     final action = _queue.removeAt(index);
     battle.teamA.trionPool.gain(action.trionSpent);
+    if (action.isReposition) _dropUnreachableQueued(action.characterId);
     return true;
+  }
+
+  /// Refunds and removes every queued ability of [characterId] whose targets
+  /// are no longer inside its band from the current projected position.
+  void _dropUnreachableQueued(String characterId) {
+    final state = battle.states[characterId];
+    if (state == null) return;
+    final equipped = equippedA[characterId] ?? const <ActiveTrigger>[];
+    _queue.removeWhere((queued) {
+      if (queued.characterId != characterId || queued.isReposition) {
+        return false;
+      }
+      ActiveTrigger? trigger;
+      for (final t in equipped) {
+        if (t.id == queued.triggerId) {
+          trigger = t;
+          break;
+        }
+      }
+      if (trigger == null) return false;
+      if (trigger.targetAffiliation == TargetAffiliation.self) return false;
+      final reachable = _legalTargetIdsFor(state, trigger).toSet();
+      if (queued.targetIds.every(reachable.contains)) return false;
+      battle.teamA.trionPool.gain(queued.trionSpent);
+      return true;
+    });
   }
 
   /// Clears the whole queue, refunding all Trion spent on queued actions.
@@ -577,20 +808,45 @@ class PlaySession {
   ///
   /// Call this before [endTurn].
   LogRound resolveQueue() {
+    // Arm phase: every queued Reposition, in queue order, before any
+    // ability. Range was validated against the resulting positions when each
+    // action was queued, so this ordering is what makes move-then-strike land.
+    final moves = <LogAction>[];
+    for (final queued in _queue) {
+      if (!queued.isReposition) continue;
+      final state = battle.states[queued.characterId]!;
+      if (!battle.turnEngine.reposition(state, queued.destination!)) continue;
+      moves.add(
+        LogAction(
+          characterId: queued.characterId,
+          characterName: state.character.name,
+          triggerId: repositionActionId,
+          triggerName: 'Reposition to ${queued.destination!.label}',
+          fatTriggered: state.fatTriggeredThisTurn,
+          targets: const [],
+        ),
+      );
+    }
+
     final round = _resolvePlan(
       [
         for (final q in _queue)
-          (
-            characterId: q.characterId,
-            triggerId: q.triggerId,
-            targetIds: q.targetIds,
-          ),
+          if (!q.isReposition)
+            (
+              characterId: q.characterId,
+              triggerId: q.triggerId,
+              targetIds: q.targetIds,
+            ),
       ],
       equipped: equippedA,
       team: 'A',
     );
     _queue.clear();
-    return round;
+    return LogRound(
+      roundNumber: round.roundNumber,
+      team: round.team,
+      actions: [...moves, ...round.actions],
+    );
   }
 
   /// Moves any AI character the plan left idle.
