@@ -98,7 +98,10 @@ ActiveTrigger testTrigger({
   int trionCost = 5,
   int cooldownTurns = 2,
   OriginTag originTag = OriginTag.physical,
-  RangeTag rangeTag = RangeTag.close,
+  // Mid is the workhorse band and reaches distance 1 to 3, which covers
+  // the default Middle-against-Middle standoff (distance 2) that battle
+  // states start in. A fixture that cares about range says so explicitly.
+  RangeTag rangeTag = RangeTag.mid,
   AttackType attackType = AttackType.melee,
   AttackSubtype attackSubtype = AttackSubtype.single,
   int hitsPerUse = 1,

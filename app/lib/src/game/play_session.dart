@@ -593,6 +593,30 @@ class PlaySession {
     return round;
   }
 
+  /// Moves any AI character the plan left idle.
+  ///
+  /// Planning picks abilities, and an ability the character cannot reach
+  /// with simply never makes the plan, so a squad standing at the wrong
+  /// distance would plan nothing and stand still. Repositioning them keeps
+  /// a bad position a tempo cost rather than a skipped turn, and stops two
+  /// stranded squads from never finishing the battle.
+  void _repositionIdleAi(List<AiPlannedAction> plan) {
+    final acted = plan.map((a) => a.characterId).toSet();
+    for (final character in battle.teamB.characters) {
+      if (acted.contains(character.id)) continue;
+      final state = battle.states[character.id]!;
+      if (!state.isAlive) continue;
+      final destination = battle.turnEngine.suggestReposition(
+        state,
+        equippedB[character.id] ?? const [],
+        battle.teamA.characters.map((c) => battle.states[c.id]!).toList(),
+      );
+      if (destination != null) {
+        battle.turnEngine.reposition(state, destination);
+      }
+    }
+  }
+
   /// Resolves the AI's committed plan (see [ProfileDrivenAi.planTurn]) for
   /// team B through the same phase-priority resolver the player's queue
   /// uses. Trion was budgeted during planning but not spent, so it is spent
@@ -890,6 +914,7 @@ class PlaySession {
 
       final plan = aiB.planTurn(battle, equippedActiveTriggers: equippedB);
       actions.addAll(resolveAiPlan(plan).actions);
+      _repositionIdleAi(plan);
 
       if (battle.isOver) break;
       battle.endTurn();

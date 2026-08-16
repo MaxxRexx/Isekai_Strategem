@@ -65,9 +65,12 @@ void main() {
           reason: 'sabotage consumed on fire');
     });
 
-    test('does not fire against melee attacks', () {
-      final attacker = makeChar(id: 'attacker');
-      final defender = makeChar(id: 'defender');
+    test('does not fire against Close Range attacks', () {
+      // Frozen Tempo punishes anyone who attacks it from a distance, so a
+      // Close Range attacker walks away untouched. Both stand at Front, so
+      // the distance is 0 and a Close ability reaches.
+      final attacker = makeChar(id: 'attacker')..position = BattlePosition.front;
+      final defender = makeChar(id: 'defender')..position = BattlePosition.front;
       defender.reactiveEffects.add(ReactiveEffect(
         kind: ReactiveKind.cooldownSabotage,
         sourceCharacterId: 'defender',
@@ -76,12 +79,12 @@ void main() {
 
       engine().resolveAbilityUse(
         attacker: attacker,
-        trigger: testTrigger(damage: damage),
+        trigger: testTrigger(damage: damage, rangeTag: RangeTag.close),
         targets: [defender],
       );
 
       expect(defender.reactiveEffects, hasLength(1),
-          reason: 'melee does not trigger sabotage');
+          reason: 'a Close Range attack does not trigger sabotage');
     });
 
     test('trigger catalog entry exists', () {

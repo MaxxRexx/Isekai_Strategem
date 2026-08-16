@@ -98,6 +98,19 @@ class ProfileDrivenAi {
 
         if (!_shouldKeepChaining(battle, healthBefore, useResult)) break;
       }
+
+      // Nothing this character could reach from where they are standing.
+      // Move rather than skip the turn: a Loadout that is briefly out of
+      // range should cost tempo, not the whole turn, and two squads both
+      // stranded would otherwise never finish the battle.
+      if (state.abilitiesUsedThisTurnCount == 0) {
+        final destination = engine.suggestReposition(
+          state,
+          triggers,
+          battle.inactiveTeamStates,
+        );
+        if (destination != null) engine.reposition(state, destination);
+      }
     }
 
     return results;

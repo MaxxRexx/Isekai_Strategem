@@ -387,17 +387,21 @@ void main() {
       expect(engine.maxRangedTargets(attacker, floorTrigger), 1);
     });
 
-    test('does not affect melee Triggers', () {
+    test('does not affect Close Range Triggers', () {
+      // Blinded keys off the range band, not the attack type: what it cuts
+      // is how wide you can spread an attack made at a distance. A Close
+      // Range ability is untouched however it is delivered.
       final engine = TurnEngine();
       final attacker = CharacterBattleState(testCharacter());
       engine.statusEffectEngine.apply(attacker, 'blinded');
 
-      final meleeTrigger = testTrigger(
+      final closeTrigger = testTrigger(
         attackType: AttackType.melee,
+        rangeTag: RangeTag.close,
         attackSubtype: AttackSubtype.aoe,
         targetCount: 3,
       );
-      expect(engine.maxRangedTargets(attacker, meleeTrigger), 3);
+      expect(engine.maxRangedTargets(attacker, closeTrigger), 3);
     });
 
     test('resolveAbilityUse defensively clamps to the reduced target count',

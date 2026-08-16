@@ -1,5 +1,9 @@
 import 'trigger.dart';
 
+/// The id a Reposition records against its action slot. Not a real Trigger,
+/// so nothing that scans used-Trigger ids will ever match it.
+const String repositionActionId = '__reposition__';
+
 /// Where a character is standing on the battlefield.
 ///
 /// The two squads face each other across a gap, so how far apart two
@@ -101,4 +105,31 @@ extension RangeTagReachWindow on RangeTag {
 
   /// Human-readable window, e.g. "0 to 1".
   String get windowLabel => '$minDistance to $maxDistance';
+}
+
+/// Where a character should start, given the range bands their Loadout
+/// actually carries.
+///
+/// Derived from the Loadout rather than from the character's type or the
+/// Trigger category, because the Loadout is what decides which distances
+/// they can operate at. A kit full of Close Range work wants to start at
+/// the Front where those abilities reach; a sniper's kit wants the Back.
+/// Ties, and an empty Loadout, fall to Middle, which is the band with the
+/// widest reach and therefore the safest default.
+BattlePosition startingPositionFor(Iterable<RangeTag> equippedBands) {
+  final counts = <RangeTag, int>{};
+  for (final band in equippedBands) {
+    counts[band] = (counts[band] ?? 0) + 1;
+  }
+  if (counts.isEmpty) return BattlePosition.middle;
+
+  final close = counts[RangeTag.close] ?? 0;
+  final mid = counts[RangeTag.mid] ?? 0;
+  final long = counts[RangeTag.long] ?? 0;
+
+  // Middle wins ties on purpose: it is the only position from which both
+  // of the other bands are one step away.
+  if (close > mid && close > long) return BattlePosition.front;
+  if (long > mid && long > close) return BattlePosition.back;
+  return BattlePosition.middle;
 }

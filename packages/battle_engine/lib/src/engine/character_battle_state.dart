@@ -241,6 +241,14 @@ class CharacterBattleState {
     return statusEffects.any((i) => cat[i.definitionId].preventsActions);
   }
 
+  /// Whether something is pinning this character in place (zone lock). Kept
+  /// separate from [isActionPrevented] because a character can be free to
+  /// act but unable to move, which is exactly what a snare should do.
+  bool isRepositionPrevented([StatusEffectCatalog? catalog]) {
+    final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
+    return statusEffects.any((i) => cat[i.definitionId].preventsReposition);
+  }
+
   bool isInvulnerableTo(String statusEffectId) =>
       character.statusInvulnerabilities.contains(statusEffectId) ||
       equippedPassiveEffects.any(
@@ -267,6 +275,19 @@ class CharacterBattleState {
     lastActiveTriggerCategory = trigger.category;
     lastUsedTriggerId = trigger.id;
     triggersUsedThisTurn.add(trigger.id);
+    hasActedThisBattle = true;
+  }
+
+  /// Spends this character's action for the turn on a Reposition.
+  ///
+  /// Deliberately does not touch `lastUsedTriggerId`, `triggersUsedThisTurn`
+  /// or `lastActiveTriggerCategory`: moving is not using an ability, so it
+  /// must not feed the combo ledger, satisfy Forced Repetition, or count as
+  /// the "category of ability last used" that Tobias's Versatile perk reads.
+  /// It only occupies the action slot, and its sentinel record carries a
+  /// zero cooldown so end-of-turn bookkeeping ignores it.
+  void recordRepositionUse() {
+    _abilitiesUsedThisTurn.add(_AbilityUseRecord(repositionActionId, 0));
     hasActedThisBattle = true;
   }
 

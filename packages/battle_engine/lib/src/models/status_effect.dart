@@ -67,6 +67,12 @@ class StatusEffectDefinition {
   /// Frozen).
   final bool preventsActions;
 
+  /// While active, the affected character is pinned in place and cannot
+  /// Reposition (zone lock). Separate from [preventsActions] because being
+  /// held still is not the same as being unable to act: a snared character
+  /// can still fight, just not from anywhere else.
+  final bool preventsReposition;
+
   /// Stats forced to zero while this effect is active (Stunned ->
   /// Team Spirit, Frozen -> Trion Affinity).
   final Set<ModifiableStat> zeroedStats;
@@ -190,6 +196,7 @@ class StatusEffectDefinition {
     required this.name,
     this.defaultDurationTurns,
     this.preventsActions = false,
+    this.preventsReposition = false,
     this.zeroedStats = const {},
     this.flatStatModifiers = const {},
     this.perRemainingTurnStatModifiers = const {},

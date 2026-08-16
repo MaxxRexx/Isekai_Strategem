@@ -171,6 +171,13 @@ CharacterBattleState buildBattleState(Character character, Loadout loadout) {
     ),
     equippedPassiveEffects: passiveEffects,
     worldAbility: loadout.blackTrigger?.worldAbility,
+    // Start where this Loadout can actually operate: a Close Range kit at
+    // the Front, a sniper's kit at the Back. Without this everyone would
+    // open at Middle, two squads would stand 2 apart, and every Close Range
+    // ability in the game would be unusable on turn one.
+    position: startingPositionFor(
+      loadout.triggers.whereType<ActiveTrigger>().map((t) => t.rangeTag),
+    ),
   );
 }
 

@@ -607,6 +607,85 @@ class TurnEngine {
   /// so this checks [attacker]'s own active effects, not [target]'s).
   /// Callers (AI/UI) should consult this before building a target list;
   /// [resolveAbilityUse] also defensively filters against it.
+  /// Whether [state] may Reposition to [destination] right now.
+  ///
+  /// Reposition is one step along the line, and it costs the character
+  /// their ability use for the turn, so it competes with attacking rather
+  /// than being a free extra. That is the tempo price of closing the gap.
+  ///
+  /// Deliberately *not* blocked by the things that block abilities beyond
+  /// action prevention: a character whose whole Loadout is out of range
+  /// must still be able to move, or a bad position would leave them with no
+  /// move at all, which is a punishment rather than a decision.
+  bool canReposition(CharacterBattleState state, BattlePosition destination) {
+    if (!state.isAlive) return false;
+    if (state.isActionPrevented()) return false;
+    if (state.isRepositionPrevented()) return false;
+    if (!fatEngine.canUseAnotherAbility(state)) return false;
+    return state.position.adjacent.contains(destination);
+  }
+
+  /// Moves [state] one step to [destination], spending their action for the
+  /// turn. Returns false and changes nothing if the move is not legal.
+  bool reposition(CharacterBattleState state, BattlePosition destination) {
+    if (!canReposition(state, destination)) return false;
+    state.position = destination;
+    state.recordRepositionUse();
+    return true;
+  }
+
+  /// How many of [triggers] could reach at least one of [opponents] if
+  /// [state] were standing at [from]. The measure of how useful a position
+  /// is to this character right now.
+  int reachableAbilityCount(
+    CharacterBattleState state,
+    BattlePosition from,
+    List<ActiveTrigger> triggers,
+    List<CharacterBattleState> opponents,
+  ) {
+    final living = opponents.where((o) => o.isAlive).toList();
+    if (living.isEmpty) return 0;
+    var count = 0;
+    for (final trigger in triggers) {
+      if (trigger.targetAffiliation != TargetAffiliation.opponent) {
+        count++;
+        continue;
+      }
+      final reaches = living.any((o) => trigger.rangeTag
+          .reaches(BattleDistance.betweenEnemies(from, o.position)));
+      if (reaches) count++;
+    }
+    return count;
+  }
+
+  /// The single step [state] should take to bring more of [triggers] into
+  /// range, or null when staying put is at least as good.
+  ///
+  /// This is what stops a bad position becoming a skipped turn. A character
+  /// whose whole Loadout is out of range would otherwise stand there doing
+  /// nothing, and if both squads were in that state the battle would never
+  /// end.
+  BattlePosition? suggestReposition(
+    CharacterBattleState state,
+    List<ActiveTrigger> triggers,
+    List<CharacterBattleState> opponents,
+  ) {
+    final staying =
+        reachableAbilityCount(state, state.position, triggers, opponents);
+    BattlePosition? best;
+    var bestCount = staying;
+    for (final destination in state.position.adjacent) {
+      if (!canReposition(state, destination)) continue;
+      final count =
+          reachableAbilityCount(state, destination, triggers, opponents);
+      if (count > bestCount) {
+        bestCount = count;
+        best = destination;
+      }
+    }
+    return best;
+  }
+
   /// Whether [a] and [b] are on the same side. Read off the `teammates`
   /// wiring the Battle constructor sets up; a character counts as their own
   /// ally so self-targeting takes the same path.
@@ -628,6 +707,16 @@ class TurnEngine {
   ///
   /// Self-targeted abilities always reach: you are always at your own
   /// position, whatever band the ability carries.
+  ///
+  /// Against an **enemy** the band is a window, minimum and maximum both: a
+  /// sniper caught in a scrum has no shot, which is what stops standing at
+  /// the back being free.
+  ///
+  /// Towards an **ally** only the maximum applies. A band's minimum is about
+  /// needing room to bring a weapon to bear on someone who is fighting you;
+  /// none of that is true of handing a heal or a ward to the person next to
+  /// you. Without this carve-out a Mid-band heal could not reach an ally
+  /// standing in the same position, which is absurd on its face.
   bool canReach(
     CharacterBattleState attacker,
     CharacterBattleState target,
@@ -635,7 +724,19 @@ class TurnEngine {
   ) {
     if (identical(attacker, target)) return true;
     if (trigger.targetAffiliation == TargetAffiliation.self) return true;
-    return trigger.rangeTag.reaches(distanceBetween(attacker, target));
+
+    // Which side the target is on comes from what the ability is *for*,
+    // not from the `teammates` wiring, which only the Battle constructor
+    // sets up and which a standalone engine harness may leave empty. An
+    // ally-targeted ability is aimed at an ally by definition.
+    final towardsAlly = trigger.targetAffiliation != TargetAffiliation.opponent;
+    if (towardsAlly) {
+      final distance =
+          BattleDistance.betweenAllies(attacker.position, target.position);
+      return distance <= trigger.rangeTag.maxDistance;
+    }
+    return trigger.rangeTag
+        .reaches(BattleDistance.betweenEnemies(attacker.position, target.position));
   }
 
   /// Whether [attacker] may target [target] at all right now: false if
@@ -1040,7 +1141,7 @@ class TurnEngine {
 
     final maxTargets = maxRangedTargets(attacker, trigger);
     var filteredTargets = targets
-        .where((t) => canTarget(attacker, t))
+        .where((t) => canTarget(attacker, t, trigger: trigger))
         .take(maxTargets)
         .toList();
 

@@ -436,6 +436,9 @@ class StatusEffectCatalog {
         name: 'Forced Repetition',
         defaultDurationTurns: magnitudes.forcedRepetitionDurationTurns,
         forcesRepetitionOfLastAbility: true,
+        // Zone lock: Root Snare pins you as well as locking your ability,
+        // so a Trapper decides where the fight happens.
+        preventsReposition: true,
       ),
       StatusEffectDefinition(
         id: 'misfire',
