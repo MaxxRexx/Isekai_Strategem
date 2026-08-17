@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/flavor_text.dart';
+import '../data/describe.dart';
 import '../ui/notched.dart';
 import '../ui/palette.dart';
 import 'game_icons.dart';
@@ -48,14 +48,34 @@ class FatBadge extends StatelessWidget {
 class StatusBadge extends StatelessWidget {
   final String name;
   final int? remainingTurns;
-  const StatusBadge({super.key, required this.name, this.remainingTurns});
+
+  /// The catalog id, so the tooltip can read what the effect actually does
+  /// rather than repeating its display name. Optional only because a few
+  /// callers still have nothing but a name to hand.
+  final String? id;
+
+  /// Whether this badge sits on one of the player's own characters, which
+  /// decides whose turns the remaining duration is counted in.
+  final bool onSelf;
+
+  const StatusBadge({
+    super.key,
+    required this.name,
+    this.remainingTurns,
+    this.id,
+    this.onSelf = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final info = statusInfo[name];
-    final message = info == null
+    final message = id == null
         ? name
-        : '$name (${info.duration} turn${info.duration == 1 ? '' : 's'}): ${info.effect}';
+        : describeStatusBadge(
+            id: id!,
+            name: name,
+            remainingTurns: remainingTurns,
+            onSelf: onSelf,
+          );
     return Tooltip(
       message: message,
       triggerMode: TooltipTriggerMode.tap,

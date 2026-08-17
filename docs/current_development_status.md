@@ -66,12 +66,12 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | # | Item | State |
 |---|---|---|
 | 0 | **Pacing target: 8 to 20 rounds.** Agreed band, replacing the old 15-20 (design section 11). `tool/balance_report.dart` now checks it: 200 simulated battles run a median of 14 with 82% of them inside the band. The engine's round-robin integration test asserts the same band. | Set |
-| 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the battlefield lane diagram and per-character move strip with an out-of-range reason on every dark ability, and AI positional judgement on both AI paths. | Done |
+| 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the full-width horizontal battlefield strip (your back line on the left through to theirs on the right, with a distance ruler and the move controls in its own cells), an explicit reason on every ability that cannot be used, a distinct pulsing state for one the queued move has brought into band, plain-English status descriptions with the duration in the player's own turns, and AI positional judgement on both AI paths. Playtested by the owner and revised. | Done |
 | 2 | **Bail Out, contested.** Not a revive: the operator leaves the engagement. A one-turn Bailing Out window where the body stays **targetable**; left alone it is recalled and the squad gets Trion Salvage (20% of base Trion Capacity), but an enemy hit destroys it instead, denying the Salvage and giving the attacker a smaller gain. Refuse to Bail is pre-declared, armed like the existing counters. | Approved, queued |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 63 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
-| 4 | **Trion economy.** Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. | Queued |
+| 4 | **Trion economy.** Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may have FAT active at a time**, so a burst turn is a spotlight rather than a windfall; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. | Queued |
 | 5 | **Healing is too weak.** Wellspring Surge averages 5.5, Soul Siphon's drain heals 1.5 and Radiant Blessing 1 a turn, all against 100 health. Folds into #4. | Queued |
-| 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. | Queued |
+| 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. Also carries the deferred battlefield layout: **lay the squads out on the board itself**, so each character's portrait sits in the lane column their position puts them in and moving one visibly moves them, replacing the separate diagram. Deferred out of #1 deliberately: it rewrites the squad panels, portrait selection, target picking and the tutorial's step targeting, which is the machinery every other feature sits on. | Queued |
 | 7 | **AI tuning (Phase G).** Teach the AI to value counters, uniques and statuses, and to play positions once #1 lands. | Queued |
 | 8 | **Tutorialize the depth.** A step-by-step tutorial introducing one system per beat. | Queued |
 | 9 | Story / visual-novel mode. | Deferred |
@@ -79,6 +79,36 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 11 | "Close" overloaded as a dialog button label. | Closed, not an issue |
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued |
+
+### Open correctness question: 1-turn effects on an enemy
+
+Found while writing the duration wording during the #1 playtest fixes, and
+**not yet fixed**. It belongs to #3, which owns every status effect's duration.
+
+Effects tick down at the **start of their holder's turn**, decrementing and then
+expiring at zero. For a self-buff that works: it covers the rest of the turn it
+was cast on plus the opponent's answer. For a **debuff put on an enemy** it does
+not: the enemy's turn begins, the effect ticks to zero and is removed, and then
+they act unimpeded. A 1-turn Stun therefore does nothing at all.
+
+Verified directly against the engine: applying `stunned` on your turn leaves
+`isActionPrevented() == true`, and at the start of the victim's next turn the
+effect list is empty and `isActionPrevented() == false`.
+
+Eleven effects carry a 1-turn default and are affected: Stunned, Frozen,
+Silenced, Prone, Marked, Untargetable, Forced Choice, Genjutsu Trapped, Echoing
+Doubt, Coldread Seize, and the critical-miss penalty. The self-targeted ones
+among those are fine; the ones meant to interrupt an enemy's turn are not.
+
+Two candidate fixes, both a decision for #3 rather than a mechanical one:
+
+- **Tick at the end of the holder's turn** instead of the start. A 1-turn debuff
+  then covers exactly the enemy turn it was meant to. The cost is that a 1-turn
+  self-buff would then expire at the end of your own turn and no longer cover
+  the opponent's answer, which changes what defensive wards do.
+- **Skip the first tick** on the turn an effect is applied. Everything gains
+  effectively one more turn of life, which is a balance change across all 63
+  effects and needs SPTV to re-price them.
 
 ### What the pre-build code audit changed
 

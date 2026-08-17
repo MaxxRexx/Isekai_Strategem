@@ -195,6 +195,53 @@ void main() {
     expect(s.queueReposition(actor, BattlePosition.middle).success, isFalse);
   });
 
+  test('an ability the move brings into band is flagged, not just greyed', () {
+    final s = session();
+    // Pin the limit to one action: FAT rolls on its own at the start of a
+    // turn, and with it the move would leave a use spare and the ability
+    // would simply be usable.
+    s.battle.states[actor]!.fatTriggeredThisTurn = false;
+    s.queueReposition(actor, BattlePosition.middle); // spends the only action
+
+    final display = s
+        .abilityDisplaysFor(actor)
+        .firstWhere((d) => d.trigger.id == 'twin_fang_strike');
+
+    expect(display.reachableAfterMove, isTrue,
+        reason: 'the step is what put it in band');
+    expect(display.blockedByRange, isFalse, reason: 'range is no longer the problem');
+    expect(display.blockedReason, contains('In range once the move resolves'));
+    expect(display.blockedReason, contains('Full Arms Trigger'),
+        reason: 'names the thing that buys moving and attacking together');
+  });
+
+  test('an ability out of band even after the move is not flagged', () {
+    final s = session();
+    s.queueReposition(actor, BattlePosition.middle);
+
+    final display = s
+        .abilityDisplaysFor(actor)
+        .firstWhere((d) => d.trigger.id == 'suppressing_fire');
+
+    expect(display.reachableAfterMove, isFalse);
+    expect(display.blockedByRange, isTrue);
+    expect(display.blockedReason, contains('Out of range'));
+  });
+
+  test('an ability already in band before the move is not flagged either', () {
+    final s = session();
+    s.forceFat(actor);
+    s.queueReposition(actor, BattlePosition.middle);
+
+    // war_chant is self-targeted, so it reached from either line.
+    final display = s
+        .abilityDisplaysFor(actor)
+        .firstWhere((d) => d.trigger.id == 'war_chant');
+
+    expect(display.reachableAfterMove, isFalse);
+    expect(display.usable, isTrue);
+  });
+
   test('the move hint points at the step that brings more abilities to bear',
       () {
     final s = session();

@@ -41,6 +41,152 @@ String capitalize(String s) =>
 String _formatNumber(double v) =>
     v == v.roundToDouble() ? v.round().toString() : v.toString();
 
+/// How long a status effect lasts, in the only terms a player can act on:
+/// their own turns.
+///
+/// The engine ticks an effect down at the **start of its holder's turn**, and
+/// the queue resolves buffs before attacks, so an effect applied on a turn is
+/// live for the rest of that turn's resolution and through the opponent's
+/// answer, and is then decremented when its holder's next turn begins. A
+/// 1-turn effect is therefore gone before its holder acts again, which is
+/// exactly the thing a bare "1 turn" fails to tell anyone.
+///
+/// [onSelf] switches the possessive, since the turns being counted are the
+/// holder's, and the holder is the target for a debuff.
+String describeStatusDuration(int? turns, {required bool onSelf}) {
+  if (turns == null) return 'Lasts until it is removed.';
+  final whose = onSelf ? 'your' : 'their';
+  if (turns <= 1) {
+    return 'Active this turn only. It wears off when $whose next turn begins.';
+  }
+  final more = turns - 1;
+  return 'Active this turn and $whose next '
+      '${more == 1 ? 'turn' : '$more turns'}.';
+}
+
+/// What a status effect actually does, in plain terms, followed by how long
+/// it lasts. This is the line the battle interface shows for a status badge,
+/// and the line an ability's description borrows when it inflicts one.
+///
+/// Deliberately short: the full prose pass over all 63 effects is its own
+/// item. This states the mechanical effect and the duration, which are the two
+/// things a player cannot work out by looking.
+String describeStatusEffect(
+  StatusEffectDefinition def, {
+  required bool onSelf,
+}) {
+  // Every clause is written to follow "You" or "They", so it stays a base-form
+  // verb ("deal", not "deals") and the two subjects share one phrasing.
+  final whose = onSelf ? 'your' : 'their';
+  final bits = <String>[];
+
+  if (def.preventsActions) bits.add('cannot act at all');
+  if (def.preventsReposition) bits.add('cannot move off this line');
+  if (def.preventsTargeting) bits.add('cannot be targeted');
+  if (def.preventsHealing) bits.add('cannot be healed');
+  if (def.preventsAllyInteraction) bits.add('cannot be helped by allies');
+  if (def.cannotTargetSource) bits.add('cannot target whoever applied this');
+  if (def.forcesNextAttackMiss) bits.add('miss the next attack outright');
+  if (def.forcesRepetitionOfLastAbility) {
+    bits.add('must repeat the last ability used');
+  }
+  if (def.locksRandomAbilityEachTurn) {
+    bits.add('lose the use of one random ability each turn');
+  }
+  if (def.rangedTargetsReducedByOne) {
+    bits.add('hit one fewer target with Mid and Long Range attacks');
+  }
+  if (def.sourceHasAdvantageAgainstTarget) {
+    bits.add('are attacked at an advantage by whoever applied this');
+  }
+  if (def.outgoingDamageMultiplier != null) {
+    final pct = ((def.outgoingDamageMultiplier! - 1) * 100).round();
+    bits.add('deal ${pct >= 0 ? '$pct% more' : '${-pct}% less'} damage');
+  }
+  if (def.allDamageTakenMultiplier != null) {
+    final pct = ((def.allDamageTakenMultiplier! - 1) * 100).round();
+    bits.add('take ${pct >= 0 ? '$pct% more' : '${-pct}% less'} damage');
+  }
+  if (def.trionCostMultiplier != null) {
+    final pct = ((def.trionCostMultiplier! - 1) * 100).round();
+    bits.add('pay ${pct >= 0 ? '$pct% more' : '${-pct}% less'} Trion');
+  }
+  if (def.misfireChance != null) {
+    bits.add('have a ${(def.misfireChance! * 100).round()}% chance to hit the '
+        'wrong target');
+  }
+  for (final entry in def.flatStatModifiers.entries) {
+    final v = entry.value;
+    bits.add(
+      'have ${statLabel[entry.key] ?? entry.key.name} '
+      '${v >= 0 ? '+' : ''}${_formatNumber(v)}',
+    );
+  }
+  for (final stat in def.zeroedStats) {
+    bits.add('have ${statLabel[stat] ?? stat.name} reduced to zero');
+  }
+  if (def.turnStartDamage != null) {
+    bits.add(
+      'take ${def.turnStartDamage!.average.round()} damage at the start of '
+      'each of $whose turns',
+    );
+  }
+  if (def.turnStartHeal != null) {
+    bits.add(
+      'heal ${def.turnStartHeal!.average.round()} at the start of each of '
+      '$whose turns',
+    );
+  }
+  if (def.disadvantageRollTags.isNotEmpty) bits.add('roll at a disadvantage');
+
+  final subject = onSelf ? 'You' : 'They';
+  final what = bits.isEmpty
+      ? '$subject are affected by ${def.name}'
+      : '$subject ${bits.join(', ')}';
+  return '$what. '
+      '${describeStatusDuration(def.defaultDurationTurns, onSelf: onSelf)}';
+}
+
+/// The tooltip for a status badge on a character in battle: what the effect
+/// does, then how much of it is left.
+///
+/// [remainingTurns] is the live counter rather than the effect's default, and
+/// it is spelled out in the same "whose turns" terms as everything else,
+/// because a bare number does not say whether it survives to your next action.
+String describeStatusBadge({
+  required String id,
+  required String name,
+  int? remainingTurns,
+  required bool onSelf,
+  StatusEffectCatalog? statusCatalog,
+}) {
+  final catalog = statusCatalog ?? StatusEffectCatalog.defaultCatalog;
+  final whose = onSelf ? 'your' : 'their';
+  final String what;
+  if (catalog.contains(id)) {
+    what = describeStatusEffect(catalog[id], onSelf: onSelf)
+        // The definition's own default duration is the wrong number here: the
+        // live counter below is what is actually left.
+        .split('. Active this turn')
+        .first
+        .split('. Lasts until')
+        .first;
+  } else {
+    what = name;
+  }
+  final String left;
+  if (remainingTurns == null) {
+    left = 'Stays until it is removed.';
+  } else if (remainingTurns <= 1) {
+    left = 'Wears off when $whose next turn begins.';
+  } else {
+    left = 'Lasts $whose next ${remainingTurns - 1} '
+        '${remainingTurns - 1 == 1 ? 'turn' : 'turns'}, '
+        'then wears off at the start of the one after.';
+  }
+  return '$name. $what. $left';
+}
+
 /// One-paragraph player-facing description of what an active Trigger
 /// does, computed from its data (mirrors the web demo's description).
 String describeActiveTrigger(
@@ -74,15 +220,29 @@ String describeActiveTrigger(
       'Heals ${t.healsCasterInstead ? 'the user' : 'the target'} for avg ${t.healAmount!.average.round()}.',
     );
   }
-  if (t.inflictedStatusEffects.isNotEmpty) {
+  // Naming a status without saying what it does or how long it lasts leaves
+  // the player nothing to plan with, so each one is spelled out. Whose turns
+  // the duration counts depends on who ends up holding it.
+  final onSelf = t.targetAffiliation != TargetAffiliation.opponent;
+  for (final application in t.inflictedStatusEffects) {
+    final def = catalog[application.statusEffectId];
     parts.add(
-      'Inflicts '
-      '${t.inflictedStatusEffects.map((a) => catalog[a.statusEffectId].name).join(' + ')}.',
+      '${onSelf ? 'Makes you' : 'Leaves the target'} '
+      '${def.name}: ${describeStatusEffect(def, onSelf: onSelf)}',
     );
   }
   parts.add(
-    'Costs ${t.trionCost} Trion, cooldown ${t.cooldownTurns} turn${t.cooldownTurns == 1 ? '' : 's'}.',
+    'Costs ${t.trionCost} Trion. Usable again after ${t.cooldownTurns} '
+    'turn${t.cooldownTurns == 1 ? '' : 's'}.',
   );
+  if (t.inflictedStatusEffects.isNotEmpty && onSelf) {
+    // The timing question the interface never answered: yes, a buff helps an
+    // attack queued in the same turn, because buffs resolve first.
+    parts.add(
+      'Buffs resolve before attacks, so an attack you queue this turn already '
+      'gets the benefit.',
+    );
+  }
   return parts.join(' ');
 }
 

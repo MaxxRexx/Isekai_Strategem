@@ -1,0 +1,82 @@
+# Working agreement
+
+How the owner of this project and the AI assistant work together. Read this
+alongside [`CLAUDE.md`](../CLAUDE.md), which carries the hard rules; this
+document carries the habits.
+
+## The loop
+
+Every numbered item in the work queue runs through the same cycle. Nothing
+skips a step.
+
+1. **Design first.** The assistant produces a design review as an artifact, with
+   the options, the trade-offs and a recommendation. No code is written yet.
+2. **Approval.** The owner approves, rejects, or corrects. Partial approval is
+   normal, and the corrections are the point.
+3. **Build on a branch**, push, and let the deploy put it in front of the owner.
+   Every push to a `claude/**` branch that touches `app/` or `packages/`
+   publishes to <https://maxxrexx.github.io/Isekai_Strategem/> automatically.
+4. **The owner playtests.** Real play, not a description of play.
+5. **The assistant fixes** what the playtest found, then restates where things
+   stand: what is done, what is left, what is next.
+6. **The owner re-tests.** If it is good: merge, delete the merged branch, and
+   the owner gives the go-ahead for the next item.
+
+Steps 4 to 6 repeat as many times as they need to. A merge happens only when
+the owner asks for one.
+
+## What the assistant is expected to do
+
+- **Audit the code before designing anything.** Designs get checked against what
+  is actually built, not against what the documents claim. This habit has caught
+  a Bail Out window that provided no mechanic at all, a range tag that carried
+  zero information, and a self-test whose simulated player had never landed a
+  single hit.
+- **Say when something is working as built.** If a playtest finding turns out
+  not to be a bug, say so and explain what the player actually saw, rather than
+  quietly "fixing" correct behaviour.
+- **Flag knock-on effects early.** Before a change lands, not after it is
+  discovered mid-rebalance.
+- **Keep the documents current.** `game_design.md` describes the game on `main`;
+  `current_development_status.md` describes where the work is. Re-render the PDF
+  when the design document changes.
+- **Test, then report honestly.** Say what passed, what was verified only
+  through tests rather than by driving the real interface, and what was not
+  checked at all.
+- **Distinguish a bug from a design change** when reporting, because they carry
+  different risk and different urgency.
+
+## What the assistant should not do
+
+- **Use em dashes.** Anywhere: chat, commit messages, code comments, documents,
+  interface copy.
+- **Invent numbers.** Durations, Trion costs, cooldowns and magnitudes come from
+  the SPTV rule, not from a value that merely looks plausible. An unpriced
+  first-pass value is labelled as one.
+- **Decide something that is the owner's to decide.** If a decision is needed
+  and it cannot be asked for, stop and report exactly what was needed. Do not
+  proceed on an assumed default.
+- **Leave documentation stale or duplicated.** Including branch names that no
+  longer exist, and phase tables that repeat what a live section already says.
+- **Describe a feature as working when only its tests have been run.** Tests
+  passing and the feature being right are different claims.
+- **Merge, push to another branch, or open a pull request** without being asked.
+
+## Naming and vocabulary
+
+- Abbreviations are defined once, in `current_development_status.md`: TEG, FAT,
+  SPTV.
+- Range bands are **Close Range**, **Mid Range**, **Long Range**. Attack types
+  are **melee**, **ranged**, **psychic**. They are different axes and the names
+  do not overlap.
+- Battlefield lines are **Front**, **Middle**, **Back**.
+- Interface copy is written for a layman. A status effect's description says
+  what it does and how long it lasts in the player's own turns, never just its
+  name.
+
+## Shorthand
+
+- **"pif"** on its own means "port into Flutter": take the most recently
+  approved mockup and build it in the real app under `app/`, matching existing
+  conventions, verified with `dart analyze` and `flutter test`, then committed
+  and pushed.

@@ -53,11 +53,21 @@ class AbilityDisplay {
   /// UI says so.
   final String? blockedReason;
 
+  /// True when this ability has a queued move to thank for being in range:
+  /// it reaches from the line its owner is stepping to, but not from the line
+  /// they are standing on.
+  ///
+  /// Its own visual state, because the alternative is painting "you have no
+  /// action left" and "you cannot reach anything" in the same grey, which
+  /// reads as nothing having changed when you queue a step.
+  final bool reachableAfterMove;
+
   const AbilityDisplay({
     required this.trigger,
     required this.legalAction,
     required this.cooldownRemaining,
     this.blockedReason,
+    this.reachableAfterMove = false,
   });
 
   bool get usable =>
@@ -469,14 +479,55 @@ class PlaySession {
         () {
           final legal = legalById[trigger.id];
           final cooldown = state.cooldowns[trigger.id] ?? 0;
+          final afterMove = _onlyReachableAfterMove(state, trigger, legal);
           return AbilityDisplay(
             trigger: trigger,
             legalAction: legal,
             cooldownRemaining: cooldown,
-            blockedReason: _blockedReasonFor(state, trigger, legal, cooldown),
+            reachableAfterMove: afterMove,
+            blockedReason: _blockedReasonFor(
+              state,
+              trigger,
+              legal,
+              cooldown,
+              afterMove,
+            ),
           );
         }(),
     ];
+  }
+
+  /// Whether [trigger] reaches from the line [state] is stepping to but not
+  /// from the line they are standing on right now.
+  bool _onlyReachableAfterMove(
+    CharacterBattleState state,
+    ActiveTrigger trigger,
+    LegalAction? legal,
+  ) {
+    if (legal == null || !legal.hasTargets) return false;
+    final projected = projectedPositionOf(state.character.id);
+    if (projected == state.position) return false;
+    if (trigger.targetAffiliation == TargetAffiliation.self) return false;
+    // Same question asked from the live position: if it already reached from
+    // there, the move is not what put it in band.
+    final engine = battle.turnEngine;
+    final pool = trigger.targetAffiliation == TargetAffiliation.opponent
+        ? battle.teamB.characters
+        : battle.teamA.characters;
+    for (final c in pool) {
+      final target = battle.states[c.id]!;
+      if (!target.isAlive) continue;
+      if (engine.canTarget(
+        state,
+        target,
+        trigger: trigger,
+        fromPosition: state.position,
+        targetPosition: projectedPositionOf(target.character.id),
+      )) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// The one reason worth showing the player for an unusable ability, most
@@ -486,25 +537,39 @@ class PlaySession {
     ActiveTrigger trigger,
     LegalAction? legal,
     int cooldown,
+    bool reachableAfterMove,
   ) {
     if (legal == null) {
       if (cooldown > 0) {
-        return 'On cooldown ($cooldown ${cooldown == 1 ? 'turn' : 'turns'})';
+        return 'On cooldown for $cooldown more '
+            '${cooldown == 1 ? 'turn' : 'turns'}.';
       }
-      if (state.isActionPrevented()) return 'Cannot act';
-      return 'Unavailable';
+      if (state.isActionPrevented()) return 'This character cannot act.';
+      return 'Not available right now.';
     }
     if (!legal.hasTargets) {
       // Say the band and the window, so the fix (step forward or back) is
       // readable off the message rather than needing the rules in front of
       // you.
-      return 'Nothing in ${trigger.rangeTag.label} '
-          '(distance ${trigger.rangeTag.windowLabel})';
+      return 'Out of range. ${trigger.rangeTag.label} reaches a distance of '
+          '${trigger.rangeTag.windowLabel}, and nobody is standing there. '
+          'Move to close or open the gap.';
     }
     if (!legal.affordable) {
-      return 'Needs ${legal.actualTrionCost} Trion';
+      return 'Not enough Trion. This costs ${legal.actualTrionCost}, and your '
+          'squad has ${battle.teamA.trionPool.current}.';
     }
-    if (!_hasUsesLeft(state)) return 'No uses left this turn';
+    if (!_hasUsesLeft(state)) {
+      // The case a stepping character hits constantly: the move spent the
+      // turn's only action. Say which of the two problems it is, because the
+      // fixes are opposite (un-queue the move, or wait for a FAT turn).
+      if (reachableAfterMove) {
+        return 'In range once the move resolves, but the move used this '
+            'turn\'s action. Only a Full Arms Trigger turn allows moving and '
+            'attacking together.';
+      }
+      return 'No ability uses left this turn.';
+    }
     return null;
   }
 

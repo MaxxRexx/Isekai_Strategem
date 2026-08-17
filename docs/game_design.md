@@ -380,6 +380,13 @@ picker offers exactly what the new line can reach. Un-queueing the step takes th
 strikes that depended on it back out of the queue and refunds them, rather than
 letting them resolve into thin air.
 
+The battlefield strip under both squads draws this: your back line on the far
+left through to the opponent's back line on the far right, with the two front
+lines meeting in the middle, so the gap you see is the distance the bands are
+measured in. It prints the real distance to each enemy line under the enemy
+half, shades the lines the selected ability reaches, and its own cells are the
+move control, so position is read and changed in one place.
+
 That is what makes the four questions the pillar was built for answerable at the
 moment of decision rather than a turn late:
 
@@ -392,6 +399,14 @@ moment of decision rather than a turn late:
   so it is the spread of your own squad that decides, and the diagram shows it.
 - *Will they be in range of my trap in two turns?* The trap keeps its band and
   the line it was armed from, so the bet is readable off the same picture.
+
+**Every ability says why it cannot be used.** Out of range names the band and
+the distance it covers. The case a moving character meets constantly gets its
+own treatment: without a Full Arms Trigger the step spends the turn's only
+action, so an ability the move has just brought into band pulses rather than
+going flat, and says so when tapped. That distinguishes the three reasons an
+ability is dark, which are fixed in three different ways: move, wait for the
+cooldown, or take a FAT turn.
 
 **The opponent plays the same board.** The AI aims only at what its bands
 actually reach, and it moves on two rules: a character who can reach nothing
@@ -530,8 +545,27 @@ you queued them. For example, a buff you queued second still resolves before an
 attack you queued first, because buffs are an earlier phase. And between two
 attacks, the character whose Team Spirit is furthest from 50 strikes first.
 
-Timed effects (wards, traps, marks that only last a couple of turns) are ticked
-down once per turn during cleanup, so they eventually wear off.
+**When a status effect actually wears off.** A timed effect ticks down at the
+**start of its holder's own turn**, and expires when the count reaches zero. Put
+that together with buffs resolving before attacks, and a status applied on a
+turn is live for the rest of that turn's resolution, stays live through the
+opponent's answer, and is decremented when its holder's next turn begins.
+
+Two consequences worth stating plainly, because a bare turn count hides both:
+
+- A buff you use helps an attack you queue in the **same** turn, since buffs are
+  an earlier phase. That is what makes a Full Arms Trigger turn worth spending on
+  a setup plus a payoff.
+- A **1-turn** effect is gone before its holder acts again. So the game says
+  "active this turn only, it wears off when your next turn begins" rather than
+  printing a 1, and a 2-turn effect says "active this turn and your next turn".
+
+*Known issue, awaiting the SPTV pass: because the tick happens at the start of
+the holder's turn, a 1-turn debuff placed on an **enemy** expires before that
+enemy acts, so it never affects the turn it was meant to interrupt. Eleven
+effects carry a 1-turn default, including Stunned and Frozen. The fix is a
+decision about when the tick happens, and it is priced with everything else in
+that pass.*
 
 ---
 

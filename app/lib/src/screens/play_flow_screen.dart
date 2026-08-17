@@ -97,6 +97,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   // matching the approved reference (not a stacked card per character).
   String? _selectedCharacterId;
   LegalAction? _selectedAction;
+
+  /// Set when the player tapped an ability they cannot use, to read it. Never
+  /// set at the same time as [_selectedAction].
+  AbilityDisplay? _inspectedAbility;
   final Set<String> _selectedTargets = {};
 
   /// Which character's info the description panel is previewing (set by
@@ -509,10 +513,22 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   void _clearSelection() {
     _selectedCharacterId = null;
     _selectedAction = null;
+    _inspectedAbility = null;
     _selectedTargets.clear();
     _infoCharacterId = null;
     _showPlayerInfo = false;
     _showOpponentInfo = false;
+  }
+
+  /// An ability the player tapped purely to read about: on cooldown, out of
+  /// range, unaffordable, or waiting on an action. It cannot be queued, so it
+  /// never becomes a [LegalAction]; the description panel reads it instead.
+  void _inspectAbility(String characterId, AbilityDisplay display) {
+    setState(() {
+      _clearSelection();
+      _selectedCharacterId = characterId;
+      _inspectedAbility = display;
+    });
   }
 
   /// The top-bar player portrait was tapped: preview the player's account
@@ -536,6 +552,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   void _selectAbility(String characterId, LegalAction action) {
     setState(() {
       _infoCharacterId = null;
+      _inspectedAbility = null;
       _selectedCharacterId = characterId;
       _selectedAction = action;
       // Self-cast highlights the caster; AoE highlights every target it can
@@ -1266,7 +1283,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 48,
+              flex: 66,
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: ShapeDecoration(
@@ -1296,10 +1313,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            Expanded(flex: 26, child: _battlefieldRail(session)),
-            const SizedBox(width: 10),
             Expanded(
-              flex: 26,
+              flex: 34,
               child: TeamPanel(
                 label: 'Opponent Squad',
                 color: Palette.teamB,
@@ -1315,6 +1330,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 10),
+        _battlefieldRail(session),
         const SizedBox(height: 12),
         if (session.isOver) ...[
           OutcomeBanner(
@@ -1401,23 +1418,38 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
-  /// The lane diagram between the two squad panels. It draws the projected
-  /// positions rather than the live ones, so a queued move shows up the
-  /// moment it is queued, and shades the enemy lines the selected ability
-  /// can actually reach from there.
+  /// The full-width lane diagram under both squad panels. It draws projected
+  /// positions rather than live ones, so a queued move shows the moment it is
+  /// queued; it shades the enemy lines the selected ability reaches from
+  /// there; and its own cells are the move control, so position is read and
+  /// changed in one place.
   Widget _battlefieldRail(PlaySession session) {
-    final selected = _selectedAction;
+    // Either a selected ability or one being read about tells us whose band
+    // to shade and whose distances to rule.
+    final band = _selectedAction?.trigger.rangeTag ??
+        _inspectedAbility?.trigger.rangeTag;
+    // Focus follows either a selected ability or a tapped portrait, so a
+    // character can be moved without first picking one of their abilities.
+    final playerIds = {for (final f in session.teamA) f.id};
+    final focused = _selectedCharacterId ??
+        (playerIds.contains(_infoCharacterId) ? _infoCharacterId : null);
     return BattlefieldRail(
       teamA: session.teamA,
       teamB: session.teamB,
       projected: {
         for (final f in session.teamA) f.id: session.projectedPositionOf(f.id),
       },
-      focusedId: _selectedCharacterId,
-      reachFrom: selected == null || _selectedCharacterId == null
+      focusedId: focused,
+      reachFrom: focused == null || band == null
           ? null
-          : session.projectedPositionOf(_selectedCharacterId!),
-      reachBand: selected?.trigger.rangeTag,
+          : session.projectedPositionOf(focused),
+      reachBand: band,
+      legalSteps: focused == null || _tutorialActive
+          ? const {}
+          : session.legalRepositionsFor(focused).toSet(),
+      onStep: (_resolving || focused == null || _tutorialActive)
+          ? null
+          : (to) => _stepTo(focused, to),
     );
   }
 
@@ -1508,9 +1540,6 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                         SizedBox(width: 6),
                         FatBadge(),
                       ],
-                      const SizedBox(width: 10),
-                      if (fighter.alive && !_tutorialActive)
-                        _positionStepper(fighter, session),
                     ],
                   ),
                   if (fighter.statusEffects.isNotEmpty)
@@ -1524,6 +1553,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                             StatusBadge(
                               name: s.name,
                               remainingTurns: s.remainingTurns,
+                              id: s.id,
                             ),
                         ],
                       ),
@@ -1557,19 +1587,6 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     );
   }
 
-  /// The Front/Middle/Back strip beside a fighter's name. It reads and writes
-  /// the projected position, so tapping twice in one turn walks two lines
-  /// (each step costing an ability use), and the strip keeps up.
-  Widget _positionStepper(FighterSnapshot fighter, PlaySession session) {
-    final projected = session.projectedPositionOf(fighter.id);
-    return PositionStepper(
-      current: projected,
-      legal: session.legalRepositionsFor(fighter.id).toSet(),
-      pending: projected != fighter.position,
-      onStep: _resolving ? null : (to) => _stepTo(fighter.id, to),
-    );
-  }
-
   bool _abilityEnabled(
     TutorialBattleStep? step,
     String fighterId,
@@ -1596,47 +1613,47 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     final action = display.legalAction;
     final isSelected =
         _selectedCharacterId == fighter.id &&
-        _selectedAction?.trigger.id == t.id;
+        (_selectedAction?.trigger.id == t.id ||
+            _inspectedAbility?.trigger.id == t.id);
     final highlight =
         tutorialStep?.triggerId == t.id &&
         tutorialStep?.characterId == fighter.id;
-    final String tooltip;
-    if (display.blockedByRange) {
-      // The one blocked state the player can fix on the spot, so it says how.
-      tooltip =
-          '${t.name}: ${t.rangeTag.label} reaches distance '
-          '${t.rangeTag.windowLabel}, and nothing is standing there. '
-          'Reposition to close or open the gap.';
-    } else if (display.cooldownRemaining > 0) {
-      tooltip =
-          '${t.name}: on cooldown for ${display.cooldownRemaining} '
-          'more turn(s).';
-    } else if (action == null) {
-      tooltip = '${t.name}: ${display.blockedReason ?? 'not usable right now'}.';
-    } else if (!action.affordable) {
-      tooltip = '${t.name}: not enough Trion this turn.';
-    } else {
-      tooltip =
-          '${t.name} (${action.actualTrionCost} Trion) - '
-          '${triggerSummaryLine(t)}';
-    }
     final enabled = _abilityEnabled(tutorialStep, fighter.id, display);
+    // Waiting on an action rather than on range: the step already brought it
+    // into band, and only a FAT turn buys both. Its own state, because the
+    // fix is different from every other reason an ability is dark.
+    final pending =
+        !enabled && display.reachableAfterMove && fighter.alive && !_resolving;
     return AbilitySlot(
       icon: TriggerIcon(trigger: t, size: 28),
       selected: isSelected,
       highlighted: !isSelected && highlight,
-      enabled: enabled,
+      // `dimmed` rather than `enabled: false`: it gives the same unavailable
+      // look but keeps the slot tappable, which is what lets an unusable
+      // ability still open its description.
+      enabled: true,
+      dimmed: !enabled,
+      pending: pending,
       // A dead fighter's abilities are just grayed out like the rest of its
       // row; no cooldown number is shown on them.
       cooldownRemaining: fighter.alive ? display.cooldownRemaining : 0,
-      tooltip: tooltip,
-      // Tapping the already-selected ability deselects it; otherwise a
-      // disabled slot is not tappable.
-      onTap: (action == null || _resolving || (!enabled && !isSelected))
+      // No tooltip: an ability explains itself in the description panel when
+      // tapped. Tooltips are reserved for status effects.
+      tooltip: null,
+      // Every ability is tappable, usable or not. A usable one is selected
+      // for targeting; anything else opens its description with the reason it
+      // is unavailable, which is the only way the player can learn the reason.
+      onTap: _resolving
           ? null
-          : () => isSelected
-                ? setState(_clearSelection)
-                : _selectAbility(fighter.id, action),
+          : () {
+              if (isSelected) {
+                setState(_clearSelection);
+              } else if (enabled && action != null) {
+                _selectAbility(fighter.id, action);
+              } else {
+                _inspectAbility(fighter.id, display);
+              }
+            },
       size: 60,
     );
   }
@@ -1824,6 +1841,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     if (action != null && charId != null) {
       return _abilityPanel(action, charId, names);
     }
+    final inspected = _inspectedAbility;
+    if (inspected != null && charId != null) {
+      return _blockedAbilityPanel(inspected, charId);
+    }
     if (_infoCharacterId != null) {
       return _characterInfoPanel(_infoCharacterId!);
     }
@@ -1887,6 +1908,72 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// The description panel for an ability the player cannot use right now.
+  /// Same blurb as the usable version, with the reason in place of the target
+  /// picker and the Queue button. Out of range and "the move used your action"
+  /// are both fixable on the spot, so they are stated in full rather than
+  /// left as a grey icon.
+  Widget _blockedAbilityPanel(AbilityDisplay display, String charId) {
+    final t = display.trigger;
+    final reasonColor = display.reachableAfterMove
+        ? Palette.warn
+        : display.blockedByRange
+        ? Palette.accent
+        : Colors.white54;
+    return _descPanel(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              TriggerIcon(trigger: t, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  t.name.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+              TagChip(t.rangeTag.label),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            describeTrigger(t),
+            style: const TextStyle(color: Colors.white70, fontSize: 12.5),
+          ),
+          if (display.blockedReason != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  display.reachableAfterMove
+                      ? Icons.timer_outlined
+                      : Icons.block_outlined,
+                  size: 15,
+                  color: reasonColor,
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    display.blockedReason!,
+                    style: TextStyle(color: reasonColor, fontSize: 12.5),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -2201,7 +2288,12 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               runSpacing: 3,
               children: [
                 for (final s in fighter.statusEffects)
-                  StatusBadge(name: s.name, remainingTurns: s.remainingTurns),
+                  StatusBadge(
+                    name: s.name,
+                    remainingTurns: s.remainingTurns,
+                    id: s.id,
+                    onSelf: isOwn,
+                  ),
               ],
             ),
           ],

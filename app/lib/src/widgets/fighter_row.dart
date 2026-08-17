@@ -81,7 +81,11 @@ class FighterRow extends StatelessWidget {
             alignment: compact ? WrapAlignment.end : WrapAlignment.start,
             children: [
               for (final s in fighter.statusEffects)
-                StatusBadge(name: s.name, remainingTurns: s.remainingTurns),
+                StatusBadge(
+                  name: s.name,
+                  remainingTurns: s.remainingTurns,
+                  id: s.id,
+                ),
             ],
           );
 
