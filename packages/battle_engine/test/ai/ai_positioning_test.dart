@@ -239,4 +239,45 @@ void main() {
     expect(results.where((r) => r.characterId == 'a-1'), isNotEmpty,
         reason: 'the move used one of three uses, not the whole turn');
   });
+
+  test('a self-buff does not disguise a character who can reach nothing', () {
+    // The reported stall: two squads out of range of each other, each holding
+    // a self-buff, standing still and re-buffing for the rest of the battle.
+    // A buff reaches from anywhere, so counting it as "reachable" meant nobody
+    // ever registered as stuck.
+    final closeAndBuff = [
+      testTrigger(id: 'close-hit', rangeTag: RangeTag.close, trionCost: 5),
+      testTrigger(
+        id: 'self-buff',
+        rangeTag: RangeTag.close,
+        targetAffiliation: TargetAffiliation.self,
+        includeDamage: false,
+        inflictedStatusEffects: const [StatusEffectApplication('empowered')],
+      ),
+    ];
+    final battle = battleWith(
+      triggers: closeAndBuff,
+      aLine: BattlePosition.back,
+      bLine: BattlePosition.back,
+    );
+
+    expect(
+      battle.turnEngine.reachableAbilityCount(
+        battle.states['a-1']!,
+        BattlePosition.back,
+        closeAndBuff,
+        battle.teamB.characters.map((c) => battle.states[c.id]!).toList(),
+      ),
+      0,
+      reason: 'only what can be aimed at an enemy counts',
+    );
+
+    final ai = ProfileDrivenAi(AiProfile.theExecutioner,
+        random: const _NoMistakes());
+    final plan = ai.planTurn(battle,
+        equippedActiveTriggers: equipAll(battle, closeAndBuff));
+
+    expect(plan.where((a) => a.isReposition), isNotEmpty,
+        reason: 'having a buff to spam is not a reason to stand still');
+  });
 }

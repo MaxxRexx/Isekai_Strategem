@@ -80,6 +80,44 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued |
 
+### Fixed during the #1 playtest: the no-fight stall
+
+The owner played six turns in which neither squad moved or attacked, the AI just
+re-casting War Chant. Reproduced on the first attempt with both squads on their
+back lines: `war_chant` three times, then `guardians_aegis` three times, then a
+cooldown gap, then round again, forever.
+
+The cause was in the "am I stuck?" test added with #1. `reachableAbilityCount`
+counted **every** equipped ability, and a self-buff or ally ward reaches from
+anywhere, so a character standing four squares outside every attack's band still
+scored as having something to do and never moved. It now counts only triggers
+aimed at an enemy. Guarded by a case in `test/ai/ai_positioning_test.dart`.
+
+Note that fixing this does not fix the underlying hole: after the change the AI
+correctly closes from back to front, and is *still* out of range of a back-line
+enemy, because Close Range cannot reach that far. See the structural hole below.
+
+### Fixed during the #1 playtest: a status could be applied twice
+
+Applying a status added a second instance rather than refreshing the first, so a
+character could carry two Bleedings ticking separately and two Braced badges
+counting down out of step. Re-applying now refreshes the existing instance and
+takes the longer of the two durations, so a short re-application never cuts a
+long one short, and no character can show the same badge twice. A genuinely
+stacking effect would need an explicit flag on its definition; none has one.
+
+### Not reproduced: Guardian's Aegis on consecutive turns
+
+The owner saw it fire on two consecutive opponent turns despite a 2-turn
+cooldown. Not reproducible: used on turn 1, blocked on turns 2 and 3, usable
+again on turn 4, and `canUseAbility` rejects a live cooldown before it ever
+looks at the FAT count, so there is no FAT bypass. Awaiting a full battle report
+from a session where it happens.
+
+One related gap did turn up: an **AI fallback reposition is applied directly and
+never written to the battle log**, so a turn where the opponent only moved
+renders as nothing at all. That can make two separated turns look adjacent.
+
 ### Fixed during the #1 playtest: friendly abilities were contested
 
 Found by sweeping every Trigger and measuring how often its advertised effect
@@ -110,6 +148,53 @@ Using two or more abilities in one Full Arms Trigger turn **doubles every
 cooldown set that turn**. That is the documented FAT price, but nothing said so,
 so a 1-turn ability coming back with a 2 on it read as a cooldown bug. Measured:
 base 1 becomes 2, base 2 becomes 4. Ability descriptions now state both numbers.
+
+### Structural hole: Close Range cannot reach the back line
+
+Found by computing position against ability range across the live catalogue,
+after the owner played six turns in which neither squad moved or attacked.
+
+Distance to an enemy is the two lines' steps added together, so the closest any
+character can get to an enemy standing on their **back** line is **2** (my front,
+step 0, plus their back, step 2). Close Range reaches 0 to 1. Therefore:
+
+**Close Range can never reach a back-line enemy, from anywhere, ever.** That is
+14 of the 51 offensive Triggers, 27% of the catalogue, permanently dead against
+one posture that costs the opponent nothing.
+
+How many of the 51 offensive Triggers reach, by line pairing:
+
+| | Their front | Their middle | Their back |
+|---|---|---|---|
+| **My front** | 14 | 32 | 37 |
+| **My middle** | 32 | 37 | 37 |
+| **My back** | 37 | 37 | 19 |
+
+The two corners are the dead zones. Everyone on the front lines (distance 0)
+leaves only the 14 Close Triggers live, because Mid and Long both have minimums.
+Everyone hanging back (distance 4) leaves only the 19 Long ones, which is the
+stall the owner played through.
+
+Exposure, summed over the three lines an enemy could occupy: front 83, middle
+106, back 93. Middle is the most exposed and the only line with no band it is
+safe from. Back is not the lowest number but it is the only line a whole band
+cannot touch, which matters more.
+
+Consequences, all of which argue that this is not a tuning problem:
+
+- **Back plus Long Range is dominant.** From the back, Long reaches every enemy
+  line (2, 3 and 4 all sit inside its window) while Close cannot answer at all.
+- **Position is decided before the first turn** and never revisited, because one
+  line is best against nearly everything and moving costs a whole action.
+- **The three-snipers-at-the-back spam is currently unanswerable** by a Close
+  squad, which is exactly the pattern the owner predicted.
+
+Five options were put to the owner (see the positional analysis review):
+widen Close to 0-2; add pull and push effects; a closing pressure on the
+battlefield; a charge that crosses the line; or leave it to #4's costs. The
+recommendation is **widen Close plus add pull/push, landing with #4**, because
+#4 already owns the range cost model, and because a cost you can afford is not
+an answer to a posture you cannot reach.
 
 ### Design rule, and the measurement behind it: no ability may rely on FAT
 

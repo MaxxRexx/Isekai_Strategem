@@ -124,6 +124,30 @@ class StatusEffectEngine {
     if (target.isInvulnerableTo(statusEffectId)) return false;
     final def = catalog[statusEffectId];
 
+    // Re-applying an effect refreshes it rather than adding a second copy.
+    // Stacking produced two Bleedings ticking separately and two Braced
+    // badges counting down out of step, which is unreadable on a character
+    // strip and doubles a magnitude nobody priced for. A genuinely stacking
+    // effect would need to say so on its definition; none currently does.
+    final existingIndex =
+        target.statusEffects.indexWhere((i) => i.definitionId == statusEffectId);
+    if (existingIndex >= 0) {
+      final existing = target.statusEffects[existingIndex];
+      final refreshed = durationOverride ?? def.defaultDurationTurns;
+      // The longer of the two wins, so a short re-application never cuts a
+      // long one short.
+      if (refreshed == null || existing.remainingTurns == null) {
+        existing.remainingTurns = null;
+      } else if (refreshed > existing.remainingTurns!) {
+        existing.remainingTurns = refreshed;
+      }
+      // sourceCharacterId is final on the instance and the first applier
+      // keeps the credit, which is what the "cannot target its source" rules
+      // read.
+      if (instanceData != null) existing.data.addAll(instanceData);
+      return true;
+    }
+
     final instance = StatusEffectInstance(
       definitionId: statusEffectId,
       remainingTurns: durationOverride ?? def.defaultDurationTurns,

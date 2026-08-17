@@ -647,6 +647,12 @@ class TurnEngine {
   /// How many of [triggers] could reach at least one of [opponents] if
   /// [state] were standing at [from]. The measure of how useful a position
   /// is to this character right now.
+  /// Counts only the triggers aimed at an enemy. A self-buff or an ally ward
+  /// reaches from anywhere, so counting those would say a character standing
+  /// four squares out of every attack's band is doing fine. That is exactly
+  /// what happened: two squads out of range of each other, each holding a
+  /// self-buff, stood still re-buffing for the rest of the battle because
+  /// neither ever registered as stuck.
   int reachableAbilityCount(
     CharacterBattleState state,
     BattlePosition from,
@@ -657,10 +663,7 @@ class TurnEngine {
     if (living.isEmpty) return 0;
     var count = 0;
     for (final trigger in triggers) {
-      if (trigger.targetAffiliation != TargetAffiliation.opponent) {
-        count++;
-        continue;
-      }
+      if (trigger.targetAffiliation != TargetAffiliation.opponent) continue;
       final reaches = living.any((o) => trigger.rangeTag
           .reaches(BattleDistance.betweenEnemies(from, o.position)));
       if (reaches) count++;

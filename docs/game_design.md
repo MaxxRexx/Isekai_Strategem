@@ -364,6 +364,18 @@ bear has nothing to do with handing a heal to the person beside you.
 | **Middle** | 1, Close or Mid | 2, Mid or Long | 3, Mid or Long |
 | **Back** | 2, Mid or Long | 3, Mid or Long | 4, Long only |
 
+Two corners of that table are dead zones worth naming. At **distance 0**, both
+squads crowded onto their front lines, only Close Range works, because Mid and
+Long both have minimums. At **distance 4**, both squads hanging back, only Long
+Range works. A fight that settles into either corner stops being a fight.
+
+*Known hole, awaiting a decision: the closest anyone can get to an enemy standing
+on their back line is distance 2, so **Close Range can never reach a back-line
+enemy at all**. That is 14 of the 51 offensive Triggers dead against one posture
+that costs the opponent nothing, and it makes back-plus-Long the dominant
+opening. Options are on the table with item #4, which already owns the range cost
+model.*
+
 **Moving.** **Reposition** shifts a character one step and costs them their
 ability use for that turn, so closing the gap competes with attacking. It costs
 no Trion. A FAT turn, which grants up to three actions, is therefore the turn you
@@ -544,6 +556,11 @@ is from 50** (the more committed character goes first), and finally by the order
 you queued them. For example, a buff you queued second still resolves before an
 attack you queued first, because buffs are an earlier phase. And between two
 attacks, the character whose Team Spirit is furthest from 50 strikes first.
+
+**A status effect is refreshed, not stacked.** Applying an effect that is
+already on a character resets its timer rather than adding a second copy, and
+the longer of the two durations wins. So a character never carries the same
+effect twice, and never shows the same badge twice.
 
 **A friendly ability is granted, not inflicted.** A heal, a ward or a buff aimed
 at yourself or an ally never rolls to hit and is never contested: it simply
