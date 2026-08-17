@@ -562,10 +562,12 @@ opponent's answer, and is decremented when its holder's next turn begins.
 
 Two consequences worth stating plainly, because a bare turn count hides both:
 
-- A buff you use helps an attack you queue in the **same** turn, since buffs are
-  an earlier phase. Note what that requires: pairing them costs two ability uses,
-  and a turn only grants two on a Full Arms Trigger turn. So the setup-plus-payoff
-  turn is a FAT turn, and on an ordinary turn a buff is a turn spent on its own.
+- A buff lasting two turns or more is **still up on your next turn**, so a turn
+  spent buffing sets up the attack you make next. That is the ordinary way a buff
+  pays, and it needs no Full Arms Trigger. (Buffs also resolve before attacks
+  within a turn, so on a FAT turn you can do both at once, but no ability is
+  built to require that: an ability that only worked inside a FAT turn would
+  mostly do nothing.)
 - A **1-turn** effect is gone before its holder acts again. So the game says
   "active this turn only, it wears off when your next turn begins" rather than
   printing a 1, and a 2-turn effect says "active this turn and your next turn".

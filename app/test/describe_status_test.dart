@@ -81,8 +81,10 @@ void main() {
       expect(text, contains('25% more damage'),
           reason: 'what the status does');
       expect(text, contains('your next turn'), reason: 'how long it lasts');
-      expect(text, contains('Buffs resolve before attacks'),
-          reason: 'whether it helps an attack queued the same turn');
+      expect(text, contains('still up on your next turn'),
+          reason: 'when the bonus actually pays, on an ordinary turn');
+      expect(text, isNot(contains('Full Arms Trigger turn an attack')),
+          reason: 'no ability should read as needing FAT to be useful');
       expect(text, contains('Costs 10 Trion'));
     });
 
@@ -93,7 +95,7 @@ void main() {
 
       expect(text, contains('Leaves the target'));
       expect(text, contains('their next'));
-      expect(text, isNot(contains('Buffs resolve')));
+      expect(text, isNot(contains('sets up the attack you make then')));
     });
   });
 

@@ -62,6 +62,18 @@ the owner asks for one.
   passing and the feature being right are different claims.
 - **Merge, push to another branch, or open a pull request** without being asked.
 
+## Standing design rules
+
+Rules, not preferences. They apply to every future item without being restated.
+
+- **No ability may rely on a Full Arms Trigger to be useful.** FAT is an
+  occasional bonus, so an ability that only pays off inside one is an ability
+  that mostly does nothing. A support ability has to pay for its own action
+  within its own duration on an ordinary one-action turn.
+- **Interface copy must not advertise a FAT-only use** as an ability's reason to
+  exist, even when the FAT case is real.
+- **Numbers come from SPTV**, never from a value that merely looks plausible.
+
 ## Naming and vocabulary
 
 - Abbreviations are defined once, in `current_development_status.md`: TEG, FAT,

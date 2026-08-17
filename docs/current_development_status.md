@@ -70,7 +70,7 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 2 | **Bail Out, contested.** Not a revive: the operator leaves the engagement. A one-turn Bailing Out window where the body stays **targetable**; left alone it is recalled and the squad gets Trion Salvage (20% of base Trion Capacity), but an enemy hit destroys it instead, denying the Salvage and giving the attacker a smaller gain. Refuse to Bail is pre-declared, armed like the existing counters. | Approved, queued |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 63 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
 | 4 | **Trion economy.** Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may have FAT active at a time**, so a burst turn is a spotlight rather than a windfall; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. | Queued |
-| 5 | **Healing is too weak.** Wellspring Surge averages 5.5, Soul Siphon's drain heals 1.5 and Radiant Blessing 1 a turn, all against 100 health. Folds into #4. | Queued |
+| 5 | **Support abilities do not pay for their action.** Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced with #3 (SPTV), since it owns every magnitude and duration. | Queued |
 | 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. Also carries the deferred battlefield layout: **lay the squads out on the board itself**, so each character's portrait sits in the lane column their position puts them in and moving one visibly moves them, replacing the separate diagram. Deferred out of #1 deliberately: it rewrites the squad panels, portrait selection, target picking and the tutorial's step targeting, which is the machinery every other feature sits on. | Queued |
 | 7 | **AI tuning (Phase G).** Teach the AI to value counters, uniques and statuses, and to play positions once #1 lands. | Queued |
 | 8 | **Tutorialize the depth.** A step-by-step tutorial introducing one system per beat. | Queued |
@@ -110,6 +110,43 @@ Using two or more abilities in one Full Arms Trigger turn **doubles every
 cooldown set that turn**. That is the documented FAT price, but nothing said so,
 so a 1-turn ability coming back with a 2 on it read as a cooldown bug. Measured:
 base 1 becomes 2, base 2 becomes 4. Ability descriptions now state both numbers.
+
+### Design rule, and the measurement behind it: no ability may rely on FAT
+
+Agreed during the #1 playtest, and it is a rule rather than a preference: **no
+ability should need a Full Arms Trigger turn to be worth using.** FAT is a
+sometimes-bonus, so an ability that only pays off inside one is an ability that
+mostly does nothing.
+
+Two separate things came out of checking that.
+
+**The wording was wrong, and is fixed.** The buff descriptions led with "on a
+Full Arms Trigger turn an attack queued alongside this already gets the
+benefit", which reads as FAT-dependence. It is not: Empowered lasts two turns,
+so a buff cast on an ordinary turn is still up for the attack you make on your
+next turn. The description now says that instead.
+
+**The value is wrong, and is not fixed.** A turn grants one action, and the
+average attack turn deals 37.3 damage across the catalogue, so any non-damaging
+ability has to beat that to be worth its action. None of them come close:
+
+| Ability | What the turn buys | Against 37.3 from attacking |
+|---|---|---|
+| War Chant | Empowered, +25% on one later attack, about 9.3 | **-28.0** |
+| Rally Cry | Inspired, +2 Attack and Defense on 3 allies, about 11.2 | **-26.1** |
+| Guardian's Aegis | Guarded, 25% less damage for one enemy turn, about 9.3 | **-28.0** |
+| Cleansing Ward | Regenerating, 3 health a turn for 3 turns, 9 | **-28.3** |
+
+So every buff in the game is a net loss of roughly 26 to 28 damage against
+simply attacking, with or without FAT. That is the same root cause as item #5
+(healing is too weak) rather than a separate problem: a full action buys far
+less than an attack does.
+
+Re-pricing belongs to **#3 (SPTV)**, which owns every magnitude and duration,
+folded together with #5. The rule above is the acceptance test: after the
+re-pricing, each buff must pay for its own action within its own duration on an
+ordinary one-action turn. Deliberately not fixed now, because picking numbers
+outside SPTV is exactly the guessing the working agreement rules out.
 
 ### Balance note for #3: hostile status infliction is weak
 

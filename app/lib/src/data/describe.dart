@@ -238,12 +238,19 @@ String describeActiveTrigger(
     'Arms Trigger turn).',
   );
   if (t.inflictedStatusEffects.isNotEmpty && onSelf) {
-    // The timing question the interface never answered. Note the condition:
-    // pairing a buff with an attack takes two ability uses, and one turn only
-    // grants two on a FAT turn, so this is only reachable there.
+    // The timing question the interface never answered, written around the
+    // ordinary turn rather than the FAT turn. Pairing a buff with an attack in
+    // one turn takes two ability uses, so leading with that would be telling
+    // the player the ability needs a Full Arms Trigger to do anything, which
+    // is not how any ability should read.
+    final lasts = t.inflictedStatusEffects
+        .map((a) => catalog[a.statusEffectId].defaultDurationTurns ?? 99)
+        .reduce((a, b) => a > b ? a : b);
     parts.add(
-      'Buffs resolve before attacks, so on a Full Arms Trigger turn an attack '
-      'queued alongside this already gets the benefit.',
+      lasts > 1
+          ? 'It is still up on your next turn, so this turn sets up the attack '
+              'you make then.'
+          : 'It covers the opponent\'s reply and is gone before you act again.',
     );
   }
   return parts.join(' ');
