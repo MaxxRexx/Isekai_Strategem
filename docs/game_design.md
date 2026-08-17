@@ -545,6 +545,15 @@ you queued them. For example, a buff you queued second still resolves before an
 attack you queued first, because buffs are an earlier phase. And between two
 attacks, the character whose Team Spirit is furthest from 50 strikes first.
 
+**A friendly ability is granted, not inflicted.** A heal, a ward or a buff aimed
+at yourself or an ally never rolls to hit and is never contested: it simply
+lands. Only an ability aimed at an enemy is contested, attacker's Status Effect
+Infliction against the target's Status Effect Resistance.
+
+**Traps do not inherit your buffs.** A trap deals its own fixed damage when it
+fires, read off the trap rather than off whoever laid it, so being Empowered when
+it goes off changes nothing. It is a placed hazard, not an attack you are making.
+
 **When a status effect actually wears off.** A timed effect ticks down at the
 **start of its holder's own turn**, and expires when the count reaches zero. Put
 that together with buffs resolving before attacks, and a status applied on a
@@ -554,8 +563,9 @@ opponent's answer, and is decremented when its holder's next turn begins.
 Two consequences worth stating plainly, because a bare turn count hides both:
 
 - A buff you use helps an attack you queue in the **same** turn, since buffs are
-  an earlier phase. That is what makes a Full Arms Trigger turn worth spending on
-  a setup plus a payoff.
+  an earlier phase. Note what that requires: pairing them costs two ability uses,
+  and a turn only grants two on a Full Arms Trigger turn. So the setup-plus-payoff
+  turn is a FAT turn, and on an ordinary turn a buff is a turn spent on its own.
 - A **1-turn** effect is gone before its holder acts again. So the game says
   "active this turn only, it wears off when your next turn begins" rather than
   printing a 1, and a 2-turn effect says "active this turn and your next turn".

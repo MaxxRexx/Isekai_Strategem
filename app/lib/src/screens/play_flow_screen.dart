@@ -1283,7 +1283,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 66,
+              flex: 48,
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: ShapeDecoration(
@@ -1313,8 +1313,14 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ),
             ),
             const SizedBox(width: 10),
+            // Breathing room between the two squads, restored after the
+            // battlefield panel moved out of this row. The gap reads as the
+            // space between the two sides, which the battlefield strip below
+            // then measures.
+            const Expanded(flex: 22, child: SizedBox()),
+            const SizedBox(width: 10),
             Expanded(
-              flex: 34,
+              flex: 30,
               child: TeamPanel(
                 label: 'Opponent Squad',
                 color: Palette.teamB,

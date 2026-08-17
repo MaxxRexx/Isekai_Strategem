@@ -80,6 +80,44 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued |
 
+### Fixed during the #1 playtest: friendly abilities were contested
+
+Found by sweeping every Trigger and measuring how often its advertised effect
+actually happened. A heal, a ward or a buff aimed at your own side was being run
+through the entire hostile pipeline: rolled to hit **against the recipient's own
+Defense**, then contested **against their own Status Effect Resistance**.
+
+The measured landing rates before the fix, on the character's own squad:
+
+| Ability | Landed |
+|---|---|
+| War Chant (self) | 25% |
+| Rally Cry (ally) | 20% |
+| Cleansing Ward (ally) | 25% |
+| Guardian's Aegis (self) | 48% |
+
+So a character resisted their own War Chant three times in four. The engine's own
+note on `StatusEffectEngine.apply` had always said self-buffs are granted
+unconditionally rather than inflicted; the two call sites in `resolveAbilityUse`
+did not honour it. Both now skip the contest, and the to-hit roll cannot make a
+friendly ability fizzle. All four land 100% of the time, and a hostile status is
+still contested. Guarded by `test/engine/friendly_abilities_test.dart`, which
+sweeps the whole catalogue.
+
+### Not a bug, but badly communicated: the FAT cooldown penalty
+
+Using two or more abilities in one Full Arms Trigger turn **doubles every
+cooldown set that turn**. That is the documented FAT price, but nothing said so,
+so a 1-turn ability coming back with a 2 on it read as a cooldown bug. Measured:
+base 1 becomes 2, base 2 becomes 4. Ability descriptions now state both numbers.
+
+### Balance note for #3: hostile status infliction is weak
+
+The same sweep measured hostile status riders landing between 10% and 85%, with
+most clustered around 20-25% (Status Effect Infliction 5 against a typical
+Resistance of 6 to 8). That is a pricing question, not a correctness one, and
+belongs with SPTV.
+
 ### Open correctness question: 1-turn effects on an enemy
 
 Found while writing the duration wording during the #1 playtest fixes, and

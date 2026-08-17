@@ -233,14 +233,17 @@ String describeActiveTrigger(
   }
   parts.add(
     'Costs ${t.trionCost} Trion. Usable again after ${t.cooldownTurns} '
-    'turn${t.cooldownTurns == 1 ? '' : 's'}.',
+    'turn${t.cooldownTurns == 1 ? '' : 's'} '
+    '(${t.cooldownTurns * 2} if you use two or more abilities in one Full '
+    'Arms Trigger turn).',
   );
   if (t.inflictedStatusEffects.isNotEmpty && onSelf) {
-    // The timing question the interface never answered: yes, a buff helps an
-    // attack queued in the same turn, because buffs resolve first.
+    // The timing question the interface never answered. Note the condition:
+    // pairing a buff with an attack takes two ability uses, and one turn only
+    // grants two on a FAT turn, so this is only reachable there.
     parts.add(
-      'Buffs resolve before attacks, so an attack you queue this turn already '
-      'gets the benefit.',
+      'Buffs resolve before attacks, so on a Full Arms Trigger turn an attack '
+      'queued alongside this already gets the benefit.',
     );
   }
   return parts.join(' ');

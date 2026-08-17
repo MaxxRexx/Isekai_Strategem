@@ -1423,6 +1423,23 @@ class TurnEngine {
             .add(_SingleHitResult(outcome, damage, damageDetail, appliedIds));
       }
 
+      // A heal, a ward or a buff aimed at your own side is not an attack. It
+      // was being run through the whole hostile pipeline: rolled to hit
+      // against the recipient's own Defense, and subject to the dodge perk.
+      // The roll is still made above so telemetry and perk charges behave the
+      // same, but it cannot make the ability fizzle on a teammate.
+      if (trigger.targetAffiliation != TargetAffiliation.opponent) {
+        outcome = AttackRollOutcome(
+          attackerRoll: outcome.attackerRoll,
+          defenderRoll: outcome.defenderRoll,
+          isHit: true,
+          isCriticalHit: false,
+          isCriticalMiss: false,
+          criticalHitThreshold: outcome.criticalHitThreshold,
+        );
+        forcedMiss = false;
+      }
+
       if (outcome.isCriticalMiss) {
         combatEngine.applyCriticalMissPenalty(attacker);
         record(0, null, const []);
@@ -1527,19 +1544,29 @@ class TurnEngine {
       // TEG Effect 1 (offense) on the causer's infliction rolls this use.
       _applyTegOffenseAdvantage(advantageContext, attacker);
       for (final application in trigger.inflictedStatusEffects) {
+        // A buff or a ward granted to your own side is not inflicted, so it
+        // is not contested. Rolling it against the recipient's own Status
+        // Effect Resistance meant a character resisted their own War Chant
+        // three times in four. (The engine's own note on
+        // `StatusEffectEngine.apply` always said self-buffs are granted
+        // unconditionally; the call sites did not honour it.)
+        final contested =
+            trigger.targetAffiliation == TargetAffiliation.opponent;
         // TEG Effect 2 (defense) on the target's resistance roll.
         final resistContext =
             target.rollContextFor(StatusRollTag.statusResistanceRoll);
         _applyTegDefenseAdvantage(resistContext, target);
-        final inflictionOutcome = statusEffectEngine.resolveInfliction(
-          causerInfliction: stats.statusEffectInfliction,
-          targetResistance: target
-              .effectiveStats(fatConfig: fatConfig)
-              .statusEffectResistance,
-          causerRollContext: advantageContext,
-          targetRollContext: resistContext,
-        );
-        if (inflictionOutcome.applies) {
+        final inflictionOutcome = contested
+            ? statusEffectEngine.resolveInfliction(
+                causerInfliction: stats.statusEffectInfliction,
+                targetResistance: target
+                    .effectiveStats(fatConfig: fatConfig)
+                    .statusEffectResistance,
+                causerRollContext: advantageContext,
+                targetRollContext: resistContext,
+              )
+            : null;
+        if (!contested || inflictionOutcome!.applies) {
           // Soren-style "Weaken Resolve" perk: bonus duration when the
           // target already carries an effect from this same attacker.
           var durationOverride = application.durationTurnsOverride;
@@ -2818,16 +2845,21 @@ class TurnEngine {
     final tegCauserContext = RollContext();
     _applyTegOffenseAdvantage(tegCauserContext, attacker);
     for (final application in trigger.inflictedStatusEffects) {
+      // Granted, not inflicted, when it lands on your own side: no contest.
+      final contested = trigger.targetAffiliation == TargetAffiliation.opponent;
       final tegResistContext = RollContext();
       _applyTegDefenseAdvantage(tegResistContext, target); // Effect 2
-      final inflictionOutcome = statusEffectEngine.resolveInfliction(
-        causerInfliction: stats.statusEffectInfliction,
-        targetResistance:
-            target.effectiveStats(fatConfig: fatConfig).statusEffectResistance,
-        causerRollContext: tegCauserContext,
-        targetRollContext: tegResistContext,
-      );
-      if (inflictionOutcome.applies) {
+      final inflictionOutcome = contested
+          ? statusEffectEngine.resolveInfliction(
+              causerInfliction: stats.statusEffectInfliction,
+              targetResistance: target
+                  .effectiveStats(fatConfig: fatConfig)
+                  .statusEffectResistance,
+              causerRollContext: tegCauserContext,
+              targetRollContext: tegResistContext,
+            )
+          : null;
+      if (!contested || inflictionOutcome!.applies) {
         final applied = statusEffectEngine.apply(
           target,
           application.statusEffectId,
