@@ -1195,7 +1195,8 @@ always runs.
 - **The interface** has the grade badge, all stats shown, the Team Spirit readout,
   the Loadout builder, plain-language descriptions of the passive counters, the
   clickable character and enemy detail panels with the Mind's Eye reveal, the
-  sign-in flow, the post-battle XP screen, and the rebuilt battle log (tap any line
+  sign-in flow, the post-battle XP screen, the full-width battlefield strip with
+  its distance ruler and move controls, and the rebuilt battle log (tap any line
   for a plain-English breakdown, and tap names or abilities to read them). Still to
   come: showing the pending queue during a turn, and polishing the resolve pause.
 - **Balance:** most of the pass is done. The five near-duplicate Trigger pairs
@@ -1207,11 +1208,17 @@ always runs.
   opening turn is earned rather than flipped for, weighted by the Team Efficiency
   Grade. And the range tag became three real bands, Close, Mid and Long, 20
   Triggers each, with every attack type present in every band.
-- **Still to come on balance:** a "Bail Out" downed state instead of instant
-  defeat (a design decision that has not been taken yet), the spatial pillar that
-  would make your range band a position you actually manage, explicit points
-  budgets for status effects and Triggers, and a steadier Trion economy. All of it
-  is written up in the design reviews under `docs/reviews/`.
+- **The spatial pillar is built.** Front, Middle and Back are real positions,
+  distance is measured across the gap, every band reaches its own window of it,
+  and Reposition costs a character their action. Range is enforced both at queue
+  time (judged from where a queued move will put you) and again at resolution.
+  See section 7.
+- **Still to come on balance:** screening, so that standing behind a teammate
+  puts distance between you and the enemy; pull and push effects; a "Bail Out"
+  downed state instead of instant defeat; explicit points budgets for status
+  effects and Triggers; and a steadier Trion economy. All of it is designed and
+  approved, and the running order is in
+  [`current_development_status.md`](current_development_status.md).
 
 ---
 

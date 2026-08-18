@@ -1,5 +1,3 @@
-import 'package:battle_engine/battle_engine.dart';
-
 /// Formation against formation under the screening rule (RPP), to answer
 /// whether one line-up dominates.
 ///

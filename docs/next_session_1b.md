@@ -122,8 +122,10 @@ at round 30.
 
 ## Still open
 
-- The four remaining unreachable statuses (`wet`, `enraged`, `adrenaline_rush`,
-  `battle_trance`) get homes under item 3b rather than deletion. A test
-  asserting every status is reachable should land with that work.
+- The five remaining unreachable statuses (`wet`, `enraged`, `adrenaline_rush`,
+  `battle_trance`, `radiant_blessing`) get homes under item 3b rather than
+  deletion. Radiant Blessing lost its maximum-health raise but still has nothing
+  that applies it. A test asserting every status is reachable should land with
+  that work.
 - Whether the 1b branch also carries the interface work or leaves it to a
   follow-up. The strip and the ruler are the visible half, so probably together.

@@ -171,7 +171,7 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 
 | # | Item | State |
 |---|---|---|
-| 0 | **Pacing target: 8 to 20 rounds.** Agreed band, replacing the old 15-20 (design section 11). `tool/balance_report.dart` now checks it: 200 simulated battles run a median of 14 with 82% of them inside the band. The engine's round-robin integration test asserts the same band. | Set |
+| 0 | **Pacing target: 8 to 20 rounds.** Agreed band, replacing the old 15-20 (design section 11). `tool/balance_report.dart` now checks it: 200 simulated battles run a median of 14 with 83% of them inside the band. The engine's round-robin integration test asserts the same band. | Set |
 | 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the full-width horizontal battlefield strip (your back line on the left through to theirs on the right, with a distance ruler and the move controls in its own cells), an explicit reason on every ability that cannot be used, a distinct pulsing state for one the queued move has brought into band, plain-English status descriptions with the duration in the player's own turns, and AI positional judgement on both AI paths. Playtested by the owner and revised. | Done |
 | **1b** | **NEXT UP. Screening (RPP), approved and specced, not built.** Effective distance to an enemy = my line's step + their line's step + the number of living enemies standing on a line strictly in front of the target. No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule. Lands with #4, which owns the range cost model. | Approved, queued |
 | 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued |
@@ -310,7 +310,8 @@ an answer to a posture you cannot reach.
 
 ### Removed: Rallied, and five more status effects nothing can apply
 
-A sweep of all 63 status effects against every Trigger, Black Trigger, Side
+A sweep of all 63 status effects as the catalogue then stood, against every
+Trigger, Black Trigger, Side
 Effect and engine path found **six that nothing in the game can apply**:
 `wet`, `rallied`, `enraged`, `adrenaline_rush`, `battle_trance`,
 `radiant_blessing`.

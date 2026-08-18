@@ -19,6 +19,12 @@ battle game plus its accounts and XP backend.
 - **Full turn-based play.** Queue your actions, choose targets, and end the turn;
   actions resolve through a fixed six-phase order. A rule-based AI opponent (five
   skill classes) plays through the same system.
+- **A real battlefield.** Every character stands at Front, Middle or Back.
+  Distance to an enemy is the two positions added, and each range band reaches a
+  different window of it (Close 0-1, Mid 1-3, Long 2-4), so where you stand
+  decides what you can use. Repositioning costs a character their action, and the
+  battlefield strip under both squads shows the whole board with its distance
+  ruler and the move controls in one place.
 - **Deep combat systems:** 60 Triggers, 10 Black Triggers, 62 status effects, a
   reactive and passive counter system, 17 unique abilities, an 18-entry combo
   recognizer, Full Arms Trigger burst turns, and a Team Efficiency Grade that
@@ -38,7 +44,14 @@ battle game plus its accounts and XP backend.
   [`docs/Isekai_Strategem_Game_Design_Document.pdf`](docs/Isekai_Strategem_Game_Design_Document.pdf).
 - **[Current Development Status](docs/current_development_status.md)** shows what
   is done, in progress, and still to do (with a status board at the top),
-  followed by the detailed combat-rework design and build tracker.
+  followed by the detailed combat-rework design and build tracker. It also holds
+  the numbered work queue that everything else refers to by number.
+- [`docs/working_agreement.md`](docs/working_agreement.md) is how the project is
+  run: the design-approve-build-playtest loop, and the standing design rules that
+  apply to every item without being restated.
+- [`docs/next_session_1b.md`](docs/next_session_1b.md) is the handoff for the
+  next item (screening / RPP): the spec, where the code lives, and what to watch
+  for.
 - [`docs/reviews/`](docs/reviews) holds four player-persona design reviews and a
   design-director synthesis of the game's balance.
 - [`docs/supabase_setup.md`](docs/supabase_setup.md) documents the accounts/XP
@@ -75,6 +88,21 @@ cd packages/battle_engine
 dart pub get
 dart test
 ```
+
+Design questions get answered by measurement rather than by guesswork. The
+engine package carries a set of standalone analysis tools in
+[`packages/battle_engine/tool/`](packages/battle_engine/tool), each runnable
+with `dart run tool/<name>.dart`:
+
+| Tool | Answers |
+|---|---|
+| `balance_report.dart` | Accuracy, dice share, Trigger value, and 200 simulated battles against the 8-20 round pacing target. |
+| `position_matrix.dart` | Position against ability range, across the live catalogue. |
+| `formation_matrix.dart` | Formation versus formation, and archetype viability with `--kits`. |
+| `screening_model.dart` | The proposed screening rule per formation, against the current one. |
+| `stall_finder.dart` | Every board state in which neither side can reach the other, and whether it can be escaped. |
+| `reach_check.dart` | Specific reach claims, plus the maximum-health invariant. |
+| `stackable_statuses.dart` | Which status effects should stack, and why. |
 
 The Flutter app:
 

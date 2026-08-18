@@ -1,6 +1,15 @@
 # Active development
 
-While combat v2 is in progress, read docs/combat_v2_design.md before starting engine work.
+Before starting any work, read `docs/current_development_status.md` (the work
+queue, every decision taken, and the specs for the queued items) and
+`docs/working_agreement.md` (how this project is run, plus the standing design
+rules). `docs/game_design.md` describes the game as it stands on `main` and is
+the single source of truth for its rules and content; re-render the PDF beside
+it whenever it changes.
+
+Item #1 (range bands as a real battlefield) is merged. **Item 1b (screening,
+also called RPP) is next: read `docs/next_session_1b.md` before touching engine
+code.**
 
 # Communication style
 

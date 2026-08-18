@@ -1,5 +1,3 @@
-import 'package:battle_engine/battle_engine.dart';
-
 /// Enumerates every board state in which neither side can reach the other, and
 /// checks whether either side could break it with one legal step.
 ///

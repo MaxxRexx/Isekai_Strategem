@@ -1,7 +1,7 @@
 /// A "reactive" combat effect standing on a character: the counter / ward /
-/// trap layer introduced by combat v2 (see docs/combat_v2_design.md section
-/// 6). Unlike a [StatusEffectDefinition] - a named, duration-based stat
-/// modifier drawn from the fixed 50-effect catalog - a reactive effect
+/// trap layer (see docs/game_design.md section 13). Unlike a
+/// [StatusEffectDefinition] - a named, duration-based stat modifier drawn from
+/// the fixed status effect catalog - a reactive effect
 /// alters *resolution flow* when the opponent acts into it: reflect, dodge,
 /// negate, redirect, and so on. It is armed on the holder's turn and fires
 /// during the opponent's turn, then is consumed.

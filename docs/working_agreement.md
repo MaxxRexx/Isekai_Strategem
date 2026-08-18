@@ -73,6 +73,14 @@ Rules, not preferences. They apply to every future item without being restated.
 - **Interface copy must not advertise a FAT-only use** as an ability's reason to
   exist, even when the FAT case is real.
 - **Numbers come from SPTV**, never from a value that merely looks plausible.
+- **Nothing heals past the base maximum of 100.** Healing clamps to the
+  character's maximum, so at 99 of 100 a heal restores 1 and nothing is banked
+  above it. No status effect, ability or Side Effect may raise maximum health,
+  and there are no overheal shields. Guarded by
+  `packages/battle_engine/test/models/health_ceiling_test.dart`.
+- **Every catalogued status effect must have something that applies it.** A
+  status nothing can reach is either given a home or removed, never left in the
+  catalogue to be described as live.
 
 ## Naming and vocabulary
 
