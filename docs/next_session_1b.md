@@ -112,6 +112,14 @@ All in `packages/battle_engine/tool/`, runnable with `dart run`:
 - Perks are being renamed to **Side Effects (SEs)** as item 5c, in its own
   commit.
 
+## Noticed at the end of #1, not yet chased
+
+A balance run on `main` produced a **118-round battle** out of 200. Everything
+concluded and the median is 14, so it is not a stall, but it is item **4b** now.
+It matters before #4's 30-round limit lands: a match that would have run 40
+rounds will instead end on the health tiebreak, handing the win to whoever led
+at round 30.
+
 ## Still open
 
 - The four remaining unreachable statuses (`wet`, `enraged`, `adrenaline_rush`,
