@@ -369,12 +369,16 @@ squads crowded onto their front lines, only Close Range works, because Mid and
 Long both have minimums. At **distance 4**, both squads hanging back, only Long
 Range works. A fight that settles into either corner stops being a fight.
 
-*Known hole, awaiting a decision: the closest anyone can get to an enemy standing
-on their back line is distance 2, so **Close Range can never reach a back-line
-enemy at all**. That is 14 of the 51 offensive Triggers dead against one posture
-that costs the opponent nothing, and it makes back-plus-Long the dominant
-opening. Options are on the table with item #4, which already owns the range cost
-model.*
+*Approved and specced, not yet built (lands with item #4): **screening**, and
+**Close Range widening to 0 to 2**. Screening adds, to the distance between you
+and a target, the number of living enemies standing on a line strictly in front
+of that target. So a sniper behind two bodies sits at effective distance 4 and
+only Long Range reaches them; kill one screen and Mid opens up; kill both and
+Close arrives. A squad stacked on one line screens nobody, so camping stops
+working of its own accord rather than being taxed. The widening is what lets a
+Close build cash in once the screen is broken, and a survey of all 4900
+kit-and-formation board states shows it is also what removes every state in
+which neither side can reach the other.*
 
 **Moving.** **Reposition** shifts a character one step and costs them their
 ability use for that turn, so closing the gap competes with attacking. It costs
@@ -760,7 +764,6 @@ turns.
 - **Hastened:** Attack rises a little more each turn, for 2 turns.
 - **Slowed:** Defense drops a little more each turn, for 2 turns.
 - **Chilled:** Attack drops a little more each turn, for 2 turns.
-- **Rallied:** +20 Max Health for 3 turns (a morale shield).
 - **Focused:** sharpened aim and readiness for 2 turns.
 - **Blinded:** attacks are much less accurate for 2 turns.
 - **Reeling:** knocked off balance for 3 turns.
@@ -1341,7 +1344,6 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 | genjutsuTrappedDrainPercentOfTrionCapacity | 0.15 |
 | adrenalineRushCriticalChanceBonus | 15 |
 | battleTranceFatChanceBonus | 20 |
-| ralliedMaxHealthBonus | 20 |
 
 
 ## Appendix D: All the tunable numbers

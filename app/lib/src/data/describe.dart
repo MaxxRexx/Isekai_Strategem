@@ -68,7 +68,7 @@ String describeStatusDuration(int? turns, {required bool onSelf}) {
 /// it lasts. This is the line the battle interface shows for a status badge,
 /// and the line an ability's description borrows when it inflicts one.
 ///
-/// Deliberately short: the full prose pass over all 63 effects is its own
+/// Deliberately short: the full prose pass over all 62 effects is its own
 /// item. This states the mechanical effect and the duration, which are the two
 /// things a player cannot work out by looking.
 String describeStatusEffect(

@@ -24,34 +24,18 @@ void main() {
         'Close 0-2: ${widened ? 'HIT' : 'safe'}');
   }
 
-  print('\nCLAIM 3: can healing take a character above 100?');
-  final def = StatusEffectCatalog.defaultCatalog['rallied'];
-  print('  Rallied: ${def.flatStatModifiers}, '
-      'lasts ${def.defaultDurationTurns} turns');
-  final c = CharacterBattleState(
-    Character(
-      id: 'x',
-      name: 'X',
-      type: CharacterType.support,
-      baseStats: const Stats(
-        maxHealth: 100,
-        attack: 8,
-        defense: 6,
-        armor: 0,
-        trionCapacity: 100,
-        trionAffinity: 8,
-        teamSpirit: 50,
-        criticalChance: 5,
-        fatChance: 10,
-        statusEffectInfliction: 5,
-        statusEffectResistance: 5,
-      ),
-    ),
-  );
-  print('  base max health: ${c.character.baseStats.maxHealth}');
-  print('  effective max, no Rallied: ${c.effectiveStats().maxHealth}');
-  StatusEffectEngine().apply(c, 'rallied');
-  print('  effective max, Rallied up: ${c.effectiveStats().maxHealth}');
-  print('  healing clamps to the effective max, so with Rallied a character');
-  print('  can currently sit above their base 100.');
+  print('\nCLAIM 3: can any status raise maximum health, and so let healing');
+  print('take a character above their base maximum?');
+  final raisers = StatusEffectCatalog.defaultCatalog.all
+      .where((d) => d.flatStatModifiers.containsKey(ModifiableStat.maxHealth))
+      .toList();
+  if (raisers.isEmpty) {
+    print('  No. Nothing in the catalogue modifies maximum health, so the');
+    print('  heal clamp can never exceed the base 100.');
+  } else {
+    for (final d in raisers) {
+      print('  ${d.name}: ${d.flatStatModifiers[ModifiableStat.maxHealth]} '
+          'max health, which lets healing exceed the base maximum.');
+    }
+  }
 }

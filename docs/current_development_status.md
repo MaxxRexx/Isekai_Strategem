@@ -10,7 +10,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 63 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | #2 Bail Out. #1 (range bands) is complete; #1, #2 and #3 are designed, audited against the code and approved, and work runs in queue order from here. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is mostly done and the rest is the owner's, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | #2 Bail Out. #1 (range bands) is complete; #1, #2 and #3 are designed, audited against the code and approved, and work runs in queue order from here. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is mostly done and the rest is the owner's, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -67,10 +67,14 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 |---|---|---|
 | 0 | **Pacing target: 8 to 20 rounds.** Agreed band, replacing the old 15-20 (design section 11). `tool/balance_report.dart` now checks it: 200 simulated battles run a median of 14 with 82% of them inside the band. The engine's round-robin integration test asserts the same band. | Set |
 | 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the full-width horizontal battlefield strip (your back line on the left through to theirs on the right, with a distance ruler and the move controls in its own cells), an explicit reason on every ability that cannot be used, a distinct pulsing state for one the queued move has brought into band, plain-English status descriptions with the duration in the player's own turns, and AI positional judgement on both AI paths. Playtested by the owner and revised. | Done |
+| 1b | **Screening (RPP), approved and specced, not built.** Effective distance to an enemy = my line's step + their line's step + the number of living enemies standing on a line strictly in front of the target. No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule. Lands with #4, which owns the range cost model. | Approved, queued |
+| 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued |
 | 2 | **Bail Out, contested.** Not a revive: the operator leaves the engagement. A one-turn Bailing Out window where the body stays **targetable**; left alone it is recalled and the squad gets Trion Salvage (20% of base Trion Capacity), but an enemy hit destroys it instead, denying the Salvage and giving the attacker a smaller gain. Refuse to Bail is pre-declared, armed like the existing counters. | Approved, queued |
-| 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 63 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
-| 4 | **Trion economy.** Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may have FAT active at a time**, so a burst turn is a spotlight rather than a windfall; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. | Queued |
+| 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
+| 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does), the screening rule from 1b, and the FAT cap below. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. | Queued |
 | 5 | **Support abilities do not pay for their action.** Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced with #3 (SPTV), since it owns every magnitude and duration. | Queued |
+| 5b | **Stackable statuses.** 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be, and a stackable effect is worth more Status Points, so it lands with #3. | Approved, queued |
+| 5c | **Rename perks to Side Effects (SEs).** `CharacterPerk` to `SideEffect`, the `perk` field, the charge-tracking flags, the Loadout panel copy and the abbreviation list. Mechanical and wide, so it goes in one commit of its own where it cannot hide a behaviour change. | Approved, queued |
 | 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. Also carries the deferred battlefield layout: **lay the squads out on the board itself**, so each character's portrait sits in the lane column their position puts them in and moving one visibly moves them, replacing the separate diagram. Deferred out of #1 deliberately: it rewrites the squad panels, portrait selection, target picking and the tutorial's step targeting, which is the machinery every other feature sits on. | Queued |
 | 7 | **AI tuning (Phase G).** Teach the AI to value counters, uniques and statuses, and to play positions once #1 lands. | Queued |
 | 8 | **Tutorialize the depth.** A step-by-step tutorial introducing one system per beat. | Queued |
@@ -196,6 +200,36 @@ recommendation is **widen Close plus add pull/push, landing with #4**, because
 #4 already owns the range cost model, and because a cost you can afford is not
 an answer to a posture you cannot reach.
 
+### Removed: Rallied, and five more status effects nothing can apply
+
+A sweep of all 63 status effects against every Trigger, Black Trigger, Side
+Effect and engine path found **six that nothing in the game can apply**:
+`wet`, `rallied`, `enraged`, `adrenaline_rush`, `battle_trance`,
+`radiant_blessing`.
+
+Two of those were load-bearing in the documentation. **Wet** was the design
+document's flagship example of damage-type interaction (immune to Fire,
+vulnerable to Lightning and Cold). **Radiant Blessing** was cited in item #5 as
+a healing example. Both were described as live and were not.
+
+**Rallied is removed** (catalogue entry, its two magnitude constants, its
+engine test, the interface flavour text and the design document line), taking
+the catalogue to **62**. It granted maximum health +20, which also broke the
+rule that nothing heals past the base 100: healing clamps to the *effective*
+maximum, so a Rallied character could sit above 100.
+
+Two things follow that are still open:
+
+- **Radiant Blessing has the same maximum-health problem** (+10) and is equally
+  unreachable. It has not been touched, because removing it was not asked for
+  and it is inert either way. It needs the same decision.
+- **A test asserting every catalogued status is reachable** would stop this
+  recurring. Not added yet: it would fail on the five remaining orphans, and
+  whether those get wired up or removed is a content decision.
+
+`tool/reach_check.dart` now checks the enduring invariant, that no status
+raises maximum health, rather than the specific Rallied case.
+
 ### Design rule, and the measurement behind it: no ability may rely on FAT
 
 Agreed during the #1 playtest, and it is a rule rather than a preference: **no
@@ -267,7 +301,7 @@ Two candidate fixes, both a decision for #3 rather than a mechanical one:
   self-buff would then expire at the end of your own turn and no longer cover
   the opponent's answer, which changes what defensive wards do.
 - **Skip the first tick** on the turn an effect is applied. Everything gains
-  effectively one more turn of life, which is a balance change across all 63
+  effectively one more turn of life, which is a balance change across all 62
   effects and needs SPTV to re-price them.
 
 ### What the pre-build code audit changed

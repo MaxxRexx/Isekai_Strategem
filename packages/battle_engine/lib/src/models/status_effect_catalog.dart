@@ -79,14 +79,6 @@ class StatusEffectCatalog {
         perRemainingTurnStatModifiers: const {ModifiableStat.attack: -1},
       ),
       StatusEffectDefinition(
-        id: 'rallied',
-        name: 'Rallied',
-        defaultDurationTurns: magnitudes.ralliedDurationTurns,
-        flatStatModifiers: {
-          ModifiableStat.maxHealth: magnitudes.ralliedMaxHealthBonus.toDouble()
-        },
-      ),
-      StatusEffectDefinition(
         id: 'prone',
         name: 'Prone',
         defaultDurationTurns: magnitudes.proneDurationTurns,

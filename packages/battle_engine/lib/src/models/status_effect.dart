@@ -77,8 +77,8 @@ class StatusEffectDefinition {
   /// Team Spirit, Frozen -> Trion Affinity).
   final Set<ModifiableStat> zeroedStats;
 
-  /// Flat modifier applied for the lifetime of the effect (Rallied ->
-  /// maxHealth, Acid -> armor).
+  /// Flat modifier applied for the lifetime of the effect (Acid -> armor,
+  /// Inspired -> attack and defense).
   final Map<ModifiableStat, double> flatStatModifiers;
 
   /// Modifier scaled by the instance's remaining-turns counter, i.e.

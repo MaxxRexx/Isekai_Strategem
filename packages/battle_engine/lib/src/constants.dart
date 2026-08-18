@@ -133,8 +133,6 @@ class StatusEffectMagnitudes {
   final int sappedDurationTurns;
   final double sappedDrainPercentOfTrionCapacity;
   final int reelingDurationTurns;
-  final int ralliedDurationTurns;
-  final int ralliedMaxHealthBonus;
   final int proneDurationTurns;
   final int preparedDurationTurns;
   final int poisonedDurationTurns;
@@ -244,8 +242,6 @@ class StatusEffectMagnitudes {
     this.sappedDurationTurns = 3,
     this.sappedDrainPercentOfTrionCapacity = 0.25,
     this.reelingDurationTurns = 3,
-    this.ralliedDurationTurns = 3,
-    this.ralliedMaxHealthBonus = 20,
     this.proneDurationTurns = 1,
     this.preparedDurationTurns = 3,
     this.poisonedDurationTurns = 3,
