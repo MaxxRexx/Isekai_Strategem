@@ -399,12 +399,12 @@ class StatusEffectCatalog {
         id: 'radiant_blessing',
         name: 'Radiant Blessing',
         defaultDurationTurns: magnitudes.radiantBlessingDurationTurns,
+        // Heals a little each turn and clamps to the character's maximum, so
+        // it can never take anyone above it: at 99 of 100 it restores 1.
+        // It used to raise maximum health as well, which let healing carry a
+        // character past their own ceiling.
         turnStartHeal: DiceExpression(0, 1,
             flatBonus: magnitudes.radiantBlessingHealPerTurn),
-        flatStatModifiers: {
-          ModifiableStat.maxHealth:
-              magnitudes.radiantBlessingMaxHealthBonus.toDouble()
-        },
         allDamageTakenMultiplier:
             magnitudes.radiantBlessingAllDamageTakenMultiplier,
       ),

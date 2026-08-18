@@ -561,6 +561,14 @@ you queued them. For example, a buff you queued second still resolves before an
 attack you queued first, because buffs are an earlier phase. And between two
 attacks, the character whose Team Spirit is furthest from 50 strikes first.
 
+*Approved and specced, not yet built: **status reactions**. Statuses will react
+to damage types and to each other, so applying one sets up the next. Wet plus a
+Cold hit becomes Frozen; Frozen plus a Bludgeoning hit shatters for double
+damage; Chilled plus Fire melts back to Wet; Scorched plus Cold is quenched to
+Chilled. Enraged is redesigned to grant immunity to Psychic damage at the cost
+of targeting at random, which makes it both a gamble on yourself and a control
+tool against someone else. The full table is in the status document.*
+
 **A status effect is refreshed, not stacked.** Applying an effect that is
 already on a character resets its timer rather than adding a second copy, and
 the longer of the two durations wins. So a character never carries the same

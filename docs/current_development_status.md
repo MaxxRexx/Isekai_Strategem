@@ -59,6 +59,108 @@ Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
   is an input to TV, so they compose. Anything carrying a magnitude, a duration
   or a target count is in SPTV's scope, including reactive and trap durations.
 
+## Status reactions: the design for item 3b
+
+Approved in principle, not built. The problem it solves: 62 status effects
+exist, six of them are unreachable, and none of them talk to each other. A
+status is currently a modifier you apply and forget. Reactions turn the
+catalogue into a web where applying one thing sets up another, which is where
+the depth the project wants actually comes from.
+
+Prior art worth naming: this is the elemental-reaction shape (Genshin Impact's
+is the best-known), chosen because it produces combinatorial depth from a small
+table rather than from more content.
+
+### The primitive
+
+One new data field on `StatusEffectDefinition`, evaluated in exactly two places
+(`_applyDamage` and `StatusEffectEngine.apply`). No switch statements, matching
+the "bag of parameters, one generic engine" shape the rest of the engine uses.
+
+```dart
+class StatusReaction {
+  final DamageType? onDamageType;      // taking this damage type fires it
+  final String? onStatusApplied;       // or this status landing does
+  final String? becomes;               // the holder gains this
+  final bool consumesTrigger;          // the reacting status is spent
+  final String? alsoRemoves;           // and this one is removed too
+  final double bonusDamageMultiplier;  // extra damage on the triggering hit
+}
+```
+
+### The reaction table
+
+Every entry uses statuses and damage types that already exist.
+
+| The target is | and is hit by | Result |
+|---|---|---|
+| **Wet** | Cold | Becomes **Frozen**. Wet is spent. Water freezes. |
+| **Wet** | Lightning | Becomes **Electrocuted** and it stacks. Wet is spent. |
+| **Wet** | Fire | Wet boils off. Both cancel, no damage (Wet is already Fire-immune). |
+| **Scorched** | Cold | Quenched. Both cancel, leaving **Chilled**. |
+| **Scorched** | Fire | **Scorched** stacks. Already Fire-vulnerable, so this is the burn build's payoff. |
+| **Chilled** | Cold | Becomes **Frozen**. Chilled is spent. |
+| **Chilled** | Fire | The ice melts. Becomes **Wet**, which sets up the next Cold or Lightning hit. |
+| **Frozen** | Bludgeoning or Thunder | **Shatter**: double damage on that hit, Frozen is spent. |
+| **Corroded** | Acid | **Acid** lands on top, deepening the armour shred. |
+| **Electrocuted** | Thunder | Arcs to one other enemy standing on the same line. |
+| **Bleeding** | Slashing | **Bleeding** stacks. |
+| **Poisoned** | Poison | Becomes **Sickened**. |
+
+The Chilled-to-Wet-to-Frozen loop is deliberate: a Cold squad can cycle a target
+without ever needing a second element, but it costs them a turn each time, so
+the two-element team is still faster.
+
+### Enraged, redesigned
+
+Currently outgoing damage x1.5 and Defense -3, and nothing applies it. It gains
+two clauses that make it a real decision rather than a stat swap:
+
+- **Immune to Psychic damage** while it lasts.
+- **All of the holder's targeting is chosen at random** while it lasts.
+
+So enraging your own character is a gamble you take for the damage and the
+psychic immunity, and enraging an enemy is a control tool that blunts their aim
+at the cost of making them hit harder. It is also the first real answer to a
+psychic-heavy squad, which currently has none.
+
+### Homes for the five remaining orphans
+
+| Status | Gets applied by | Why there |
+|---|---|---|
+| **Wet** | A new Mid Range ranged area attack, one enemy line | Soaking a whole line is the setup half of every reaction above, and hitting three targets is worth an action under #5's test. |
+| **Enraged** | A Close Range melee taunt (on an enemy) and a psychic self-buff | Both readings of the status get a home, and the melee version gives a front-liner something to do that is not damage. |
+| **Adrenaline Rush** | A **Side Effect**, granted on dropping below half health | Passive, so it never has to justify an action, which sidesteps the problem #5 exists to fix. |
+| **Battle Trance** | An ally-targeted support ability | FAT Chance +20 on an ally sets up next turn's burst, and it matters far more now that the squad may only cash in one FAT per turn. |
+| **Radiant Blessing** | An ally-targeted Mid Range ward | Heal over time plus 10% damage reduction is the support's staple, and it now clamps to the base maximum. |
+
+### Content to redesign around reactions, by subcategory
+
+- **Melee / Close**: a taunt that applies Enraged; a shatter finisher that
+  reads Frozen.
+- **Ranged / Mid, area**: the Wet applier; a Thunder burst that arcs off
+  Electrocuted.
+- **Ranged / Long**: a Cold shot that is ordinary alone and freezes a Wet
+  target, so a sniper wants a soaker on the squad.
+- **Psychic**: abilities that check whether the target already carries a
+  status, rewarding setup rather than opening with them.
+- **Burst**: the last hit of a burst applies the reaction, so spending the whole
+  burst on one target is rewarded.
+- **Traps and counters**: a trap that arms a reaction rather than damage, firing
+  when the enemy takes a matching damage type. The reactive engine already
+  supports conditional firing.
+- **Side Effects**: one that makes the holder immune to a chosen reaction; one
+  that lets their damage type count as two for reaction purposes.
+
+### Sequencing and pricing
+
+The mechanism and the reaction table belong with **#3**, because SPTV has to
+price them: a status that sets up a reaction is worth more Status Points than
+one that does not, and a stacking status is worth more again. The new abilities
+and Side Effects are a content pass and should land after **#4**, alongside 1c
+(pull and push), so the whole catalogue is priced once rather than twice.
+
+
 ## The work queue
 
 Agreed running order. Items are referred to by these numbers everywhere else.
@@ -70,6 +172,7 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 1b | **Screening (RPP), approved and specced, not built.** Effective distance to an enemy = my line's step + their line's step + the number of living enemies standing on a line strictly in front of the target. No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule. Lands with #4, which owns the range cost model. | Approved, queued |
 | 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued |
 | 2 | **Bail Out, contested.** Not a revive: the operator leaves the engagement. A one-turn Bailing Out window where the body stays **targetable**; left alone it is recalled and the squad gets Trion Salvage (20% of base Trion Capacity), but an enemy hit destroys it instead, denying the Salvage and giving the attacker a smaller gain. Refuse to Bail is pre-declared, armed like the existing counters. | Approved, queued |
+| 3b | **Status reactions.** A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. Mechanism and table with #3 so SPTV prices them; the new abilities and Side Effects after #4 with 1c. | Approved, queued |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
 | 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does), the screening rule from 1b, and the FAT cap below. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. | Queued |
 | 5 | **Support abilities do not pay for their action.** Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced with #3 (SPTV), since it owns every magnitude and duration. | Queued |
@@ -220,12 +323,14 @@ maximum, so a Rallied character could sit above 100.
 
 Two things follow that are still open:
 
-- **Radiant Blessing has the same maximum-health problem** (+10) and is equally
-  unreachable. It has not been touched, because removing it was not asked for
-  and it is inert either way. It needs the same decision.
-- **A test asserting every catalogued status is reachable** would stop this
-  recurring. Not added yet: it would fail on the five remaining orphans, and
-  whether those get wired up or removed is a content decision.
+- **Radiant Blessing keeps its heal and loses the ceiling raise.** It now heals
+  a little each turn and clamps to the character's maximum, so at 99 of 100 it
+  restores 1 and nothing is banked above the maximum. Guarded by
+  `test/models/health_ceiling_test.dart`, which asserts that **no** status
+  raises maximum health, so this cannot come back by another route.
+- **The five remaining orphans get homes rather than deletion.** See the status
+  reactions spec above. A test asserting every catalogued status is reachable
+  should land with that work, once nothing is orphaned.
 
 `tool/reach_check.dart` now checks the enduring invariant, that no status
 raises maximum health, rather than the specific Rallied case.
