@@ -36,7 +36,7 @@ advantage or disadvantage, critical hits, and a big list of status conditions).
 8. Full Arms Trigger (FAT): your burst turn
 9. How a turn works: queue then resolve
 10. Resolution order: the six phases
-11. How an attack is decided: the dice math, and the damage types
+11. How an attack is decided: the dice math, damage types, and SPTV
 12. Status effects: the full list, explained
 13. Counters: reacting to the enemy
 14. Unique abilities: the signature moves
@@ -337,13 +337,119 @@ attacks its holder from range. So a Close Range build is quietly resistant to a
 whole family of debuffs, and that is now a real reason to take a point-blank
 scattergun over a rifle.
 
-*Design note: this used to be a two-value near/far tag, and every non-melee
-Trigger was lumped into "ranged". That made the tag perfectly predictable from
-the attack type, so it carried no information of its own. It is now three bands
-assigned per ability by what that ability actually is, which is why the grid
-above has no empty cells. Mid and Long still behave identically, since every rule
-that reads the band asks only "is this at a distance"; the band becomes a
-decision in its own right when the spatial pillar from the design reviews lands.*
+### Position: where each character is standing
+
+The bands are not just labels on abilities. Each character occupies a
+**position** on the battlefield, and the band decides what they can reach from
+there.
+
+- Every character stands at **Front**, **Middle** or **Back**, worth 0, 1 and 2.
+  Their starting position comes from the bands their own Loadout carries: a
+  Close Range kit starts at the Front, a sniper's kit at the Back.
+- **Distance to an enemy is the two positions added**, because the squads face
+  each other across a gap. Your Front against their Back is 0 + 2 = 2.
+- **Distance to an ally is the two positions subtracted**, because you are on the
+  same side. Your Front and your own Back are 2 apart.
+- An ability works if the distance falls inside its band's window: **Close
+  reaches 0 to 1, Mid reaches 1 to 3, Long reaches 2 to 4**.
+
+The minimums are the important half. A sniper caught in a scrum at distance 0 or
+1 genuinely has no shot, which is what stops standing at the back being free.
+Against an ally only the maximum applies, since needing room to bring a weapon to
+bear has nothing to do with handing a heal to the person beside you.
+
+| You are at | Their Front | Their Middle | Their Back |
+|---|---|---|---|
+| **Front** | 0, Close only | 1, Close or Mid | 2, Mid or Long |
+| **Middle** | 1, Close or Mid | 2, Mid or Long | 3, Mid or Long |
+| **Back** | 2, Mid or Long | 3, Mid or Long | 4, Long only |
+
+Two corners of that table are dead zones worth naming. At **distance 0**, both
+squads crowded onto their front lines, only Close Range works, because Mid and
+Long both have minimums. At **distance 4**, both squads hanging back, only Long
+Range works. A fight that settles into either corner stops being a fight.
+
+*Approved and specced, not yet built (lands with item #4): **screening**, and
+**Close Range widening to 0 to 2**. Screening adds, to the distance between you
+and a target, the number of living enemies standing on a line strictly in front
+of that target. So a sniper behind two bodies sits at effective distance 4 and
+only Long Range reaches them; kill one screen and Mid opens up; kill both and
+Close arrives. A squad stacked on one line screens nobody, so camping stops
+working of its own accord rather than being taxed. The widening is what lets a
+Close build cash in once the screen is broken, and a survey of all 4900
+kit-and-formation board states shows it is also what removes every state in
+which neither side can reach the other.*
+
+**Moving.** **Reposition** shifts a character one step and costs them their
+ability use for that turn, so closing the gap competes with attacking. It costs
+no Trion. A FAT turn, which grants up to three actions, is therefore the turn you
+can move *and* strike. A character can always Reposition even when nothing else
+is legal, so a bad position costs you tempo but never your whole turn. A
+zone-lock effect (Forced Repetition) is the exception: it pins you where you
+stand.
+
+**You plan against where you will be, not where you are.** Moves resolve before
+every ability in the turn, in the arm phase (section 8). So the moment you queue
+a step, the whole turn is judged from the destination: abilities that were out of
+band light up, abilities that needed the old distance go dark, and the target
+picker offers exactly what the new line can reach. Un-queueing the step takes the
+strikes that depended on it back out of the queue and refunds them, rather than
+letting them resolve into thin air.
+
+The battlefield strip under both squads draws this: your back line on the far
+left through to the opponent's back line on the far right, with the two front
+lines meeting in the middle, so the gap you see is the distance the bands are
+measured in. It prints the real distance to each enemy line under the enemy
+half, shades the lines the selected ability reaches, and its own cells are the
+move control, so position is read and changed in one place.
+
+That is what makes the four questions the pillar was built for answerable at the
+moment of decision rather than a turn late:
+
+- *Am I in range to do this?* The ability is lit or it is dark, and a dark one
+  says which band it needs and what distance that band covers.
+- *Am I in their attack range?* The lane diagram stacks both squads, your back
+  line at the top and theirs at the bottom, so the gap on screen is the distance
+  the bands are measured in.
+- *Am I in range to receive buffs and healing?* Ally range uses only the maximum,
+  so it is the spread of your own squad that decides, and the diagram shows it.
+- *Will they be in range of my trap in two turns?* The trap keeps its band and
+  the line it was armed from, so the bet is readable off the same picture.
+
+**Every ability says why it cannot be used.** Out of range names the band and
+the distance it covers. The case a moving character meets constantly gets its
+own treatment: without a Full Arms Trigger the step spends the turn's only
+action, so an ability the move has just brought into band pulses rather than
+going flat, and says so when tapped. That distinguishes the three reasons an
+ability is dark, which are fixed in three different ways: move, wait for the
+cooldown, or take a FAT turn.
+
+**The opponent plays the same board.** The AI aims only at what its bands
+actually reach, and it moves on two rules: a character who can reach nothing
+steps towards the band it needs, and a character with an ability use to spare
+spends one on the step that brings more of its Loadout to bear. A character with
+one action and something worth doing keeps the action, because paying a whole
+turn to improve the next one is a bad trade.
+
+**Area attacks catch a position, not a squad.** An area ability hits everyone
+standing with the target you aimed at, and nobody standing elsewhere. Bunching
+your squad together makes you a target; spreading out is a genuine defence.
+
+**Traps remember where they were laid.** A trap records the position it was armed
+from and its own band, and only fires if the enemy is inside that band when they
+act. Setting one is a bet on where they will be standing for as long as it lasts.
+How long that is is a per-ability number, and those numbers are unpriced
+first-pass values awaiting the SPTV pass (see below).
+
+**Some things need you to be close.** Root Snare pins its target in place as well
+as locking their ability, so a Trapper decides where the fight happens. Sable's
+Guardian's Instinct only intercepts an attack on someone he is standing with or
+next to, because a bodyguard has to actually be there.
+
+*Design note: the band used to be a two-value near/far tag, and every non-melee
+Trigger was lumped into "ranged", which made it perfectly predictable from the
+attack type and therefore empty of information. It became three bands assigned
+per ability, and then the positional layer above gave those bands teeth.*
 
 ### Origin: what kind of power drives it
 
@@ -402,7 +508,10 @@ used to be pure luck, which was the one thing a player could not build toward;
 now the better-assembled squad is favoured for it, while the underdog still
 takes the opening turn better than one time in three. Going first is not free
 either: whoever moves first takes the lowest Trion income on that opening turn.
-Each team turn is capped at a **15-second timer** to lock in your actions; if it
+On your turn each living character may either use an ability or
+**Reposition** one step (see section 7); a move counts against the same per-turn
+ability limit, so a FAT turn is what buys you both. Each team turn is capped at a
+**15-second timer** to lock in your actions; if it
 runs out the turn is forfeited with nothing committed. A Black Trigger's World
 ability can change that limit for its team, which is exactly what Chrono Fragment
 does.
@@ -415,9 +524,12 @@ On your turn:
    the Trion back. Cooldowns, on the other hand, only start once the action
    actually resolves.
 2. **The game keeps you honest.** It only lets you queue legal actions (you can
-   afford them, they are off cooldown, they have valid targets, and you have not
-   exceeded your per-turn ability limit, which is 1 normally or up to 3 on a FAT
-   turn).
+   afford them, they are off cooldown, they have a valid target **inside their
+   range band**, and you have not exceeded your per-turn ability limit, which is
+   1 normally or up to 3 on a FAT turn). Range is measured from the position
+   your queued moves will have put you in, so a step you have queued already
+   counts. An ability you cannot use says why, and out of range says which band
+   it needs.
 3. **You end the turn.** Your queued actions now resolve in a set order (next
    section), the results are shown after a brief "Resolving..." pause, and then
    the AI takes its turn through the exact same process.
@@ -433,7 +545,10 @@ When your turn resolves, your queued actions do **not** simply go in the order y
 picked them. They are sorted into a fixed **phase order** so that setups happen
 before payoffs. The phases are:
 
-1. Pre-emptive and reactive setup (arming counters and traps).
+1. **Movement and setup**: every Reposition queued this turn, then arming
+   counters and traps. Moves going first is what makes move-then-strike work,
+   and it is why the queue judges range against where a character will be
+   standing rather than where they are.
 2. **Buffs** (boosting yourself or an ally, putting up wards).
 3. **Control** (debuffs that do not deal damage, like stuns and slows).
 4. **Attacks** (anything that deals damage).
@@ -446,8 +561,52 @@ you queued them. For example, a buff you queued second still resolves before an
 attack you queued first, because buffs are an earlier phase. And between two
 attacks, the character whose Team Spirit is furthest from 50 strikes first.
 
-Timed effects (wards, traps, marks that only last a couple of turns) are ticked
-down once per turn during cleanup, so they eventually wear off.
+*Approved and specced, not yet built: **status reactions**. Statuses will react
+to damage types and to each other, so applying one sets up the next. Wet plus a
+Cold hit becomes Frozen; Frozen plus a Bludgeoning hit shatters for double
+damage; Chilled plus Fire melts back to Wet; Scorched plus Cold is quenched to
+Chilled. Enraged is redesigned to grant immunity to Psychic damage at the cost
+of targeting at random, which makes it both a gamble on yourself and a control
+tool against someone else. The full table is in the status document.*
+
+**A status effect is refreshed, not stacked.** Applying an effect that is
+already on a character resets its timer rather than adding a second copy, and
+the longer of the two durations wins. So a character never carries the same
+effect twice, and never shows the same badge twice.
+
+**A friendly ability is granted, not inflicted.** A heal, a ward or a buff aimed
+at yourself or an ally never rolls to hit and is never contested: it simply
+lands. Only an ability aimed at an enemy is contested, attacker's Status Effect
+Infliction against the target's Status Effect Resistance.
+
+**Traps do not inherit your buffs.** A trap deals its own fixed damage when it
+fires, read off the trap rather than off whoever laid it, so being Empowered when
+it goes off changes nothing. It is a placed hazard, not an attack you are making.
+
+**When a status effect actually wears off.** A timed effect ticks down at the
+**start of its holder's own turn**, and expires when the count reaches zero. Put
+that together with buffs resolving before attacks, and a status applied on a
+turn is live for the rest of that turn's resolution, stays live through the
+opponent's answer, and is decremented when its holder's next turn begins.
+
+Two consequences worth stating plainly, because a bare turn count hides both:
+
+- A buff lasting two turns or more is **still up on your next turn**, so a turn
+  spent buffing sets up the attack you make next. That is the ordinary way a buff
+  pays, and it needs no Full Arms Trigger. (Buffs also resolve before attacks
+  within a turn, so on a FAT turn you can do both at once, but no ability is
+  built to require that: an ability that only worked inside a FAT turn would
+  mostly do nothing.)
+- A **1-turn** effect is gone before its holder acts again. So the game says
+  "active this turn only, it wears off when your next turn begins" rather than
+  printing a 1, and a 2-turn effect says "active this turn and your next turn".
+
+*Known issue, awaiting the SPTV pass: because the tick happens at the start of
+the holder's turn, a 1-turn debuff placed on an **enemy** expires before that
+enemy acts, so it never affects the turn it was meant to interrupt. Eleven
+effects carry a 1-turn default, including Stunned and Frozen. The fix is a
+decision about when the tick happens, and it is priced with everything else in
+that pass.*
 
 ---
 
@@ -492,6 +651,26 @@ it passes through a short chain of adjustments (the battle log shows every step)
 Burst abilities run this whole chain once per hit, and area abilities apply it to
 each target.
 
+### SPTV: the Status Point and Trigger Value budget
+
+**SPTV** is the shorthand for the two-part pricing rule that keeps content
+honest, and it is used throughout these documents:
+
+- **SP, Status Points**, prices an *effect*. How strong it is, multiplied by how
+  long it lasts, multiplied by how many targets it hits. A stun costs more than a
+  small attack penalty; two turns costs twice one turn; three targets cost three
+  times one.
+- **TV, Trigger Value**, prices a *whole ability*. It adds the damage and the SP
+  together, divides by the Trion cost, and adjusts for cooldown, because an
+  ability you can use every turn is worth more than the same one every third
+  turn.
+
+The two compose rather than compete: SP is an input to TV. Anything with a
+magnitude, a duration or a target count is in SPTV's scope, which includes the
+status effects, the Trigger costs and cooldowns, and the durations on the
+reactive counters and traps. Numbers that have not been through SPTV yet are
+first-pass values chosen by eye, and this document says so where that is true.
+
 ### Damage types: what the damage is made of
 
 Every damaging Trigger deals one of **13 damage types**, grouped into three
@@ -516,6 +695,16 @@ grants resistance to Bludgeoning.
 The practical upshot is that a Loadout spread across several damage types is
 harder to wall off than one that leans on a single type, in the same way that a
 Loadout spread across several origins is harder to lock out.
+
+**How long a fight should last: 8 to 20 rounds.** That is the pacing target the
+combat numbers are tuned against, and it is deliberately a band rather than a
+point. Eight rounds is a decisive engagement where one squad reads the matchup
+and closes it out; twenty is a grind between two well-assembled squads trading
+positions and status effects. A fight that ends much under eight means somebody
+was deleted before they got to play, and one that runs much over twenty means
+nobody's damage is keeping up with the healing and the Trion. Both ends are
+balance bugs, and `tool/balance_report.dart` reports the distribution over 200
+simulated battles so the band can be checked rather than assumed.
 
 *Design note: this is where the balance pass did most of its work. Attack and
 Defense used to run 10-29 and 6-16, which put a 15-point gap on a typical attack
@@ -583,7 +772,6 @@ turns.
 - **Hastened:** Attack rises a little more each turn, for 2 turns.
 - **Slowed:** Defense drops a little more each turn, for 2 turns.
 - **Chilled:** Attack drops a little more each turn, for 2 turns.
-- **Rallied:** +20 Max Health for 3 turns (a morale shield).
 - **Focused:** sharpened aim and readiness for 2 turns.
 - **Blinded:** attacks are much less accurate for 2 turns.
 - **Reeling:** knocked off balance for 3 turns.
@@ -1164,7 +1352,6 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 | genjutsuTrappedDrainPercentOfTrionCapacity | 0.15 |
 | adrenalineRushCriticalChanceBonus | 15 |
 | battleTranceFatChanceBonus | 20 |
-| ralliedMaxHealthBonus | 20 |
 
 
 ## Appendix D: All the tunable numbers

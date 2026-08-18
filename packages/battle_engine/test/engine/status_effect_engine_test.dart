@@ -379,19 +379,6 @@ void main() {
     });
   });
 
-  group('Rallied', () {
-    test('increases max Health by the configured flat value', () {
-      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
-      final state =
-          CharacterBattleState(testCharacter(stats: testStats(maxHealth: 100)));
-      engine.apply(state, 'rallied');
-      expect(
-        state.effectiveStats().maxHealth,
-        100 + StatusEffectMagnitudes.defaults.ralliedMaxHealthBonus,
-      );
-    });
-  });
-
   group('Charmed', () {
     test('is flagged as cannot-target-source with source advantage', () {
       final def = StatusEffectCatalog.defaultCatalog['charmed'];
@@ -419,8 +406,8 @@ void main() {
   });
 
   group('StatusEffectCatalog.defaultCatalog completeness', () {
-    test('has exactly 63 built-in effects', () {
-      expect(StatusEffectCatalog.defaultCatalog.all, hasLength(63));
+    test('has exactly 62 built-in effects', () {
+      expect(StatusEffectCatalog.defaultCatalog.all, hasLength(62));
     });
 
     test('every effect has a unique id', () {

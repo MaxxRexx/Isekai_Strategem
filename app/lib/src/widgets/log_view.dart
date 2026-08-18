@@ -195,14 +195,74 @@ class RoundEntry extends StatelessWidget {
               ),
             ),
           for (final action in round.actions)
-            for (final t in action.targets)
+            // A move has no target to roll against, so it gets its own plain
+            // line. Rendering only per-target would drop it from the log
+            // entirely, which is how Repositions went unrecorded.
+            if (action.targets.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: LogLine(action: action, target: t, color: actorColor),
-              ),
+                child: UntargetedLogLine(action: action, color: actorColor),
+              )
+            else
+              for (final t in action.targets)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: LogLine(action: action, target: t, color: actorColor),
+                ),
         ],
       ),
     );
+  }
+}
+
+/// A log line for an action that resolved against nobody: a Reposition. There
+/// are no dice behind it, so unlike [LogLine] it has nothing to expand.
+class UntargetedLogLine extends StatelessWidget {
+  final LogAction action;
+  final Color color;
+  const UntargetedLogLine({
+    super.key,
+    required this.action,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.swap_horiz, size: 13, color: color.withValues(alpha: 0.7)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                style: const TextStyle(color: Colors.white70, fontSize: 12.5),
+                children: [
+                  TextSpan(
+                    text: action.characterName,
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                  ),
+                  const TextSpan(text: ' '),
+                  TextSpan(text: _phrase(action.triggerName)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// "Reposition to the front line" reads as a label, not an event. Turn it
+  /// into something that sits in a sentence after the character's name.
+  static String _phrase(String triggerName) {
+    const prefix = 'Reposition to the ';
+    if (triggerName.startsWith(prefix)) {
+      return 'moves to the ${triggerName.substring(prefix.length)}';
+    }
+    return triggerName;
   }
 }
 

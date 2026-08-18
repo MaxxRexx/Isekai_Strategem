@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../constants.dart';
+import '../models/battle_position.dart';
 import '../models/character_type.dart';
 import '../models/damage_type.dart';
 import '../models/passive_counter.dart';
@@ -123,6 +124,12 @@ class _SingleHitResult {
 /// future rule-based AI module or story-triggered scripted battle) - this
 /// engine only answers "is this legal / what does this cost / what's the
 /// result", not "what should happen".
+/// Keys a trap uses to remember where it was laid and how far it reaches.
+/// Private to the engine: a trap's band is engine bookkeeping, not part of
+/// the [ReactiveEffect] contract callers write against.
+const String _trapBandKey = '__trapBand';
+const String _trapArmedStepKey = '__trapArmedStep';
+
 class TurnEngine {
   final TrionGainEngine trionGainEngine;
   final FatEngine fatEngine;
@@ -600,14 +607,236 @@ class TurnEngine {
     return trigger.targetCount > 1 ? trigger.targetCount - 1 : 1;
   }
 
+  /// Whether [state] may Reposition to [destination] right now.
+  ///
+  /// Reposition is one step along the line, and it costs the character
+  /// their ability use for the turn, so it competes with attacking rather
+  /// than being a free extra. That is the tempo price of closing the gap.
+  ///
+  /// Deliberately *not* blocked by the things that block abilities beyond
+  /// action prevention: a character whose whole Loadout is out of range
+  /// must still be able to move, or a bad position would leave them with no
+  /// move at all, which is a punishment rather than a decision.
+  bool canReposition(CharacterBattleState state, BattlePosition destination) {
+    if (!canRepositionAtAll(state)) return false;
+    if (!fatEngine.canUseAnotherAbility(state)) return false;
+    return state.position.adjacent.contains(destination);
+  }
+
+  /// Whether nothing about [state] itself forbids moving: they are alive,
+  /// not action-locked, and not pinned by a zone-lock effect.
+  ///
+  /// Split out of [canReposition] for the player's queue, which validates a
+  /// move against a *projected* position and counts ability uses against what
+  /// is already queued rather than against what has already resolved. Those
+  /// two checks belong to the queue; these three belong to the character.
+  bool canRepositionAtAll(CharacterBattleState state) =>
+      state.isAlive &&
+      !state.isActionPrevented() &&
+      !state.isRepositionPrevented();
+
+  /// Moves [state] one step to [destination], spending their action for the
+  /// turn. Returns false and changes nothing if the move is not legal.
+  bool reposition(CharacterBattleState state, BattlePosition destination) {
+    if (!canReposition(state, destination)) return false;
+    state.position = destination;
+    state.recordRepositionUse();
+    return true;
+  }
+
+  /// How many of [triggers] could reach at least one of [opponents] if
+  /// [state] were standing at [from]. The measure of how useful a position
+  /// is to this character right now.
+  /// Counts only the triggers aimed at an enemy. A self-buff or an ally ward
+  /// reaches from anywhere, so counting those would say a character standing
+  /// four squares out of every attack's band is doing fine. That is exactly
+  /// what happened: two squads out of range of each other, each holding a
+  /// self-buff, stood still re-buffing for the rest of the battle because
+  /// neither ever registered as stuck.
+  int reachableAbilityCount(
+    CharacterBattleState state,
+    BattlePosition from,
+    List<ActiveTrigger> triggers,
+    List<CharacterBattleState> opponents,
+  ) {
+    final living = opponents.where((o) => o.isAlive).toList();
+    if (living.isEmpty) return 0;
+    var count = 0;
+    for (final trigger in triggers) {
+      if (trigger.targetAffiliation != TargetAffiliation.opponent) continue;
+      final reaches = living.any((o) => trigger.rangeTag
+          .reaches(BattleDistance.betweenEnemies(from, o.position)));
+      if (reaches) count++;
+    }
+    return count;
+  }
+
+  /// The single step [state] should take to bring more of [triggers] into
+  /// range, or null when staying put is at least as good.
+  ///
+  /// This is what stops a bad position becoming a skipped turn. A character
+  /// whose whole Loadout is out of range would otherwise stand there doing
+  /// nothing, and if both squads were in that state the battle would never
+  /// end.
+  ///
+  /// [from] measures the step from somewhere other than where the character
+  /// is standing, for a caller planning against a projected position (the
+  /// player's queue). Such a caller counts ability uses against what it has
+  /// queued, so the use check is skipped when [from] is given.
+  BattlePosition? suggestReposition(
+    CharacterBattleState state,
+    List<ActiveTrigger> triggers,
+    List<CharacterBattleState> opponents, {
+    BattlePosition? from,
+  }) {
+    if (!canRepositionAtAll(state)) return null;
+    if (from == null && !fatEngine.canUseAnotherAbility(state)) return null;
+    final origin = from ?? state.position;
+    final staying = reachableAbilityCount(state, origin, triggers, opponents);
+    BattlePosition? best;
+    var bestCount = staying;
+    for (final destination in origin.adjacent) {
+      final count =
+          reachableAbilityCount(state, destination, triggers, opponents);
+      if (count > bestCount) {
+        bestCount = count;
+        best = destination;
+      }
+    }
+    if (best != null || staying > 0) return best;
+
+    // Nothing reachable from here, and no single step fixes that either. A
+    // strict-improvement test can never fire from that position, so a
+    // character stranded two steps out would stand still forever. Walk
+    // towards the band instead: whichever step shrinks the gap to the nearest
+    // band edge, so the second step arrives.
+    final here = _bandShortfall(origin, triggers, opponents);
+    var bestShortfall = here;
+    for (final destination in origin.adjacent) {
+      final shortfall = _bandShortfall(destination, triggers, opponents);
+      if (shortfall < bestShortfall) {
+        bestShortfall = shortfall;
+        best = destination;
+      }
+    }
+    return best;
+  }
+
+  /// How far out of band this position is, summed over the opponent-targeted
+  /// [triggers]: for each one, how many steps the nearest enemy is outside its
+  /// window (0 when it already reaches). Lower is closer to being useful.
+  ///
+  /// Only meaningful as a comparison between neighbouring positions, which is
+  /// the one thing [suggestReposition] uses it for.
+  int _bandShortfall(
+    BattlePosition from,
+    List<ActiveTrigger> triggers,
+    List<CharacterBattleState> opponents,
+  ) {
+    final living = opponents.where((o) => o.isAlive).toList();
+    if (living.isEmpty) return 0;
+    var total = 0;
+    for (final trigger in triggers) {
+      if (trigger.targetAffiliation != TargetAffiliation.opponent) continue;
+      var closest = BattleDistance.maxEnemyDistance + 1;
+      for (final opponent in living) {
+        final distance =
+            BattleDistance.betweenEnemies(from, opponent.position);
+        final gap = distance < trigger.rangeTag.minDistance
+            ? trigger.rangeTag.minDistance - distance
+            : distance > trigger.rangeTag.maxDistance
+                ? distance - trigger.rangeTag.maxDistance
+                : 0;
+        if (gap < closest) closest = gap;
+      }
+      total += closest;
+    }
+    return total;
+  }
+
+  /// Whether [a] and [b] are on the same side. Read off the `teammates`
+  /// wiring the Battle constructor sets up; a character counts as their own
+  /// ally so self-targeting takes the same path.
+  bool areAllies(CharacterBattleState a, CharacterBattleState b) =>
+      identical(a, b) || a.teammates.contains(b);
+
+  /// How far apart [a] and [b] are standing right now.
+  ///
+  /// Allies subtract and enemies add (see [BattleDistance]), because the two
+  /// squads face each other across a gap: hanging back moves you away from
+  /// the enemy but towards your own back line.
+  int distanceBetween(CharacterBattleState a, CharacterBattleState b) =>
+      areAllies(a, b)
+          ? BattleDistance.betweenAllies(a.position, b.position)
+          : BattleDistance.betweenEnemies(a.position, b.position);
+
+  /// Whether [trigger]'s range band reaches [target] from where [attacker]
+  /// is standing.
+  ///
+  /// Self-targeted abilities always reach: you are always at your own
+  /// position, whatever band the ability carries.
+  ///
+  /// Against an **enemy** the band is a window, minimum and maximum both: a
+  /// sniper caught in a scrum has no shot, which is what stops standing at
+  /// the back being free.
+  ///
+  /// Towards an **ally** only the maximum applies. A band's minimum is about
+  /// needing room to bring a weapon to bear on someone who is fighting you;
+  /// none of that is true of handing a heal or a ward to the person next to
+  /// you. Without this carve-out a Mid-band heal could not reach an ally
+  /// standing in the same position, which is absurd on its face.
+  ///
+  /// [fromPosition] overrides where the attacker is measured from, and
+  /// [targetPosition] where the target is. Both exist for planning against a
+  /// position nobody is standing in yet: the player's queue resolves every
+  /// Reposition before any ability, so the UI has to judge range against
+  /// where the character *will* be, not where they are (see
+  /// `PlaySession.projectedPositionOf`). Omit them for the live answer.
+  bool canReach(
+    CharacterBattleState attacker,
+    CharacterBattleState target,
+    ActiveTrigger trigger, {
+    BattlePosition? fromPosition,
+    BattlePosition? targetPosition,
+  }) {
+    if (identical(attacker, target)) return true;
+    if (trigger.targetAffiliation == TargetAffiliation.self) return true;
+
+    final from = fromPosition ?? attacker.position;
+    final to = targetPosition ?? target.position;
+
+    // Which side the target is on comes from what the ability is *for*,
+    // not from the `teammates` wiring, which only the Battle constructor
+    // sets up and which a standalone engine harness may leave empty. An
+    // ally-targeted ability is aimed at an ally by definition.
+    final towardsAlly = trigger.targetAffiliation != TargetAffiliation.opponent;
+    if (towardsAlly) {
+      final distance = BattleDistance.betweenAllies(from, to);
+      return distance <= trigger.rangeTag.maxDistance;
+    }
+    return trigger.rangeTag.reaches(BattleDistance.betweenEnemies(from, to));
+  }
+
   /// Whether [attacker] may target [target] at all right now: false if
   /// [attacker] is Charmed by [target] (a charmed character cannot target
   /// their own charmer - the restriction lives on the charmed character,
   /// so this checks [attacker]'s own active effects, not [target]'s).
-  /// Callers (AI/UI) should consult this before building a target list;
-  /// [resolveAbilityUse] also defensively filters against it.
+  ///
+  /// Pass [trigger] to also apply the range band: an ability only reaches a
+  /// target inside its window (see [canReach]). Callers that have no
+  /// particular ability in mind may leave it null and get the old
+  /// ability-agnostic answer. [fromPosition]/[targetPosition] are passed
+  /// straight through to [canReach] for planning against projected positions.
   bool canTarget(CharacterBattleState attacker, CharacterBattleState target,
-      {StatusEffectCatalog? catalog}) {
+      {StatusEffectCatalog? catalog,
+      ActiveTrigger? trigger,
+      BattlePosition? fromPosition,
+      BattlePosition? targetPosition}) {
+    if (trigger != null &&
+        !canReach(attacker, target, trigger,
+            fromPosition: fromPosition, targetPosition: targetPosition)) {
+      return false;
+    }
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
     for (final instance in attacker.statusEffects) {
       final def = cat[instance.definitionId];
@@ -694,6 +923,12 @@ class TurnEngine {
         continue;
       }
       if (teammate.perkChargeUsed) continue;
+      // Protection needs proximity: you cannot step in front of someone you
+      // are not standing near. A bodyguard has to actually be there.
+      if (BattleDistance.betweenAllies(teammate.position, target.position) >
+          1) {
+        continue;
+      }
       teammate.consumePerkChargeIfAvailable();
       return teammate;
     }
@@ -831,14 +1066,31 @@ class TurnEngine {
   /// Checks attacker-side reactive effects (Deadfall, Death Ledger) before
   /// ability resolution. Returns true if the ability is countered (should
   /// not resolve). Deadfall deals trap damage to the attacker.
+  /// Whether [effect] can still reach [holder], the enemy it was set on,
+  /// from where it was armed.
+  ///
+  /// A trap armed before positions existed, or by a caller that did not
+  /// record them, carries no band and always fires - so older content and
+  /// test fixtures behave exactly as they did.
+  bool _trapStillReaches(ReactiveEffect effect, CharacterBattleState holder) {
+    final band = effect.data[_trapBandKey];
+    final armedStep = effect.data[_trapArmedStepKey];
+    if (band is! String || armedStep is! int) return true;
+    final tag = RangeTag.values.firstWhere(
+      (t) => t.name == band,
+      orElse: () => RangeTag.mid,
+    );
+    return tag.reaches(armedStep + holder.position.step);
+  }
+
   bool _checkAttackerReactives(
     CharacterBattleState attacker,
     ActiveTrigger trigger,
   ) {
     // Deadfall: if the attacker has trapOnAction and uses a damaging ability.
     if (trigger.damageType != null) {
-      final trapIndex = attacker.reactiveEffects
-          .indexWhere((r) => r.kind == ReactiveKind.trapOnAction);
+      final trapIndex = attacker.reactiveEffects.indexWhere((r) =>
+          r.kind == ReactiveKind.trapOnAction && _trapStillReaches(r, attacker));
       if (trapIndex >= 0) {
         attacker.reactiveEffects.removeAt(trapIndex);
         final trapDamage = const DiceExpression(4, 8, flatBonus: 16)
@@ -998,9 +1250,23 @@ class TurnEngine {
 
     final maxTargets = maxRangedTargets(attacker, trigger);
     var filteredTargets = targets
-        .where((t) => canTarget(attacker, t))
-        .take(maxTargets)
+        .where((t) => canTarget(attacker, t, trigger: trigger))
         .toList();
+
+    // An area attack catches one position, not any three bodies on the
+    // field. The first surviving target is the one being aimed at, and
+    // everyone standing with them is caught; anyone at another position is
+    // not. This is what makes stacking a squad dangerous and spreading out
+    // a real defence, and it is the half of the change that gives the
+    // opponent a reason to want you clumped together.
+    if (trigger.attackSubtype == AttackSubtype.aoe &&
+        filteredTargets.isNotEmpty) {
+      final aimedAt = filteredTargets.first.position;
+      filteredTargets =
+          filteredTargets.where((t) => t.position == aimedAt).toList();
+    }
+
+    filteredTargets = filteredTargets.take(maxTargets).toList();
 
     // Misfire redirect: if attacker has the misfire status, some targets
     // may be redirected to the attacker's own allies.
@@ -1160,6 +1426,23 @@ class TurnEngine {
             .add(_SingleHitResult(outcome, damage, damageDetail, appliedIds));
       }
 
+      // A heal, a ward or a buff aimed at your own side is not an attack. It
+      // was being run through the whole hostile pipeline: rolled to hit
+      // against the recipient's own Defense, and subject to the dodge perk.
+      // The roll is still made above so telemetry and perk charges behave the
+      // same, but it cannot make the ability fizzle on a teammate.
+      if (trigger.targetAffiliation != TargetAffiliation.opponent) {
+        outcome = AttackRollOutcome(
+          attackerRoll: outcome.attackerRoll,
+          defenderRoll: outcome.defenderRoll,
+          isHit: true,
+          isCriticalHit: false,
+          isCriticalMiss: false,
+          criticalHitThreshold: outcome.criticalHitThreshold,
+        );
+        forcedMiss = false;
+      }
+
       if (outcome.isCriticalMiss) {
         combatEngine.applyCriticalMissPenalty(attacker);
         record(0, null, const []);
@@ -1264,19 +1547,29 @@ class TurnEngine {
       // TEG Effect 1 (offense) on the causer's infliction rolls this use.
       _applyTegOffenseAdvantage(advantageContext, attacker);
       for (final application in trigger.inflictedStatusEffects) {
+        // A buff or a ward granted to your own side is not inflicted, so it
+        // is not contested. Rolling it against the recipient's own Status
+        // Effect Resistance meant a character resisted their own War Chant
+        // three times in four. (The engine's own note on
+        // `StatusEffectEngine.apply` always said self-buffs are granted
+        // unconditionally; the call sites did not honour it.)
+        final contested =
+            trigger.targetAffiliation == TargetAffiliation.opponent;
         // TEG Effect 2 (defense) on the target's resistance roll.
         final resistContext =
             target.rollContextFor(StatusRollTag.statusResistanceRoll);
         _applyTegDefenseAdvantage(resistContext, target);
-        final inflictionOutcome = statusEffectEngine.resolveInfliction(
-          causerInfliction: stats.statusEffectInfliction,
-          targetResistance: target
-              .effectiveStats(fatConfig: fatConfig)
-              .statusEffectResistance,
-          causerRollContext: advantageContext,
-          targetRollContext: resistContext,
-        );
-        if (inflictionOutcome.applies) {
+        final inflictionOutcome = contested
+            ? statusEffectEngine.resolveInfliction(
+                causerInfliction: stats.statusEffectInfliction,
+                targetResistance: target
+                    .effectiveStats(fatConfig: fatConfig)
+                    .statusEffectResistance,
+                causerRollContext: advantageContext,
+                targetRollContext: resistContext,
+              )
+            : null;
+        if (!contested || inflictionOutcome!.applies) {
           // Soren-style "Weaken Resolve" perk: bonus duration when the
           // target already carries an effect from this same attacker.
           var durationOverride = application.durationTurnsOverride;
@@ -1454,10 +1747,24 @@ class TurnEngine {
       holder = originalTargets.isNotEmpty ? originalTargets.first : caster;
     }
 
+    // A trap is laid at a place, in a band. It records where the wielder
+    // was standing and how far that ability reaches, so it can later ask
+    // whether the enemy walked into it or acted from safely outside. That
+    // turns "will they still be in range when this fires" into a real
+    // question rather than a formality.
+    //
+    // How long it stays armed is the ability's own armsReactiveDefaultTurns,
+    // untouched here. Those are Phase B first-pass values chosen by eye and
+    // are in scope for the SPTV pass (item #3), which prices duration
+    // alongside magnitude and target count.
     holder.reactiveEffects.add(ReactiveEffect(
       kind: kind,
       sourceCharacterId: caster.character.id,
-      data: reactiveData,
+      data: {
+        ...?reactiveData,
+        _trapBandKey: trigger.rangeTag.name,
+        _trapArmedStepKey: caster.position.step,
+      },
       remainingTurns: trigger.armsReactiveDefaultTurns,
     ));
 
@@ -2541,16 +2848,21 @@ class TurnEngine {
     final tegCauserContext = RollContext();
     _applyTegOffenseAdvantage(tegCauserContext, attacker);
     for (final application in trigger.inflictedStatusEffects) {
+      // Granted, not inflicted, when it lands on your own side: no contest.
+      final contested = trigger.targetAffiliation == TargetAffiliation.opponent;
       final tegResistContext = RollContext();
       _applyTegDefenseAdvantage(tegResistContext, target); // Effect 2
-      final inflictionOutcome = statusEffectEngine.resolveInfliction(
-        causerInfliction: stats.statusEffectInfliction,
-        targetResistance:
-            target.effectiveStats(fatConfig: fatConfig).statusEffectResistance,
-        causerRollContext: tegCauserContext,
-        targetRollContext: tegResistContext,
-      );
-      if (inflictionOutcome.applies) {
+      final inflictionOutcome = contested
+          ? statusEffectEngine.resolveInfliction(
+              causerInfliction: stats.statusEffectInfliction,
+              targetResistance: target
+                  .effectiveStats(fatConfig: fatConfig)
+                  .statusEffectResistance,
+              causerRollContext: tegCauserContext,
+              targetRollContext: tegResistContext,
+            )
+          : null;
+      if (!contested || inflictionOutcome!.applies) {
         final applied = statusEffectEngine.apply(
           target,
           application.statusEffectId,

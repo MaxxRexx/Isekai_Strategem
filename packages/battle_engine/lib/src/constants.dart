@@ -133,8 +133,6 @@ class StatusEffectMagnitudes {
   final int sappedDurationTurns;
   final double sappedDrainPercentOfTrionCapacity;
   final int reelingDurationTurns;
-  final int ralliedDurationTurns;
-  final int ralliedMaxHealthBonus;
   final int proneDurationTurns;
   final int preparedDurationTurns;
   final int poisonedDurationTurns;
@@ -206,7 +204,6 @@ class StatusEffectMagnitudes {
   final int hexedResistancePenalty;
   final int radiantBlessingDurationTurns;
   final int radiantBlessingHealPerTurn;
-  final int radiantBlessingMaxHealthBonus;
   final double radiantBlessingAllDamageTakenMultiplier;
   final int necroticWoundDurationTurns;
   final int necroticWoundDamagePerTurn;
@@ -244,8 +241,6 @@ class StatusEffectMagnitudes {
     this.sappedDurationTurns = 3,
     this.sappedDrainPercentOfTrionCapacity = 0.25,
     this.reelingDurationTurns = 3,
-    this.ralliedDurationTurns = 3,
-    this.ralliedMaxHealthBonus = 20,
     this.proneDurationTurns = 1,
     this.preparedDurationTurns = 3,
     this.poisonedDurationTurns = 3,
@@ -315,7 +310,6 @@ class StatusEffectMagnitudes {
     this.hexedResistancePenalty = 10,
     this.radiantBlessingDurationTurns = 3,
     this.radiantBlessingHealPerTurn = 1,
-    this.radiantBlessingMaxHealthBonus = 10,
     this.radiantBlessingAllDamageTakenMultiplier = 0.9,
     this.necroticWoundDurationTurns = 3,
     this.necroticWoundDamagePerTurn = 12,

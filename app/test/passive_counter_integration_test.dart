@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/draft.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
 
+import 'support/battle_positions.dart';
+
 /// Phase A (passive-counter integration): the app's resolution loop now
 /// feeds the engine's passive-counter hooks, so the six counters actually
 /// advance in-game. Before this wiring `notifyAbilityResolved` /
@@ -30,6 +32,7 @@ void main() {
       firstTurn: 'teamA',
     );
     s.battle.teamA.trionPool.gain(500);
+    spreadForFullRangeCoverage(s);
     return s;
   }
 

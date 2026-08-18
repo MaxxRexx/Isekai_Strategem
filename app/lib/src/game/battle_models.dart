@@ -217,6 +217,11 @@ class FighterSnapshot {
   final bool fatTriggered;
   final List<StatusBadgeInfo> statusEffects;
 
+  /// Which line of the battlefield this fighter is standing on. Distance to
+  /// an enemy is the two sides' steps added together, so hanging back opens
+  /// the gap; distance to an ally is the difference.
+  final BattlePosition position;
+
   const FighterSnapshot({
     required this.id,
     required this.name,
@@ -226,6 +231,7 @@ class FighterSnapshot {
     required this.alive,
     this.fatTriggered = false,
     this.statusEffects = const [],
+    this.position = BattlePosition.middle,
   });
 }
 

@@ -1,4 +1,5 @@
 import '../constants.dart';
+import '../models/battle_position.dart';
 import '../models/character.dart';
 import '../models/damage_type.dart';
 import '../models/passive_counter.dart';
@@ -46,6 +47,15 @@ class TempFlatBonus {
 class CharacterBattleState {
   final Character character;
   int currentHealth;
+
+  /// Where this character is standing (see [BattlePosition]). Chosen at
+  /// draft time and changed in battle by the Reposition action, which
+  /// costs the character their ability use for that turn.
+  ///
+  /// Defaults to Middle so a battle built without positions (an older test,
+  /// a standalone engine harness) behaves sensibly: at Middle against
+  /// Middle the distance is 2, which Mid and Long both reach.
+  BattlePosition position;
 
   /// Nullhymn: how many resonance grades this wielder's Black Trigger has been
   /// permanently dropped this battle (A->B->C->D). Applied in
@@ -204,6 +214,7 @@ class CharacterBattleState {
     List<PassiveEffect> equippedPassiveEffects = const [],
     List<String> equippedTriggerIds = const [],
     WorldAbilityEffect? worldAbility,
+    this.position = BattlePosition.middle,
   })  : currentHealth = character.baseStats.maxHealth,
         equippedPassiveEffects = equippedPassiveEffects,
         equippedTriggerIds = equippedTriggerIds,
@@ -228,6 +239,14 @@ class CharacterBattleState {
   bool isActionPrevented([StatusEffectCatalog? catalog]) {
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
     return statusEffects.any((i) => cat[i.definitionId].preventsActions);
+  }
+
+  /// Whether something is pinning this character in place (zone lock). Kept
+  /// separate from [isActionPrevented] because a character can be free to
+  /// act but unable to move, which is exactly what a snare should do.
+  bool isRepositionPrevented([StatusEffectCatalog? catalog]) {
+    final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
+    return statusEffects.any((i) => cat[i.definitionId].preventsReposition);
   }
 
   bool isInvulnerableTo(String statusEffectId) =>
@@ -256,6 +275,19 @@ class CharacterBattleState {
     lastActiveTriggerCategory = trigger.category;
     lastUsedTriggerId = trigger.id;
     triggersUsedThisTurn.add(trigger.id);
+    hasActedThisBattle = true;
+  }
+
+  /// Spends this character's action for the turn on a Reposition.
+  ///
+  /// Deliberately does not touch `lastUsedTriggerId`, `triggersUsedThisTurn`
+  /// or `lastActiveTriggerCategory`: moving is not using an ability, so it
+  /// must not feed the combo ledger, satisfy Forced Repetition, or count as
+  /// the "category of ability last used" that Tobias's Versatile perk reads.
+  /// It only occupies the action slot, and its sentinel record carries a
+  /// zero cooldown so end-of-turn bookkeeping ignores it.
+  void recordRepositionUse() {
+    _abilitiesUsedThisTurn.add(_AbilityUseRecord(repositionActionId, 0));
     hasActedThisBattle = true;
   }
 

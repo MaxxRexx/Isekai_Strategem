@@ -50,9 +50,15 @@ void main() {
     for (final id in opponentIds) {
       expect(s.battle.states[id]!.abilitiesUsedThisTurnCount, 0);
     }
-    // Every planned action names an equipped ability and a living owner.
+    // Every planned action names a living owner, and either an equipped
+    // ability or (for a planned move) a destination line.
     for (final action in plan) {
       expect(opponentIds, contains(action.characterId));
+      if (action.isReposition) {
+        expect(action.destination, isNotNull);
+        expect(action.targetIds, isEmpty);
+        continue;
+      }
       expect(
         s.equippedB[action.characterId]!.map((t) => t.id),
         contains(action.triggerId),
@@ -67,7 +73,9 @@ void main() {
     s.battle.teamB.trionPool.gain(500);
 
     final plan = s.aiB.planTurn(s.battle, equippedActiveTriggers: s.equippedB);
+    // Moves are free in Trion, so they do not count towards the spend.
     final expectedSpend = plan.fold<int>(0, (sum, a) {
+      if (a.isReposition) return sum;
       final state = s.battle.states[a.characterId]!;
       final trigger = s.equippedB[a.characterId]!.firstWhere(
         (t) => t.id == a.triggerId,

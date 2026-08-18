@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/draft.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
 
+import 'support/battle_positions.dart';
+
 /// A2 (phase-priority resolution): resolveQueue orders actions by phase
 /// (buffs/control before attacks, heals after), then by Team Spirit
 /// deviation from the midpoint, then by queue order - independent of the
@@ -33,6 +35,7 @@ void main() {
       firstTurn: 'teamA',
     );
     s.battle.teamA.trionPool.gain(500);
+    spreadForFullRangeCoverage(s);
     return s;
   }
 

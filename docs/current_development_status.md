@@ -10,11 +10,31 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 63 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | #1 range bands. #1, #2 and #3 are designed, audited against the code and approved; work runs in queue order from here. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is the owner's, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | #2 Bail Out. #1 (range bands) is complete; #1, #2 and #3 are designed, audited against the code and approved, and work runs in queue order from here. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is mostly done and the rest is the owner's, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
 | Balance: the five near-duplicate ("reskin") Trigger clusters differentiated; critical hits capped at a natural 17 and doubling dice only; the four dominant Triggers re-costed; the P0 bounded-accuracy re-tune landed (Attack compressed to 4-14, Defense to 2-12, and every damage expression rebuilt to about half dice); the opening turn is now earned, weighted by the Team Efficiency Grade instead of a coin flip; and the range tag became three real bands (Close/Mid/Long, 20 each, with every attack type present in every band). | | Optional polish: a custom domain so Google sign-in shows the game name instead of the Supabase URL. |
+
+## Branches
+
+Only these exist, and this list is the authority. Anything else named in an
+older note is gone.
+
+| Branch | What it is |
+|---|---|
+| `main` | The trunk. Everything below the "in progress" line has been merged here, and the design document describes `main`, not any branch. |
+| `gh-pages` | The published web build. Deploy target only; never develop on it. |
+| `claude/range-band-positions` | The active work branch, carrying #1 (range bands as a real battlefield). Merges to `main` when #1 is signed off. |
+
+Two leftovers are fully merged into `main` and carry no unique commits, so they
+are safe to delete and are awaiting the owner's action:
+`claude/range-bands-close-mid-long` (remote) and
+`claude/balance-bounded-accuracy-ylhvao` (local only).
+
+Branch names are deliberately absent from the phase table further down: every
+phase listed there is merged, so the branch it arrived on no longer exists and
+naming it only invites confusion.
 
 Progress by area:
 
@@ -27,25 +47,367 @@ AI tuning          ▒▒▒▒▒▒▒▒▒▒   0%   not started
 Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
 ```
 
+## Abbreviations
+
+- **TEG**, Team Efficiency Grade: the D to SSS score for how well a squad is put
+  together, with its in-battle dice effects and inverse XP.
+- **FAT**, Full Arms Trigger: the burst turn that grants up to three ability uses
+  instead of one.
+- **SPTV**, Status Points and Trigger Value: the two-part pricing rule from item
+  #3. SP prices an effect by magnitude times duration times targets; TV prices a
+  whole ability as (damage + SP) divided by Trion cost, adjusted for cooldown. SP
+  is an input to TV, so they compose. Anything carrying a magnitude, a duration
+  or a target count is in SPTV's scope, including reactive and trap durations.
+
+## Status reactions: the design for item 3b
+
+Approved in principle, not built. The problem it solves: 62 status effects
+exist, six of them are unreachable, and none of them talk to each other. A
+status is currently a modifier you apply and forget. Reactions turn the
+catalogue into a web where applying one thing sets up another, which is where
+the depth the project wants actually comes from.
+
+Prior art worth naming: this is the elemental-reaction shape (Genshin Impact's
+is the best-known), chosen because it produces combinatorial depth from a small
+table rather than from more content.
+
+### The primitive
+
+One new data field on `StatusEffectDefinition`, evaluated in exactly two places
+(`_applyDamage` and `StatusEffectEngine.apply`). No switch statements, matching
+the "bag of parameters, one generic engine" shape the rest of the engine uses.
+
+```dart
+class StatusReaction {
+  final DamageType? onDamageType;      // taking this damage type fires it
+  final String? onStatusApplied;       // or this status landing does
+  final String? becomes;               // the holder gains this
+  final bool consumesTrigger;          // the reacting status is spent
+  final String? alsoRemoves;           // and this one is removed too
+  final double bonusDamageMultiplier;  // extra damage on the triggering hit
+}
+```
+
+### The reaction table
+
+Every entry uses statuses and damage types that already exist.
+
+| The target is | and is hit by | Result |
+|---|---|---|
+| **Wet** | Cold | Becomes **Frozen**. Wet is spent. Water freezes. |
+| **Wet** | Lightning | Becomes **Electrocuted** and it stacks. Wet is spent. |
+| **Wet** | Fire | Wet boils off. Both cancel, no damage (Wet is already Fire-immune). |
+| **Scorched** | Cold | Quenched. Both cancel, leaving **Chilled**. |
+| **Scorched** | Fire | **Scorched** stacks. Already Fire-vulnerable, so this is the burn build's payoff. |
+| **Chilled** | Cold | Becomes **Frozen**. Chilled is spent. |
+| **Chilled** | Fire | The ice melts. Becomes **Wet**, which sets up the next Cold or Lightning hit. |
+| **Frozen** | Bludgeoning or Thunder | **Shatter**: double damage on that hit, Frozen is spent. |
+| **Corroded** | Acid | **Acid** lands on top, deepening the armour shred. |
+| **Electrocuted** | Thunder | Arcs to one other enemy standing on the same line. |
+| **Bleeding** | Slashing | **Bleeding** stacks. |
+| **Poisoned** | Poison | Becomes **Sickened**. |
+
+The Chilled-to-Wet-to-Frozen loop is deliberate: a Cold squad can cycle a target
+without ever needing a second element, but it costs them a turn each time, so
+the two-element team is still faster.
+
+### Enraged, redesigned
+
+Currently outgoing damage x1.5 and Defense -3, and nothing applies it. It gains
+two clauses that make it a real decision rather than a stat swap:
+
+- **Immune to Psychic damage** while it lasts.
+- **All of the holder's targeting is chosen at random** while it lasts.
+
+So enraging your own character is a gamble you take for the damage and the
+psychic immunity, and enraging an enemy is a control tool that blunts their aim
+at the cost of making them hit harder. It is also the first real answer to a
+psychic-heavy squad, which currently has none.
+
+### Homes for the five remaining orphans
+
+| Status | Gets applied by | Why there |
+|---|---|---|
+| **Wet** | A new Mid Range ranged area attack, one enemy line | Soaking a whole line is the setup half of every reaction above, and hitting three targets is worth an action under #5's test. |
+| **Enraged** | A Close Range melee taunt (on an enemy) and a psychic self-buff | Both readings of the status get a home, and the melee version gives a front-liner something to do that is not damage. |
+| **Adrenaline Rush** | A **Side Effect**, granted on dropping below half health | Passive, so it never has to justify an action, which sidesteps the problem #5 exists to fix. |
+| **Battle Trance** | An ally-targeted support ability | FAT Chance +20 on an ally sets up next turn's burst, and it matters far more now that the squad may only cash in one FAT per turn. |
+| **Radiant Blessing** | An ally-targeted Mid Range ward | Heal over time plus 10% damage reduction is the support's staple, and it now clamps to the base maximum. |
+
+### Content to redesign around reactions, by subcategory
+
+- **Melee / Close**: a taunt that applies Enraged; a shatter finisher that
+  reads Frozen.
+- **Ranged / Mid, area**: the Wet applier; a Thunder burst that arcs off
+  Electrocuted.
+- **Ranged / Long**: a Cold shot that is ordinary alone and freezes a Wet
+  target, so a sniper wants a soaker on the squad.
+- **Psychic**: abilities that check whether the target already carries a
+  status, rewarding setup rather than opening with them.
+- **Burst**: the last hit of a burst applies the reaction, so spending the whole
+  burst on one target is rewarded.
+- **Traps and counters**: a trap that arms a reaction rather than damage, firing
+  when the enemy takes a matching damage type. The reactive engine already
+  supports conditional firing.
+- **Side Effects**: one that makes the holder immune to a chosen reaction; one
+  that lets their damage type count as two for reaction purposes.
+
+### Sequencing and pricing
+
+The mechanism and the reaction table belong with **#3**, because SPTV has to
+price them: a status that sets up a reaction is worth more Status Points than
+one that does not, and a stacking status is worth more again. The new abilities
+and Side Effects are a content pass and should land after **#4**, alongside 1c
+(pull and push), so the whole catalogue is priced once rather than twice.
+
+
 ## The work queue
 
 Agreed running order. Items are referred to by these numbers everywhere else.
 
 | # | Item | State |
 |---|---|---|
-| 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4. Reposition costs your action and resolves in the Arm phase, with range checked against projected position so move-then-strike works on a FAT turn. Plus area attacks hitting one position (which turns them into an aimed choice), traps carrying a band, zone lock, and protection needing proximity. | Approved, in progress |
+| 0 | **Pacing target: 8 to 20 rounds.** Agreed band, replacing the old 15-20 (design section 11). `tool/balance_report.dart` now checks it: 200 simulated battles run a median of 14 with 82% of them inside the band. The engine's round-robin integration test asserts the same band. | Set |
+| 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the full-width horizontal battlefield strip (your back line on the left through to theirs on the right, with a distance ruler and the move controls in its own cells), an explicit reason on every ability that cannot be used, a distinct pulsing state for one the queued move has brought into band, plain-English status descriptions with the duration in the player's own turns, and AI positional judgement on both AI paths. Playtested by the owner and revised. | Done |
+| 1b | **Screening (RPP), approved and specced, not built.** Effective distance to an enemy = my line's step + their line's step + the number of living enemies standing on a line strictly in front of the target. No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule. Lands with #4, which owns the range cost model. | Approved, queued |
+| 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued |
 | 2 | **Bail Out, contested.** Not a revive: the operator leaves the engagement. A one-turn Bailing Out window where the body stays **targetable**; left alone it is recalled and the squad gets Trion Salvage (20% of base Trion Capacity), but an enemy hit destroys it instead, denying the Salvage and giving the attacker a smaller gain. Refuse to Bail is pre-declared, armed like the existing counters. | Approved, queued |
-| 3 | **Both budgets, plus the tooltip fix.** Status Points price effects and feed into the Trigger Value formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
-| 4 | **Trion economy.** Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. | Queued |
-| 5 | **Healing is too weak.** Wellspring Surge averages 5.5, Soul Siphon's drain heals 1.5 and Radiant Blessing 1 a turn, all against 100 health. Folds into #4. | Queued |
-| 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. | Queued |
+| 3b | **Status reactions.** A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. Mechanism and table with #3 so SPTV prices them; the new abilities and Side Effects after #4 with 1c. | Approved, queued |
+| 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
+| 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does), the screening rule from 1b, and the FAT cap below. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. | Queued |
+| 5 | **Support abilities do not pay for their action.** Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced with #3 (SPTV), since it owns every magnitude and duration. | Queued |
+| 5b | **Stackable statuses.** 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be, and a stackable effect is worth more Status Points, so it lands with #3. | Approved, queued |
+| 5c | **Rename perks to Side Effects (SEs).** `CharacterPerk` to `SideEffect`, the `perk` field, the charge-tracking flags, the Loadout panel copy and the abbreviation list. Mechanical and wide, so it goes in one commit of its own where it cannot hide a behaviour change. | Approved, queued |
+| 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. Also carries the deferred battlefield layout: **lay the squads out on the board itself**, so each character's portrait sits in the lane column their position puts them in and moving one visibly moves them, replacing the separate diagram. Deferred out of #1 deliberately: it rewrites the squad panels, portrait selection, target picking and the tutorial's step targeting, which is the machinery every other feature sits on. | Queued |
 | 7 | **AI tuning (Phase G).** Teach the AI to value counters, uniques and statuses, and to play positions once #1 lands. | Queued |
 | 8 | **Tutorialize the depth.** A step-by-step tutorial introducing one system per beat. | Queued |
 | 9 | Story / visual-novel mode. | Deferred |
-| 10 | Delete the four merged branches. | Owner's action |
+| 10 | Delete the merged branches. | Four deleted. Two still to go: `claude/range-bands-close-mid-long` and `claude/balance-bounded-accuracy-ylhvao`, both fully merged. See "Branches" above. |
 | 11 | "Close" overloaded as a dialog button label. | Closed, not an issue |
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued |
+
+### Fixed during the #1 playtest: the no-fight stall
+
+The owner played six turns in which neither squad moved or attacked, the AI just
+re-casting War Chant. Reproduced on the first attempt with both squads on their
+back lines: `war_chant` three times, then `guardians_aegis` three times, then a
+cooldown gap, then round again, forever.
+
+The cause was in the "am I stuck?" test added with #1. `reachableAbilityCount`
+counted **every** equipped ability, and a self-buff or ally ward reaches from
+anywhere, so a character standing four squares outside every attack's band still
+scored as having something to do and never moved. It now counts only triggers
+aimed at an enemy. Guarded by a case in `test/ai/ai_positioning_test.dart`.
+
+Note that fixing this does not fix the underlying hole: after the change the AI
+correctly closes from back to front, and is *still* out of range of a back-line
+enemy, because Close Range cannot reach that far. See the structural hole below.
+
+### Fixed during the #1 playtest: a status could be applied twice
+
+Applying a status added a second instance rather than refreshing the first, so a
+character could carry two Bleedings ticking separately and two Braced badges
+counting down out of step. Re-applying now refreshes the existing instance and
+takes the longer of the two durations, so a short re-application never cuts a
+long one short, and no character can show the same badge twice. A genuinely
+stacking effect would need an explicit flag on its definition; none has one.
+
+### Not reproduced: Guardian's Aegis on consecutive turns
+
+The owner saw it fire on two consecutive opponent turns despite a 2-turn
+cooldown. Not reproducible: used on turn 1, blocked on turns 2 and 3, usable
+again on turn 4, and `canUseAbility` rejects a live cooldown before it ever
+looks at the FAT count, so there is no FAT bypass. Awaiting a full battle report
+from a session where it happens.
+
+One related gap did turn up: an **AI fallback reposition is applied directly and
+never written to the battle log**, so a turn where the opponent only moved
+renders as nothing at all. That can make two separated turns look adjacent.
+
+### Fixed during the #1 playtest: friendly abilities were contested
+
+Found by sweeping every Trigger and measuring how often its advertised effect
+actually happened. A heal, a ward or a buff aimed at your own side was being run
+through the entire hostile pipeline: rolled to hit **against the recipient's own
+Defense**, then contested **against their own Status Effect Resistance**.
+
+The measured landing rates before the fix, on the character's own squad:
+
+| Ability | Landed |
+|---|---|
+| War Chant (self) | 25% |
+| Rally Cry (ally) | 20% |
+| Cleansing Ward (ally) | 25% |
+| Guardian's Aegis (self) | 48% |
+
+So a character resisted their own War Chant three times in four. The engine's own
+note on `StatusEffectEngine.apply` had always said self-buffs are granted
+unconditionally rather than inflicted; the two call sites in `resolveAbilityUse`
+did not honour it. Both now skip the contest, and the to-hit roll cannot make a
+friendly ability fizzle. All four land 100% of the time, and a hostile status is
+still contested. Guarded by `test/engine/friendly_abilities_test.dart`, which
+sweeps the whole catalogue.
+
+### Not a bug, but badly communicated: the FAT cooldown penalty
+
+Using two or more abilities in one Full Arms Trigger turn **doubles every
+cooldown set that turn**. That is the documented FAT price, but nothing said so,
+so a 1-turn ability coming back with a 2 on it read as a cooldown bug. Measured:
+base 1 becomes 2, base 2 becomes 4. Ability descriptions now state both numbers.
+
+### Structural hole: Close Range cannot reach the back line
+
+Found by computing position against ability range across the live catalogue,
+after the owner played six turns in which neither squad moved or attacked.
+
+Distance to an enemy is the two lines' steps added together, so the closest any
+character can get to an enemy standing on their **back** line is **2** (my front,
+step 0, plus their back, step 2). Close Range reaches 0 to 1. Therefore:
+
+**Close Range can never reach a back-line enemy, from anywhere, ever.** That is
+14 of the 51 offensive Triggers, 27% of the catalogue, permanently dead against
+one posture that costs the opponent nothing.
+
+How many of the 51 offensive Triggers reach, by line pairing:
+
+| | Their front | Their middle | Their back |
+|---|---|---|---|
+| **My front** | 14 | 32 | 37 |
+| **My middle** | 32 | 37 | 37 |
+| **My back** | 37 | 37 | 19 |
+
+The two corners are the dead zones. Everyone on the front lines (distance 0)
+leaves only the 14 Close Triggers live, because Mid and Long both have minimums.
+Everyone hanging back (distance 4) leaves only the 19 Long ones, which is the
+stall the owner played through.
+
+Exposure, summed over the three lines an enemy could occupy: front 83, middle
+106, back 93. Middle is the most exposed and the only line with no band it is
+safe from. Back is not the lowest number but it is the only line a whole band
+cannot touch, which matters more.
+
+Consequences, all of which argue that this is not a tuning problem:
+
+- **Back plus Long Range is dominant.** From the back, Long reaches every enemy
+  line (2, 3 and 4 all sit inside its window) while Close cannot answer at all.
+- **Position is decided before the first turn** and never revisited, because one
+  line is best against nearly everything and moving costs a whole action.
+- **The three-snipers-at-the-back spam is currently unanswerable** by a Close
+  squad, which is exactly the pattern the owner predicted.
+
+Five options were put to the owner (see the positional analysis review):
+widen Close to 0-2; add pull and push effects; a closing pressure on the
+battlefield; a charge that crosses the line; or leave it to #4's costs. The
+recommendation is **widen Close plus add pull/push, landing with #4**, because
+#4 already owns the range cost model, and because a cost you can afford is not
+an answer to a posture you cannot reach.
+
+### Removed: Rallied, and five more status effects nothing can apply
+
+A sweep of all 63 status effects against every Trigger, Black Trigger, Side
+Effect and engine path found **six that nothing in the game can apply**:
+`wet`, `rallied`, `enraged`, `adrenaline_rush`, `battle_trance`,
+`radiant_blessing`.
+
+Two of those were load-bearing in the documentation. **Wet** was the design
+document's flagship example of damage-type interaction (immune to Fire,
+vulnerable to Lightning and Cold). **Radiant Blessing** was cited in item #5 as
+a healing example. Both were described as live and were not.
+
+**Rallied is removed** (catalogue entry, its two magnitude constants, its
+engine test, the interface flavour text and the design document line), taking
+the catalogue to **62**. It granted maximum health +20, which also broke the
+rule that nothing heals past the base 100: healing clamps to the *effective*
+maximum, so a Rallied character could sit above 100.
+
+Two things follow that are still open:
+
+- **Radiant Blessing keeps its heal and loses the ceiling raise.** It now heals
+  a little each turn and clamps to the character's maximum, so at 99 of 100 it
+  restores 1 and nothing is banked above the maximum. Guarded by
+  `test/models/health_ceiling_test.dart`, which asserts that **no** status
+  raises maximum health, so this cannot come back by another route.
+- **The five remaining orphans get homes rather than deletion.** See the status
+  reactions spec above. A test asserting every catalogued status is reachable
+  should land with that work, once nothing is orphaned.
+
+`tool/reach_check.dart` now checks the enduring invariant, that no status
+raises maximum health, rather than the specific Rallied case.
+
+### Design rule, and the measurement behind it: no ability may rely on FAT
+
+Agreed during the #1 playtest, and it is a rule rather than a preference: **no
+ability should need a Full Arms Trigger turn to be worth using.** FAT is a
+sometimes-bonus, so an ability that only pays off inside one is an ability that
+mostly does nothing.
+
+Two separate things came out of checking that.
+
+**The wording was wrong, and is fixed.** The buff descriptions led with "on a
+Full Arms Trigger turn an attack queued alongside this already gets the
+benefit", which reads as FAT-dependence. It is not: Empowered lasts two turns,
+so a buff cast on an ordinary turn is still up for the attack you make on your
+next turn. The description now says that instead.
+
+**The value is wrong, and is not fixed.** A turn grants one action, and the
+average attack turn deals 37.3 damage across the catalogue, so any non-damaging
+ability has to beat that to be worth its action. None of them come close:
+
+| Ability | What the turn buys | Against 37.3 from attacking |
+|---|---|---|
+| War Chant | Empowered, +25% on one later attack, about 9.3 | **-28.0** |
+| Rally Cry | Inspired, +2 Attack and Defense on 3 allies, about 11.2 | **-26.1** |
+| Guardian's Aegis | Guarded, 25% less damage for one enemy turn, about 9.3 | **-28.0** |
+| Cleansing Ward | Regenerating, 3 health a turn for 3 turns, 9 | **-28.3** |
+
+So every buff in the game is a net loss of roughly 26 to 28 damage against
+simply attacking, with or without FAT. That is the same root cause as item #5
+(healing is too weak) rather than a separate problem: a full action buys far
+less than an attack does.
+
+Re-pricing belongs to **#3 (SPTV)**, which owns every magnitude and duration,
+folded together with #5. The rule above is the acceptance test: after the
+re-pricing, each buff must pay for its own action within its own duration on an
+ordinary one-action turn. Deliberately not fixed now, because picking numbers
+outside SPTV is exactly the guessing the working agreement rules out.
+
+### Balance note for #3: hostile status infliction is weak
+
+The same sweep measured hostile status riders landing between 10% and 85%, with
+most clustered around 20-25% (Status Effect Infliction 5 against a typical
+Resistance of 6 to 8). That is a pricing question, not a correctness one, and
+belongs with SPTV.
+
+### Open correctness question: 1-turn effects on an enemy
+
+Found while writing the duration wording during the #1 playtest fixes, and
+**not yet fixed**. It belongs to #3, which owns every status effect's duration.
+
+Effects tick down at the **start of their holder's turn**, decrementing and then
+expiring at zero. For a self-buff that works: it covers the rest of the turn it
+was cast on plus the opponent's answer. For a **debuff put on an enemy** it does
+not: the enemy's turn begins, the effect ticks to zero and is removed, and then
+they act unimpeded. A 1-turn Stun therefore does nothing at all.
+
+Verified directly against the engine: applying `stunned` on your turn leaves
+`isActionPrevented() == true`, and at the start of the victim's next turn the
+effect list is empty and `isActionPrevented() == false`.
+
+Eleven effects carry a 1-turn default and are affected: Stunned, Frozen,
+Silenced, Prone, Marked, Untargetable, Forced Choice, Genjutsu Trapped, Echoing
+Doubt, Coldread Seize, and the critical-miss penalty. The self-targeted ones
+among those are fine; the ones meant to interrupt an enemy's turn are not.
+
+Two candidate fixes, both a decision for #3 rather than a mechanical one:
+
+- **Tick at the end of the holder's turn** instead of the start. A 1-turn debuff
+  then covers exactly the enemy turn it was meant to. The cost is that a 1-turn
+  self-buff would then expire at the end of your own turn and no longer cover
+  the opponent's answer, which changes what defensive wards do.
+- **Skip the first tick** on the turn an effect is applied. Everything gains
+  effectively one more turn of life, which is a balance change across all 62
+  effects and needs SPTV to re-price them.
 
 ### What the pre-build code audit changed
 
@@ -61,10 +423,21 @@ caught five things worth recording:
   than 30%, because 30% of a typical 110 exceeds a whole High income turn.
 - **Ability legality is checked at queue time**, so range has to be evaluated
   against projected position (current plus any queued Reposition) or move then
-  strike would be impossible and the FAT engage plan would not work.
+  strike would be impossible and the FAT engage plan would not work. Built that
+  way, and building it turned up two more: the interface's own legal-target
+  list applied no range filter at all (it called `canTarget` with no trigger,
+  and skipped it entirely for ally-targeted abilities), and the AI's target
+  selection did the same, so the opponent was spending Trion on abilities the
+  engine then dropped at resolution.
 - **Area attacks currently auto-select every legal target.** Making them hit one
   position turns them into an aimed choice, which is a change to the target
   picker as well as the engine.
+- **The randomized-playthrough self-test never resolved its queue.** It queued
+  actions and called `endTurn`, which does not resolve them, so the simulated
+  player landed zero hits across all 30 battles and every "playthrough" was
+  really the AI beating up a statue. Found because the range work made the
+  resulting stalls visible. Fixed; 360 probe battles across six seeds now
+  conclude with no stalls.
 - **`isAlive` is simply health above zero and thirty-eight places read it**, so a
   targetable bailing body needs one narrow exception in damaging-ability target
   selection, not a general "still alive" state.
@@ -277,7 +650,7 @@ rolls, not to counter resolution.
 |---|---|---|---|---|---|---|---|
 | Def adv chance | 20% | 16% | 12% | 9% | 6% | 3% | 0% |
 
-**Effect 3 - Synergy Refunds (Trion). BUILT (green on branch).** On a
+**Effect 3 - Synergy Refunds (Trion). BUILT and merged to main.** On a
 recognized **setup->payoff** combo (a payoff offensive ability landing on an
 enemy under a control/debuff status **an ally applied**), refund part of the
 payoff's Trion cost. **SS caps at 20%; SSS is 0%** and takes Effect 5 in its
@@ -288,7 +661,7 @@ place. In code: the engine computes the refund at the payoff's resolution
 |---|---|---|---|---|---|---|---|
 | Trion refund | 0% | 4% | 8% | 12% | 16% | 20% | 0% (-> fx5) |
 
-**Effect 4 - Focus Fire / combo amplifier. BUILT (green on branch).** When
+**Effect 4 - Focus Fire / combo amplifier. BUILT and merged to main.** When
 the squad executes a **recognized combo**, the payoff gains advantage, its
 strength scaled by the combo and **hard-capped at 20%** (the universal
 advantage-chance ceiling; focus fire is how sub-SSS squads climb to it). This
@@ -712,19 +1085,19 @@ flat +2 to the whole squad's rolls for 1 turn, alternating with the Levy on
 successful reads (Levy first), self-contained and no longer dependent on the
 retired tiebreak.
 
-| Phase | Status | Branch |
-|---|---|---|
-| Phase A: turn-queue resolution engine | done + merged to main: queue model with Trion-at-queue / refund-on-unqueue and cooldown-at-resolve; the 6-phase within-team resolution ordering (Team-Spirit-deviation tiebreak, then queue order); AI builds and resolves a queue through the same path; TEG computed + displayed. (Turn order shipped here as an even 50-50 coin flip; the balance pass has since made it TEG-weighted.) (Its deliverables are also itemized in 13.1 "Built and working".) | merged to main (early branch, deleted) |
-| Phase B: reactive/counter engine + 19 counters | done + merged to main. The 13 active/reactive counters run inside `resolveAbilityUse`; the 6 passive counters are now fed by the app (see passive-counter integration row) and reactive expiry is ticked. All 19 work in-game. | `claude/phase-b-reactive-counters` (deleted) |
-| Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic | `claude/tactical-combat-engine-5luk6z` |
-| Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active) | `claude/tactical-combat-engine-5luk6z` |
-| Phase E: new-content wiring | done + merged: the two deferred unique hooks (7.1), Coldread "seize", Nullhymn's real resonance-grade downgrade (per-wielder step count on the const grid; targets the most-recently-active enemy BT), and Death Ledger's nullified-AoE loadout swap (engine signals; app borrows the AoE into the wielder's loadout for 2 turns, then reverts) | `claude/tactical-combat-engine-5luk6z` |
-| Phase F: remaining UI | mostly done + merged to main: TEG badge (six-sub-score expand + live effects), surfacing the hidden stats, the Team Spirit live offense/sustain readout, the loadout-builder preview/EQUIP-UNEQUIP/Randomize-Reset-Unequip-all pass, passive-counter descriptions, the clickable-portrait detail panel with own-full / enemy-public gating + Mind's Eye reveal, the sign-in flow (`AccountSheet`) + post-battle XP-award readout, and the battle-log rework (tap-anywhere-to-expand, always-visible scrollbar, plain-English breakdowns, clickable names/abilities → info popups). Remaining: queue display + resolve-beat polish. | `claude/tactical-combat-engine-5luk6z` |
-| Phase G: AI tuning | not started | TBD |
-| Phase H: balancing pass | in progress. Done: the five reskin Trigger clusters differentiated; critical hits capped at a natural 17 and doubling the damage dice only; the four dominant Triggers (Whirlwind Slash, Twin Fang Strike, Longshot, Cinderburst) re-costed; and the P0 bounded-accuracy re-tune, which compressed Attack to 4-14 and Defense to 2-12 and rebuilt every damage expression so roughly half the number comes from dice; and earned initiative, which replaced the opening coin flip with a Team-Efficiency-Grade-weighted roll (equal grades 50/50, 5 points per tier, capped at 65/35); and the range-band rework, which renamed `RangeTag` from melee/ranged (it collided with the attack type names) to close/mid/long and, more importantly, gave it content: the tag used to be perfectly derivable from the attack type, and is now assigned per ability so that all three attack types appear in all three bands (melee 12/5/3, ranged 3/8/9, psychic 5/7/8). `tool/balance_report.dart` prints the accuracy band, the per-Trigger dice share and value, and a batch of simulated battles; `test/balance/bounded_accuracy_test.dart` guards both the combat math and the type-by-band grid. Remaining: the optional Bail-Out downed state (a design decision, not yet taken), the spatial pillar (the range bands are now the natural data layer for it), status/Trigger point budgets, and the Trion economy. | merged to main |
-| Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built | `claude/tactical-combat-engine-5luk6z` |
-| Phase I: Combo Recognition system | I1-I5 done (I1-I3 merged; I4-I5 green on branch): action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains), live ledger population, and a design-time signature-combo proposer (`tool/propose_signature_combos.dart`). The signature roster grows as designer content | `claude/tactical-combat-engine-5luk6z` |
-| Phase J: TEG mechanical effects (section 5.2) | done + merged: Effects 1-5 (fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund), Draegor's "raise TEG 2 tiers" wired, and the inverse-TEG XP (section 15.8) now live server-side (see section 15 row). | `claude/tactical-combat-engine-5luk6z` |
+| Phase | Status |
+|---|---|
+| Phase A: turn-queue resolution engine | done + merged to main: queue model with Trion-at-queue / refund-on-unqueue and cooldown-at-resolve; the 6-phase within-team resolution ordering (Team-Spirit-deviation tiebreak, then queue order); AI builds and resolves a queue through the same path; TEG computed + displayed. (Turn order shipped here as an even 50-50 coin flip; the balance pass has since made it TEG-weighted.) (Its deliverables are also itemized in 13.1 "Built and working".)  |
+| Phase B: reactive/counter engine + 19 counters | done + merged to main. The 13 active/reactive counters run inside `resolveAbilityUse`; the 6 passive counters are now fed by the app (see passive-counter integration row) and reactive expiry is ticked. All 19 work in-game.  |
+| Phase C: Unique subtype + 17 unique abilities | done (merged to main): C1 engine seam, C2 5 melee, C3 2 ranged + 10 psychic  |
+| Phase D: trigger rebalance to 20/20/20 | done (merged to main): 17 unique Triggers wired + catalog balanced to exactly 20/20/20 (60 active)  |
+| Phase E: new-content wiring | done + merged: the two deferred unique hooks (7.1), Coldread "seize", Nullhymn's real resonance-grade downgrade (per-wielder step count on the const grid; targets the most-recently-active enemy BT), and Death Ledger's nullified-AoE loadout swap (engine signals; app borrows the AoE into the wielder's loadout for 2 turns, then reverts)  |
+| Phase F: remaining UI | mostly done + merged to main: TEG badge (six-sub-score expand + live effects), surfacing the hidden stats, the Team Spirit live offense/sustain readout, the loadout-builder preview/EQUIP-UNEQUIP/Randomize-Reset-Unequip-all pass, passive-counter descriptions, the clickable-portrait detail panel with own-full / enemy-public gating + Mind's Eye reveal, the sign-in flow (`AccountSheet`) + post-battle XP-award readout, and the battle-log rework (tap-anywhere-to-expand, always-visible scrollbar, plain-English breakdowns, clickable names/abilities → info popups). Remaining: queue display + resolve-beat polish.  |
+| Phase G: AI tuning | not started  |
+| Phase H: balancing pass | in progress. Done: the five reskin Trigger clusters differentiated; critical hits capped at a natural 17 and doubling the damage dice only; the four dominant Triggers (Whirlwind Slash, Twin Fang Strike, Longshot, Cinderburst) re-costed; and the P0 bounded-accuracy re-tune, which compressed Attack to 4-14 and Defense to 2-12 and rebuilt every damage expression so roughly half the number comes from dice; and earned initiative, which replaced the opening coin flip with a Team-Efficiency-Grade-weighted roll (equal grades 50/50, 5 points per tier, capped at 65/35); and the range-band rework, which renamed `RangeTag` from melee/ranged (it collided with the attack type names) to close/mid/long and, more importantly, gave it content: the tag used to be perfectly derivable from the attack type, and is now assigned per ability so that all three attack types appear in all three bands (melee 12/5/3, ranged 3/8/9, psychic 5/7/8). `tool/balance_report.dart` prints the accuracy band, the per-Trigger dice share and value, and a batch of simulated battles; `test/balance/bounded_accuracy_test.dart` guards both the combat math and the type-by-band grid. Remaining: the optional Bail-Out downed state (a design decision, not yet taken), the spatial pillar (the range bands are now the natural data layer for it), status/Trigger point budgets, and the Trion economy.  |
+| Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built  |
+| Phase I: Combo Recognition system | I1-I5 done and merged to main: action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains), live ledger population, and a design-time signature-combo proposer (`tool/propose_signature_combos.dart`). The signature roster grows as designer content  |
+| Phase J: TEG mechanical effects (section 5.2) | done + merged: Effects 1-5 (fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund), Draegor's "raise TEG 2 tiers" wired, and the inverse-TEG XP (section 15.8) now live server-side (see section 15 row).  |
 
 ### 13.1 Build status (verified against code)
 

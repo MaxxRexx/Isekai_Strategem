@@ -63,7 +63,6 @@ const statusInfo = <String, StatusInfo>{
     3,
     '-1 Attack per remaining turn (stronger early, fades out)',
   ),
-  'Rallied': StatusInfo(3, '+20 max health'),
   'Prone': StatusInfo(1, 'Locks a random equipped ability each turn'),
   'Prepared': StatusInfo(3, '+1 Attack per remaining turn (builds up)'),
   'Poisoned': StatusInfo(

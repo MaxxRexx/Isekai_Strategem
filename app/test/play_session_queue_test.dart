@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/loadout_selection.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
 
+import 'support/battle_positions.dart';
+
 /// A1 (turn-queue engine): the queue/unqueue/resolve contract on
 /// [PlaySession]. Trion is spent at queue time and refunded on un-queue;
 /// effects are applied only when the queue resolves.
@@ -24,6 +26,7 @@ void main() {
     // Guarantee affordability so tests do not depend on the opening
     // Trion tier roll.
     session.battle.teamA.trionPool.gain(500);
+    spreadForFullRangeCoverage(session);
     return session;
   }
 
