@@ -188,7 +188,9 @@ class BattlefieldRail extends StatelessWidget {
       stepTarget: false,
       onTap: null,
       children: [
-        for (final f in occupants) _token(f, Palette.teamB, ghosted: false),
+        for (final f in occupants)
+          _token(f, Palette.teamB,
+              ghosted: false, screens: _screensAt(line)),
       ],
     );
   }
@@ -200,12 +202,35 @@ class BattlefieldRail extends StatelessWidget {
     return BattlePosition.middle;
   }
 
+  /// The lines their living squad is standing on, which is what screens them.
+  List<BattlePosition> get _theirLivingLines => [
+        for (final f in teamB)
+          if (f.alive) f.position,
+      ];
+
+  /// How many of their squad are standing in front of [line], shielding
+  /// anyone on it. Screening is per line, not per character, so one number
+  /// covers everybody standing there.
+  int _screensAt(BattlePosition line) =>
+      BattleDistance.screensFor(line, _theirLivingLines);
+
+  /// The effective distance from the focused character to an enemy on [line],
+  /// screens included. This is the number the range bands are compared
+  /// against, so it is the number the ruler prints.
+  int? _distanceTo(BattlePosition line) {
+    final from = reachFrom ??
+        (focusedId == null ? null : (projected[focusedId] ?? _liveOf(focusedId!)));
+    if (from == null) return null;
+    return BattleDistance.betweenEnemies(from, line,
+        targetSquad: _theirLivingLines);
+  }
+
   /// Whether the selected ability's band covers an enemy standing on [line].
   bool _bandReaches(BattlePosition line) {
-    final from = reachFrom;
     final band = reachBand;
-    if (from == null || band == null) return false;
-    return band.reaches(BattleDistance.betweenEnemies(from, line));
+    if (band == null || reachFrom == null) return false;
+    final distance = _distanceTo(line);
+    return distance != null && band.reaches(distance);
   }
 
   Widget _cell({
@@ -276,12 +301,25 @@ class BattlefieldRail extends StatelessWidget {
     );
   }
 
-  Widget _token(FighterSnapshot fighter, Color color, {required bool ghosted}) {
+  Widget _token(
+    FighterSnapshot fighter,
+    Color color, {
+    required bool ghosted,
+    int screens = 0,
+  }) {
     final focused = fighter.id == focusedId;
+    final health = '${fighter.currentHealth}/${fighter.maxHealth}';
     return Tooltip(
       message: ghosted
           ? '${fighter.name} moves here this turn'
-          : '${fighter.name}: ${fighter.currentHealth}/${fighter.maxHealth}',
+          : screens > 0
+          // Say what the pips mean and what to do about them, since this is
+          // where a player meets screening for the first time.
+          ? '${fighter.name}: $health\n'
+              '${screens == 1 ? '1 squadmate is' : '$screens squadmates are'} '
+              'screening them, adding $screens to the distance. '
+              'Break the screen to get closer.'
+          : '${fighter.name}: $health',
       child: Opacity(
         opacity: fighter.alive ? 1 : 0.3,
         child: Container(
@@ -293,14 +331,32 @@ class BattlefieldRail extends StatelessWidget {
               width: focused ? 1.5 : 1,
             ),
           ),
-          child: Text(
-            '${ghosted ? '> ' : ''}${_shortName(fighter.name)}',
-            style: TextStyle(
-              color: fighter.alive ? Colors.white : Colors.white38,
-              fontSize: 9.5,
-              fontWeight: focused ? FontWeight.w700 : FontWeight.w500,
-              decoration: fighter.alive ? null : TextDecoration.lineThrough,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${ghosted ? '> ' : ''}${_shortName(fighter.name)}',
+                style: TextStyle(
+                  color: fighter.alive ? Colors.white : Colors.white38,
+                  fontSize: 9.5,
+                  fontWeight: focused ? FontWeight.w700 : FontWeight.w500,
+                  decoration: fighter.alive ? null : TextDecoration.lineThrough,
+                ),
+              ),
+              // One pip per body in the way. The pips answer "who do I have to
+              // kill to get closer", which the distance number alone cannot.
+              if (fighter.alive && screens > 0) ...[
+                const SizedBox(width: 3),
+                Text(
+                  '●' * screens,
+                  style: const TextStyle(
+                    color: Palette.warn,
+                    fontSize: 7,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -311,9 +367,6 @@ class BattlefieldRail extends StatelessWidget {
   /// line, printed under the enemy half. This is the number the range bands
   /// are compared against, so showing it removes the arithmetic entirely.
   Widget _ruler() {
-    final from = focusedId == null
-        ? null
-        : (projected[focusedId] ?? _liveOf(focusedId!));
     return Padding(
       padding: const EdgeInsets.only(top: 5),
       child: Row(
@@ -324,9 +377,7 @@ class BattlefieldRail extends StatelessWidget {
           for (final line in _theirLines)
             Expanded(
               child: _rulerCell(
-                from == null
-                    ? null
-                    : BattleDistance.betweenEnemies(from, line),
+                _distanceTo(line),
                 inBand: _bandReaches(line),
               ),
             ),

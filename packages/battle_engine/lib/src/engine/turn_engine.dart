@@ -661,11 +661,15 @@ class TurnEngine {
   ) {
     final living = opponents.where((o) => o.isAlive).toList();
     if (living.isEmpty) return 0;
+    // The opponents are each other's screens, so the lines they are standing
+    // on are exactly what [BattleDistance.betweenEnemies] needs.
+    final theirLines = [for (final o in living) o.position];
     var count = 0;
     for (final trigger in triggers) {
       if (trigger.targetAffiliation != TargetAffiliation.opponent) continue;
-      final reaches = living.any((o) => trigger.rangeTag
-          .reaches(BattleDistance.betweenEnemies(from, o.position)));
+      final reaches = living.any((o) => trigger.rangeTag.reaches(
+          BattleDistance.betweenEnemies(from, o.position,
+              targetSquad: theirLines)));
       if (reaches) count++;
     }
     return count;
@@ -735,13 +739,16 @@ class TurnEngine {
   ) {
     final living = opponents.where((o) => o.isAlive).toList();
     if (living.isEmpty) return 0;
+    final theirLines = [for (final o in living) o.position];
     var total = 0;
     for (final trigger in triggers) {
       if (trigger.targetAffiliation != TargetAffiliation.opponent) continue;
+      // Bigger than any real shortfall can be: the widest gap is
+      // maxEnemyDistance short of the tightest band's minimum of 0.
       var closest = BattleDistance.maxEnemyDistance + 1;
       for (final opponent in living) {
-        final distance =
-            BattleDistance.betweenEnemies(from, opponent.position);
+        final distance = BattleDistance.betweenEnemies(from, opponent.position,
+            targetSquad: theirLines);
         final gap = distance < trigger.rangeTag.minDistance
             ? trigger.rangeTag.minDistance - distance
             : distance > trigger.rangeTag.maxDistance
@@ -760,15 +767,30 @@ class TurnEngine {
   bool areAllies(CharacterBattleState a, CharacterBattleState b) =>
       identical(a, b) || a.teammates.contains(b);
 
+  /// The lines [target]'s own living squadmates are standing on, which is
+  /// what screens them (see [BattleDistance.screensFor]).
+  ///
+  /// Read off the `teammates` wiring the Battle constructor sets up. A
+  /// standalone engine harness may leave that empty, in which case nobody
+  /// screens anybody and the distance is the raw geometry, exactly as it was
+  /// before screening existed. `battle_test` guards that a real Battle always
+  /// wires it, so a live game never silently loses screening.
+  List<BattlePosition> screeningLinesFor(CharacterBattleState target) => [
+        for (final mate in target.teammates)
+          if (mate.isAlive) mate.position,
+      ];
+
   /// How far apart [a] and [b] are standing right now.
   ///
   /// Allies subtract and enemies add (see [BattleDistance]), because the two
   /// squads face each other across a gap: hanging back moves you away from
-  /// the enemy but towards your own back line.
+  /// the enemy but towards your own back line. Against an enemy the bodies
+  /// screening them count too.
   int distanceBetween(CharacterBattleState a, CharacterBattleState b) =>
       areAllies(a, b)
           ? BattleDistance.betweenAllies(a.position, b.position)
-          : BattleDistance.betweenEnemies(a.position, b.position);
+          : BattleDistance.betweenEnemies(a.position, b.position,
+              targetSquad: screeningLinesFor(b));
 
   /// Whether [trigger]'s range band reaches [target] from where [attacker]
   /// is standing.
@@ -780,11 +802,13 @@ class TurnEngine {
   /// sniper caught in a scrum has no shot, which is what stops standing at
   /// the back being free.
   ///
-  /// Towards an **ally** only the maximum applies. A band's minimum is about
-  /// needing room to bring a weapon to bear on someone who is fighting you;
-  /// none of that is true of handing a heal or a ward to the person next to
-  /// you. Without this carve-out a Mid-band heal could not reach an ally
-  /// standing in the same position, which is absurd on its face.
+  /// Towards an **ally** only a maximum applies, and it is the band's own
+  /// [RangeTagReachWindow.allyMaxDistance]. A band's minimum is about needing
+  /// room to bring a weapon to bear on someone who is fighting you; none of
+  /// that is true of handing a heal or a ward to the person next to you.
+  /// Without this carve-out a Mid-band heal could not reach an ally standing
+  /// in the same position, which is absurd on its face. Screening does not
+  /// apply towards an ally either: your own squad is not in your way.
   ///
   /// [fromPosition] overrides where the attacker is measured from, and
   /// [targetPosition] where the target is. Both exist for planning against a
@@ -792,12 +816,18 @@ class TurnEngine {
   /// Reposition before any ability, so the UI has to judge range against
   /// where the character *will* be, not where they are (see
   /// `PlaySession.projectedPositionOf`). Omit them for the live answer.
+  ///
+  /// [targetSquad] overrides which lines are counted as screening [target],
+  /// for the same planning reason: a caller working from projected positions
+  /// has to screen against the projected formation, not the live one. Omit it
+  /// and the target's own living teammates are used.
   bool canReach(
     CharacterBattleState attacker,
     CharacterBattleState target,
     ActiveTrigger trigger, {
     BattlePosition? fromPosition,
     BattlePosition? targetPosition,
+    Iterable<BattlePosition>? targetSquad,
   }) {
     if (identical(attacker, target)) return true;
     if (trigger.targetAffiliation == TargetAffiliation.self) return true;
@@ -811,10 +841,11 @@ class TurnEngine {
     // ally-targeted ability is aimed at an ally by definition.
     final towardsAlly = trigger.targetAffiliation != TargetAffiliation.opponent;
     if (towardsAlly) {
-      final distance = BattleDistance.betweenAllies(from, to);
-      return distance <= trigger.rangeTag.maxDistance;
+      return trigger.rangeTag
+          .reachesAlly(BattleDistance.betweenAllies(from, to));
     }
-    return trigger.rangeTag.reaches(BattleDistance.betweenEnemies(from, to));
+    return trigger.rangeTag.reaches(BattleDistance.betweenEnemies(from, to,
+        targetSquad: targetSquad ?? screeningLinesFor(target)));
   }
 
   /// Whether [attacker] may target [target] at all right now: false if
@@ -831,10 +862,13 @@ class TurnEngine {
       {StatusEffectCatalog? catalog,
       ActiveTrigger? trigger,
       BattlePosition? fromPosition,
-      BattlePosition? targetPosition}) {
+      BattlePosition? targetPosition,
+      Iterable<BattlePosition>? targetSquad}) {
     if (trigger != null &&
         !canReach(attacker, target, trigger,
-            fromPosition: fromPosition, targetPosition: targetPosition)) {
+            fromPosition: fromPosition,
+            targetPosition: targetPosition,
+            targetSquad: targetSquad)) {
       return false;
     }
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
@@ -1069,6 +1103,15 @@ class TurnEngine {
   /// Whether [effect] can still reach [holder], the enemy it was set on,
   /// from where it was armed.
   ///
+  /// **Screening deliberately does not apply here**, and this is the only
+  /// distance in the game measured that way. A trap is a hazard already
+  /// attached to its target, and squadmates shuffling about in front of them
+  /// does not undo it. The two lines still count, so retreating out of the
+  /// band you armed from does drop the trap.
+  ///
+  /// Every enemy-placed trap asks this question. Death Ledger used not to,
+  /// which read as an oversight rather than as a rule.
+  ///
   /// A trap armed before positions existed, or by a caller that did not
   /// record them, carries no band and always fires - so older content and
   /// test fixtures behave exactly as they did.
@@ -1108,8 +1151,8 @@ class TurnEngine {
     // Death Ledger: if the attacker has nullifyAoe and uses an AoE, nullify it
     // and signal the wielder to swap the AoE Trigger into their loadout.
     if (trigger.attackSubtype == AttackSubtype.aoe) {
-      final ledgerIndex = attacker.reactiveEffects
-          .indexWhere((r) => r.kind == ReactiveKind.nullifyAoe);
+      final ledgerIndex = attacker.reactiveEffects.indexWhere((r) =>
+          r.kind == ReactiveKind.nullifyAoe && _trapStillReaches(r, attacker));
       if (ledgerIndex >= 0) {
         final reactive = attacker.reactiveEffects.removeAt(ledgerIndex);
         final wielderId = reactive.sourceCharacterId;

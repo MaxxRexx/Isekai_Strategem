@@ -13,7 +13,7 @@ void main() {
   Loadout mixed(String id) => Loadout(
         characterId: id,
         triggers: [
-          triggerCatalog['twin_fang_strike'], // Close Range (0 to 1)
+          triggerCatalog['twin_fang_strike'], // Close Range (0 to 2)
           triggerCatalog['war_chant'], // Close Range, self
           triggerCatalog['charm_whisper'], // Close Range, control
           triggerCatalog['suppressing_fire'], // Long Range (2 to 4)
@@ -23,9 +23,11 @@ void main() {
   const squad = ['marren_osei', 'ilona_vance', 'bastian_cole'];
   const actor = 'marren_osei';
 
-  /// Team A on the back line, team B on the front line: enemy distance 2, so
-  /// Long Range reaches and Close Range does not. One step forward makes
-  /// distance 1 and flips both.
+  /// Team A on the back line, team B on the middle line: enemy distance 3, so
+  /// Long Range reaches and Close Range does not (Close is 0 to 2 after 1b).
+  /// One step forward makes distance 2 and flips both. Team B stacks on one
+  /// line, so nobody screens anybody and these cases stay about the two lines
+  /// alone; screening has its own tests.
   PlaySession session() {
     final s = PlaySession.start(
       playerCharacterIds: squad,
@@ -39,9 +41,19 @@ void main() {
       s.battle.states[c.id]!.position = BattlePosition.back;
     }
     for (final c in s.battle.teamB.characters) {
-      s.battle.states[c.id]!.position = BattlePosition.front;
+      s.battle.states[c.id]!.position = BattlePosition.middle;
     }
     return s;
+  }
+
+  /// Pulls their squad onto their front line, so a step forward drops the gap
+  /// to 1 and Long Range loses its minimum. The shared fixture cannot show
+  /// that any more: at Close Range's widened 0 to 2, a squad on the middle
+  /// line is still 2 away after one step, which Long Range reaches.
+  void pullEnemiesToTheFront(PlaySession s) {
+    for (final c in s.battle.teamB.characters) {
+      s.battle.states[c.id]!.position = BattlePosition.front;
+    }
   }
 
   List<String> targetsFor(PlaySession s, String triggerId) =>
@@ -54,7 +66,7 @@ void main() {
   test('the range band decides which abilities have any target at all', () {
     final s = session();
     expect(targetsFor(s, 'twin_fang_strike'), isEmpty,
-        reason: 'Close Range cannot reach across a gap of 2');
+        reason: 'Close Range cannot reach across a gap of 3');
     expect(targetsFor(s, 'suppressing_fire'), isNotEmpty,
         reason: 'Long Range reaches from 2 to 4');
   });
@@ -68,7 +80,7 @@ void main() {
     expect(display.usable, isFalse);
     expect(display.blockedByRange, isTrue);
     expect(display.blockedReason, contains('Close Range'));
-    expect(display.blockedReason, contains('0 to 1'));
+    expect(display.blockedReason, contains('0 to 2'));
   });
 
   test('queueing a Reposition moves the projected position, not the live one',
@@ -95,6 +107,7 @@ void main() {
 
   test('stepping forward pushes a Long Range ability out of its band', () {
     final s = session();
+    pullEnemiesToTheFront(s);
     s.forceFat(actor);
     s.queueReposition(actor, BattlePosition.middle);
 
@@ -217,6 +230,7 @@ void main() {
 
   test('an ability out of band even after the move is not flagged', () {
     final s = session();
+    pullEnemiesToTheFront(s);
     s.queueReposition(actor, BattlePosition.middle);
 
     final display = s

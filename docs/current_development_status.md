@@ -251,16 +251,17 @@ does not re-open any of them.
 trap question against a real battle, and is what the first two decisions were
 made from.
 
-**Still open, found after the review was answered.** Widening Close Range to 0-2
-also widens it on the **ally** side, because an ally-targeted ability uses only
-the band's maximum and ally distance is the difference between two lines, at
-most 2. So three ally-targeted Close Range abilities (**Foresight Counter**,
-**Mirror Ward**, **Puppet Strings**) go from reaching a neighbouring line to
-reaching anyone in the formation. That is a real buff to three defensive
-abilities arriving as a side effect of a decision taken to let Close Range
-attacks reach the enemy back line. Either the band has one definition and they
-get the reach, or the widening applies only to the enemy-facing window and ally
-reach stays at 1. Owner's call, not yet made.
+**The widening is enemy-facing only.** Found after the review was answered: an
+ally-targeted ability uses only the band's maximum, and ally distance is the
+difference between two lines, at most 2. So widening Close Range would have
+silently given three ally-targeted Close Range abilities (**Foresight Counter**,
+**Mirror Ward**, **Puppet Strings**) the whole formation instead of a
+neighbouring line, as a side effect of a decision taken to let Close Range
+*attacks* reach the enemy back line. Decided: the widening applies to the
+enemy-facing window only, and Close Range ally reach stays at 1. A band
+therefore carries two maximums, 2 against an enemy and 1 towards an ally, and
+Mid and Long are unaffected because their maximums already exceed the widest
+possible ally distance.
 
 ### Fixed during the #1 playtest: the no-fight stall
 

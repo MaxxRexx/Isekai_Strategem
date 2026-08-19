@@ -7,14 +7,19 @@ import 'package:isekai_strategem/src/widgets/battlefield_rail.dart';
 /// #1 (range bands), UI side: the horizontal lane diagram, its distance ruler,
 /// and moving by tapping one of your own lines.
 void main() {
-  FighterSnapshot fighter(String id, String name, BattlePosition position) =>
+  FighterSnapshot fighter(
+    String id,
+    String name,
+    BattlePosition position, {
+    bool alive = true,
+  }) =>
       FighterSnapshot(
         id: id,
         name: name,
         type: CharacterType.attack,
-        currentHealth: 100,
+        currentHealth: alive ? 100 : 0,
         maxHealth: 100,
-        alive: true,
+        alive: alive,
         position: position,
       );
 
@@ -65,11 +70,51 @@ void main() {
       focusedId: 'a1',
     )));
 
-    // Standing on your front line (step 0), the enemy lines are 0, 1 and 2
-    // away: distance is the two sides' steps added together.
+    // Standing on your front line (step 0), the two lines add and the bodies
+    // in the way add on top: their front is unscreened at 0, their middle has
+    // one body in front of it so 1 + 1 = 2, and their back has two so
+    // 2 + 2 = 4. The ruler prints the number the bands are compared against,
+    // screens included, or it would be lying about who is reachable.
     expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
+  });
+
+  testWidgets('a screened enemy carries one pip per body shielding them',
+      (tester) async {
+    await tester.pumpWidget(wrap(BattlefieldRail(
+      teamA: [fighter('a1', 'Ren Kobayashi', BattlePosition.front)],
+      teamB: [
+        fighter('b1', 'Vela Ashworth', BattlePosition.front),
+        fighter('b2', 'Dross', BattlePosition.front),
+        fighter('b3', 'Kaito Reyes', BattlePosition.back),
+      ],
+      focusedId: 'a1',
+    )));
+
+    // Their sniper is behind two bodies, so two pips and a distance of 4.
+    expect(find.text('●●'), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
+    // The pair screening them are on the front line and screen nobody.
+    expect(find.text('●'), findsNothing);
+  });
+
+  testWidgets('killing a screen shortens the printed distance',
+      (tester) async {
+    await tester.pumpWidget(wrap(BattlefieldRail(
+      teamA: [fighter('a1', 'Ren Kobayashi', BattlePosition.front)],
+      teamB: [
+        fighter('b1', 'Vela Ashworth', BattlePosition.front, alive: false),
+        fighter('b2', 'Dross', BattlePosition.front),
+        fighter('b3', 'Kaito Reyes', BattlePosition.back),
+      ],
+      focusedId: 'a1',
+    )));
+
+    // One screen down: the sniper drops from 4 to 3 and shows a single pip.
+    // Only the living get in the way.
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('●'), findsOneWidget);
   });
 
   testWidgets('the selected band is named, and measured from the focused line',

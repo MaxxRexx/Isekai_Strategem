@@ -411,6 +411,7 @@ class PlaySession {
     final pool = trigger.targetAffiliation == TargetAffiliation.opponent
         ? battle.teamB.characters.map((c) => battle.states[c.id]!)
         : battle.teamA.characters.map((c) => battle.states[c.id]!);
+    final squadLines = _projectedLinesOf(pool);
     return [
       for (final t in pool)
         if (t.isAlive &&
@@ -420,10 +421,70 @@ class PlaySession {
               trigger: trigger,
               fromPosition: from,
               targetPosition: projectedPositionOf(t.character.id),
+              targetSquad: squadLines,
             ))
           t.character.id,
     ];
   }
+
+  /// The sentence that follows "Close Range reaches a distance of 0 to 2."
+  ///
+  /// Names screening when screening is what put the target out of reach,
+  /// because the fix is a different one: break the bodies in the way rather
+  /// than move. Falls back to the plain "nobody is standing there" when the
+  /// gap really is empty. Picks the least-screened enemy, since that is the
+  /// cheapest one to open up.
+  String _rangeDetailFor(CharacterBattleState state, ActiveTrigger trigger) {
+    final from = projectedPositionOf(state.character.id);
+    final enemies = [
+      for (final c in battle.teamB.characters) battle.states[c.id]!,
+    ];
+    final lines = _projectedLinesOf(enemies);
+
+    BattlePosition? bestLine;
+    var fewestScreens = 0;
+    var distanceThere = 0;
+    for (final enemy in enemies) {
+      if (!enemy.isAlive) continue;
+      final to = projectedPositionOf(enemy.character.id);
+      final screens = BattleDistance.screensFor(to, lines);
+      if (screens == 0) continue;
+      final screened =
+          BattleDistance.betweenEnemies(from, to, targetSquad: lines);
+      if (trigger.rangeTag.reaches(screened)) continue;
+      // Only screening's fault if the bare geometry would have reached.
+      final raw = BattleDistance.betweenEnemies(from, to, targetSquad: const []);
+      if (!trigger.rangeTag.reaches(raw)) continue;
+      if (bestLine == null || screens < fewestScreens) {
+        bestLine = to;
+        fewestScreens = screens;
+        distanceThere = screened;
+      }
+    }
+
+    if (bestLine == null) {
+      return 'Nobody is standing there. Move to close or open the gap.';
+    }
+    final who = fewestScreens == 1
+        ? 'one of their squad is'
+        : '$fewestScreens of their squad are';
+    return 'Their ${bestLine.label} line is at $distanceThere, because $who '
+        'screening it. Move up, or break the screen.';
+  }
+
+  /// Where [squad]'s living members will be standing once the queue resolves.
+  ///
+  /// Screening has to be measured against the same projected formation the
+  /// rest of the range check uses, or a queued move would change who is in
+  /// range without changing who is screening them. In practice only one side
+  /// queues at a time, so the enemy formation is the live one; this keeps the
+  /// two halves consistent anyway, and it is what pull and push (1c) will
+  /// need once a queued action can move an enemy.
+  List<BattlePosition> _projectedLinesOf(Iterable<CharacterBattleState> squad) =>
+      [
+        for (final t in squad)
+          if (t.isAlive) projectedPositionOf(t.character.id),
+      ];
 
   /// Only meaningful during the player's own turn, for one of their own
   /// living characters; returns an empty list otherwise.
@@ -514,8 +575,9 @@ class PlaySession {
     final pool = trigger.targetAffiliation == TargetAffiliation.opponent
         ? battle.teamB.characters
         : battle.teamA.characters;
-    for (final c in pool) {
-      final target = battle.states[c.id]!;
+    final states = [for (final c in pool) battle.states[c.id]!];
+    final squadLines = _projectedLinesOf(states);
+    for (final target in states) {
       if (!target.isAlive) continue;
       if (engine.canTarget(
         state,
@@ -523,6 +585,7 @@ class PlaySession {
         trigger: trigger,
         fromPosition: state.position,
         targetPosition: projectedPositionOf(target.character.id),
+        targetSquad: squadLines,
       )) {
         return false;
       }
@@ -551,9 +614,16 @@ class PlaySession {
       // Say the band and the window, so the fix (step forward or back) is
       // readable off the message rather than needing the rules in front of
       // you.
+      if (trigger.targetAffiliation != TargetAffiliation.opponent) {
+        return 'Out of range. ${trigger.rangeTag.label} reaches an ally '
+            '${trigger.rangeTag.allyWindowLabel} away, and none of your squad '
+            'is that close. Move together.';
+      }
+      // Screening is the reason often enough, and the fix is a different one
+      // (kill the bodies in the way, not move), so name it when it applies
+      // rather than claiming nobody is standing there when they plainly are.
       return 'Out of range. ${trigger.rangeTag.label} reaches a distance of '
-          '${trigger.rangeTag.windowLabel}, and nobody is standing there. '
-          'Move to close or open the gap.';
+          '${trigger.rangeTag.windowLabel}. ${_rangeDetailFor(state, trigger)}';
     }
     if (!legal.affordable) {
       return 'Not enough Trion. This costs ${legal.actualTrionCost}, and your '
@@ -693,8 +763,11 @@ class PlaySession {
       final reachable = _legalTargetIdsFor(state, trigger).toSet();
       if (targetIds.any((id) => !reachable.contains(id))) {
         return QueueOutcome.failure(
-          'Out of ${trigger.rangeTag.label} '
-          '(distance ${trigger.rangeTag.windowLabel}).',
+          trigger.targetAffiliation == TargetAffiliation.opponent
+              ? 'Out of ${trigger.rangeTag.label} '
+                  '(distance ${trigger.rangeTag.windowLabel}, screens included).'
+              : 'Out of ${trigger.rangeTag.label} '
+                  '(an ally ${trigger.rangeTag.allyWindowLabel} away).',
         );
       }
     }
@@ -906,6 +979,18 @@ class PlaySession {
       ],
       equipped: equippedA,
       team: 'A',
+      // Hand back exactly what was taken. The queue still holds each action's
+      // spend at this point, so the refund is the real figure rather than a
+      // recomputed one, and a cost multiplier that has since changed cannot
+      // make the player money.
+      onLostRange: (characterId, trigger) {
+        for (final q in _queue) {
+          if (q.characterId == characterId && q.triggerId == trigger.id) {
+            battle.teamA.trionPool.gain(q.trionSpent);
+            break;
+          }
+        }
+      },
     );
     _queue.clear();
     return LogRound(
@@ -986,6 +1071,15 @@ class PlaySession {
       ],
       equipped: equippedB,
       team: 'B',
+      // The AI pays the same price and gets the same refund, so a squad that
+      // breaks its own screen is not quietly taxed on one side of the board
+      // and not the other.
+      onLostRange: (characterId, trigger) {
+        final state = battle.states[characterId]!;
+        pool.gain(
+          (trigger.trionCost * state.trionCostMultiplier()).round(),
+        );
+      },
     );
     return LogRound(
       roundNumber: round.roundNumber,
@@ -1004,6 +1098,7 @@ class PlaySession {
     items, {
     required Map<String, List<ActiveTrigger>> equipped,
     required String team,
+    void Function(String characterId, ActiveTrigger trigger)? onLostRange,
   }) {
     final engine = battle.turnEngine;
     const midpoint = 50; // TeamSpiritCurveConfig.defaults.midpoint.
@@ -1032,14 +1127,24 @@ class PlaySession {
         return a.compareTo(b);
       });
 
-    final actions = [
-      for (final i in order)
-        _resolveAction(
-          ordered[i].characterId,
-          triggerAt(i),
-          ordered[i].targetIds,
-        ),
-    ];
+    final actions = <LogAction>[];
+    for (final i in order) {
+      final trigger = triggerAt(i);
+      final item = ordered[i];
+      // Screening means an earlier action this turn can move a later one out
+      // of band: kill a body screening a target and the target gets *closer*,
+      // which can drop them under the band's minimum. Rather than let the
+      // strike resolve into thin air, pull it and hand the Trion back, the
+      // same bargain un-queueing a Reposition already offers.
+      if (_lostEveryTargetToRange(item.characterId, trigger, item.targetIds)) {
+        onLostRange?.call(item.characterId, trigger);
+        actions.add(_lostRangeLogAction(item.characterId, trigger));
+        continue;
+      }
+      actions.add(
+        _resolveAction(item.characterId, trigger, item.targetIds),
+      );
+    }
     // Death Ledger: apply any AoE-swap the engine just signalled, then decay
     // the acting team's existing swaps (reverting expired ones).
     _applyPendingDeathLedgerSwaps();
@@ -1167,6 +1272,47 @@ class PlaySession {
       triggerName: trigger.name,
       fatTriggered: state.fatTriggeredThisTurn,
       targets: logTargets(battle, useResult),
+    );
+  }
+
+  /// Whether every living target of a committed action has fallen out of
+  /// [trigger]'s band since it was committed, so resolving it would spend the
+  /// action on nothing.
+  ///
+  /// Deliberately asks about **range only**. A target who simply died is not
+  /// a range problem and the engine already handles it; this is about the
+  /// board moving underneath a plan that was legal when it was made, which
+  /// screening is what makes possible.
+  bool _lostEveryTargetToRange(
+    String characterId,
+    ActiveTrigger trigger,
+    List<String> targetIds,
+  ) {
+    if (trigger.targetAffiliation == TargetAffiliation.self) return false;
+    if (targetIds.isEmpty) return false;
+    final actor = battle.states[characterId];
+    if (actor == null || !actor.isAlive) return false;
+    final living = [
+      for (final id in targetIds)
+        if (battle.states[id]?.isAlive ?? false) battle.states[id]!,
+    ];
+    // Everyone being dead is a different story, told by the engine.
+    if (living.isEmpty) return false;
+    return !living.any((t) => battle.turnEngine.canReach(actor, t, trigger));
+  }
+
+  /// The log line for an action pulled by [_lostEveryTargetToRange]. Says why,
+  /// because "nothing happened" is the worst possible reading of a refund.
+  LogAction _lostRangeLogAction(String characterId, ActiveTrigger trigger) {
+    final state = battle.states[characterId]!;
+    return LogAction(
+      characterId: characterId,
+      characterName: state.character.name,
+      triggerId: trigger.id,
+      triggerName: '${trigger.name} was called off: the target moved out of '
+          '${trigger.rangeTag.label} before it landed. Trion refunded.',
+      fatTriggered: state.fatTriggeredThisTurn,
+      targets: const [],
     );
   }
 
