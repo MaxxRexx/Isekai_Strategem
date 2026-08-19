@@ -45,6 +45,7 @@ the owner asks for one.
   checked at all.
 - **Distinguish a bug from a design change** when reporting, because they carry
   different risk and different urgency.
+- **Use Signatures when giving options or asking questions** Examples: #A choose A; #B choose B; #C design C?; etc
 
 ## What the assistant should not do
 
