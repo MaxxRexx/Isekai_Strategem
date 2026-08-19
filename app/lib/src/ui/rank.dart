@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'palette.dart';
 
 /// A flavor rank shown on a character's portrait, earned through account-
-/// wide mission objectives (not yet implemented — see [placeholderRanks]).
+/// wide mission objectives (not yet implemented, see [placeholderRanks]).
 enum CharacterRank { s, a, b, c }
 
 extension CharacterRankStyle on CharacterRank {

@@ -709,7 +709,7 @@ class RollBreakdownView extends StatelessWidget {
         ),
       if (b.isCriticalMiss)
         const TextSpan(
-          text: ' A critical miss — the attack fails outright.',
+          text: ' A critical miss. The attack fails outright.',
           style: TextStyle(color: Palette.danger),
         ),
     ];
@@ -800,7 +800,7 @@ class RollBreakdownView extends StatelessWidget {
                 children: [
                   TextSpan(text: '• $name', style: _total),
                   if (_statusExplain(name).isNotEmpty)
-                    TextSpan(text: ' — ${_statusExplain(name)}'),
+                    TextSpan(text: ': ${_statusExplain(name)}'),
                 ],
               ),
             ),
