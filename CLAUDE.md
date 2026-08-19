@@ -7,9 +7,9 @@ rules). `docs/game_design.md` describes the game as it stands on `main` and is
 the single source of truth for its rules and content; re-render the PDF beside
 it whenever it changes.
 
-Item #1 (range bands as a real battlefield) is merged. **Item 1b (screening,
-also called RPP) is next: read `docs/next_session_1b.md` before touching engine
-code.**
+Items #1 (range bands as a real battlefield) and 1b (screening, also called
+RPP) are built. The next item is whatever `current_development_status.md` names
+as the current priority.
 
 # Communication style
 

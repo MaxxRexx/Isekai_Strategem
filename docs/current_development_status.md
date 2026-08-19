@@ -5,8 +5,7 @@ now, and what is still to do. The detailed design of the combat rework (which is
 what most of this project has been) follows in the sections below. For a plain
 explanation of the whole game itself, see
 [`game_design.md`](game_design.md). For how this project is run, see
-[`working_agreement.md`](working_agreement.md). **Starting item 1b? Read
-[`next_session_1b.md`](next_session_1b.md) first.**
+[`working_agreement.md`](working_agreement.md).
 
 ## Status at a glance
 
@@ -250,6 +249,24 @@ does not re-open any of them.
 `packages/battle_engine/tool/trap_screening_sim.dart` runs both readings of the
 trap question against a real battle, and is what the first two decisions were
 made from.
+
+**Measured after the build, four runs of 200 simulated battles on each side.**
+Screening only ever lengthens distances, so the worry was that it would push
+pacing out of the 8-20 band. It does not:
+
+| | `main` | 1b |
+|---|---|---|
+| Median rounds | 14 to 15 | 14 |
+| Inside the 8-20 band | 78 to 82% | 80 to 82% |
+| Mean | 15.2 to 15.9 | 14.9 to 15.3 |
+| p90 | 23 to 24 | 23 |
+| **Worst single battle** | **40, 52, 65, 106** | **35, 41, 41, 47** |
+
+The middle of the distribution does not move at all. The **tail is
+consistently shorter**, which is item 4b's problem and is worth confirming with
+more runs before 4b leans on it: the likely reason is that fewer board states
+now exist in which neither squad can reach the other, so fewer battles grind.
+No numbers were touched; #3 and #4 still own every magnitude.
 
 **The widening is enemy-facing only.** Found after the review was answered: an
 ally-targeted ability uses only the band's maximum, and ally distance is the

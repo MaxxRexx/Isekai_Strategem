@@ -346,39 +346,62 @@ there.
 - Every character stands at **Front**, **Middle** or **Back**, worth 0, 1 and 2.
   Their starting position comes from the bands their own Loadout carries: a
   Close Range kit starts at the Front, a sniper's kit at the Back.
-- **Distance to an enemy is the two positions added**, because the squads face
-  each other across a gap. Your Front against their Back is 0 + 2 = 2.
+- **Distance to an enemy is the two positions added, plus screening**, because
+  the squads face each other across a gap and their squad stands in the way.
+  See below.
 - **Distance to an ally is the two positions subtracted**, because you are on the
-  same side. Your Front and your own Back are 2 apart.
+  same side. Your Front and your own Back are 2 apart. Screening never applies:
+  your own squad is not in the way of a heal.
 - An ability works if the distance falls inside its band's window: **Close
-  reaches 0 to 1, Mid reaches 1 to 3, Long reaches 2 to 4**.
+  reaches 0 to 2, Mid reaches 1 to 3, Long reaches 2 to 4**.
 
 The minimums are the important half. A sniper caught in a scrum at distance 0 or
 1 genuinely has no shot, which is what stops standing at the back being free.
-Against an ally only the maximum applies, since needing room to bring a weapon to
-bear has nothing to do with handing a heal to the person beside you.
+Against an ally only a maximum applies, since needing room to bring a weapon to
+bear has nothing to do with handing a heal to the person beside you, and there
+the Close Range maximum is **1** rather than 2: a Close Range ward reaches the
+next line along, not the whole formation.
+
+**Screening: the bodies in the way.** To the two lines added, add the number of
+**living members of the target's own squad standing on a line strictly in front
+of them**. That is the whole rule, and it does most of the work in this section.
+
+- Screening is a property of the **line**, not of the character. Everyone
+  standing together has the same number of bodies in front of them, so the
+  battlefield strip prints one distance per enemy line and marks each screened
+  enemy with a pip per body shielding them.
+- A sniper behind two squadmates sits at effective distance 4 and only Long
+  Range reaches them. Kill one screen and Mid Range opens up. Kill both and
+  Close Range arrives. **Breaking a screen is how you reach the people behind
+  it**, and that is the tactical loop the whole rule exists to create.
+- **A squad stacked on one line screens nobody**, because nobody is standing in
+  front of anybody. So camping at the back stops working of its own accord
+  rather than having to be taxed.
+- **The frontmost character always has zero screens**, so no squad can ever
+  make itself unreachable. The bodies doing the screening are themselves the
+  easiest thing on the board to hit.
 
 | You are at | Their Front | Their Middle | Their Back |
 |---|---|---|---|
-| **Front** | 0, Close only | 1, Close or Mid | 2, Mid or Long |
-| **Middle** | 1, Close or Mid | 2, Mid or Long | 3, Mid or Long |
-| **Back** | 2, Mid or Long | 3, Mid or Long | 4, Long only |
+| **Front** | 0, Close only | 1, Close or Mid | 2, any band |
+| **Middle** | 1, Close or Mid | 2, any band | 3, Mid or Long |
+| **Back** | 2, any band | 3, Mid or Long | 4, Long only |
 
-Two corners of that table are dead zones worth naming. At **distance 0**, both
-squads crowded onto their front lines, only Close Range works, because Mid and
-Long both have minimums. At **distance 4**, both squads hanging back, only Long
-Range works. A fight that settles into either corner stops being a fight.
+That table is the **unscreened** case: it assumes nobody is standing in front of
+the target, which is true of a squad stacked on one line and of every frontmost
+character. Add one to the number for each body in the way.
 
-*Approved and specced, not yet built (lands with item #4): **screening**, and
-**Close Range widening to 0 to 2**. Screening adds, to the distance between you
-and a target, the number of living enemies standing on a line strictly in front
-of that target. So a sniper behind two bodies sits at effective distance 4 and
-only Long Range reaches them; kill one screen and Mid opens up; kill both and
-Close arrives. A squad stacked on one line screens nobody, so camping stops
-working of its own accord rather than being taxed. The widening is what lets a
-Close build cash in once the screen is broken, and a survey of all 4900
-kit-and-formation board states shows it is also what removes every state in
-which neither side can reach the other.*
+At **distance 0**, both squads crowded onto their front lines, only Close Range
+works, because Mid and Long both have minimums. At **distance 4**, both squads
+hanging back, only Long Range works, and a fight that settles there stops being
+a fight. **Distance 2 is the one every band covers**, which makes it the most
+contested square on the board.
+
+Screening can push the number as high as **6**, which no band reaches at all.
+That is not a trap: measured from your **own front line** the distance never
+exceeds 4 whatever the enemy formation, so a character who can walk forward
+always has a shot eventually. A 5 or a 6 on the ruler means you chose to stand
+too far back, and the answer is to move up.
 
 **Moving.** **Reposition** shifts a character one step and costs them their
 ability use for that turn, so closing the gap competes with attacking. It costs
@@ -399,15 +422,19 @@ letting them resolve into thin air.
 The battlefield strip under both squads draws this: your back line on the far
 left through to the opponent's back line on the far right, with the two front
 lines meeting in the middle, so the gap you see is the distance the bands are
-measured in. It prints the real distance to each enemy line under the enemy
-half, shades the lines the selected ability reaches, and its own cells are the
-move control, so position is read and changed in one place.
+measured in. It prints the effective distance to each enemy line under the
+enemy half, screens included, because that is the number the bands are compared
+against; it marks a screened enemy with a pip per body shielding them, so who
+you have to kill to get closer is readable without counting lines; it shades the
+lines the selected ability reaches; and its own cells are the move control, so
+position is read and changed in one place.
 
 That is what makes the four questions the pillar was built for answerable at the
 moment of decision rather than a turn late:
 
 - *Am I in range to do this?* The ability is lit or it is dark, and a dark one
-  says which band it needs and what distance that band covers.
+  says which band it needs, what distance that band covers, and whether it is
+  their squad screening the target that put it out of reach.
 - *Am I in their attack range?* The lane diagram stacks both squads, your back
   line at the top and theirs at the bottom, so the gap on screen is the distance
   the bands are measured in.
@@ -417,7 +444,9 @@ moment of decision rather than a turn late:
   the line it was armed from, so the bet is readable off the same picture.
 
 **Every ability says why it cannot be used.** Out of range names the band and
-the distance it covers. The case a moving character meets constantly gets its
+the distance it covers, and when screening is what put the target out of reach
+it says so and names the fix, because breaking a screen and moving are
+different answers to the same red text. The case a moving character meets constantly gets its
 own treatment: without a Full Arms Trigger the step spends the turn's only
 action, so an ability the move has just brought into band pulses rather than
 going flat, and says so when tapped. That distinguishes the three reasons an
@@ -440,6 +469,12 @@ from and its own band, and only fires if the enemy is inside that band when they
 act. Setting one is a bet on where they will be standing for as long as it lasts.
 How long that is is a per-ability number, and those numbers are unpriced
 first-pass values awaiting the SPTV pass (see below).
+
+**A trap is the one thing screening does not block.** It is already attached to
+its target, and squadmates shuffling about in front of them does not unstick it.
+The two lines still count, so an enemy who falls back out of the band you armed
+from does escape it, and so do you if you retreat. Every trap you place on an
+enemy asks that question.
 
 **Some things need you to be close.** Root Snare pins its target in place as well
 as locking their ability, so a Trapper decides where the fight happens. Sable's
@@ -1213,11 +1248,13 @@ always runs.
   and Reposition costs a character their action. Range is enforced both at queue
   time (judged from where a queued move will put you) and again at resolution.
   See section 7.
-- **Still to come on balance:** screening, so that standing behind a teammate
-  puts distance between you and the enemy; pull and push effects; a "Bail Out"
-  downed state instead of instant defeat; explicit points budgets for status
-  effects and Triggers; and a steadier Trion economy. All of it is designed and
-  approved, and the running order is in
+- **Screening is built.** Standing behind a teammate now puts real distance
+  between you and the enemy, Close Range reaches 0 to 2 against an enemy, and
+  breaking a screen is how you get at the people behind it. See section 7.
+- **Still to come on balance:** pull and push effects; a "Bail Out" downed state
+  instead of instant defeat; explicit points budgets for status effects and
+  Triggers; more traps built around position; and a steadier Trion economy. All
+  of it is designed and approved, and the running order is in
   [`current_development_status.md`](current_development_status.md).
 
 ---
