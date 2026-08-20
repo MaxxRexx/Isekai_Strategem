@@ -341,6 +341,18 @@ class TurnEngine {
     double modifier = 0,
     bool forceLowestTier = false,
   }) {
+    // Trion Backlash: a shot bent last turn, so this squad's income is capped
+    // at Low however good their affinity is. Cleared as it is paid, so the
+    // price lands once. Same switch as the first-move handicap, because it is
+    // the same idea: this turn's income is not rolled for.
+    if (team.trionBacklash) {
+      team.trionBacklash = false;
+      final result =
+          TrionGainResult(TrionTier.low, trionGainEngine.config.lowAmount);
+      team.trionPool.gain(result.amount);
+      return result;
+    }
+
     if (forceLowestTier) {
       final result =
           TrionGainResult(TrionTier.low, trionGainEngine.config.lowAmount);
@@ -821,6 +833,12 @@ class TurnEngine {
   /// for the same planning reason: a caller working from projected positions
   /// has to screen against the projected formation, not the live one. Omit it
   /// and the target's own living teammates are used.
+  /// [bending] drops the band's **minimum** for this check, which is what a
+  /// bent shot is: an attack committed at a legal distance whose target has
+  /// since come too close. The maximum still applies, because bending buys
+  /// you room, not reach. Callers set it only for a shot they have already
+  /// decided is bending; see `PlaySession`, which owns that decision and
+  /// charges Trion Backlash for it.
   bool canReach(
     CharacterBattleState attacker,
     CharacterBattleState target,
@@ -828,6 +846,7 @@ class TurnEngine {
     BattlePosition? fromPosition,
     BattlePosition? targetPosition,
     Iterable<BattlePosition>? targetSquad,
+    bool bending = false,
   }) {
     if (identical(attacker, target)) return true;
     if (trigger.targetAffiliation == TargetAffiliation.self) return true;
@@ -844,8 +863,10 @@ class TurnEngine {
       return trigger.rangeTag
           .reachesAlly(BattleDistance.betweenAllies(from, to));
     }
-    return trigger.rangeTag.reaches(BattleDistance.betweenEnemies(from, to,
-        targetSquad: targetSquad ?? screeningLinesFor(target)));
+    final distance = BattleDistance.betweenEnemies(from, to,
+        targetSquad: targetSquad ?? screeningLinesFor(target));
+    if (bending) return distance <= trigger.rangeTag.maxDistance;
+    return trigger.rangeTag.reaches(distance);
   }
 
   /// Whether [attacker] may target [target] at all right now: false if
@@ -863,12 +884,14 @@ class TurnEngine {
       ActiveTrigger? trigger,
       BattlePosition? fromPosition,
       BattlePosition? targetPosition,
-      Iterable<BattlePosition>? targetSquad}) {
+      Iterable<BattlePosition>? targetSquad,
+      bool bending = false}) {
     if (trigger != null &&
         !canReach(attacker, target, trigger,
             fromPosition: fromPosition,
             targetPosition: targetPosition,
-            targetSquad: targetSquad)) {
+            targetSquad: targetSquad,
+            bending: bending)) {
       return false;
     }
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
@@ -1263,6 +1286,7 @@ class TurnEngine {
     Map<String, Object?>? reactiveData,
     Map<String, Object?>? statusEffectData,
     Map<String, Object?>? uniqueData,
+    bool bending = false,
   }) {
     // Nullhymn recency: stamp Black-Trigger-active uses so a later discharge
     // can downgrade the most-recently-active enemy Black Trigger.
@@ -1293,7 +1317,7 @@ class TurnEngine {
 
     final maxTargets = maxRangedTargets(attacker, trigger);
     var filteredTargets = targets
-        .where((t) => canTarget(attacker, t, trigger: trigger))
+        .where((t) => canTarget(attacker, t, trigger: trigger, bending: bending))
         .toList();
 
     // An area attack catches one position, not any three bodies on the

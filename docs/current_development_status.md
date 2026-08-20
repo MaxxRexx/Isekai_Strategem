@@ -241,7 +241,7 @@ does not re-open any of them.
 | **Both traps check their reach** | Deadfall re-checks whether it still reaches; Death Ledger never did, which read as an oversight rather than a rule. Death Ledger now checks too. This is a behaviour change to a shipping Trigger: it stops nullifying area attacks from outside its own Mid Range window. |
 | **The battlefield strip** | The distance ruler prints the **screened** number, and a screened enemy carries one pip per body shielding them, so "who do I kill to get closer" is readable without counting lines. At distances 5 and 6, where no band reaches, the real number is printed and the band shading stays dark. |
 | **Out-of-range copy** | Names screening as the cause and names the fix, rather than the current "and nobody is standing there", which screening makes false. |
-| **A kill that invalidates your own queued shot** | Refunded and pulled from the queue, with the reason in the battle log. Band minimums mean a target can become *too close* to shoot, and killing a screen shortens the distance, so your own squad can walk your own queued shot out the bottom of its band. Matches the precedent already set by un-queueing a move. |
+| **A kill that invalidates your own queued shot** | **The shot bends.** Band minimums mean a target can become *too close* to shoot, and killing a screen shortens the distance, so your own squad can walk your own committed shot out the bottom of its band. Rather than being called off, it curves onto the target and lands at full effect, and the squad takes **Trion Backlash**: next turn's income is forced to the Low tier. Revised from an earlier decision to refund the shot, on the grounds that breaking a screen should never cost you the attack it set up. Complexity, not complication. |
 | **Bailing Out bodies** | Screen while they are still on the board. The body is still targetable, so clearing it is a real choice that also denies the Trion Salvage. Sets the rule item #2 inherits. |
 | **Zone lock with no legal attack** | Acceptable. A pinned character at effective distance 6 has no move and no shot, but it needs two things to go wrong at once, and the honest fix is a duration or a cost, which belongs to #3 and #4. |
 | **Pacing** | Screening only ever lengthens distances, so battles get slightly longer. 1b measures the before and after and changes no numbers; #3 and #4 own every magnitude. |
@@ -249,6 +249,40 @@ does not re-open any of them.
 `packages/battle_engine/tool/trap_screening_sim.dart` runs both readings of the
 trap question against a real battle, and is what the first two decisions were
 made from.
+
+### The bending shot, in full
+
+Only screening can create the case. Killing a body standing in front of someone
+brings them closer, so an earlier action can drag a later one under its own
+band's minimum. Distances never grow mid-turn, because every Reposition
+resolves in the arm phase before any ability, so "too close" is the only way a
+committed shot can fall out of band.
+
+- **Which bands.** Any band with a minimum, so Mid (1) and Long (2). Close
+  Range's minimum is 0, so a Close shot can never be too close and never bends.
+- **Both sides.** The opponent bends on the same terms. The AI breaks screens
+  by accident often enough that a one-sided rule would read as a bug.
+- **Full effect.** A bent shot is not weakened. The Trion is the whole price.
+- **The price.** `forceLowestTier` already existed for the first-move handicap;
+  Backlash sets the same switch. Income is rolled per squad per turn as Low 10,
+  Medium 20 or High 35, so a typical squad (three characters, about 20 Trion
+  Affinity each) gives up roughly **21 Trion**, more than a whole Long Range
+  Trigger costs to fire. The cost scales with Trion Affinity, from 7.6 at the
+  bottom of the roster to 25 at the top: the squad that generates the most has
+  the most to give up, and a poor squad can bend almost freely.
+- **A flag, not a counter.** Bending three shots in one turn costs exactly what
+  bending one does. That is the clause that stops the rule taxing the combo it
+  exists to reward, and the log says so explicitly, because a player who has
+  just been charged will otherwise assume the next bend charges again.
+- **One turn** is a first-pass duration, queued with every other duration
+  awaiting the SPTV pass.
+- **The log explains itself.** A violet `BENT` pill with a curving-arrow icon
+  on the line, and a Details panel answering the four questions in the order a
+  player asks them: why was this legal when I committed it, what changed, why
+  did it still hit, and what did it cost. Violet because it is the one hue the
+  battle log had not already spent: amber is FAT, gold is critical hits and
+  stat values, red is death, cyan is status effects and your own squad, green
+  is healing.
 
 **Measured after the build, four runs of 200 simulated battles on each side.**
 Screening only ever lengthens distances, so the worry was that it would push

@@ -13,6 +13,12 @@ abstract final class Palette {
   static const danger = Color(0xFFFF5468);
   static const good = Color(0xFF57D98A);
   static const gold = Color(0xFFF0B429);
+  /// A bent shot, and the Trion Backlash it costs. Violet because it is the
+  /// one hue the battle log has not already given a meaning: amber is the
+  /// Full Arms Trigger, gold is critical hits and stat values, red is death,
+  /// cyan is status effects and your own squad, green is healing.
+  static const bend = Color(0xFFA78BFA);
+
   static const hairline = Color(0x1AE9EBF1);
 
   /// Per-type portrait gradient pairs (top-left, bottom-right), matching

@@ -395,7 +395,9 @@ class _LogLineState extends State<LogLine> {
       if (t.hits - t.crits - t.misses > 0) '${t.hits - t.crits - t.misses} hit',
       if (t.misses > 0) '${t.misses} miss',
     ];
-    final hasBreakdown = t.rolls.isNotEmpty || t.statusEffectsApplied.isNotEmpty;
+    final hasBreakdown = t.rolls.isNotEmpty ||
+        t.statusEffectsApplied.isNotEmpty ||
+        action.bend != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,6 +437,14 @@ class _LogLineState extends State<LogLine> {
                             style: TextStyle(
                               color: Palette.warn,
                               fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        if (action.bend != null)
+                          const WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Padding(
+                              padding: EdgeInsets.only(left: 5),
+                              child: BentTag(),
                             ),
                           ),
                         const TextSpan(text: ' uses '),
@@ -489,7 +499,8 @@ class _LogLineState extends State<LogLine> {
             ),
           ),
         ),
-        if (_expanded && hasBreakdown)
+        if (_expanded && action.bend != null) BendExplanation(bend: action.bend!),
+        if (_expanded && hasBreakdown && t.rolls.isNotEmpty)
           RollBreakdownView(
             actorName: action.characterName,
             abilityName: action.triggerName,
@@ -859,5 +870,206 @@ class RollBreakdownView extends StatelessWidget {
     }
     final tail = dur != null ? ' for $dur turn${dur == 1 ? '' : 's'}' : '';
     return '${bits.join(', ')}$tail';
+  }
+}
+
+/// The mark on a log line whose shot bent.
+///
+/// A bordered pill rather than bare bracketed text, so it never reads as part
+/// of the sentence the way `[FAT]` deliberately does, and violet because that
+/// is the one hue the battle log has not already spent (see [Palette.bend]).
+/// The arrow is the shape of what happened.
+class BentTag extends StatelessWidget {
+  const BentTag({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: Palette.bend.withValues(alpha: 0.14),
+        border: Border.all(color: Palette.bend.withValues(alpha: 0.55)),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CustomPaint(
+            size: const Size(9, 9),
+            painter: _BendArrowPainter(),
+          ),
+          const SizedBox(width: 4),
+          const Text(
+            'BENT',
+            style: TextStyle(
+              color: Palette.bend,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.9,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A curving arrow: a shot that came in on an arc rather than a straight line.
+/// Drawn rather than set as a glyph, because the web build's font subset does
+/// not carry every symbol and a missing one renders as an empty box.
+class _BendArrowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = Palette.bend
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final w = size.width, h = size.height;
+
+    // The arc, sweeping up and to the right.
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.16, h * 0.92)
+        ..cubicTo(w * 0.16, h * 0.40, w * 0.42, h * 0.18, w * 0.80, h * 0.18),
+      stroke,
+    );
+    // The head.
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.55, h * 0.02)
+        ..lineTo(w * 0.92, h * 0.18)
+        ..lineTo(w * 0.60, h * 0.40),
+      stroke,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Why a shot bent, in the Details panel under the line that bent.
+///
+/// Answers the four questions a player has, in the order they ask them: why
+/// was this legal when I queued it, what changed, why did it still hit, and
+/// what did it cost. The last line says the cost does not stack, because a
+/// player who has just been charged will otherwise assume the next bend
+/// charges again and stop comboing, which is the opposite of the point.
+class BendExplanation extends StatelessWidget {
+  final LogBend bend;
+
+  const BendExplanation({super.key, required this.bend});
+
+  @override
+  Widget build(BuildContext context) {
+    final broke = bend.screensBroken;
+    final wasScreened = bend.screensWhenCommitted > 0;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 6, bottom: 4),
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+      decoration: BoxDecoration(
+        color: Palette.bend.withValues(alpha: 0.06),
+        border: Border(
+          left: BorderSide(color: Palette.bend.withValues(alpha: 0.7), width: 2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'THE SHOT BENT TO REACH THEM',
+            style: TextStyle(
+              color: Palette.bend,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 9),
+          _para(
+            'When you committed it, ${bend.targetName} was at distance '
+            '${bend.distanceWhenCommitted}'
+            '${wasScreened ? ', counting the '
+                '${_count(bend.screensWhenCommitted)} '
+                '${bend.screensWhenCommitted == 1 ? 'body' : 'bodies'} '
+                'standing in front of them' : ''}. '
+            '${bend.bandLabel} reaches ${bend.bandWindow}, so the shot was '
+            'legal.',
+          ),
+          _para(
+            broke.isEmpty
+                ? '${bend.targetName} then came closer, down to distance '
+                    '${bend.distanceNow}, which is under ${bend.bandLabel}\'s '
+                    'minimum of ${bend.bandMinimum}.'
+                : '${_join(broke)} then died earlier in this turn. With '
+                    '${broke.length == 1 ? 'that body' : 'those bodies'} gone, '
+                    '${bend.targetName} was no longer screened and dropped to '
+                    'distance ${bend.distanceNow}, under ${bend.bandLabel}\'s '
+                    'minimum of ${bend.bandMinimum}. That close, there is no '
+                    'straight shot.',
+          ),
+          _para(
+            broke.isEmpty
+                ? 'Rather than waste the action, the shot bent and landed at '
+                    'full effect.'
+                : 'Rather than waste the action, the shot bent and landed at '
+                    'full effect. Breaking a screen should never cost you the '
+                    'attack it set up.',
+          ),
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: 9),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Palette.hairline)),
+            ),
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  color: Palette.bend,
+                  fontSize: 12,
+                  height: 1.45,
+                ),
+                children: [
+                  const TextSpan(
+                    text: 'Trion Backlash. ',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text: 'Bending strains the squad\'s Trion. Next turn your '
+                        'income is capped at the Low tier, ${bend.backlashTier} '
+                        'Trion, instead of rolling for more. It costs nothing '
+                        'further if other shots bend this turn.',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _para(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      text,
+      style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.45),
+    ),
+  );
+
+  /// Small numbers read better as words in a sentence than as digits.
+  static String _count(int n) => switch (n) {
+        1 => 'one',
+        2 => 'two',
+        3 => 'three',
+        _ => '$n',
+      };
+
+  static String _join(List<String> names) {
+    if (names.length == 1) return names.first;
+    return '${names.take(names.length - 1).join(', ')} and ${names.last}';
   }
 }

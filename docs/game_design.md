@@ -411,6 +411,22 @@ is legal, so a bad position costs you tempo but never your whole turn. A
 zone-lock effect (Forced Repetition) is the exception: it pins you where you
 stand.
 
+**A shot that gets crowded bends.** Band minimums mean a target can become
+*too close* to shoot, and killing a body screening someone brings them closer.
+So an attack you committed at a legal distance can be dragged under its own
+band's minimum by your own squad's success, part-way through the same turn.
+When that happens the shot **bends**: it curves onto the target and lands at
+full effect rather than being wasted, because breaking a screen should never
+cost you the attack it set up.
+
+The price is paid a turn later, by the whole squad. **Trion Backlash** forces
+your next Trion income to the Low tier, which for a typical squad is about 21
+Trion given up, more than a whole Long Range Trigger costs to fire. It is a
+flag rather than a tally, so bending three shots in one turn costs exactly what
+bending one does: having decided to break the screen, you should follow through
+with everything you have. Close Range can never bend, since its minimum is 0
+and nothing can be too close for it.
+
 **You plan against where you will be, not where you are.** Moves resolve before
 every ability in the turn, in the arm phase (section 8). So the moment you queue
 a step, the whole turn is judged from the destination: abilities that were out of

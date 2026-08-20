@@ -175,6 +175,46 @@ class LogTargetResult {
 }
 
 /// One ability use by one character (either side) in the battle log.
+/// Why a shot bent, carried to the battle log so it can explain itself.
+///
+/// A bend is the one thing in a turn the player did not ask for, so the log
+/// has to answer all four questions they will have: why was this legal when I
+/// queued it, what changed, why did it still hit, and what did it cost.
+class LogBend {
+  /// The target the shot bent to reach.
+  final String targetName;
+
+  /// The band's label and window, e.g. "Long Range" and "2 to 4".
+  final String bandLabel;
+  final String bandWindow;
+  final int bandMinimum;
+
+  /// The effective distance when the action was committed, and now.
+  final int distanceWhenCommitted;
+  final int distanceNow;
+
+  /// How many of the target's squad were screening them when the action was
+  /// committed, and the names of the ones who died in between. Empty when the
+  /// target simply moved rather than lost a screen.
+  final int screensWhenCommitted;
+  final List<String> screensBroken;
+
+  /// The Trion the squad's income is capped at next turn.
+  final int backlashTier;
+
+  const LogBend({
+    required this.targetName,
+    required this.bandLabel,
+    required this.bandWindow,
+    required this.bandMinimum,
+    required this.distanceWhenCommitted,
+    required this.distanceNow,
+    required this.screensWhenCommitted,
+    required this.screensBroken,
+    required this.backlashTier,
+  });
+}
+
 class LogAction {
   final String characterId;
   final String characterName;
@@ -183,6 +223,9 @@ class LogAction {
   final bool fatTriggered;
   final List<LogTargetResult> targets;
 
+  /// Set when this shot bent to reach a target that had come too close.
+  final LogBend? bend;
+
   const LogAction({
     required this.characterId,
     required this.characterName,
@@ -190,6 +233,7 @@ class LogAction {
     required this.triggerName,
     required this.fatTriggered,
     required this.targets,
+    this.bend,
   });
 }
 
