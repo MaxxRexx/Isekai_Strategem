@@ -88,6 +88,27 @@ void main() {
     expect(find.text('4'), findsOneWidget);
   });
 
+  testWidgets('an empty enemy line shows a dash, not a number', (tester) async {
+    await tester.pumpWidget(wrap(BattlefieldRail(
+      teamA: [fighter('a1', 'Ren Kobayashi', BattlePosition.back)],
+      teamB: [
+        fighter('b1', 'Vela Ashworth', BattlePosition.front),
+        fighter('b2', 'Dross', BattlePosition.front),
+        fighter('b3', 'Kaito Reyes', BattlePosition.front),
+      ],
+      focusedId: 'a1',
+    )));
+
+    // All three of theirs are on one line, so their middle and back are empty.
+    // Measured as if someone were standing there, their back would compute as
+    // 2 + 2 + 3 screens = 7, which is higher than any real target can ever be.
+    // Nobody is there, so it is a dash.
+    expect(find.text('2'), findsOneWidget, reason: 'their front, occupied');
+    expect(find.text('7'), findsNothing);
+    expect(find.text('-'), findsNWidgets(2),
+        reason: 'their empty middle and back lines');
+  });
+
   testWidgets('a screened enemy carries one pip per body shielding them',
       (tester) async {
     await tester.pumpWidget(wrap(BattlefieldRail(

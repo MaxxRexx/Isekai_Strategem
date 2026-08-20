@@ -214,10 +214,21 @@ class BattlefieldRail extends StatelessWidget {
   int _screensAt(BattlePosition line) =>
       BattleDistance.screensFor(line, _theirLivingLines);
 
+  /// Whether any of their living squad is standing on [line].
+  ///
+  /// An empty line is not a target, so it gets no distance and no shading.
+  /// The number would be a hypothetical, and a misleading one: with all three
+  /// of their squad standing in front of it, an empty line can compute higher
+  /// than any real target ever reaches.
+  bool _theyOccupy(BattlePosition line) =>
+      teamB.any((f) => f.alive && f.position == line);
+
   /// The effective distance from the focused character to an enemy on [line],
   /// screens included. This is the number the range bands are compared
-  /// against, so it is the number the ruler prints.
+  /// against, so it is the number the ruler prints. Null when there is nobody
+  /// there to measure to.
   int? _distanceTo(BattlePosition line) {
+    if (!_theyOccupy(line)) return null;
     final from = reachFrom ??
         (focusedId == null ? null : (projected[focusedId] ?? _liveOf(focusedId!)));
     if (from == null) return null;
@@ -406,10 +417,16 @@ class BattlefieldRail extends StatelessWidget {
           ),
         ),
         child: Text(
-          distance == null ? ' ' : '$distance',
+          // A dash rather than a number when nobody is standing on that line:
+          // there is nothing there to be a distance to.
+          distance == null ? '-' : '$distance',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: inBand ? Palette.accent : Colors.white38,
+            color: inBand
+                ? Palette.accent
+                : distance == null
+                ? Colors.white24
+                : Colors.white38,
             fontSize: 9.5,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
