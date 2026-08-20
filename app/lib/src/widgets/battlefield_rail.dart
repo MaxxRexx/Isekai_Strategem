@@ -345,16 +345,23 @@ class BattlefieldRail extends StatelessWidget {
               ),
               // One pip per body in the way. The pips answer "who do I have to
               // kill to get closer", which the distance number alone cannot.
+              //
+              // Drawn rather than written: a bullet character depends on the
+              // glyph being present in whatever font the web build ends up
+              // loading, and on the real build it is not, so it rendered as an
+              // empty box. A shape always draws.
               if (fighter.alive && screens > 0) ...[
-                const SizedBox(width: 3),
-                Text(
-                  '●' * screens,
-                  style: const TextStyle(
-                    color: Palette.warn,
-                    fontSize: 7,
-                    letterSpacing: 0.5,
+                const SizedBox(width: 4),
+                for (var i = 0; i < screens; i++)
+                  Container(
+                    width: 4,
+                    height: 4,
+                    margin: EdgeInsets.only(left: i == 0 ? 0 : 2),
+                    decoration: const BoxDecoration(
+                      color: Palette.warn,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
               ],
             ],
           ),

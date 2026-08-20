@@ -23,6 +23,14 @@ void main() {
         position: position,
       );
 
+  /// The screen pips are drawn shapes rather than a bullet character, because
+  /// the glyph is not in the font the web build loads and rendered as an empty
+  /// box. So count circles, not text.
+  Finder screenPips() => find.byWidgetPredicate((w) =>
+      w is Container &&
+      w.decoration is BoxDecoration &&
+      (w.decoration! as BoxDecoration).shape == BoxShape.circle);
+
   Widget wrap(Widget child) => MaterialApp(
         home: Scaffold(body: SizedBox(width: 900, child: child)),
       );
@@ -93,10 +101,10 @@ void main() {
     )));
 
     // Their sniper is behind two bodies, so two pips and a distance of 4.
-    expect(find.text('●●'), findsOneWidget);
+    // The pair screening them are on the front line and screen nobody, so
+    // two pips is the total across the whole strip.
+    expect(screenPips(), findsNWidgets(2));
     expect(find.text('4'), findsOneWidget);
-    // The pair screening them are on the front line and screen nobody.
-    expect(find.text('●'), findsNothing);
   });
 
   testWidgets('killing a screen shortens the printed distance',
@@ -114,7 +122,7 @@ void main() {
     // One screen down: the sniper drops from 4 to 3 and shows a single pip.
     // Only the living get in the way.
     expect(find.text('3'), findsOneWidget);
-    expect(find.text('●'), findsOneWidget);
+    expect(screenPips(), findsOneWidget);
   });
 
   testWidgets('the selected band is named, and measured from the focused line',
