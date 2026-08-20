@@ -124,6 +124,79 @@ void main() {
     }
   });
 
+  test('a stranded squad walks into firing position within two turns', () {
+    // The hardest case the walk-towards-the-band fallback has to solve, and
+    // 1b makes it the *only* two-step case: both squads camped on their back
+    // lines. Nothing is in band from there or from one step in, so the
+    // strict-improvement test can never fire and only the shortfall fallback
+    // gets them there.
+    //
+    // A screened formation cannot strand anyone longer than this, because the
+    // bodies doing the screening are themselves standing further forward and
+    // are therefore the easiest thing on the board to reach. Screening hides
+    // the target behind the squad; it never hides the squad.
+    final battle = battleWith(
+      triggers: closeOnly,
+      aLine: BattlePosition.back,
+      bLine: BattlePosition.back,
+    );
+    final ai = ProfileDrivenAi(AiProfile.theExecutioner,
+        random: const _NoMistakes());
+    final mine = [for (final c in battle.teamA.characters) battle.states[c.id]!];
+    final opponents = [
+      for (final c in battle.teamB.characters) battle.states[c.id]!,
+    ];
+
+    bool anyoneCanShoot() => mine.any((state) =>
+        battle.turnEngine.reachableAbilityCount(
+            state, state.position, closeOnly, opponents) >
+        0);
+
+    expect(anyoneCanShoot(), isFalse, reason: 'they start stranded at 4');
+
+    for (var turn = 0; turn < 2; turn++) {
+      final plan = ai.planTurn(battle,
+          equippedActiveTriggers: equipAll(battle, closeOnly));
+      for (final move in plan.where((a) => a.isReposition)) {
+        battle.turnEngine
+            .reposition(battle.states[move.characterId]!, move.destination!);
+      }
+      for (final state in mine) {
+        state.endTurn();
+      }
+    }
+
+    expect(anyoneCanShoot(), isTrue,
+        reason: 'two steps must be enough to bring a Close kit to bear, or a '
+            'stranded squad would stall the battle out');
+  });
+
+  test('a screen never strands you, because the screens are themselves the '
+      'nearest targets', () {
+    // Their sniper is behind two bodies and unreachable by a knife. Those two
+    // bodies are standing on their front line, which is the closest thing on
+    // the board, so a Close kit always has something to hit.
+    final battle = battleWith(
+      triggers: closeOnly,
+      aLine: BattlePosition.front,
+      bLine: BattlePosition.front,
+    );
+    final theirs = battle.teamB.characters;
+    battle.states[theirs[2].id]!.position = BattlePosition.back;
+    final attacker = battle.states[battle.teamA.characters.first.id]!;
+    final sniper = battle.states[theirs[2].id]!;
+    final opponents = [for (final c in theirs) battle.states[c.id]!];
+
+    expect(battle.turnEngine.distanceBetween(attacker, sniper), 4,
+        reason: 'two screens put the sniper out of every band but Long');
+    expect(
+      battle.turnEngine.reachableAbilityCount(
+          attacker, attacker.position, closeOnly, opponents),
+      1,
+      reason: 'the screens themselves are at distance 0 and always hittable',
+    );
+  });
+
   test('with one action and something to do, the AI swings instead of moving',
       () {
     // Distance 1: Close Range reaches, so there is no reason to spend the
@@ -145,9 +218,11 @@ void main() {
 
   test('a spare ability use buys the step that brings more Triggers to bear',
       () {
-    // Back against front is distance 2: the Long Range Trigger reaches, the
-    // two Close Range ones do not. Stepping in flips two of the three into
-    // band, and FAT means the step does not cost the whole turn.
+    // Back against middle is distance 3: the Long Range Trigger reaches, the
+    // two Close Range ones do not, Close being 0-2 after 1b. Stepping in makes
+    // it 2 and flips both, and FAT means the step does not cost the whole
+    // turn. Their squad stacks on one line, so nobody screens anybody and the
+    // arithmetic stays about the two lines alone.
     final mixed = [
       testTrigger(id: 'close-a', rangeTag: RangeTag.close, trionCost: 5),
       testTrigger(id: 'close-b', rangeTag: RangeTag.close, trionCost: 5),
@@ -156,7 +231,7 @@ void main() {
     final battle = battleWith(
       triggers: mixed,
       aLine: BattlePosition.back,
-      bLine: BattlePosition.front,
+      bLine: BattlePosition.middle,
     );
     for (final c in battle.teamA.characters) {
       battle.states[c.id]!.fatTriggeredThisTurn = true;
@@ -181,7 +256,7 @@ void main() {
     final battle = battleWith(
       triggers: mixed,
       aLine: BattlePosition.back,
-      bLine: BattlePosition.front,
+      bLine: BattlePosition.middle,
     );
     for (final c in battle.teamA.characters) {
       battle.states[c.id]!.fatTriggeredThisTurn = true;
@@ -202,9 +277,14 @@ void main() {
       if (!move.isReposition) continue;
       final trigger = mixed.firstWhere((t) => t.id == action.triggerId);
       for (final targetId in action.targetIds) {
+        final theirLines = [
+          for (final c in battle.teamB.characters)
+            if (battle.states[c.id]!.isAlive) battle.states[c.id]!.position,
+        ];
         expect(
           trigger.rangeTag.reaches(BattleDistance.betweenEnemies(
-              move.destination!, battle.states[targetId]!.position)),
+              move.destination!, battle.states[targetId]!.position,
+              targetSquad: theirLines)),
           isTrue,
           reason: '${action.triggerId} must reach from ${move.destination}',
         );
@@ -224,7 +304,7 @@ void main() {
     final battle = battleWith(
       triggers: mixed,
       aLine: BattlePosition.back,
-      bLine: BattlePosition.front,
+      bLine: BattlePosition.middle,
     );
     for (final c in battle.teamA.characters) {
       battle.states[c.id]!.fatTriggeredThisTurn = true;

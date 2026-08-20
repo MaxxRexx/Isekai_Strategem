@@ -5,14 +5,13 @@ now, and what is still to do. The detailed design of the combat rework (which is
 what most of this project has been) follows in the sections below. For a plain
 explanation of the whole game itself, see
 [`game_design.md`](game_design.md). For how this project is run, see
-[`working_agreement.md`](working_agreement.md). **Starting item 1b? Read
-[`next_session_1b.md`](next_session_1b.md) first.**
+[`working_agreement.md`](working_agreement.md).
 
 ## Status at a glance
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | **1b, screening (RPP).** #1 is merged to main. 1b, 1c, #2, #3 and 3b are designed and approved; work runs in queue order from here. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 60 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, and the Team Efficiency Grade with its in-battle effects and inverse XP. | **#2, Bail Out.** #1 and 1b are both merged to main. **1b has not been playtested yet**, so its findings are still to come. 1c waits for #4 and 3b's table lands with #3, which makes #2 the next buildable item. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -28,8 +27,8 @@ older note is gone.
 | `main` | The trunk. Everything below the "in progress" line has been merged here, and the design document describes `main`, not any branch. |
 | `gh-pages` | The published web build. Deploy target only; never develop on it. |
 
-Every merged work branch has now been deleted, so the table above is the whole
-list. The next work branch has not been created yet. It should be named for 1b.
+Every merged work branch has been deleted, 1b's included, so the table above is
+the whole list. The next work branch has not been created yet.
 
 Branch names are deliberately absent from the phase table further down: every
 phase listed there is merged, so the branch it arrived on no longer exists and
@@ -41,7 +40,7 @@ Progress by area:
 Battle engine      ██████████ 100%   done
 Accounts and XP    ██████████ 100%   live and verified
 Phase F interface  ████████▒▒  85%   a couple of items left
-Balance pass       ███████▒▒▒  70%   P0, initiative and range bands done
+Balance pass       ████████▒▒  80%   P0, initiative, range bands and screening
 AI tuning          ▒▒▒▒▒▒▒▒▒▒   0%   not started
 Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
 ```
@@ -168,12 +167,12 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 |---|---|---|
 | 0 | **Pacing target: 8 to 20 rounds.** Agreed band, replacing the old 15-20 (design section 11). `tool/balance_report.dart` now checks it: 200 simulated battles run a median of 14 with 83% of them inside the band. The engine's round-robin integration test asserts the same band. | Set |
 | 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the full-width horizontal battlefield strip (your back line on the left through to theirs on the right, with a distance ruler and the move controls in its own cells), an explicit reason on every ability that cannot be used, a distinct pulsing state for one the queued move has brought into band, plain-English status descriptions with the duration in the player's own turns, and AI positional judgement on both AI paths. Playtested by the owner and revised. | Done |
-| **1b** | **NEXT UP. Screening (RPP), approved and specced, not built.** Effective distance to an enemy = my line's step + their line's step + the number of living enemies standing on a line strictly in front of the target. No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule. Lands with #4, which owns the range cost model. | Approved, queued |
+| **1b** | **Screening (RPP).** Effective distance to an enemy = my line's step + their line's step + the number of living enemies standing on a line strictly in front of the target. No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule, and goes with 5c's rename rather than here. Being built now as its own item rather than waiting for #4, since the battlefield it changes is already live. Built: the distance rule and the widening (enemy-facing only, so a Close Range ward still reaches just the next line), screening threaded through every reach question, traps deliberately exempt with both of them now checking their reach, the ruler printing the screened number with a pip per screening body, a dash on empty lines, out-of-range copy that names screening and the fix, and the **bending shot** with Trion Backlash and its self-explaining log entry. The design review's decisions are recorded below. **Not yet playtested.** | Merged, awaiting playtest |
 | 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued |
 | 2 | **Bail Out, contested.** Not a revive: the operator leaves the engagement. A one-turn Bailing Out window where the body stays **targetable**; left alone it is recalled and the squad gets Trion Salvage (20% of base Trion Capacity), but an enemy hit destroys it instead, denying the Salvage and giving the attacker a smaller gain. Refuse to Bail is pre-declared, armed like the existing counters. | Approved, queued |
 | 3b | **Status reactions.** A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. Mechanism and table with #3 so SPTV prices them; the new abilities and Side Effects after #4 with 1c. | Approved, queued |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
-| 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does), the screening rule from 1b, and the FAT cap below. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. | Queued |
+| 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued |
 | 4b | **The long tail of battle length.** The distribution is healthy in the middle and ragged at the end: 200 simulated battles run a median of 14 rounds with 83% inside the 8-20 band, but p90 is 23 and the worst single battle took **118 rounds**. Everything concludes, so it is not a stall, and the 30-round limit in #4 would cut it off rather than explain it. Worth understanding before that limit lands, because a match that would have taken 40 rounds now ends on the health tiebreak instead, and whoever was ahead at round 30 wins a fight they might not have won. Likely suspects: two sustain-heavy squads out-healing each other's damage, or a Trion-starved pair trading single cheap abilities. Diagnose from `tool/balance_report.dart`, which already records the distribution. Sits with #4 because the fix, if there is one, is an economy number. | Queued |
 | 5 | **Support abilities do not pay for their action.** Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced with #3 (SPTV), since it owns every magnitude and duration. | Queued |
 | 5b | **Stackable statuses.** 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be, and a stackable effect is worth more Status Points, so it lands with #3. | Approved, queued |
@@ -186,6 +185,133 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 11 | "Close" overloaded as a dialog button label. | Closed, not an issue |
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued |
+
+### More traps, designed around positional play: part of item #4
+
+Raised while designing 1b, and the counts below are what argued for it. The
+battlefield made a trap's band and the line it was laid from into real
+information, and the catalogue has not caught up.
+
+What exists today, counted off the live catalogue rather than estimated:
+
+| | Count |
+|---|---|
+| Triggers that arm a reactive at all | 10 (5 Triggers, 5 Black Trigger abilities) |
+| Placed **on an enemy**, which is what "trap" means here | **2** |
+| Placed on yourself or an ally (wards and counters) | 8 |
+| Trapper-category Triggers that arm anything | 2 of 24 |
+
+The two enemy-placed traps are **Deadfall** (Long Range, Paradox Shard) and
+**Death Ledger** (Mid Range). So the whole trap game is two abilities, one of
+which lives on a Black Trigger, and **there is no Close Range trap at all**. The
+other 8 are all Close Range wards and counters placed on your own side, which
+screening never touches, since ally distance is unchanged.
+
+What the pass should produce:
+
+- **A trap in every band.** Close especially, which currently has none, so a
+  front-line Trapper is a build that cannot exist. Bands now carry economic
+  identity under #4, so a Close trap is cheap and demands you stand in the
+  danger to lay it, and a Long one is safe and paid for twice over.
+- **Traps that read position rather than only actions.** The recorded band and
+  armed line already exist and are only used to ask "does this still reach". A
+  trap that fires when the target *moves*, or one that fires only while the
+  target is unscreened, turns the battlefield into the trigger condition.
+- **Something for the Trapper category to actually do.** 22 of its 24 Triggers
+  are control and debuff work that any category could carry.
+- **The reaction-armed trap already sketched for 3b** (a trap that arms a status
+  reaction rather than damage, firing on a matching damage type) belongs in the
+  same pass rather than on its own.
+
+Sequencing, and why here: new content should land once, priced once. #3 owns the
+durations (`armsReactiveDefaultTurns`) and #4 owns range as an input to the cost
+model, which is exactly what prices a positional trap. So the content lands with
+#4, alongside 1c and 3b's content pass, on the same rule 3b already records: the
+whole catalogue gets priced in one pass rather than two.
+
+### Decisions taken for 1b, from the design review
+
+Answered by the owner against the 1b design review. Recorded here so the build
+does not re-open any of them.
+
+| | Decision |
+|---|---|
+| **Traps and screening** | Screens do **not** block a trap. A trap is a hazard already attached to the target, and bystanders moving about does not undo it. Distance still applies, unscreened. |
+| **Both traps check their reach** | Deadfall re-checks whether it still reaches; Death Ledger never did, which read as an oversight rather than a rule. Death Ledger now checks too. This is a behaviour change to a shipping Trigger: it stops nullifying area attacks from outside its own Mid Range window. |
+| **The battlefield strip** | The distance ruler prints the **screened** number, and a screened enemy carries one pip per body shielding them, so "who do I kill to get closer" is readable without counting lines. At distances 5 and 6, where no band reaches, the real number is printed and the band shading stays dark. |
+| **Out-of-range copy** | Names screening as the cause and names the fix, rather than the current "and nobody is standing there", which screening makes false. |
+| **A kill that invalidates your own queued shot** | **The shot bends.** Band minimums mean a target can become *too close* to shoot, and killing a screen shortens the distance, so your own squad can walk your own committed shot out the bottom of its band. Rather than being called off, it curves onto the target and lands at full effect, and the squad takes **Trion Backlash**: next turn's income is forced to the Low tier. Revised from an earlier decision to refund the shot, on the grounds that breaking a screen should never cost you the attack it set up. Complexity, not complication. |
+| **Bailing Out bodies** | Screen while they are still on the board. The body is still targetable, so clearing it is a real choice that also denies the Trion Salvage. Sets the rule item #2 inherits. |
+| **Zone lock with no legal attack** | Acceptable. A pinned character at effective distance 6 has no move and no shot, but it needs two things to go wrong at once, and the honest fix is a duration or a cost, which belongs to #3 and #4. |
+| **Pacing** | Screening only ever lengthens distances, so battles get slightly longer. 1b measures the before and after and changes no numbers; #3 and #4 own every magnitude. |
+
+`packages/battle_engine/tool/trap_screening_sim.dart` runs both readings of the
+trap question against a real battle, and is what the first two decisions were
+made from.
+
+### The bending shot, in full
+
+Only screening can create the case. Killing a body standing in front of someone
+brings them closer, so an earlier action can drag a later one under its own
+band's minimum. Distances never grow mid-turn, because every Reposition
+resolves in the arm phase before any ability, so "too close" is the only way a
+committed shot can fall out of band.
+
+- **Which bands.** Any band with a minimum, so Mid (1) and Long (2). Close
+  Range's minimum is 0, so a Close shot can never be too close and never bends.
+- **Both sides.** The opponent bends on the same terms. The AI breaks screens
+  by accident often enough that a one-sided rule would read as a bug.
+- **Full effect.** A bent shot is not weakened. The Trion is the whole price.
+- **The price.** `forceLowestTier` already existed for the first-move handicap;
+  Backlash sets the same switch. Income is rolled per squad per turn as Low 10,
+  Medium 20 or High 35, so a typical squad (three characters, about 20 Trion
+  Affinity each) gives up roughly **21 Trion**, more than a whole Long Range
+  Trigger costs to fire. The cost scales with Trion Affinity, from 7.6 at the
+  bottom of the roster to 25 at the top: the squad that generates the most has
+  the most to give up, and a poor squad can bend almost freely.
+- **A flag, not a counter.** Bending three shots in one turn costs exactly what
+  bending one does. That is the clause that stops the rule taxing the combo it
+  exists to reward, and the log says so explicitly, because a player who has
+  just been charged will otherwise assume the next bend charges again.
+- **One turn** is a first-pass duration, queued with every other duration
+  awaiting the SPTV pass.
+- **The log explains itself.** A violet `BENT` pill with a curving-arrow icon
+  on the line, and a Details panel answering the four questions in the order a
+  player asks them: why was this legal when I committed it, what changed, why
+  did it still hit, and what did it cost. Violet because it is the one hue the
+  battle log had not already spent: amber is FAT, gold is critical hits and
+  stat values, red is death, cyan is status effects and your own squad, green
+  is healing.
+
+**Measured after the build, four runs of 200 simulated battles on each side.**
+Screening only ever lengthens distances, so the worry was that it would push
+pacing out of the 8-20 band. It does not:
+
+| | `main` | 1b |
+|---|---|---|
+| Median rounds | 14 to 15 | 14 |
+| Inside the 8-20 band | 78 to 82% | 80 to 82% |
+| Mean | 15.2 to 15.9 | 14.9 to 15.3 |
+| p90 | 23 to 24 | 23 |
+| **Worst single battle** | **40, 52, 65, 106** | **35, 41, 41, 47** |
+
+The middle of the distribution does not move at all. The **tail is
+consistently shorter**, which is item 4b's problem and is worth confirming with
+more runs before 4b leans on it: the likely reason is that fewer board states
+now exist in which neither squad can reach the other, so fewer battles grind.
+No numbers were touched; #3 and #4 still own every magnitude.
+
+**The widening is enemy-facing only.** Found after the review was answered: an
+ally-targeted ability uses only the band's maximum, and ally distance is the
+difference between two lines, at most 2. So widening Close Range would have
+silently given three ally-targeted Close Range abilities (**Foresight Counter**,
+**Mirror Ward**, **Puppet Strings**) the whole formation instead of a
+neighbouring line, as a side effect of a decision taken to let Close Range
+*attacks* reach the enemy back line. Decided: the widening applies to the
+enemy-facing window only, and Close Range ally reach stays at 1. A band
+therefore carries two maximums, 2 against an enemy and 1 towards an ally, and
+Mid and Long are unaffected because their maximums already exceed the widest
+possible ally distance.
 
 ### Fixed during the #1 playtest: the no-fight stall
 
@@ -1095,7 +1221,7 @@ retired tiebreak.
 | Phase E: new-content wiring | done + merged: the two deferred unique hooks (7.1), Coldread "seize", Nullhymn's real resonance-grade downgrade (per-wielder step count on the const grid; targets the most-recently-active enemy BT), and Death Ledger's nullified-AoE loadout swap (engine signals; app borrows the AoE into the wielder's loadout for 2 turns, then reverts)  |
 | Phase F: remaining UI | mostly done + merged to main: TEG badge (six-sub-score expand + live effects), surfacing the hidden stats, the Team Spirit live offense/sustain readout, the loadout-builder preview/EQUIP-UNEQUIP/Randomize-Reset-Unequip-all pass, passive-counter descriptions, the clickable-portrait detail panel with own-full / enemy-public gating + Mind's Eye reveal, the sign-in flow (`AccountSheet`) + post-battle XP-award readout, and the battle-log rework (tap-anywhere-to-expand, always-visible scrollbar, plain-English breakdowns, clickable names/abilities → info popups). Remaining: queue display + resolve-beat polish.  |
 | Phase G: AI tuning | not started  |
-| Phase H: balancing pass | in progress. Done: the five reskin Trigger clusters differentiated; critical hits capped at a natural 17 and doubling the damage dice only; the four dominant Triggers (Whirlwind Slash, Twin Fang Strike, Longshot, Cinderburst) re-costed; and the P0 bounded-accuracy re-tune, which compressed Attack to 4-14 and Defense to 2-12 and rebuilt every damage expression so roughly half the number comes from dice; and earned initiative, which replaced the opening coin flip with a Team-Efficiency-Grade-weighted roll (equal grades 50/50, 5 points per tier, capped at 65/35); and the range-band rework, which renamed `RangeTag` from melee/ranged (it collided with the attack type names) to close/mid/long and, more importantly, gave it content: the tag used to be perfectly derivable from the attack type, and is now assigned per ability so that all three attack types appear in all three bands (melee 12/5/3, ranged 3/8/9, psychic 5/7/8). `tool/balance_report.dart` prints the accuracy band, the per-Trigger dice share and value, and a batch of simulated battles; `test/balance/bounded_accuracy_test.dart` guards both the combat math and the type-by-band grid. The spatial pillar then landed on top of those bands as item #1: real Front/Middle/Back positions, distance measured across the gap, and range enforced at queue time and again at resolution. Remaining: screening (1b), pull and push (1c), the Bail Out downed state (#2, since approved and specced), status/Trigger point budgets (#3), and the Trion economy (#4).  |
+| Phase H: balancing pass | in progress. Done: the five reskin Trigger clusters differentiated; critical hits capped at a natural 17 and doubling the damage dice only; the four dominant Triggers (Whirlwind Slash, Twin Fang Strike, Longshot, Cinderburst) re-costed; and the P0 bounded-accuracy re-tune, which compressed Attack to 4-14 and Defense to 2-12 and rebuilt every damage expression so roughly half the number comes from dice; and earned initiative, which replaced the opening coin flip with a Team-Efficiency-Grade-weighted roll (equal grades 50/50, 5 points per tier, capped at 65/35); and the range-band rework, which renamed `RangeTag` from melee/ranged (it collided with the attack type names) to close/mid/long and, more importantly, gave it content: the tag used to be perfectly derivable from the attack type, and is now assigned per ability so that all three attack types appear in all three bands (melee 12/5/3, ranged 3/8/9, psychic 5/7/8). `tool/balance_report.dart` prints the accuracy band, the per-Trigger dice share and value, and a batch of simulated battles; `test/balance/bounded_accuracy_test.dart` guards both the combat math and the type-by-band grid. The spatial pillar then landed on top of those bands as item #1: real Front/Middle/Back positions, distance measured across the gap, and range enforced at queue time and again at resolution. Screening (1b) then landed on top of that: bodies in the way add to the distance, Close Range widened to 0-2 against an enemy, and a shot dragged under its band's minimum bends rather than being wasted. Remaining: pull and push (1c), the Bail Out downed state (#2, since approved and specced), status/Trigger point budgets (#3), and the Trion economy (#4).  |
 | Passive-counter integration (design 13.1 gap #1) | done + merged to main: all six counters fed from `play_session.dart`; reactive expiry ticked; Coldread Seize built  |
 | Phase I: Combo Recognition system | I1-I5 done and merged to main: action ledger + condition primitives (structural + identity leaves) + recognizer + Layer-1 generic catalog + Layer-2 signature catalog (seeded with thematic trigger chains), live ledger population, and a design-time signature-combo proposer (`tool/propose_signature_combos.dart`). The signature roster grows as designer content  |
 | Phase J: TEG mechanical effects (section 5.2) | done + merged: Effects 1-5 (fx1/fx2 on all four roll sites, SSS crit widener, live combo ledger + Effect 4 payoff advantage, Effect 3 setup->payoff Trion refund), Draegor's "raise TEG 2 tiers" wired, and the inverse-TEG XP (section 15.8) now live server-side (see section 15 row).  |

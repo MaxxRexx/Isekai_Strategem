@@ -7,6 +7,14 @@ class Team {
   final List<Character> characters;
   final TrionPool trionPool;
 
+  /// Set when one of this squad's shots bends (see `TurnEngine.canReach`'s
+  /// band minimums): their next Trion income is forced to the Low tier.
+  ///
+  /// A flag rather than a counter on purpose. Bending three shots in one turn
+  /// costs exactly what bending one does, so a squad that has decided to break
+  /// a screen is never taxed per shot for following through.
+  bool trionBacklash = false;
+
   Team({
     required this.id,
     required this.characters,

@@ -122,6 +122,16 @@ class QueuedAction {
   bool get isReposition => triggerId == repositionActionId;
 }
 
+/// The board as one action saw it when the turn was committed: how far each
+/// of its targets was, and who was standing in front of them.
+///
+/// Only used to work out whether a shot bends (see `PlaySession._bendFor`).
+class _ReachSnapshot {
+  final Map<String, int> distances;
+  final Map<String, List<String>> screens;
+  const _ReachSnapshot(this.distances, this.screens);
+}
+
 /// Result of trying to [PlaySession.queue] an action.
 class QueueOutcome {
   final bool success;
@@ -208,6 +218,7 @@ class PlaySession {
     required List<String> opponentCharacterIds,
     required String opponentProfileId,
     String firstTurn = 'random',
+    TurnEngine? turnEngine,
   }) {
     for (final id in playerCharacterIds) {
       final validation = playerLoadouts[id]!.validateFor(roster[id]);
@@ -253,6 +264,10 @@ class PlaySession {
       teamB: teamBDraft.team,
       states: {...teamADraft.states, ...teamBDraft.states},
       teamAGoesFirst: teamAGoesFirst,
+      // A seam for tests that need the dice to be predictable, mirroring the
+      // one `Battle` already offers. Production leaves it null and gets the
+      // ordinary random engine.
+      turnEngine: turnEngine,
     );
 
     // TEG Effects 1/2/5 (section 5.2): inject each team's grade-derived roll
@@ -411,6 +426,7 @@ class PlaySession {
     final pool = trigger.targetAffiliation == TargetAffiliation.opponent
         ? battle.teamB.characters.map((c) => battle.states[c.id]!)
         : battle.teamA.characters.map((c) => battle.states[c.id]!);
+    final squadLines = _projectedLinesOf(pool);
     return [
       for (final t in pool)
         if (t.isAlive &&
@@ -420,10 +436,70 @@ class PlaySession {
               trigger: trigger,
               fromPosition: from,
               targetPosition: projectedPositionOf(t.character.id),
+              targetSquad: squadLines,
             ))
           t.character.id,
     ];
   }
+
+  /// The sentence that follows "Close Range reaches a distance of 0 to 2."
+  ///
+  /// Names screening when screening is what put the target out of reach,
+  /// because the fix is a different one: break the bodies in the way rather
+  /// than move. Falls back to the plain "nobody is standing there" when the
+  /// gap really is empty. Picks the least-screened enemy, since that is the
+  /// cheapest one to open up.
+  String _rangeDetailFor(CharacterBattleState state, ActiveTrigger trigger) {
+    final from = projectedPositionOf(state.character.id);
+    final enemies = [
+      for (final c in battle.teamB.characters) battle.states[c.id]!,
+    ];
+    final lines = _projectedLinesOf(enemies);
+
+    BattlePosition? bestLine;
+    var fewestScreens = 0;
+    var distanceThere = 0;
+    for (final enemy in enemies) {
+      if (!enemy.isAlive) continue;
+      final to = projectedPositionOf(enemy.character.id);
+      final screens = BattleDistance.screensFor(to, lines);
+      if (screens == 0) continue;
+      final screened =
+          BattleDistance.betweenEnemies(from, to, targetSquad: lines);
+      if (trigger.rangeTag.reaches(screened)) continue;
+      // Only screening's fault if the bare geometry would have reached.
+      final raw = BattleDistance.betweenEnemies(from, to, targetSquad: const []);
+      if (!trigger.rangeTag.reaches(raw)) continue;
+      if (bestLine == null || screens < fewestScreens) {
+        bestLine = to;
+        fewestScreens = screens;
+        distanceThere = screened;
+      }
+    }
+
+    if (bestLine == null) {
+      return 'Nobody is standing there. Move to close or open the gap.';
+    }
+    final who = fewestScreens == 1
+        ? 'one of their squad is'
+        : '$fewestScreens of their squad are';
+    return 'Their ${bestLine.label} line is at $distanceThere, because $who '
+        'screening it. Move up, or break the screen.';
+  }
+
+  /// Where [squad]'s living members will be standing once the queue resolves.
+  ///
+  /// Screening has to be measured against the same projected formation the
+  /// rest of the range check uses, or a queued move would change who is in
+  /// range without changing who is screening them. In practice only one side
+  /// queues at a time, so the enemy formation is the live one; this keeps the
+  /// two halves consistent anyway, and it is what pull and push (1c) will
+  /// need once a queued action can move an enemy.
+  List<BattlePosition> _projectedLinesOf(Iterable<CharacterBattleState> squad) =>
+      [
+        for (final t in squad)
+          if (t.isAlive) projectedPositionOf(t.character.id),
+      ];
 
   /// Only meaningful during the player's own turn, for one of their own
   /// living characters; returns an empty list otherwise.
@@ -514,8 +590,9 @@ class PlaySession {
     final pool = trigger.targetAffiliation == TargetAffiliation.opponent
         ? battle.teamB.characters
         : battle.teamA.characters;
-    for (final c in pool) {
-      final target = battle.states[c.id]!;
+    final states = [for (final c in pool) battle.states[c.id]!];
+    final squadLines = _projectedLinesOf(states);
+    for (final target in states) {
       if (!target.isAlive) continue;
       if (engine.canTarget(
         state,
@@ -523,6 +600,7 @@ class PlaySession {
         trigger: trigger,
         fromPosition: state.position,
         targetPosition: projectedPositionOf(target.character.id),
+        targetSquad: squadLines,
       )) {
         return false;
       }
@@ -551,9 +629,16 @@ class PlaySession {
       // Say the band and the window, so the fix (step forward or back) is
       // readable off the message rather than needing the rules in front of
       // you.
+      if (trigger.targetAffiliation != TargetAffiliation.opponent) {
+        return 'Out of range. ${trigger.rangeTag.label} reaches an ally '
+            '${trigger.rangeTag.allyWindowLabel} away, and none of your squad '
+            'is that close. Move together.';
+      }
+      // Screening is the reason often enough, and the fix is a different one
+      // (kill the bodies in the way, not move), so name it when it applies
+      // rather than claiming nobody is standing there when they plainly are.
       return 'Out of range. ${trigger.rangeTag.label} reaches a distance of '
-          '${trigger.rangeTag.windowLabel}, and nobody is standing there. '
-          'Move to close or open the gap.';
+          '${trigger.rangeTag.windowLabel}. ${_rangeDetailFor(state, trigger)}';
     }
     if (!legal.affordable) {
       return 'Not enough Trion. This costs ${legal.actualTrionCost}, and your '
@@ -693,8 +778,11 @@ class PlaySession {
       final reachable = _legalTargetIdsFor(state, trigger).toSet();
       if (targetIds.any((id) => !reachable.contains(id))) {
         return QueueOutcome.failure(
-          'Out of ${trigger.rangeTag.label} '
-          '(distance ${trigger.rangeTag.windowLabel}).',
+          trigger.targetAffiliation == TargetAffiliation.opponent
+              ? 'Out of ${trigger.rangeTag.label} '
+                  '(distance ${trigger.rangeTag.windowLabel}, screens included).'
+              : 'Out of ${trigger.rangeTag.label} '
+                  '(an ally ${trigger.rangeTag.allyWindowLabel} away).',
         );
       }
     }
@@ -1032,14 +1120,35 @@ class PlaySession {
         return a.compareTo(b);
       });
 
-    final actions = [
-      for (final i in order)
-        _resolveAction(
-          ordered[i].characterId,
-          triggerAt(i),
-          ordered[i].targetIds,
-        ),
-    ];
+    // Snapshot the board as the turn was committed, before anything resolves.
+    // Taken here rather than at queue time so the player's queue and the AI's
+    // plan are measured the same way, and so it sits after the arm phase where
+    // every move has already happened.
+    final committed = {
+      for (var i = 0; i < ordered.length; i++)
+        i: _snapshotReach(ordered[i].characterId, triggerAt(i),
+            ordered[i].targetIds),
+    };
+
+    final actions = <LogAction>[];
+    for (final i in order) {
+      final trigger = triggerAt(i);
+      final item = ordered[i];
+      // Screening means an earlier action this turn can move a later one out
+      // of band: kill a body screening a target and the target comes *closer*,
+      // which can drop them under the band's minimum. The shot bends to reach
+      // them rather than being wasted, and the squad pays for it out of next
+      // turn's Trion. Breaking a screen should never cost you the attack it
+      // set up.
+      final bend = _bendFor(item.characterId, trigger, item.targetIds,
+          committed[i]);
+      if (bend != null) {
+        (team == 'A' ? battle.teamA : battle.teamB).trionBacklash = true;
+      }
+      actions.add(
+        _resolveAction(item.characterId, trigger, item.targetIds, bend: bend),
+      );
+    }
     // Death Ledger: apply any AoE-swap the engine just signalled, then decay
     // the acting team's existing swaps (reverting expired ones).
     _applyPendingDeathLedgerSwaps();
@@ -1131,8 +1240,9 @@ class PlaySession {
   LogAction _resolveAction(
     String characterId,
     ActiveTrigger trigger,
-    List<String> targetIds,
-  ) {
+    List<String> targetIds, {
+    LogBend? bend,
+  }) {
     final engine = battle.turnEngine;
     final state = battle.states[characterId]!;
     final targets = [for (final id in targetIds) battle.states[id]!];
@@ -1150,6 +1260,9 @@ class PlaySession {
       attacker: state,
       trigger: trigger,
       targets: targets,
+      // A bending shot drops the band's minimum for this resolution only, so
+      // the target it curved onto is not filtered straight back out.
+      bending: bend != null,
     );
     // TEG Effect 3: credit any setup->payoff Trion refund to the acting team.
     if (useResult.trionRefund > 0) {
@@ -1167,9 +1280,110 @@ class PlaySession {
       triggerName: trigger.name,
       fatTriggered: state.fatTriggeredThisTurn,
       targets: logTargets(battle, useResult),
+      bend: bend,
     );
   }
 
+  /// Where each of an action's targets stood, and who was screening them,
+  /// at the moment the turn was committed.
+  ///
+  /// Screening is the only thing that can move a committed shot out of band,
+  /// and it moves it *downwards*: distances never grow mid-turn, because every
+  /// Reposition resolves in the arm phase before any ability. So this is the
+  /// "before" half of the comparison that decides whether a shot bends.
+  _ReachSnapshot _snapshotReach(
+    String characterId,
+    ActiveTrigger trigger,
+    List<String> targetIds,
+  ) {
+    final actor = battle.states[characterId];
+    if (actor == null ||
+        trigger.targetAffiliation != TargetAffiliation.opponent) {
+      return const _ReachSnapshot({}, {});
+    }
+    final engine = battle.turnEngine;
+    final distances = <String, int>{};
+    final screens = <String, List<String>>{};
+    for (final id in targetIds) {
+      final target = battle.states[id];
+      if (target == null) continue;
+      distances[id] = engine.distanceBetween(actor, target);
+      screens[id] = [
+        for (final mate in target.teammates)
+          if (mate.isAlive && mate.position.step < target.position.step)
+            mate.character.name,
+      ];
+    }
+    return _ReachSnapshot(distances, screens);
+  }
+
+  /// The bend, if this action's targets have all come too close since it was
+  /// committed. Null when nothing bent, which is the ordinary case.
+  ///
+  /// Deliberately asks about the band's **minimum** only. A target who died is
+  /// the engine's story, and a target who got further away cannot happen: the
+  /// only mid-turn change to a distance is a screen dying, which shortens it.
+  LogBend? _bendFor(
+    String characterId,
+    ActiveTrigger trigger,
+    List<String> targetIds,
+    _ReachSnapshot? before,
+  ) {
+    if (before == null) return null;
+    if (trigger.targetAffiliation != TargetAffiliation.opponent) return null;
+    final actor = battle.states[characterId];
+    if (actor == null || !actor.isAlive) return null;
+
+    final engine = battle.turnEngine;
+    final band = trigger.rangeTag;
+    final living = [
+      for (final id in targetIds)
+        if (battle.states[id]?.isAlive ?? false) battle.states[id]!,
+    ];
+    if (living.isEmpty) return null;
+
+    // Nothing bends while any target is still straightforwardly reachable.
+    if (living.any((t) => engine.canReach(actor, t, trigger))) return null;
+
+    // Of the ones left, the shot can only bend to a target that is under the
+    // minimum rather than over the maximum. Pick the closest, which is the one
+    // the shot is actually curving onto.
+    CharacterBattleState? bendTarget;
+    var bestDistance = 1 << 20;
+    for (final t in living) {
+      final distance = engine.distanceBetween(actor, t);
+      if (distance >= band.minDistance) continue; // too far, not too close
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bendTarget = t;
+      }
+    }
+    if (bendTarget == null) return null;
+
+    final id = bendTarget.character.id;
+    final wasScreening = before.screens[id] ?? const <String>[];
+    final stillScreening = {
+      for (final mate in bendTarget.teammates)
+        if (mate.isAlive && mate.position.step < bendTarget.position.step)
+          mate.character.name,
+    };
+    return LogBend(
+      targetName: bendTarget.character.name,
+      bandLabel: band.label,
+      bandWindow: band.windowLabel,
+      bandMinimum: band.minDistance,
+      distanceWhenCommitted: before.distances[id] ?? bestDistance,
+      distanceNow: bestDistance,
+      screensWhenCommitted: wasScreening.length,
+      screensBroken: [
+        for (final name in wasScreening)
+          if (!stillScreening.contains(name)) name,
+      ],
+      backlashTier: TrionTierConfig.defaults.lowAmount,
+    );
+  }
+
+  /// Feeds the passive-counter state machines after an ability resolves.
   /// Feeds the passive-counter state machines after an ability resolves.
   /// Without these calls the six passive counters never advance (design
   /// 13.1): Draegor Enmity, Reckoning Debt, Nullhymn Discord, Coldread's

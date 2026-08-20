@@ -49,9 +49,6 @@ battle game plus its accounts and XP backend.
 - [`docs/working_agreement.md`](docs/working_agreement.md) is how the project is
   run: the design-approve-build-playtest loop, and the standing design rules that
   apply to every item without being restated.
-- [`docs/next_session_1b.md`](docs/next_session_1b.md) is the handoff for the
-  next item (screening / RPP): the spec, where the code lives, and what to watch
-  for.
 - [`docs/reviews/`](docs/reviews) holds four player-persona design reviews and a
   design-director synthesis of the game's balance.
 - [`docs/supabase_setup.md`](docs/supabase_setup.md) documents the accounts/XP
