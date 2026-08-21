@@ -10,9 +10,18 @@ import '../test_helpers.dart';
 /// the squad wiring screening reads, that area attacks inherit screening
 /// without being taught it, and that traps deliberately do not.
 void main() {
+  /// Deterministic dice: two of these tests turn on an attack actually
+  /// landing, and leaving that to the shuffle makes them fail perhaps one run
+  /// in fifty, which is exactly the kind of test that erodes trust in a suite.
   Battle twoSquads() {
     final roster = CharacterRoster.defaultRoster;
     return Battle(
+      turnEngine: TurnEngine(
+        combatEngine:
+            CombatEngine(diceRoller: DiceRoller(const FixedRandom(19))),
+        statusEffectEngine:
+            StatusEffectEngine(diceRoller: DiceRoller(const FixedRandom(19))),
+      ),
       teamA: Team(
         id: 'a',
         characters: [
