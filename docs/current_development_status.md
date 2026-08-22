@@ -408,6 +408,26 @@ because it is what the AI's deliberately conservative rule (D7) produces; a
 player who values denial will push it higher, and that is the number the
 playtest should watch.
 
+### Found during the #2 build, not fixed: the Quick Battle log reads end-of-turn
+
+Seen by driving the real web build rather than by a test. The Quick Battle
+screen builds its log entries **after the whole turn has resolved**, so every
+line prints the health and the state as they stand at the end of the turn rather
+than after that action. A hit that took a character from 100 to 36 renders as
+"64 dmg -> HP 0" if somebody else finished them later in the same turn.
+
+This is pre-existing (`healthAfter` and `died` have always worked this way) and
+it is confined to the Quick Battle viewer; the Play-mode battle log resolves
+action by action and is unaffected. Bail Out makes it more visible, because two
+hits on the same character in one turn can now both read "BAILING OUT" when one
+of them was the drop and the other was not.
+
+The fix is not free: `takeTurn` resolves the entire turn before returning, so
+per-action state needs `AiActionResult` to carry it, which is an engine API
+change for a secondary screen's display. Left for a later pass rather than
+widened into #2's diff. Evidence: `quick_battle_controller.dart` builds
+`QuickBattleTargetResult` from `battle.states[...]` after the `takeTurn` loop.
+
 ### Fixed during the #2 build: a stale claim in a tool
 
 `tool/trap_screening_sim.dart` printed "Death Ledger never consults its recorded

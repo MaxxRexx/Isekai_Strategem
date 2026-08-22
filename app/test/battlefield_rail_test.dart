@@ -12,6 +12,7 @@ void main() {
     String name,
     BattlePosition position, {
     bool alive = true,
+    bool bailingOut = false,
   }) =>
       FighterSnapshot(
         id: id,
@@ -20,6 +21,7 @@ void main() {
         currentHealth: alive ? 100 : 0,
         maxHealth: 100,
         alive: alive,
+        bailingOut: bailingOut,
         position: position,
       );
 
@@ -128,7 +130,7 @@ void main() {
     expect(find.text('4'), findsOneWidget);
   });
 
-  testWidgets('killing a screen shortens the printed distance',
+  testWidgets('clearing a screen shortens the printed distance',
       (tester) async {
     await tester.pumpWidget(wrap(BattlefieldRail(
       teamA: [fighter('a1', 'Ren Kobayashi', BattlePosition.front)],
@@ -140,10 +142,33 @@ void main() {
       focusedId: 'a1',
     )));
 
-    // One screen down: the sniper drops from 4 to 3 and shows a single pip.
-    // Only the living get in the way.
+    // One screen gone from the board: the sniper drops from 4 to 3 and shows
+    // a single pip. Only what is still standing gets in the way.
     expect(find.text('3'), findsOneWidget);
     expect(screenPips(), findsOneWidget);
+  });
+
+  testWidgets('a bailing body is still in the way, so the ruler still counts '
+      'it', (tester) async {
+    // Item #2: killing a screen is not enough on its own any more, and the
+    // ruler has to print the number the engine will actually enforce or the
+    // player is planning against a different board.
+    await tester.pumpWidget(wrap(BattlefieldRail(
+      teamA: [fighter('a1', 'Ren Kobayashi', BattlePosition.front)],
+      teamB: [
+        fighter('b1', 'Vela Ashworth', BattlePosition.front,
+            alive: false, bailingOut: true),
+        fighter('b2', 'Dross', BattlePosition.front),
+        fighter('b3', 'Kaito Reyes', BattlePosition.back),
+      ],
+      focusedId: 'a1',
+    )));
+
+    expect(find.text('4'), findsOneWidget,
+        reason: 'the body has not left the line, so neither has the distance');
+    expect(screenPips(), findsNWidgets(2));
+    expect(find.text('Vela'), findsOneWidget,
+        reason: 'and it is still drawn on the board it is standing on');
   });
 
   testWidgets('the selected band is named, and measured from the focused line',
