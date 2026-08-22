@@ -427,9 +427,14 @@ class PlaySession {
         ? battle.teamB.characters.map((c) => battle.states[c.id]!)
         : battle.teamA.characters.map((c) => battle.states[c.id]!);
     final squadLines = _projectedLinesOf(pool);
+    // A Bailing Out body is a legal target for an attack and for nothing
+    // else. It has no health left to take a debuff's word for, nothing to
+    // cleanse and nothing to heal, so every other ability passes it by and
+    // the interface never offers it (see `TurnEngine.isAttackOnEnemy`).
+    final bodiesCount = TurnEngine.isAttackOnEnemy(trigger);
     return [
       for (final t in pool)
-        if (t.isAlive &&
+        if ((t.isAlive || (bodiesCount && t.isOnBoard)) &&
             engine.canTarget(
               state,
               t,
@@ -498,7 +503,7 @@ class PlaySession {
   List<BattlePosition> _projectedLinesOf(Iterable<CharacterBattleState> squad) =>
       [
         for (final t in squad)
-          if (t.isAlive) projectedPositionOf(t.character.id),
+          if (t.isOnBoard) projectedPositionOf(t.character.id),
       ];
 
   /// Only meaningful during the player's own turn, for one of their own
@@ -1246,6 +1251,9 @@ class PlaySession {
     final engine = battle.turnEngine;
     final state = battle.states[characterId]!;
     final targets = [for (final id in targetIds) battle.states[id]!];
+    // Who was already a body, so the log can tell "this hit put them there"
+    // apart from "they were already there when this hit landed".
+    final bailBefore = bailOutSnapshot(battle);
     // Trion was already spent (at queue time for the player, at plan commit
     // for the AI); record the use here so the FAT count and end-of-turn
     // cooldowns are set.
@@ -1279,7 +1287,7 @@ class PlaySession {
       triggerId: trigger.id,
       triggerName: trigger.name,
       fatTriggered: state.fatTriggeredThisTurn,
-      targets: logTargets(battle, useResult),
+      targets: logTargets(battle, useResult, before: bailBefore),
       bend: bend,
     );
   }
@@ -1310,7 +1318,7 @@ class PlaySession {
       distances[id] = engine.distanceBetween(actor, target);
       screens[id] = [
         for (final mate in target.teammates)
-          if (mate.isAlive && mate.position.step < target.position.step)
+          if (mate.isOnBoard && mate.position.step < target.position.step)
             mate.character.name,
       ];
     }
@@ -1336,9 +1344,13 @@ class PlaySession {
 
     final engine = battle.turnEngine;
     final band = trigger.rangeTag;
+    // On board, not alive: a shot that was committed at a legal distance
+    // should still land if the squad's own kill dragged it under the band's
+    // minimum, and that is just as true when what is left standing there is a
+    // Bailing Out body. Breaking a screen never costs you the attack it set up.
     final living = [
       for (final id in targetIds)
-        if (battle.states[id]?.isAlive ?? false) battle.states[id]!,
+        if (battle.states[id]?.isOnBoard ?? false) battle.states[id]!,
     ];
     if (living.isEmpty) return null;
 
@@ -1364,7 +1376,7 @@ class PlaySession {
     final wasScreening = before.screens[id] ?? const <String>[];
     final stillScreening = {
       for (final mate in bendTarget.teammates)
-        if (mate.isAlive && mate.position.step < bendTarget.position.step)
+        if (mate.isOnBoard && mate.position.step < bendTarget.position.step)
           mate.character.name,
     };
     return LogBend(
@@ -1432,12 +1444,12 @@ class PlaySession {
   /// player's next turn (unless the battle ends first). Returns the AI's
   /// turn as a log round.
   LogRound endTurn() {
-    battle.endTurn();
+    final settled = _logBailOuts(battle.endTurn());
     final aiRound = _playAiTurns();
     if (!battle.isOver) {
       battle.startTurn(equippedActiveTriggers: equippedA);
     }
-    return aiRound;
+    return _withBailOuts(aiRound, settled);
   }
 
   /// Like [endTurn] but waits [thinkingDelay] before the AI acts, so the UI
@@ -1445,7 +1457,7 @@ class PlaySession {
   /// (the simulated "thinking" beat). Behaves identically to [endTurn] with
   /// a zero delay.
   Future<LogRound> endTurnWithDelay(Duration thinkingDelay) async {
-    battle.endTurn();
+    final settled = _logBailOuts(battle.endTurn());
     if (thinkingDelay > Duration.zero) {
       await Future<void>.delayed(thinkingDelay);
     }
@@ -1453,8 +1465,36 @@ class PlaySession {
     if (!battle.isOver) {
       battle.startTurn(equippedActiveTriggers: equippedA);
     }
-    return aiRound;
+    return _withBailOuts(aiRound, settled);
   }
+
+  /// Turns what a turn boundary settled into log entries.
+  ///
+  /// A recall belongs to the squad whose body it was, not to whoever was
+  /// acting, so each entry carries its own side and the log line names the
+  /// squad rather than relying on the round header.
+  List<LogBailOut> _logBailOuts(TeamTurnEndResult result) => [
+    for (final r in result.bailOuts)
+      LogBailOut(
+        characterId: r.characterId,
+        characterName: battle.states[r.characterId]!.character.name,
+        team: battle.teamA.characters.any((c) => c.id == r.characterId)
+            ? 'A'
+            : 'B',
+        trionSalvaged: r.trionSalvaged,
+        refused: r.refused,
+      ),
+  ];
+
+  LogRound _withBailOuts(LogRound round, List<LogBailOut> settled) =>
+      settled.isEmpty && round.bailOuts.isEmpty
+          ? round
+          : LogRound(
+              roundNumber: round.roundNumber,
+              team: round.team,
+              actions: round.actions,
+              bailOuts: [...settled, ...round.bailOuts],
+            );
 
   /// Forces Full Arms Trigger active for the rest of this character's
   /// current turn, bypassing the normal FAT Chance roll. Not part of the
@@ -1470,6 +1510,7 @@ class PlaySession {
   /// phase-priority path the player's queue uses ([resolveAiPlan]).
   LogRound _playAiTurns() {
     final actions = <LogAction>[];
+    final bailOuts = <LogBailOut>[];
     var aiRoundNumber = battle.roundNumber;
     while (!battle.isTeamATurn && !battle.isOver) {
       battle.startTurn(equippedActiveTriggers: equippedB);
@@ -1481,8 +1522,13 @@ class PlaySession {
       _repositionIdleAi(plan);
 
       if (battle.isOver) break;
-      battle.endTurn();
+      bailOuts.addAll(_logBailOuts(battle.endTurn()));
     }
-    return LogRound(roundNumber: aiRoundNumber, team: 'B', actions: actions);
+    return LogRound(
+      roundNumber: aiRoundNumber,
+      team: 'B',
+      actions: actions,
+      bailOuts: bailOuts,
+    );
   }
 }

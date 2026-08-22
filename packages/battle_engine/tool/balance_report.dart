@@ -207,11 +207,11 @@ _Draft draft(String teamId, List<String> ids, AiProfile profile) {
   return _Draft(Team(id: teamId, characters: characters), states, equipped);
 }
 
-void reportSimulation({int battles = 200}) {
-  print('== Simulated battles ($battles AI vs AI) ==');
+void reportSimulation({int battles = 200, int seed = 20260814}) {
+  print('== Simulated battles ($battles AI vs AI, seed $seed) ==');
   final roster = CharacterRoster.defaultRoster.all.map((c) => c.id).toList();
   final profiles = AiProfile.all;
-  final random = Random(20260814);
+  final random = Random(seed);
 
   final rounds = <int>[];
   var attackRolls = 0;
@@ -225,13 +225,24 @@ void reportSimulation({int battles = 200}) {
     final bProfile = profiles[random.nextInt(profiles.length)];
     final a = draft('team-a', pool.take(3).toList(), aProfile);
     final b = draft('team-b', pool.skip(3).take(3).toList(), bProfile);
+    // Every source of chance in the battle is drawn from the one seed, so a
+    // pacing number printed here can be reproduced later. Without this only
+    // the matchups were seeded and the dice were not, which made two runs of
+    // the same seed disagree about the tail.
+    final dice = Random(seed * 1000003 + i);
     final battle = Battle(
       teamA: a.team,
       teamB: b.team,
       states: {...a.states, ...b.states},
+      turnEngine: TurnEngine(
+        combatEngine: CombatEngine(diceRoller: DiceRoller(dice)),
+        statusEffectEngine: StatusEffectEngine(diceRoller: DiceRoller(dice)),
+        trionGainEngine: TrionGainEngine(diceRoller: DiceRoller(dice)),
+        fatEngine: FatEngine(diceRoller: DiceRoller(dice)),
+      ),
     );
-    final aiA = ProfileDrivenAi(aProfile);
-    final aiB = ProfileDrivenAi(bProfile);
+    final aiA = ProfileDrivenAi(aProfile, random: dice);
+    final aiB = ProfileDrivenAi(bProfile, random: dice);
 
     var concluded = false;
     for (var turn = 0; turn < 400; turn++) {
@@ -301,8 +312,25 @@ void reportSimulation({int battles = 200}) {
       'crit rate ${pct(crits / attackRolls)}');
 }
 
-void main() {
-  reportAccuracyBand();
-  reportDamageCatalog();
-  reportSimulation();
+/// `dart run tool/balance_report.dart [--seed N] [--battles N] [--sim-only]`
+///
+/// The seed is an argument rather than a constant because a pacing claim made
+/// from one batch of 200 is one sample, and the questions this tool gets asked
+/// (does a change move the median, does it move the tail) need several. Four
+/// runs on four seeds is what items 1b and #2 were both measured with.
+void main(List<String> args) {
+  int intArg(String name, int fallback) {
+    final i = args.indexOf('--$name');
+    if (i < 0 || i + 1 >= args.length) return fallback;
+    return int.tryParse(args[i + 1]) ?? fallback;
+  }
+
+  if (!args.contains('--sim-only')) {
+    reportAccuracyBand();
+    reportDamageCatalog();
+  }
+  reportSimulation(
+    battles: intArg('battles', 200),
+    seed: intArg('seed', 20260814),
+  );
 }

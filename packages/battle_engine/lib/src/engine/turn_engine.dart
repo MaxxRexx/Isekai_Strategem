@@ -139,6 +139,14 @@ class TurnEngine {
   final FatConfig fatConfig;
   final PassiveCounterConfig passiveCounterConfig;
   final UniqueConfig uniqueConfig;
+  final BailOutConfig bailOutConfig;
+
+  /// Per-character shared team Trion pool (character id -> the pool of the
+  /// team they belong to), set by the Battle layer. Used to pay the attacking
+  /// squad for destroying a Bailing Out body, the same way
+  /// `StatusEffectEngine` credits a Sapped drain to its causer's pool. Empty
+  /// when TurnEngine is used standalone, which simply skips the payment.
+  Map<String, TrionPool> teamTrionPools = {};
 
   /// Battle-wide character registry (id -> state), set by the Battle layer
   /// so cross-team unique effects (Karmic Bind's live link) can look up a
@@ -319,6 +327,7 @@ class TurnEngine {
     this.fatConfig = FatConfig.defaults,
     this.passiveCounterConfig = PassiveCounterConfig.defaults,
     this.uniqueConfig = UniqueConfig.defaults,
+    this.bailOutConfig = BailOutConfig.defaults,
   })  : trionGainEngine = trionGainEngine ?? TrionGainEngine(),
         fatEngine = fatEngine ?? FatEngine(),
         combatEngine = combatEngine ?? CombatEngine(),
@@ -459,6 +468,22 @@ class TurnEngine {
     CharacterBattleState? damageSource,
     int? criticalDiceComponent,
   }) {
+    // A Bailing Out body has no health left to lose, so "destroyed" cannot be
+    // defined by damage crossing zero. Any hit that reaches it ends it,
+    // whatever the number and whoever threw it (a misfire from its own side
+    // counts, and denies its own squad the Salvage). The mitigation math below
+    // would be measuring a pool that is already empty, so this returns before
+    // running it.
+    if (target.bailOutState == BailOutState.bailingOut) {
+      _destroyBailingBody(target, damageSource);
+      return combatEngine.resolveDamageBreakdown(
+        baseDamage: 0,
+        damageType: damageType,
+        isCriticalHit: false,
+        target: target,
+      );
+    }
+
     final healthBeforeDamage = target.currentHealth;
     final breakdown = combatEngine.resolveDamageBreakdown(
       baseDamage: baseDamage,
@@ -516,10 +541,66 @@ class TurnEngine {
           (target.currentHealth - damage).clamp(0, maxHealth);
     }
 
+    noteHealthChanged(target);
+
     // Karmic Bind (Punish): a fraction of any damage this character takes
     // is dealt to the enemy they are bound to.
     _propagateKarmicBind(target, healthBeforeDamage - target.currentHealth);
     return breakdown;
+  }
+
+  /// Call after anything writes [state]'s health, so a drop to zero opens the
+  /// Bail Out window (or spends a Refuse to Bail) the instant it happens
+  /// rather than at the next turn boundary.
+  ///
+  /// The timing matters: a body that is still on the board **screens**, so
+  /// every distance computed later in the same resolution has to already know
+  /// it is there. Deferring this to the end of the turn would mean an earlier
+  /// kill briefly shortened the gap to whoever was standing behind them, which
+  /// is exactly the case the bending shot exists to catch.
+  void noteHealthChanged(CharacterBattleState state) {
+    if (state.currentHealth > 0) return;
+    if (state.bailOutState != BailOutState.none) return;
+
+    // Refuse to Bail, pre-declared and armed like any other counter: the drop
+    // does not happen. They stay standing at 1 health, buy one more turn of
+    // their own, and are then gone for good with no window and no Salvage.
+    final refusalIndex = state.reactiveEffects
+        .indexWhere((r) => r.kind == ReactiveKind.refuseToBail);
+    if (refusalIndex >= 0) {
+      state.reactiveEffects.removeAt(refusalIndex);
+      state.hasRefusedToBail = true;
+      state.currentHealth = 1;
+      return;
+    }
+
+    // Having already refused once, there is no window left to open: the
+    // second drop is simply the end of them.
+    if (state.hasRefusedToBail) return;
+
+    // The last body of a squad does not bail. Its squad is defeated the
+    // moment it falls (`Battle.isTeamDefeated` is unchanged), so a window
+    // would only hold a finished battle open to settle a Trion transfer that
+    // can no longer buy anything.
+    if (!state.teammates.any((t) => t.isAlive)) return;
+
+    state.bailOutState = BailOutState.bailingOut;
+    // A wreck does not parry. Whatever was standing on this character - their
+    // own ward, or an enemy trap that was waiting for them to act - goes with
+    // them, so a corpse cannot reflect the hit that clears it.
+    state.reactiveEffects.clear();
+  }
+
+  /// Ends a Bailing Out body: the Salvage is denied, and [destroyer]'s squad
+  /// banks its share for having spent the action.
+  void _destroyBailingBody(
+    CharacterBattleState body,
+    CharacterBattleState? destroyer,
+  ) {
+    body.bailOutState = BailOutState.destroyed;
+    if (destroyer == null) return;
+    teamTrionPools[destroyer.character.id]
+        ?.gain(bailOutConfig.attackerGainFor(body.character.baseStats.trionCapacity));
   }
 
   /// Karmic Bind, "Punish" (one-way): when a bound caster's own health
@@ -548,6 +629,7 @@ class TurnEngine {
     if (dmg <= 0) return;
     _resolvingKarmicBind = true;
     partner.currentHealth = (partner.currentHealth - dmg).clamp(0, 1 << 30);
+    noteHealthChanged(partner);
     _resolvingKarmicBind = false;
   }
 
@@ -674,8 +756,13 @@ class TurnEngine {
     final living = opponents.where((o) => o.isAlive).toList();
     if (living.isEmpty) return 0;
     // The opponents are each other's screens, so the lines they are standing
-    // on are exactly what [BattleDistance.betweenEnemies] needs.
-    final theirLines = [for (final o in living) o.position];
+    // on are exactly what [BattleDistance.betweenEnemies] needs. Only the
+    // living are worth aiming at, but every body still on the board screens,
+    // so the two lists are drawn separately.
+    final theirLines = [
+      for (final o in opponents)
+        if (o.isOnBoard) o.position,
+    ];
     var count = 0;
     for (final trigger in triggers) {
       if (trigger.targetAffiliation != TargetAffiliation.opponent) continue;
@@ -751,7 +838,10 @@ class TurnEngine {
   ) {
     final living = opponents.where((o) => o.isAlive).toList();
     if (living.isEmpty) return 0;
-    final theirLines = [for (final o in living) o.position];
+    final theirLines = [
+      for (final o in opponents)
+        if (o.isOnBoard) o.position,
+    ];
     var total = 0;
     for (final trigger in triggers) {
       if (trigger.targetAffiliation != TargetAffiliation.opponent) continue;
@@ -773,14 +863,32 @@ class TurnEngine {
     return total;
   }
 
+  /// Whether [trigger] is an attack: aimed at the enemy, and dealing damage.
+  ///
+  /// The one question that decides what may be pointed at a Bailing Out body.
+  /// A body has no health left to take a debuff's word for, nothing to cleanse
+  /// and nothing to heal, so only an attack may be aimed at one; every other
+  /// ability passes it by and the interface never offers it. Shared with the
+  /// app and the AI so there is exactly one definition of "damaging".
+  static bool isAttackOnEnemy(ActiveTrigger trigger) =>
+      trigger.targetAffiliation == TargetAffiliation.opponent &&
+      trigger.damageType != null &&
+      trigger.damage != null;
+
   /// Whether [a] and [b] are on the same side. Read off the `teammates`
   /// wiring the Battle constructor sets up; a character counts as their own
   /// ally so self-targeting takes the same path.
   bool areAllies(CharacterBattleState a, CharacterBattleState b) =>
       identical(a, b) || a.teammates.contains(b);
 
-  /// The lines [target]'s own living squadmates are standing on, which is
-  /// what screens them (see [BattleDistance.screensFor]).
+  /// The lines [target]'s own squadmates are standing on, which is what
+  /// screens them (see [BattleDistance.screensFor]).
+  ///
+  /// Reads [CharacterBattleState.isOnBoard] rather than `isAlive`, because a
+  /// Bailing Out body is still a body in the way. That is what makes clearing
+  /// one a real choice rather than a formality: breaking a screen no longer
+  /// shortens the gap on its own, since the screen is still standing there
+  /// until somebody spends an action on it or it is recalled.
   ///
   /// Read off the `teammates` wiring the Battle constructor sets up. A
   /// standalone engine harness may leave that empty, in which case nobody
@@ -789,7 +897,7 @@ class TurnEngine {
   /// wires it, so a live game never silently loses screening.
   List<BattlePosition> screeningLinesFor(CharacterBattleState target) => [
         for (final mate in target.teammates)
-          if (mate.isAlive) mate.position,
+          if (mate.isOnBoard) mate.position,
       ];
 
   /// How far apart [a] and [b] are standing right now.
@@ -973,6 +1081,10 @@ class TurnEngine {
   /// that teammate instead, consuming their charge. Returns [target]
   /// unchanged if no redirect applies.
   CharacterBattleState _applyGuardianRedirect(CharacterBattleState target) {
+    // Nobody steps in front of a Bailing Out body. There is nothing left to
+    // save, and spending a once-per-battle charge on one would be the worst
+    // trade in the game.
+    if (target.bailOutState == BailOutState.bailingOut) return target;
     for (final teammate in target.teammates) {
       if (identical(teammate, target)) continue;
       if (!teammate.isAlive) continue;
@@ -1613,7 +1725,13 @@ class TurnEngine {
       final appliedIds = <String>[];
       // TEG Effect 1 (offense) on the causer's infliction rolls this use.
       _applyTegOffenseAdvantage(advantageContext, attacker);
-      for (final application in trigger.inflictedStatusEffects) {
+      // A hit that destroyed a Bailing Out body leaves nothing to afflict.
+      // The body is off the board; hanging a Bleeding on it would show a
+      // status badge on a character who is gone.
+      final skipRiders = target.bailOutState == BailOutState.destroyed;
+      for (final application in skipRiders
+          ? const <StatusEffectApplication>[]
+          : trigger.inflictedStatusEffects) {
         // A buff or a ward granted to your own side is not inflicted, so it
         // is not contested. Rolling it against the recipient's own Status
         // Effect Resistance meant a character resisted their own War Chant
@@ -2579,6 +2697,7 @@ class TurnEngine {
     final maxHp = attacker.effectiveStats(fatConfig: fatConfig).maxHealth;
     attacker.currentHealth =
         (attacker.currentHealth - selfDamage).clamp(0, maxHp);
+    noteHealthChanged(attacker);
 
     // Enemy damage: rolled amount * linked multiplier (1.2x default),
     // through normal damage pipeline.
@@ -2634,6 +2753,7 @@ class TurnEngine {
     // no defense, no type interactions, no damage prevention.
     final healthBefore = target.currentHealth;
     target.currentHealth = max(0, target.currentHealth - hpCost);
+    noteHealthChanged(target);
     final damageDealt = healthBefore - target.currentHealth;
 
     if (damageDealt > 0) {
@@ -2668,8 +2788,11 @@ class TurnEngine {
       return _emptyResult(attacker.character.id, trigger.id);
     }
 
-    // The caster is removed from battle.
+    // The caster is removed from battle. Uniformly with every other way to
+    // reach zero, that opens a Bail Out window: the operator leaving the
+    // engagement is what Bail Out is, however they came to leave it.
     attacker.currentHealth = 0;
+    noteHealthChanged(attacker);
 
     // Every living enemy takes massive damage.
     final targetResults = <TargetHitResult>[];

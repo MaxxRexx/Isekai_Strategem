@@ -231,6 +231,17 @@ String describeActiveTrigger(
       '${def.name}: ${describeStatusEffect(def, onSelf: onSelf)}',
     );
   }
+  if (t.armsReactive != null) {
+    final line = reactiveDescription[t.armsReactive!];
+    if (line != null) {
+      parts.add(
+        t.armsReactiveDefaultTurns == null
+            ? '$line It stays armed until it fires.'
+            : '$line It stays armed for ${t.armsReactiveDefaultTurns} '
+                'turn${t.armsReactiveDefaultTurns == 1 ? '' : 's'}.',
+      );
+    }
+  }
   parts.add(
     'Costs ${t.trionCost} Trion. Usable again after ${t.cooldownTurns} '
     'turn${t.cooldownTurns == 1 ? '' : 's'} '
@@ -325,6 +336,54 @@ const passiveCounterDescription = <PassiveCounterKind, String>{
       'and brands the target (repeating an ability two turns running lands '
       'weakened). Cost: your other allies are left vulnerable to that type '
       'until your next turn. 3 per battle.',
+};
+
+/// What each counter actually does when it fires, in the player's own terms.
+///
+/// The arming half of a ward was invisible before this: an ability whose whole
+/// point is the reactive it sets up described itself as "Affects the user
+/// only", which tells nobody anything. A counter is a promise about the
+/// opponent's next turn, so the description has to say what the promise is.
+const reactiveDescription = <ReactiveKind, String>{
+  ReactiveKind.reflectNonAoe:
+      'Counter: the next single-target hit against you is reflected straight '
+      'back at whoever threw it, at full effect. An area attack ignores it and '
+      'leaves it standing.',
+  ReactiveKind.dodgeMeleeSingle:
+      'Counter: dodge the next single-target melee attack against you and '
+      'answer it with a free counter-hit. Once per battle.',
+  ReactiveKind.negateByOrigin:
+      'Counter: name a kind of power. The next attack of that kind against the '
+      'warded ally is cancelled outright, and its attacker is Stunned for 2 '
+      'turns.',
+  ReactiveKind.burstMitigation:
+      'Counter: a multi-hit burst against you only lands its first hit. Every '
+      'later hit in the same burst is suppressed.',
+  ReactiveKind.cooldownSabotage:
+      'Counter: when a ranged attack hits you, that ability goes on double '
+      'cooldown for its owner.',
+  ReactiveKind.redirectToOwnAlly:
+      'Counter: the next single-target attack on the protected ally is '
+      'redirected onto one of the attacker\'s own squad at random. You are '
+      'Exposed while it is armed.',
+  ReactiveKind.trapOnAction:
+      'Trap, laid on an enemy: the next time they use a damaging ability it is '
+      'countered outright and they take the trap damage instead.',
+  ReactiveKind.nullifyAoe:
+      'Mark, laid on an enemy: the next area attack they aim at your squad is '
+      'nullified, and you borrow the ability for 2 turns.',
+  ReactiveKind.bankDamage:
+      'Counter: while you are Guarded or Braced, damage you take is banked '
+      'instead of lost. Your next attack deals all of it as bonus damage.',
+  ReactiveKind.enrichSurviveLethal:
+      'Counter: when your survive-lethal charge saves you, every status you '
+      'are carrying lasts twice as long and whoever struck you is Stunned for '
+      '2 turns.',
+  ReactiveKind.refuseToBail:
+      'Pre-declared: the next time you would be reduced to 0 health, you are '
+      'not. You stay standing on 1 health and act one more time, and are then '
+      'gone for good. No body is left to recall, so your squad gets no Trion '
+      'Salvage.',
 };
 
 String describeTrigger(Trigger t) => switch (t) {

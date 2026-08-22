@@ -95,6 +95,7 @@ QuickBattleFighter _fighterSummary(CharacterBattleState s) =>
       currentHealth: s.currentHealth,
       maxHealth: s.effectiveStats().maxHealth,
       alive: s.isAlive,
+      bailingOut: s.bailOutState == BailOutState.bailingOut,
     );
 
 /// Picks 3 distinct random character ids from the full roster, avoiding any
@@ -220,6 +221,10 @@ QuickBattleResult runQuickBattle({int maxRounds = 60}) {
                     .effectiveStats()
                     .maxHealth,
                 died: !battle.states[t.targetCharacterId]!.isAlive,
+                startedBailingOut: battle
+                        .states[t.targetCharacterId]!
+                        .bailOutState ==
+                    BailOutState.bailingOut,
                 rolls: rollBreakdownsFor(t),
               ),
           ],

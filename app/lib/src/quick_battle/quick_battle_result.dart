@@ -14,6 +14,10 @@ class QuickBattleTargetResult {
   final int maxHealth;
   final bool died;
 
+  /// The drop opened a Bail Out window rather than ending them: the body is
+  /// still on the board. Rendered instead of DEFEATED, which it is not.
+  final bool startedBailingOut;
+
   /// The full per-roll breakdown behind [hits]/[crits]/[misses]/[damage].
   final List<LogRollBreakdown> rolls;
 
@@ -27,6 +31,7 @@ class QuickBattleTargetResult {
     required this.healthAfter,
     required this.maxHealth,
     required this.died,
+    this.startedBailingOut = false,
     this.rolls = const [],
   });
 }
@@ -66,11 +71,15 @@ class QuickBattleFighter {
   final int maxHealth;
   final bool alive;
 
+  /// The body is still on the board, bailing out (see item #2).
+  final bool bailingOut;
+
   const QuickBattleFighter({
     required this.name,
     required this.currentHealth,
     required this.maxHealth,
     required this.alive,
+    this.bailingOut = false,
   });
 }
 

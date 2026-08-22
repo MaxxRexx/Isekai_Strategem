@@ -105,8 +105,12 @@ void main() {
 
   group('range bands', () {
     test('the catalog is split evenly across the three bands', () {
+      // The 60 combat Triggers. Refuse to Bail (#2) is self-targeted and deals
+      // nothing, so its band never gates anything and it is deliberately
+      // outside the split; see content_catalogs_test for the same carve-out.
       final byBand = <RangeTag, int>{};
       for (final t in catalog.activeTriggers) {
+        if (t.id == 'refuse_to_bail') continue;
         byBand[t.rangeTag] = (byBand[t.rangeTag] ?? 0) + 1;
       }
       expect(byBand[RangeTag.close], 20);

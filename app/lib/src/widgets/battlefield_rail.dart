@@ -202,10 +202,14 @@ class BattlefieldRail extends StatelessWidget {
     return BattlePosition.middle;
   }
 
-  /// The lines their living squad is standing on, which is what screens them.
+  /// The lines their squad is standing on, which is what screens them.
+  ///
+  /// A Bailing Out body counts: it is still standing there, so it still adds
+  /// to the distance, and the ruler has to print the number the engine will
+  /// actually enforce. Clearing the body is what shortens the shot.
   List<BattlePosition> get _theirLivingLines => [
         for (final f in teamB)
-          if (f.alive) f.position,
+          if (f.alive || f.bailingOut) f.position,
       ];
 
   /// How many of their squad are standing in front of [line], shielding
@@ -221,7 +225,7 @@ class BattlefieldRail extends StatelessWidget {
   /// of their squad standing in front of it, an empty line can compute higher
   /// than any real target ever reaches.
   bool _theyOccupy(BattlePosition line) =>
-      teamB.any((f) => f.alive && f.position == line);
+      teamB.any((f) => (f.alive || f.bailingOut) && f.position == line);
 
   /// The effective distance from the focused character to an enemy on [line],
   /// screens included. This is the number the range bands are compared
@@ -320,9 +324,19 @@ class BattlefieldRail extends StatelessWidget {
   }) {
     final focused = fighter.id == focusedId;
     final health = '${fighter.currentHealth}/${fighter.maxHealth}';
+    // A body is not a fighter and not a corpse: it is still standing there,
+    // still in the way, and one hit clears it. It reads as drained rather
+    // than as a colour of its own, because every hue in this interface is
+    // already spoken for and "no longer fighting" is what drained means.
+    final bailing = fighter.bailingOut;
     return Tooltip(
       message: ghosted
           ? '${fighter.name} moves here this turn'
+          : bailing
+          ? '${fighter.name} is bailing out. The body is still in the way and '
+              'still screens. One hit destroys it and denies their squad the '
+              'Trion Salvage; left alone it is recalled at the end of your '
+              'next turn.'
           : screens > 0
           // Say what the pips mean and what to do about them, since this is
           // where a player meets screening for the first time.
@@ -332,7 +346,7 @@ class BattlefieldRail extends StatelessWidget {
               'Break the screen to get closer.'
           : '${fighter.name}: $health',
       child: Opacity(
-        opacity: fighter.alive ? 1 : 0.3,
+        opacity: fighter.alive ? 1 : (bailing ? 0.6 : 0.3),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
@@ -348,10 +362,16 @@ class BattlefieldRail extends StatelessWidget {
               Text(
                 '${ghosted ? '> ' : ''}${_shortName(fighter.name)}',
                 style: TextStyle(
-                  color: fighter.alive ? Colors.white : Colors.white38,
+                  color: fighter.alive
+                      ? Colors.white
+                      : (bailing ? Colors.white70 : Colors.white38),
                   fontSize: 9.5,
                   fontWeight: focused ? FontWeight.w700 : FontWeight.w500,
-                  decoration: fighter.alive ? null : TextDecoration.lineThrough,
+                  // A body has not been struck off the board yet, so it does
+                  // not get the strike-through a defeated character does.
+                  decoration: (fighter.alive || bailing)
+                      ? null
+                      : TextDecoration.lineThrough,
                 ),
               ),
               // One pip per body in the way. The pips answer "who do I have to

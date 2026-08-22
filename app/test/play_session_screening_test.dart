@@ -99,11 +99,18 @@ void main() {
   /// sniper on their middle line behind one body, and both actions committed
   /// in the same turn.
   ///
-  /// Marren kills the screen and Ilona shoots the sniper. Marren resolves
+  /// Marren clears the screen and Ilona shoots the sniper. Marren resolves
   /// first because attacks tie-break on Team Spirit deviation and hers is 5
-  /// against Ilona's 0, so the screen is already gone when the shot lands.
-  /// That is the whole scenario, rather than killing the screen by hand
-  /// between queueing and resolving, which is not something a turn can do.
+  /// against Ilona's 0, so the lane is already open when the shot lands. That
+  /// is the whole scenario, rather than clearing the screen by hand between
+  /// queueing and resolving, which is not something a turn can do.
+  ///
+  /// **The screen here is a Bailing Out body**, and that is item #2's doing.
+  /// Before Bail Out, killing the screen was enough: the body vanished and the
+  /// distance shortened on the spot. Now a killed screen stays standing and
+  /// keeps screening, so what opens the lane mid-turn is *destroying a body*,
+  /// not landing a kill. The test below named 'a kill no longer opens the
+  /// lane' guards the other half of that.
   ({PlaySession session, CharacterBattleState screen, CharacterBattleState sniper})
       committedBend() {
     final s = session();
@@ -113,12 +120,16 @@ void main() {
     final theirs = s.battle.teamB.characters;
     final screen = s.battle.states[theirs[0].id]!
       ..position = BattlePosition.front
-      ..currentHealth = 1; // so the Close Range hit is certain to finish it
+      ..currentHealth = 0;
     final sniper = s.battle.states[theirs[1].id]!
       ..position = BattlePosition.middle;
     s.battle.states[theirs[2].id]!
       ..position = BattlePosition.middle
       ..currentHealth = 0;
+    // Their front-liner is already bailing: on the board, screening, and one
+    // landed hit from being cleared off it.
+    s.battle.turnEngine.noteHealthChanged(screen);
+    expect(screen.bailOutState, BailOutState.bailingOut);
 
     expect(s.battle.turnEngine.distanceBetween(
             s.battle.states['ilona_vance']!, sniper), 2,
@@ -127,6 +138,7 @@ void main() {
     expect(
       s.queue('marren_osei', 'twin_fang_strike', [screen.character.id]).success,
       isTrue,
+      reason: 'a body is a legal target for an attack, and nothing else',
     );
     expect(
       s.queue('ilona_vance', 'suppressing_fire', [sniper.character.id]).success,
@@ -136,16 +148,62 @@ void main() {
     return (session: s, screen: screen, sniper: sniper);
   }
 
+  test('a kill no longer opens the lane on its own, because the body screens',
+      () {
+    // Item #2 changes what breaking a screen does. The screen dies, but the
+    // body stays where it fell, so the distance does not move and the shot
+    // that was committed at 2 is still a shot at 2. Nothing bends.
+    final s = session();
+    for (final c in s.battle.teamA.characters) {
+      s.battle.states[c.id]!.position = BattlePosition.front;
+    }
+    final theirs = s.battle.teamB.characters;
+    final screen = s.battle.states[theirs[0].id]!
+      ..position = BattlePosition.front
+      ..currentHealth = 1;
+    final sniper = s.battle.states[theirs[1].id]!
+      ..position = BattlePosition.middle;
+    s.battle.states[theirs[2].id]!
+      ..position = BattlePosition.middle
+      ..currentHealth = 0;
+
+    expect(
+      s.queue('marren_osei', 'twin_fang_strike', [screen.character.id]).success,
+      isTrue,
+    );
+    expect(
+      s.queue('ilona_vance', 'suppressing_fire', [sniper.character.id]).success,
+      isTrue,
+    );
+    final round = s.resolveQueue();
+
+    expect(screen.isAlive, isFalse, reason: 'the screen went down');
+    expect(screen.bailOutState, BailOutState.bailingOut,
+        reason: 'and is now a body rather than gone');
+    expect(s.battle.turnEngine.distanceBetween(
+            s.battle.states['ilona_vance']!, sniper), 2,
+        reason: 'the body is still in the way, so the distance did not move');
+    expect(
+      round.actions.firstWhere((a) => a.triggerId == 'suppressing_fire').bend,
+      isNull,
+      reason: 'nothing bent, because nothing came closer',
+    );
+    expect(s.battle.teamA.trionBacklash, isFalse,
+        reason: 'and nothing was charged for it');
+  });
+
   test('a kill that drops a target under the band bends the shot instead of '
       'wasting it', () {
     final f = committedBend();
     final before = f.sniper.currentHealth;
     final round = f.session.resolveQueue();
 
-    expect(f.screen.isAlive, isFalse, reason: 'the screen went down first');
+    expect(f.screen.bailOutState, BailOutState.destroyed,
+        reason: 'the body was cleared off the line first');
     expect(f.session.battle.turnEngine.distanceBetween(
             f.session.battle.states['ilona_vance']!, f.sniper), 1,
         reason: 'which dragged the sniper under Long Range\'s minimum of 2');
+
 
     final line =
         round.actions.firstWhere((a) => a.triggerId == 'suppressing_fire');

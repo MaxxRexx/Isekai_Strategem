@@ -126,6 +126,7 @@ FighterSnapshot fighterSnapshot(CharacterBattleState s) => FighterSnapshot(
   currentHealth: s.currentHealth,
   maxHealth: s.effectiveStats().maxHealth,
   alive: s.isAlive,
+  bailingOut: s.bailOutState == BailOutState.bailingOut,
   fatTriggered: s.fatTriggeredThisTurn,
   position: s.position,
   statusEffects: [
@@ -156,21 +157,68 @@ List<LogRollBreakdown> rollBreakdownsFor(TargetHitResult t) => [
     ),
 ];
 
+/// Who was already Bailing Out, and who had already refused, before an action
+/// resolves. Compared against the same states afterwards so the log can say
+/// what *this* action did rather than what is merely true now.
+BailOutSnapshot bailOutSnapshot(Battle battle) => BailOutSnapshot(
+  bailing: {
+    for (final s in battle.states.values)
+      if (s.bailOutState == BailOutState.bailingOut) s.character.id,
+  },
+  refused: {
+    for (final s in battle.states.values)
+      if (s.hasRefusedToBail) s.character.id,
+  },
+);
+
+/// See [bailOutSnapshot].
+class BailOutSnapshot {
+  final Set<String> bailing;
+  final Set<String> refused;
+  const BailOutSnapshot({this.bailing = const {}, this.refused = const {}});
+  static const empty = BailOutSnapshot();
+}
+
 /// The per-target log entries for one resolved ability use.
-List<LogTargetResult> logTargets(Battle battle, AbilityUseResult useResult) => [
+///
+/// [before] is the Bail Out picture from just before this action resolved; it
+/// is what turns "this target is Bailing Out" into "this hit is what put them
+/// there". Omit it and the Bail Out fields simply stay false, which is what an
+/// older caller with no bodies on the board wants anyway.
+List<LogTargetResult> logTargets(
+  Battle battle,
+  AbilityUseResult useResult, {
+  BailOutSnapshot before = BailOutSnapshot.empty,
+}) => [
   for (final t in useResult.targetResults)
-    LogTargetResult(
-      targetId: t.targetCharacterId,
-      targetName: battle.states[t.targetCharacterId]!.character.name,
-      hits: t.attackRolls.length,
-      crits: t.attackRolls.where((r) => r.isCriticalHit).length,
-      misses: t.attackRolls.where((r) => !r.isHit && !r.isCriticalMiss).length,
-      damage: t.totalDamageDealt,
-      statusEffectsApplied: statusEffectNames(t.statusEffectsApplied),
-      healthAfter: battle.states[t.targetCharacterId]!.currentHealth,
-      died: !battle.states[t.targetCharacterId]!.isAlive,
-      rolls: rollBreakdownsFor(t),
-    ),
+    () {
+      final state = battle.states[t.targetCharacterId]!;
+      final id = t.targetCharacterId;
+      final wasBailing = before.bailing.contains(id);
+      return LogTargetResult(
+        targetId: id,
+        targetName: state.character.name,
+        hits: t.attackRolls.length,
+        crits: t.attackRolls.where((r) => r.isCriticalHit).length,
+        misses: t.attackRolls.where((r) => !r.isHit && !r.isCriticalMiss).length,
+        damage: t.totalDamageDealt,
+        statusEffectsApplied: statusEffectNames(t.statusEffectsApplied),
+        healthAfter: state.currentHealth,
+        died: !state.isAlive,
+        startedBailingOut:
+            !wasBailing && state.bailOutState == BailOutState.bailingOut,
+        bodyDestroyed:
+            wasBailing && state.bailOutState == BailOutState.destroyed,
+        trionFromBody: wasBailing &&
+                state.bailOutState == BailOutState.destroyed
+            ? BailOutConfig.defaults
+                .attackerGainFor(state.character.baseStats.trionCapacity)
+            : 0,
+        refusedToBail:
+            !before.refused.contains(id) && state.hasRefusedToBail,
+        rolls: rollBreakdownsFor(t),
+      );
+    }(),
 ];
 
 LogAction logActionFor(

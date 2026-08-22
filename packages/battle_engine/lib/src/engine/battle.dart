@@ -24,6 +24,36 @@ class TeamTurnStartResult {
   });
 }
 
+/// One body leaving the board at a turn boundary, so the caller can log it.
+///
+/// Either a Bailing Out body being recalled (with the Trion Salvage its squad
+/// banked for getting the operator out), or a Refuse to Bail running out of
+/// the turn it bought.
+class BailOutResolution {
+  final String characterId;
+
+  /// Trion banked by that character's **own** squad. Zero for a spent
+  /// refusal, which is the whole price of refusing.
+  final int trionSalvaged;
+
+  /// Whether this was a Refuse to Bail expiring rather than a recall.
+  final bool refused;
+
+  const BailOutResolution({
+    required this.characterId,
+    required this.trionSalvaged,
+    required this.refused,
+  });
+}
+
+/// What [Battle.endTurn] settled at the turn boundary. Empty on almost every
+/// turn; a caller that does not care may ignore it.
+class TeamTurnEndResult {
+  final List<BailOutResolution> bailOuts;
+
+  const TeamTurnEndResult({this.bailOuts = const []});
+}
+
 /// A battle's outcome. [ongoing] until one or both teams are fully
 /// defeated (see [Battle.isTeamDefeated]).
 enum BattleOutcome { ongoing, teamAWins, teamBWins, draw }
@@ -97,8 +127,10 @@ class Battle {
     }
 
     // Give the engine the battle-wide registry so cross-team unique effects
-    // (Karmic Bind's live link) can look up a partner on the other team.
+    // (Karmic Bind's live link) can look up a partner on the other team, and
+    // the pool map it needs to pay a squad for destroying a Bailing Out body.
     this.turnEngine.characterRegistry = this.states;
+    this.turnEngine.teamTrionPools = _teamPoolsByCharacterId;
   }
 
   Team get activeTeam => isTeamATurn ? teamA : teamB;
@@ -261,6 +293,25 @@ class Battle {
       if (state.isAlive) turnEngine.tickReactiveEffects(state);
     }
 
+    // Bail Out (#2). Two things get armed here, both deliberately at a turn
+    // boundary rather than at the moment somebody fell:
+    //
+    //  - Every Bailing Out body on the team about to be *attacked* now has its
+    //    contested window. The turn the enemy killed them in was committed
+    //    before the kill landed, so it was never a decision; this one is.
+    //  - Anyone on the active team who refused to bail is spending the extra
+    //    turn they bought right now, and is destroyed at the end of it.
+    for (final state in inactiveTeamStates) {
+      if (state.bailOutState == BailOutState.bailingOut) {
+        state.bailOutWindowArmed = true;
+      }
+    }
+    for (final state in activeTeamStates) {
+      if (state.hasRefusedToBail && state.isAlive) {
+        state.refuseToBailFinalTurn = true;
+      }
+    }
+
     // Phase E: grant Illusory Double charges for any deaths from
     // start-of-turn status ticks.
     checkForDefeats();
@@ -272,11 +323,14 @@ class Battle {
     );
   }
 
-  /// Ends [activeTeam]'s turn: finalizes cooldowns/penalties for every
-  /// living member (see `TurnEngine.endCharacterTurn`), then passes
-  /// control to the other team, incrementing [roundNumber] once both
-  /// teams have gone.
-  void endTurn() {
+  /// Ends [activeTeam]'s turn: settles any Bail Out window that has now run
+  /// its course, finalizes cooldowns/penalties for every living member (see
+  /// `TurnEngine.endCharacterTurn`), then passes control to the other team,
+  /// incrementing [roundNumber] once both teams have gone.
+  ///
+  /// Returns what it settled, for the battle log. Callers that do not log may
+  /// ignore it.
+  TeamTurnEndResult endTurn() {
     // Phase B4: end-of-turn passive counter hooks (fire before character
     // bookkeeping so triggersUsedThisTurn is still populated for Levy).
     turnEngine.tickEndOfTurnPassiveCounters(
@@ -292,11 +346,59 @@ class Battle {
       if (state.isAlive) turnEngine.endCharacterTurn(state);
     }
 
+    final bailOuts = _settleBailOuts();
+
     // Phase E: grant Illusory Double charges for any deaths this turn
     // (ability resolutions, end-of-turn finishers like Gravehour).
     checkForDefeats();
 
     if (!isTeamATurn) roundNumber++;
     isTeamATurn = !isTeamATurn;
+    return TeamTurnEndResult(bailOuts: bailOuts);
+  }
+
+  /// Closes out the turn's Bail Out bookkeeping: a body whose contested
+  /// window has just passed untouched is recalled and its squad banks the
+  /// Trion Salvage, and anyone who refused to bail has now spent the turn
+  /// they bought and is destroyed for good.
+  List<BailOutResolution> _settleBailOuts() {
+    final settled = <BailOutResolution>[];
+    final config = turnEngine.bailOutConfig;
+
+    // The window belongs to the team that was *not* acting: the enemy just
+    // had their turn with the body standing there and left it alone.
+    for (final team in [teamA, teamB]) {
+      final isActive = identical(team, activeTeam);
+      for (final character in team.characters) {
+        final state = states[character.id]!;
+
+        if (!isActive &&
+            state.bailOutState == BailOutState.bailingOut &&
+            state.bailOutWindowArmed) {
+          state.bailOutState = BailOutState.recalled;
+          state.bailOutWindowArmed = false;
+          final salvage =
+              config.salvageFor(character.baseStats.trionCapacity);
+          team.trionPool.gain(salvage);
+          settled.add(BailOutResolution(
+            characterId: character.id,
+            trionSalvaged: salvage,
+            refused: false,
+          ));
+          continue;
+        }
+
+        if (isActive && state.refuseToBailFinalTurn) {
+          state.refuseToBailFinalTurn = false;
+          state.currentHealth = 0;
+          settled.add(BailOutResolution(
+            characterId: character.id,
+            trionSalvaged: 0,
+            refused: true,
+          ));
+        }
+      }
+    }
+    return settled;
   }
 }
