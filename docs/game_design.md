@@ -46,7 +46,8 @@ advantage or disadvantage, critical hits, and a big list of status conditions).
 18. Character perks: innate traits
 19. The AI opponent: 20 profiles across 5 skill classes
 20. Accounts and XP: the online part
-21. What is built so far
+21. Bail Out: what happens when a character reaches 0 Health
+22. What is built so far
 - Appendix A: every Trigger, explained
 - Appendix B: the full character roster
 - Appendix C: every status effect magnitude
@@ -64,8 +65,11 @@ A battle is a series of **turns** that alternate between the two squads. On your
 turn you pick actions for your living characters, choose their targets, and end
 the turn. Your actions then play out, the enemy takes its turn, and this repeats
 until every character on one side has been reduced to 0 Health. Reducing a
-character to 0 Health takes it out of the fight for good ("DEFEATED"), and a
-strong hit can do that in one blow, so the game is about smart planning: managing
+character to 0 Health takes them out of the fight for good: the operator
+**bails out** and leaves the engagement, though their body stays on the
+battlefield for one more turn and what happens to it is worth fighting over (see
+section 21). A strong hit can do that in one blow, so the game is about smart
+planning: managing
 your resource, landing status effects at the right moment, setting traps for the
 enemy, and building a team whose pieces support each other. It is not about
 simply having bigger numbers.
@@ -135,7 +139,9 @@ what each one actually does in plain terms:
 - **Armor.** A flat amount of damage removed from every hit that lands on you,
   after all the multipliers. Small but constant protection.
 - **Max Health.** How much damage you can take before you are knocked out. Every
-  character starts at 100. At 0 Health, the character is DEFEATED and gone.
+  character starts at 100. At 0 Health the operator bails out: they are out of
+  the fight for good, and their body spends one contested turn on the board
+  before it is recalled (section 21).
 - **Trion Capacity.** Two things at once: the size of your spendable resource
   pool, and the budget you have for equipping Triggers when you build the Loadout.
   It ranges from about 100 to 130 across the roster.
@@ -242,15 +248,18 @@ interactions key off them.
 
 ### Category: what job the Trigger does
 
-The 60 active Triggers are grouped into five **categories** by their role, which
-line up with World Trigger's classes:
+The 60 combat Triggers are grouped into five **categories** by their role, which
+line up with World Trigger's classes (Refuse to Bail, from section 21, is a 61st
+Trigger that sits outside every one of these splits, because it is self-targeted
+and deals nothing):
 
 - **Attacker (16):** melee bruisers who close in and hit hard.
 - **Shooter (9):** ranged fighters who fire volume, often in bursts.
 - **Sniper (3):** long-range specialists who land one big shot.
 - **Trapper (24):** control, damage-over-time, debuffs, and most of the unique
   abilities.
-- **Optional (8):** buffs, wards, self-help, and the reactive counters.
+- **Optional (8, plus Refuse to Bail):** buffs, wards, self-help, and the
+  reactive counters.
 
 ### Attack type: melee, ranged, or psychic
 
@@ -283,7 +292,7 @@ The **subtype** is what actually decides how an attack resolves:
   follow the standard hit-and-damage flow at all. See section 14.
 
 Not every combination exists. Melee has no bursts, and psychic has no bursts
-either, so the distribution across the 60 Triggers looks like this:
+either, so the distribution across the 60 combat Triggers looks like this:
 
 | Attack type | Single | Area | Burst | Unique | Total |
 |---|--:|--:|--:|--:|--:|
@@ -363,17 +372,22 @@ the Close Range maximum is **1** rather than 2: a Close Range ward reaches the
 next line along, not the whole formation.
 
 **Screening: the bodies in the way.** To the two lines added, add the number of
-**living members of the target's own squad standing on a line strictly in front
-of them**. That is the whole rule, and it does most of the work in this section.
+**members of the target's own squad still on the board and standing on a line
+strictly in front of them**. That is the whole rule, and it does most of the
+work in this section. "Still on the board" is doing real work in that sentence:
+a character you have just dropped is bailing out, and their body keeps screening
+until it is destroyed or recalled (section 21).
 
 - Screening is a property of the **line**, not of the character. Everyone
   standing together has the same number of bodies in front of them, so the
   battlefield strip prints one distance per enemy line and marks each screened
   enemy with a pip per body shielding them.
 - A sniper behind two squadmates sits at effective distance 4 and only Long
-  Range reaches them. Kill one screen and Mid Range opens up. Kill both and
+  Range reaches them. Clear one screen and Mid Range opens up. Clear both and
   Close Range arrives. **Breaking a screen is how you reach the people behind
-  it**, and that is the tactical loop the whole rule exists to create.
+  it**, and that is the tactical loop the whole rule exists to create. Note
+  *clear*, not *kill*: dropping a screen leaves a body standing in the same
+  place, so opening the lane takes the kill and then one more hit on the body.
 - **A squad stacked on one line screens nobody**, because nobody is standing in
   front of anybody. So camping at the back stops working of its own accord
   rather than having to be taxed.
@@ -909,6 +923,9 @@ These come from special Triggers. Each does one specific thing:
   Stored Retribution Trigger).
 - **Survive Lethal:** lets you live through a hit that would have knocked you out
   (the One More Breath ability).
+- **Refuse to Bail:** the next time you would be reduced to 0 Health, you are
+  not. You stay standing on 1 Health and act one more time, and are then gone
+  for good with no body to recall and no Trion Salvage (section 21).
 
 ### Passive counters (they charge up, then discharge)
 
@@ -1236,7 +1253,58 @@ always runs.
 
 ---
 
-## 21. What is built so far
+## 21. Bail Out: what happens when a character reaches 0 Health
+
+Reaching 0 Health does not kill anybody. The operator's trion body is spent, so
+they **bail out**: they leave the engagement and take no further part in the
+battle. That much is final, and no heal, ward or ability brings them back. What
+is *not* settled is what happens to the body they leave behind.
+
+**The body stays on the board for one contested turn.**
+
+- It cannot act, cannot be healed and cannot be moved.
+- It **still screens**. Standing where it fell, it keeps adding to the distance
+  for anyone behind it, exactly as the living character did.
+- It is a legal target for **an attack, and nothing else**. No heal, no ward, no
+  stun and no debuff will be offered against it, because there is nothing left
+  for any of them to do.
+
+Then one of two things happens:
+
+| What happens | Result |
+|---|---|
+| **Nobody touches it** | At the end of the enemy's next turn the operator is recalled. Their squad banks **Trion Salvage**: 20% of that character's base Trion Capacity, so 20 to 26 Trion. The body leaves the board and stops screening. |
+| **One hit lands on it** | The body is destroyed. The Salvage is gone, and the attacking squad banks a smaller share instead: 10% of the same base, so 10 to 13 Trion. |
+
+**Any landed hit of any size destroys it.** The body has no Health left to lose,
+so there is nothing to mitigate: a graze ends it exactly as a critical hit would.
+A miss does nothing. An area attack aimed at a living enemy standing on the same
+line clears the body along with them, which is a real reason to care where your
+squad falls.
+
+**The enemy gets one full turn to decide.** Whoever landed the killing blow had
+already committed that turn before the body existed, so the window opens on
+their *next* turn. In between, the bailing squad gets a turn of their own: they
+cannot save the body, but they can make it harder to reach, and they can kill
+whoever is best placed to take the shot.
+
+**The last one does not bail.** If a squad's final member goes down, that squad
+is defeated and the battle ends there. A window would only hold a finished battle
+open to settle Trion that can no longer buy anything.
+
+**Refuse to Bail** is the counter-play, and it is a Trigger you equip and arm in
+advance like any other ward. While it stands, the next drop to 0 Health does not
+happen: you stay on **1 Health**, act one more time, and are then gone for good,
+with no body to recall and **no Trion Salvage**. One more action against 20 to 26
+Trion is the whole gamble.
+
+*Design note: the attacker's 10% share, and Refuse to Bail's Trion cost, equip
+cost and cooldown, are first-pass values. The Status Point and Trigger Value pass
+(section 11) prices them along with everything else.*
+
+---
+
+## 22. What is built so far
 
 - **The battle engine is complete:** the queue-and-resolve turn system, all the
   reactive and passive counters, the unique abilities, the rebalanced Trigger
@@ -1267,17 +1335,21 @@ always runs.
 - **Screening is built.** Standing behind a teammate now puts real distance
   between you and the enemy, Close Range reaches 0 to 2 against an enemy, and
   breaking a screen is how you get at the people behind it. See section 7.
-- **Still to come on balance:** pull and push effects; a "Bail Out" downed state
-  instead of instant defeat; explicit points budgets for status effects and
-  Triggers; more traps built around position; and a steadier Trion economy. All
-  of it is designed and approved, and the running order is in
+- **Bail Out is built.** Reaching 0 Health is the operator leaving rather than
+  dying, and the body they leave behind is worth a turn's argument: recalled for
+  Trion Salvage if it is left alone, destroyed if it is not. Refuse to Bail is
+  the counter-play. See section 21. **Not yet playtested.**
+- **Still to come on balance:** pull and push effects; explicit points budgets
+  for status effects and Triggers; more traps built around position; and a
+  steadier Trion economy. All of it is designed and approved, and the running
+  order is in
   [`current_development_status.md`](current_development_status.md).
 
 ---
 
 ## Appendix A: Every Trigger, explained
 
-Each entry lists the cost in Trion, the cooldown in turns, and a plain description. There are 60 active Triggers.
+Each entry lists the cost in Trion, the cooldown in turns, and a plain description. There are 61 active Triggers: 60 combat Triggers, evenly split 20 per attack type and 20 per range band, plus Refuse to Bail, which is self-targeted and deals nothing and so sits outside both splits.
 
 
 ### Attacker Triggers (melee bruisers) (16)
@@ -1344,7 +1416,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 - **Venom Needle** (costs 12 Trion, 1-turn cooldown). A mid-range single-target poison attack dealing about 15 damage. Applies Poisoned (damage each turn).
 - **Venom Spray** (costs 20 Trion, 2-turn cooldown). A close-range rapid burst poison attack dealing about 9 damage per hit across 3 hits on each of up to 2 targets. Applies Poisoned (damage each turn).
 
-### Optional Triggers (buffs, wards, counters) (8)
+### Optional Triggers (buffs, wards, counters) (9)
 
 - **"Guardian's Aegis"** (costs 14 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Applies Guarded (takes 25% less damage). Applies Braced (reduced incoming damage).
 - **"Mind's Eye"** (costs 10 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: reveals the enemy Loadout for 3 turns.
@@ -1352,6 +1424,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 - **Frozen Tempo** (costs 18 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: extends the attacker cooldowns when they hit it.
 - **Illusory Double** (costs 0 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: a decoy that soaks a hit.
 - **Rally Cry** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Inspired (+2 attack and defense).
+- **Refuse to Bail** (costs 20 Trion, 3-turn cooldown). A self-targeted counter (no direct damage). Counter: the next drop to 0 Health does not happen. You stay on 1 Health, act one more time, and are then gone for good with no Trion Salvage. Stays armed until it fires. First-pass costs, awaiting the SPTV pass.
 - **Stored Retribution** (costs 16 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: banks damage taken to release later.
 - **War Chant** (costs 10 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Applies Empowered (deals +25% damage).
 
@@ -1426,6 +1499,15 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 | lowAmount | 10 |
 | mediumAmount | 20 |
 | highAmount | 35 |
+
+### Bail Out
+| Setting | Value |
+|---|---|
+| salvagePercentOfCapacity | 0.20 |
+| attackerGainPercentOfCapacity | 0.10 |
+
+The Salvage share is approved; the attacker's is a first-pass value, as are
+Refuse to Bail's 20 Trion cost, 20 equip cost and 3-turn cooldown.
 
 ### Full Arms Trigger
 | Setting | Value |
