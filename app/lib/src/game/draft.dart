@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:battle_engine/battle_engine.dart';
 
 import 'battle_models.dart';
@@ -126,6 +128,7 @@ FighterSnapshot fighterSnapshot(CharacterBattleState s) => FighterSnapshot(
   currentHealth: s.currentHealth,
   maxHealth: s.effectiveStats().maxHealth,
   alive: s.isAlive,
+  bailingOut: s.bailOutState == BailOutState.bailingOut,
   fatTriggered: s.fatTriggeredThisTurn,
   position: s.position,
   statusEffects: [
@@ -156,21 +159,73 @@ List<LogRollBreakdown> rollBreakdownsFor(TargetHitResult t) => [
     ),
 ];
 
+/// Who was already Bailing Out, and who had already refused, before an action
+/// resolves. Compared against the same states afterwards so the log can say
+/// what *this* action did rather than what is merely true now.
+BailOutSnapshot bailOutSnapshot(Battle battle) => BailOutSnapshot(
+  bailing: {
+    for (final s in battle.states.values)
+      if (s.bailOutState == BailOutState.bailingOut) s.character.id,
+  },
+  refused: {
+    for (final s in battle.states.values)
+      if (s.hasRefusedToBail) s.character.id,
+  },
+);
+
+/// See [bailOutSnapshot].
+class BailOutSnapshot {
+  final Set<String> bailing;
+  final Set<String> refused;
+  const BailOutSnapshot({this.bailing = const {}, this.refused = const {}});
+  static const empty = BailOutSnapshot();
+}
+
 /// The per-target log entries for one resolved ability use.
-List<LogTargetResult> logTargets(Battle battle, AbilityUseResult useResult) => [
+///
+/// [before] is the Bail Out picture from just before this action resolved; it
+/// is what turns "this target is Bailing Out" into "this hit is what put them
+/// there". Omit it and the Bail Out fields simply stay false, which is what an
+/// older caller with no bodies on the board wants anyway.
+List<LogTargetResult> logTargets(
+  Battle battle,
+  AbilityUseResult useResult, {
+  BailOutSnapshot before = BailOutSnapshot.empty,
+}) => [
   for (final t in useResult.targetResults)
-    LogTargetResult(
-      targetId: t.targetCharacterId,
-      targetName: battle.states[t.targetCharacterId]!.character.name,
-      hits: t.attackRolls.length,
-      crits: t.attackRolls.where((r) => r.isCriticalHit).length,
-      misses: t.attackRolls.where((r) => !r.isHit && !r.isCriticalMiss).length,
-      damage: t.totalDamageDealt,
-      statusEffectsApplied: statusEffectNames(t.statusEffectsApplied),
-      healthAfter: battle.states[t.targetCharacterId]!.currentHealth,
-      died: !battle.states[t.targetCharacterId]!.isAlive,
-      rolls: rollBreakdownsFor(t),
-    ),
+    () {
+      final state = battle.states[t.targetCharacterId]!;
+      final id = t.targetCharacterId;
+      final wasBailing = before.bailing.contains(id);
+      return LogTargetResult(
+        targetId: id,
+        targetName: state.character.name,
+        hits: t.attackRolls.length,
+        crits: t.attackRolls.where((r) => r.isCriticalHit).length,
+        misses: t.attackRolls.where((r) => !r.isHit && !r.isCriticalMiss).length,
+        damage: t.totalDamageDealt,
+        statusEffectsApplied: statusEffectNames(t.statusEffectsApplied),
+        healthAfter: state.currentHealth,
+        // Still in the window is not defeated. Without this clause a later
+        // action aimed at a body - even one that missed it - would print
+        // DEFEATED, which is both wrong and the opposite of the decision the
+        // player still has to make about that body.
+        died: !state.isAlive &&
+            state.bailOutState != BailOutState.bailingOut,
+        startedBailingOut:
+            !wasBailing && state.bailOutState == BailOutState.bailingOut,
+        bodyDestroyed:
+            wasBailing && state.bailOutState == BailOutState.destroyed,
+        trionFromBody: wasBailing &&
+                state.bailOutState == BailOutState.destroyed
+            ? BailOutConfig.defaults
+                .attackerGainFor(state.character.baseStats.trionCapacity)
+            : 0,
+        refusedToBail:
+            !before.refused.contains(id) && state.hasRefusedToBail,
+        rolls: rollBreakdownsFor(t),
+      );
+    }(),
 ];
 
 LogAction logActionFor(
@@ -185,3 +240,37 @@ LogAction logActionFor(
   fatTriggered: battle.states[result.characterId]!.fatTriggeredThisTurn,
   targets: logTargets(battle, result.useResult),
 );
+
+
+/// Picks [size] distinct random character ids, avoiding everyone in [taken].
+///
+/// **A character can only be in a battle once.** Their id is the key to their
+/// battle state, their Loadout, their `teammates` wiring, their row in the
+/// squad panel and their target id in the interface, so drafting the same
+/// character onto both squads gives the two of them one shared state: one
+/// health pool, each squad counting them as a teammate, and one of them able
+/// to be ordered to attack themselves. A playtest found exactly that with a
+/// mirror-matched Ilona Vance.
+///
+/// `Battle` now refuses to start such a battle at all. This is the other half:
+/// the squad drafts share one rule rather than each screen writing its own,
+/// which is how the two screens that got it wrong got it wrong.
+///
+/// A stopgap, not a rule: both sides are meant to be able to pick whoever they
+/// want. Item #14 replaces the character id with a battle-scoped one, and this
+/// exclusion goes with it.
+///
+/// [taken] accepts nulls so a screen can pass its slot list straight in.
+List<String> randomSquadAvoiding(
+  Random random,
+  Iterable<String?> taken, {
+  int size = 3,
+}) {
+  final excluded = taken.whereType<String>().toSet();
+  final pool = roster.all
+      .map((c) => c.id)
+      .where((id) => !excluded.contains(id))
+      .toList()
+    ..shuffle(random);
+  return pool.take(size).toList();
+}

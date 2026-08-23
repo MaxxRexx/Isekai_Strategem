@@ -179,8 +179,12 @@ class _FighterRow extends StatelessWidget {
               fighter.name,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: fighter.alive ? Colors.white : Colors.white38,
-                decoration: fighter.alive ? null : TextDecoration.lineThrough,
+                color: fighter.alive
+                    ? Colors.white
+                    : (fighter.bailingOut ? Colors.white70 : Colors.white38),
+                decoration: (fighter.alive || fighter.bailingOut)
+                    ? null
+                    : TextDecoration.lineThrough,
                 fontSize: 12.5,
               ),
             ),
@@ -358,7 +362,15 @@ class _QuickLogLineState extends State<_QuickLogLine> {
                         style: const TextStyle(color: Color(0xFF34D1C8)),
                       ),
                     TextSpan(text: ' -> HP ${t.healthAfter}'),
-                    if (t.died)
+                    if (t.startedBailingOut)
+                      const TextSpan(
+                        text: ' BAILING OUT',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    else if (t.died)
                       const TextSpan(
                         text: ' DEFEATED',
                         style: TextStyle(

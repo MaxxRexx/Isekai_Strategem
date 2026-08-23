@@ -161,19 +161,25 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         _teamAIds[i] = widget.initialTeamAIds![i];
       }
       _selections.addAll(widget.initialSelections!);
-      _randomizeTeam(_teamBIds, withProfile: true);
+      _randomizeTeam(_teamBIds, withProfile: true, avoid: _teamAIds);
       _startBattle();
     } else {
-      _randomizeTeam(_teamAIds, withProfile: false);
-      _randomizeTeam(_teamBIds, withProfile: true);
+      _randomizeTeam(_teamAIds, withProfile: false, avoid: _teamBIds);
+      _randomizeTeam(_teamBIds, withProfile: true, avoid: _teamAIds);
     }
   }
 
-  void _randomizeTeam(List<String?> slots, {required bool withProfile}) {
+  /// [avoid] is the other squad's slots: see [randomSquadAvoiding] for why a
+  /// character can only be in a battle once.
+  void _randomizeTeam(
+    List<String?> slots, {
+    required bool withProfile,
+    required List<String?> avoid,
+  }) {
     final random = Random();
-    final pool = roster.all.map((c) => c.id).toList()..shuffle(random);
+    final picked = randomSquadAvoiding(random, avoid);
     for (var i = 0; i < 3; i++) {
-      slots[i] = pool[i];
+      slots[i] = picked[i];
     }
     if (withProfile) {
       _profileBId = AiProfile.all[random.nextInt(AiProfile.all.length)].id;
@@ -804,9 +810,12 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     final setupStep = _tutorialActive ? _tutorial!.currentSetupStep : null;
     final lockedByTutorial = _tutorialActive;
 
+    // Every other slot on this squad, plus the whole of the other squad: a
+    // character can only be in the battle once (see [_randomizeTeam]).
     Set<String> takenExcept(List<String?> slots, int slot) => {
       for (var i = 0; i < slots.length; i++)
         if (i != slot && slots[i] != null) slots[i]!,
+      for (final id in (identical(slots, _teamAIds) ? _teamBIds : _teamAIds)) ?id,
     };
 
     final activeSlotA = lockedByTutorial
@@ -830,7 +839,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           onRandomize: lockedByTutorial
               ? null
               : () => setState(() {
-                  _randomizeTeam(_teamAIds, withProfile: false);
+                  _randomizeTeam(_teamAIds,
+                      withProfile: false, avoid: _teamBIds);
                   _activeSlotA = 0;
                   _previewIdA = null;
                 }),
@@ -860,7 +870,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           onRandomize: lockedByTutorial
               ? null
               : () => setState(() {
-                  _randomizeTeam(_teamBIds, withProfile: true);
+                  _randomizeTeam(_teamBIds,
+                      withProfile: true, avoid: _teamAIds);
                   _activeSlotB = 0;
                   _previewIdB = null;
                 }),
@@ -1327,6 +1338,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 fighters: session.teamB,
                 portraitSize: 96,
                 compact: true,
+                isOpponent: true,
                 rank: opponentAccountRank,
                 selectedIds: _selectedAction != null
                     ? _selectedTargets

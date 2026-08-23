@@ -30,6 +30,31 @@ class TempPercentPenalty {
   TempPercentPenalty(this.stat, this.percent, this.remainingTurns);
 }
 
+/// Where a character stands in the Bail Out sequence (work item #2).
+///
+/// Deliberately separate from health, and deliberately not a second reading
+/// of "alive". Thirty-odd places already agree that zero health means gone,
+/// and all of them should keep agreeing; only two questions get a different
+/// answer while a body is [bailingOut], and both are listed on
+/// [CharacterBattleState.isOnBoard].
+enum BailOutState {
+  /// Not bailing: still fighting, or destroyed outright with no window.
+  none,
+
+  /// The body is still on the board. It cannot act and cannot be healed,
+  /// but it is a legal target for a damaging enemy ability and it still
+  /// screens whoever is standing behind it.
+  bailingOut,
+
+  /// The window closed untouched: the operator was recalled and their squad
+  /// banked the Trion Salvage.
+  recalled,
+
+  /// A landed hit destroyed the body before it could be recalled. The
+  /// Salvage is gone.
+  destroyed,
+}
+
 /// A temporary flat bonus to a stat (e.g. Ilona's Riposte perk: a
 /// stacking Attack buff after a melee miss against her). The additive
 /// counterpart to [TempPercentPenalty].
@@ -231,6 +256,42 @@ class CharacterBattleState {
   }
 
   bool get isAlive => currentHealth > 0;
+
+  /// Whether this character's body is still physically on the battlefield:
+  /// alive, or [BailOutState.bailingOut] and not yet recalled or destroyed.
+  ///
+  /// Exactly two questions read this instead of [isAlive], and both are about
+  /// the body rather than the fighter: **who screens** (a body in the way is
+  /// still in the way), and **what a damaging enemy ability may be aimed at**.
+  /// Everything else - Trion income, ally counts, whether a team is defeated,
+  /// every perk that reads the squad - keeps reading [isAlive] and keeps
+  /// treating a bailing character as gone, because they are.
+  bool get isOnBoard => isAlive || bailOutState == BailOutState.bailingOut;
+
+  /// See [BailOutState]. Driven by `TurnEngine` (entering the window, being
+  /// destroyed) and `Battle` (the recall at the turn boundary).
+  BailOutState bailOutState = BailOutState.none;
+
+  /// Set by `Battle` at the start of the enemy turn that is this body's
+  /// contested window, and read at the end of it to recall the body.
+  ///
+  /// Armed at a turn boundary rather than counted from the drop, because the
+  /// enemy committed the turn they killed you in before they knew they had:
+  /// they get the *next* one to decide whether the body is worth an action.
+  bool bailOutWindowArmed = false;
+
+  /// Set once this character has spent a Refuse to Bail, so a second drop
+  /// destroys them outright instead of opening a window they already refused.
+  bool hasRefusedToBail = false;
+
+  /// Set by `Battle` at the start of the turn that is the extra turn a
+  /// Refuse to Bail bought, and read at the end of it to destroy the holder
+  /// for good.
+  ///
+  /// Armed at a turn boundary rather than counted from the refusal, so the
+  /// turn that was already underway when they refused never counts as the one
+  /// they paid for. That is the same rule the Bail Out window uses.
+  bool refuseToBailFinalTurn = false;
 
   bool get canTriggerFat => fatCooldownRemaining <= 0;
 

@@ -92,6 +92,13 @@ void main() {
 
       expect(find.text('YOUR SQUAD'), findsOneWidget);
       expect(find.text('OPPONENT SQUAD'), findsOneWidget);
+
+      // A character can only be in a battle once: the opponent squad here is
+      // randomised, and drafting one of yours would give the two of them a
+      // single shared battle state. Reaching this screen *is* the assertion,
+      // because `Battle` refuses to start a battle whose squads collide, so a
+      // regression in the draft throws on the way in rather than getting here.
+      // The rule itself is checked over 2000 draws in bail_out_session_test.
     },
   );
 

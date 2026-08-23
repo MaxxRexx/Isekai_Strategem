@@ -202,7 +202,7 @@ void example1() {
 }
 
 // ---------------------------------------------------------------------------
-// Example 2: Death Ledger, the trap whose reach is never checked at all.
+// Example 2: Death Ledger, which now re-checks its reach as Deadfall does.
 // ---------------------------------------------------------------------------
 
 void example2() {
@@ -279,8 +279,12 @@ void example2() {
           ? 'yes, unspent'
           : 'no, spent');
   print('\n  >>> The trap ${anyoneHurt ? 'DID NOT FIRE' : 'FIRED'}.');
-  print('      Death Ledger never consults its recorded band at all, so the');
-  print('      answer to Q1 does not reach it. Only Deadfall asks.');
+  print('      Both traps now re-check their recorded band when they fire,');
+  print('      which is what 1b decided. The check is deliberately');
+  print('      unscreened, so the two bodies that stepped up do not push it');
+  print('      out: 1 (the line it was armed from) + 2 (the sniper) is 3,');
+  print('      still inside Mid Range. A trap is a hazard already attached to');
+  print('      the target; bystanders moving about does not undo it.');
 }
 
 void main() {

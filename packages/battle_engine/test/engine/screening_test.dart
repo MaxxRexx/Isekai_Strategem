@@ -68,7 +68,7 @@ void main() {
       }
     });
 
-    test('screeningLinesFor counts only living squadmates', () {
+    test('screeningLinesFor counts every squadmate still on the board', () {
       final battle = twoSquads();
       setLines(battle, {
         'marren_osei': BattlePosition.front,
@@ -76,11 +76,21 @@ void main() {
         'bastian_cole': BattlePosition.back,
       });
       final sniper = battle.states['bastian_cole']!;
+      final screen = battle.states['marren_osei']!;
       expect(battle.turnEngine.screeningLinesFor(sniper), hasLength(2));
 
-      battle.states['marren_osei']!.currentHealth = 0;
+      // Item #2 changed what a kill does here. A dropped squadmate is a
+      // Bailing Out body: off the fight, but still standing in the way until
+      // somebody clears it or it is recalled.
+      screen.currentHealth = 0;
+      battle.turnEngine.noteHealthChanged(screen);
+      expect(screen.bailOutState, BailOutState.bailingOut);
+      expect(battle.turnEngine.screeningLinesFor(sniper), hasLength(2),
+          reason: 'the body has not left the line yet');
+
+      screen.bailOutState = BailOutState.destroyed;
       expect(battle.turnEngine.screeningLinesFor(sniper), hasLength(1),
-          reason: 'a body on the floor is not in the way');
+          reason: 'once it is off the board it is no longer in the way');
     });
   });
 

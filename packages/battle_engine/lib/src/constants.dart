@@ -528,3 +528,45 @@ class TurnTimerConfig {
   const TurnTimerConfig({this.secondsPerTurn = 15});
   static const TurnTimerConfig defaults = TurnTimerConfig();
 }
+
+/// Config for Bail Out (work item #2): the contested window an operator's
+/// body spends on the board after being reduced to zero health.
+///
+/// Bail Out is not a revive. The operator leaves the engagement either way;
+/// what is contested is whether their squad gets the Trion back. Left alone
+/// the body is recalled and the squad banks [salvagePercentOfCapacity] of
+/// that character's **base** Trion Capacity (base, because Capacity is a
+/// draft-time per-character budget and there is no per-character pool in
+/// battle to take a share of). One landed hit destroys it instead, denying
+/// the Salvage and paying the attacker's squad
+/// [attackerGainPercentOfCapacity] of the same base.
+///
+/// The Salvage share is the approved 20%: 30% of a typical Capacity of 110
+/// would exceed a whole High income turn. The attacker's share is exactly
+/// half of it, so the two stay tied to one base when SPTV (#3) re-prices
+/// either of them. **[attackerGainPercentOfCapacity] is an unpriced
+/// first-pass value.**
+class BailOutConfig {
+  /// Share of base Trion Capacity the squad banks when a body is recalled
+  /// untouched.
+  final double salvagePercentOfCapacity;
+
+  /// Share of base Trion Capacity the attacking squad banks for destroying
+  /// a body before it can be recalled. Unpriced first pass; #3 owns it.
+  final double attackerGainPercentOfCapacity;
+
+  const BailOutConfig({
+    this.salvagePercentOfCapacity = 0.20,
+    this.attackerGainPercentOfCapacity = 0.10,
+  });
+
+  static const BailOutConfig defaults = BailOutConfig();
+
+  /// The Trion a squad banks for recalling [baseTrionCapacity]'s owner.
+  int salvageFor(int baseTrionCapacity) =>
+      (baseTrionCapacity * salvagePercentOfCapacity).round();
+
+  /// The Trion an attacking squad banks for destroying that same body.
+  int attackerGainFor(int baseTrionCapacity) =>
+      (baseTrionCapacity * attackerGainPercentOfCapacity).round();
+}

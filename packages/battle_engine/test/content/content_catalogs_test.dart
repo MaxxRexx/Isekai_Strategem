@@ -49,19 +49,32 @@ void main() {
   group('TriggerCatalog.defaultCatalog', () {
     final catalog = TriggerCatalog.defaultCatalog;
 
-    test('has exactly 72 Triggers', () {
-      expect(catalog.all, hasLength(72));
+    /// The 60 combat Triggers, which are what the even splits below describe.
+    ///
+    /// Refuse to Bail (item #2) is the 61st active Trigger and is excluded on
+    /// purpose. It is self-targeted and deals nothing, so `canReach`
+    /// short-circuits before its band is ever consulted and its attack type
+    /// never rolls against anything: giving it either would tilt a grid that
+    /// is a statement about the attacking catalog. Counted here, it would make
+    /// psychic 21 and Close Range 21 while changing nothing anyone can play
+    /// against.
+    final combatTriggers = catalog.activeTriggers
+        .where((t) => t.id != 'refuse_to_bail')
+        .toList();
+
+    test('has exactly 73 Triggers', () {
+      expect(catalog.all, hasLength(73));
     });
 
-    test('has 60 active and 12 passive Triggers', () {
-      expect(catalog.activeTriggers, hasLength(60));
+    test('has 61 active and 12 passive Triggers', () {
+      expect(catalog.activeTriggers, hasLength(61));
+      expect(combatTriggers, hasLength(60));
       expect(catalog.passiveTriggers, hasLength(12));
     });
 
     test('active Triggers are balanced to exactly 20 / 20 / 20 by attack type '
         'with the target subtype distribution', () {
-      int count(AttackType type, AttackSubtype subtype) => catalog
-          .activeTriggers
+      int count(AttackType type, AttackSubtype subtype) => combatTriggers
           .where((t) => t.attackType == type && t.attackSubtype == subtype)
           .length;
 
@@ -84,8 +97,7 @@ void main() {
       expect(count(AttackType.psychic, AttackSubtype.unique), 10);
 
       for (final type in AttackType.values) {
-        expect(
-            catalog.activeTriggers.where((t) => t.attackType == type).length, 20,
+        expect(combatTriggers.where((t) => t.attackType == type).length, 20,
             reason: '$type should total 20');
       }
     });

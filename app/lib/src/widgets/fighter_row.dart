@@ -18,6 +18,11 @@ class FighterRow extends StatelessWidget {
   final double portraitSize;
   final bool compact;
 
+  /// Whether this row belongs to the enemy squad. Only read for the Bail Out
+  /// pill, whose whole point is what *you* can do about the body, which is a
+  /// different thing on each side of the board.
+  final bool isOpponent;
+
   /// Overrides the per-character placeholder rank with a single squad-wide
   /// value (e.g. the opponent's account rank), so every row shows the same
   /// badge instead of varying per character.
@@ -34,6 +39,7 @@ class FighterRow extends StatelessWidget {
     required this.fighter,
     this.portraitSize = 64,
     this.compact = false,
+    this.isOpponent = false,
     this.rank,
     this.selected = false,
     this.onTap,
@@ -63,14 +69,25 @@ class FighterRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: compact ? TextAlign.right : TextAlign.left,
             style: TextStyle(
-              color: fighter.alive ? Colors.white : Colors.white38,
-              decoration: fighter.alive ? null : TextDecoration.lineThrough,
+              // A bailing body is neither fighting nor struck off the board,
+              // so it gets neither the full white of the living nor the
+              // strike-through of the defeated.
+              color: fighter.alive
+                  ? Colors.white
+                  : (fighter.bailingOut ? Colors.white70 : Colors.white38),
+              decoration: (fighter.alive || fighter.bailingOut)
+                  ? null
+                  : TextDecoration.lineThrough,
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
         if (fighter.fatTriggered) ...const [SizedBox(width: 4), FatBadge()],
+        if (fighter.bailingOut) ...[
+          const SizedBox(width: 4),
+          BailingOutBadge(isOwnSquad: !isOpponent),
+        ],
       ],
     );
     final effects = fighter.statusEffects.isEmpty
@@ -141,6 +158,11 @@ class TeamPanel extends StatelessWidget {
   final double portraitSize;
   final bool compact;
 
+  /// Whether this row belongs to the enemy squad. Only read for the Bail Out
+  /// pill, whose whole point is what *you* can do about the body, which is a
+  /// different thing on each side of the board.
+  final bool isOpponent;
+
   /// A single squad-wide rank for every row (see [FighterRow.rank]).
   final CharacterRank? rank;
 
@@ -157,6 +179,7 @@ class TeamPanel extends StatelessWidget {
     required this.fighters,
     this.portraitSize = 64,
     this.compact = false,
+    this.isOpponent = false,
     this.rank,
     this.selectedIds = const {},
     this.onFighterTap,
@@ -190,6 +213,7 @@ class TeamPanel extends StatelessWidget {
               fighter: f,
               portraitSize: portraitSize,
               compact: compact,
+              isOpponent: isOpponent,
               rank: rank,
               selected: selectedIds.contains(f.id),
               onTap: onFighterTap == null ? null : () => onFighterTap!(f.id),

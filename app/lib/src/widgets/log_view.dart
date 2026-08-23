@@ -209,7 +209,76 @@ class RoundEntry extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 2),
                   child: LogLine(action: action, target: t, color: actorColor),
                 ),
+          // Nobody performed these: they are what the turn ending settled.
+          // Coloured by whose body it was rather than by who was acting,
+          // because the Salvage went into that squad's pool.
+          for (final b in round.bailOuts)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: BailOutLogLine(
+                entry: b,
+                color: b.team == 'A' ? Palette.teamA : Palette.teamB,
+                squadName: b.team == 'A' ? teamAName : teamBName,
+              ),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+/// A Bail Out window closing at a turn boundary: a recall with its Trion
+/// Salvage, or a Refuse to Bail running out of the turn it bought.
+class BailOutLogLine extends StatelessWidget {
+  final LogBailOut entry;
+  final Color color;
+  final String squadName;
+
+  const BailOutLogLine({
+    super.key,
+    required this.entry,
+    required this.color,
+    required this.squadName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(color: Colors.white70, fontSize: 12.5),
+        children: entry.refused
+            ? [
+                TextSpan(
+                  text: entry.characterName,
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                ),
+                const TextSpan(
+                  text: ' refused to bail, and that turn is spent: gone for '
+                      'good, with no Trion Salvage.',
+                ),
+              ]
+            : [
+                TextSpan(
+                  text: entry.characterName,
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                ),
+                const TextSpan(
+                  text: ' was left alone and is recalled. The body leaves the '
+                      'board and stops screening. ',
+                ),
+                // Phrased so it reads right whatever the squad is called:
+                // the names in play are "You" and "Opponent", and "You banks"
+                // is not a sentence.
+                TextSpan(text: 'Trion Salvage to $squadName: '),
+                TextSpan(
+                  text: '+${entry.trionSalvaged} Trion',
+                  style: const TextStyle(
+                    color: Palette.gold,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const TextSpan(text: '.'),
+              ],
       ),
     );
   }
@@ -478,8 +547,37 @@ class _LogLineState extends State<LogLine> {
                             text: ' [${t.statusEffectsApplied.join(', ')}]',
                             style: const TextStyle(color: Palette.accent),
                           ),
-                        TextSpan(text: ' -> HP ${t.healthAfter}'),
-                        if (t.died)
+                        if (!t.bodyDestroyed)
+                          TextSpan(text: ' -> HP ${t.healthAfter}'),
+                        // Three different endings, and calling any of the
+                        // other two "defeated" would be a lie: a body left
+                        // standing is still a decision, and a refusal means
+                        // they are still fighting.
+                        if (t.bodyDestroyed)
+                          const TextSpan(
+                            text: ' BODY DESTROYED',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        else if (t.refusedToBail)
+                          const TextSpan(
+                            text: ' REFUSES TO BAIL',
+                            style: TextStyle(
+                              color: Palette.gold,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        else if (t.startedBailingOut)
+                          const TextSpan(
+                            text: ' BAILING OUT',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        else if (t.died)
                           const TextSpan(
                             text: ' DEFEATED',
                             style: TextStyle(
@@ -509,6 +607,10 @@ class _LogLineState extends State<LogLine> {
             statusEffectsApplied: t.statusEffectsApplied,
             healthAfter: t.healthAfter,
             died: t.died,
+            startedBailingOut: t.startedBailingOut,
+            bodyDestroyed: t.bodyDestroyed,
+            trionFromBody: t.trionFromBody,
+            refusedToBail: t.refusedToBail,
           ),
       ],
     );
@@ -553,6 +655,14 @@ class RollBreakdownView extends StatelessWidget {
   final List<String> statusEffectsApplied;
   final int healthAfter;
   final bool died;
+
+  /// Bail Out (#2). See [LogTargetResult] for what each of these means; the
+  /// result line has to say which of the four endings happened, because
+  /// "defeated" is only one of them.
+  final bool startedBailingOut;
+  final bool bodyDestroyed;
+  final int trionFromBody;
+  final bool refusedToBail;
   const RollBreakdownView({
     super.key,
     required this.actorName,
@@ -562,6 +672,10 @@ class RollBreakdownView extends StatelessWidget {
     required this.statusEffectsApplied,
     required this.healthAfter,
     required this.died,
+    this.startedBailingOut = false,
+    this.bodyDestroyed = false,
+    this.trionFromBody = 0,
+    this.refusedToBail = false,
   });
 
   static const _body = TextStyle(
@@ -821,6 +935,45 @@ class RollBreakdownView extends StatelessWidget {
   }
 
   Widget _resultLine() {
+    if (bodyDestroyed) {
+      return RichText(
+        text: TextSpan(
+          style: _body,
+          children: [
+            const TextSpan(text: 'Result: '),
+            TextSpan(text: targetName, style: _total),
+            const TextSpan(
+              text: ' was already bailing out, so the hit destroyed the body '
+                  'rather than damaging it. Their squad loses the Trion '
+                  'Salvage they would have banked for the recall',
+            ),
+            if (trionFromBody > 0) ...[
+              const TextSpan(text: ', and your squad gains '),
+              TextSpan(text: '$trionFromBody Trion', style: _total),
+            ],
+            const TextSpan(text: '.'),
+          ],
+        ),
+      );
+    }
+    if (refusedToBail) {
+      return RichText(
+        text: TextSpan(
+          style: _body,
+          children: [
+            const TextSpan(text: 'Result: '),
+            TextSpan(text: targetName, style: _total),
+            const TextSpan(
+              text: ' had Refuse to Bail standing, so the drop did not happen: '
+                  'they stay on 1 HP and act one more time. At the end of that '
+                  'turn they are gone for good, with no body left to recall '
+                  'and no Trion Salvage.',
+              style: TextStyle(color: Palette.gold),
+            ),
+          ],
+        ),
+      );
+    }
     return RichText(
       text: TextSpan(
         style: _body,
@@ -829,7 +982,18 @@ class RollBreakdownView extends StatelessWidget {
           TextSpan(text: targetName, style: _total),
           const TextSpan(text: ' is now at '),
           TextSpan(text: '$healthAfter HP', style: _total),
-          if (died)
+          if (startedBailingOut)
+            const TextSpan(
+              text: ' and is bailing out: the operator is leaving, but the '
+                  'body stays on its line for one more turn. It still screens '
+                  'whoever is behind it. Hit it and it is destroyed, denying '
+                  'their squad the Trion Salvage; leave it and they bank it.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          else if (died)
             const TextSpan(
               text: ' and is defeated.',
               style: TextStyle(color: Palette.danger, fontWeight: FontWeight.bold),

@@ -510,6 +510,32 @@ class TriggerCatalog {
         armsReactiveDefaultTurns: 2,
       ),
 
+      // Item #2's counter-play, and the 61st active Trigger. It is deliberately
+      // outside the catalog's even 20/20/20 splits by attack type and by band:
+      // it is self-targeted and deals nothing, so neither its band nor its
+      // attack type ever gates anything, and giving it either would tilt a grid
+      // that describes the 60 combat Triggers.
+      //
+      // Untimed, like Predictive Parry and Stored Retribution: it stands until
+      // it fires, so arming it early is a real commitment of an action rather
+      // than a chore to re-cast. Costs are first-pass values set alongside its
+      // Optional-category peers (Stored Retribution 18/16/2, Frozen Tempo
+      // 20/18/2, Predictive Parry 20/20/2) and are unpriced until SPTV (#3).
+      ActiveTrigger(
+        id: 'refuse_to_bail',
+        name: 'Refuse to Bail',
+        category: TriggerCategory.optional,
+        equipCost: 20,
+        trionCost: 20,
+        cooldownTurns: 3,
+        originTag: OriginTag.mental,
+        rangeTag: RangeTag.close,
+        attackType: AttackType.psychic,
+        attackSubtype: AttackSubtype.single,
+        targetAffiliation: TargetAffiliation.self,
+        armsReactive: ReactiveKind.refuseToBail,
+      ),
+
       // --- Phase D: Unique-subtype Triggers wiring the Phase C behaviors ---
       // Numbers here follow existing tuning conventions and are tunable.
 

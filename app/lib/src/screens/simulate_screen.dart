@@ -38,15 +38,21 @@ class _SimulateScreenState extends State<SimulateScreen> {
   @override
   void initState() {
     super.initState();
-    _randomizeTeam(_teamAIds, (id) => _profileAId = id);
-    _randomizeTeam(_teamBIds, (id) => _profileBId = id);
+    _randomizeTeam(_teamAIds, (id) => _profileAId = id, avoid: _teamBIds);
+    _randomizeTeam(_teamBIds, (id) => _profileBId = id, avoid: _teamAIds);
   }
 
-  void _randomizeTeam(List<String?> slots, void Function(String) setProfile) {
+  /// [avoid] is the other squad: see [randomSquadAvoiding] for why a character
+  /// can only be in a battle once.
+  void _randomizeTeam(
+    List<String?> slots,
+    void Function(String) setProfile, {
+    required List<String?> avoid,
+  }) {
     final random = Random();
-    final pool = roster.all.map((c) => c.id).toList()..shuffle(random);
+    final picked = randomSquadAvoiding(random, avoid);
     for (var i = 0; i < 3; i++) {
-      slots[i] = pool[i];
+      slots[i] = picked[i];
     }
     setProfile(AiProfile.all[random.nextInt(AiProfile.all.length)].id);
   }
@@ -54,6 +60,7 @@ class _SimulateScreenState extends State<SimulateScreen> {
   Set<String> _takenExcept(List<String?> slots, int slot) => {
     for (var i = 0; i < slots.length; i++)
       if (i != slot && slots[i] != null) slots[i]!,
+    for (final id in (identical(slots, _teamAIds) ? _teamBIds : _teamAIds)) ?id,
   };
 
   void _engage() {
@@ -118,7 +125,8 @@ class _SimulateScreenState extends State<SimulateScreen> {
               slots: _teamAIds,
               profileId: _profileAId,
               onRandomize: () => setState(
-                () => _randomizeTeam(_teamAIds, (id) => _profileAId = id),
+                () => _randomizeTeam(_teamAIds, (id) => _profileAId = id,
+                    avoid: _teamBIds),
               ),
               onProfileChanged: (id) => setState(() => _profileAId = id),
             ),
@@ -164,7 +172,8 @@ class _SimulateScreenState extends State<SimulateScreen> {
               slots: _teamBIds,
               profileId: _profileBId,
               onRandomize: () => setState(
-                () => _randomizeTeam(_teamBIds, (id) => _profileBId = id),
+                () => _randomizeTeam(_teamBIds, (id) => _profileBId = id,
+                    avoid: _teamAIds),
               ),
               onProfileChanged: (id) => setState(() => _profileBId = id),
             ),

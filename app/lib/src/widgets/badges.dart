@@ -43,6 +43,57 @@ class FatBadge extends StatelessWidget {
   }
 }
 
+/// The Bail Out pill: this operator is leaving, but their body is still on
+/// the board for one contested turn.
+///
+/// Deliberately colourless. Amber is the Full Arms Trigger, gold is critical
+/// hits and stat values, red is death, cyan is status effects and your own
+/// squad, green is healing and violet is a bent shot: every hue in this
+/// interface already means something, and the one hue left (a cold blue) sits
+/// right on top of your own squad's cyan. Drained of colour is also what the
+/// state is, so it is the honest reading rather than a leftover.
+class BailingOutBadge extends StatelessWidget {
+  /// Whose body it is, which decides what the player can do about it.
+  final bool isOwnSquad;
+
+  const BailingOutBadge({super.key, required this.isOwnSquad});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: isOwnSquad
+          ? 'Bailing out. The operator is leaving the engagement and cannot '
+              'act, be healed or be moved. Their body still screens whoever '
+              'is behind it. If the enemy leaves it alone until the end of '
+              'their next turn it is recalled and your squad banks the Trion '
+              'Salvage; if they hit it, the body is destroyed and the Salvage '
+              'is lost.'
+          : 'Bailing out. The body is still standing there, still screening, '
+              'and one hit of any size destroys it. Destroying it denies them '
+              'the Trion Salvage and pays your squad a smaller share; leaving '
+              'it alone lets them bank the lot at the end of your next turn.',
+      triggerMode: TooltipTriggerMode.tap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          border: Border.all(color: Colors.white54),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: const Text(
+          'BAILING',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// A status-effect square icon badge (the effect-strip look from the
 /// approved mockup); tapping shows the name, duration, and effect summary.
 class StatusBadge extends StatelessWidget {

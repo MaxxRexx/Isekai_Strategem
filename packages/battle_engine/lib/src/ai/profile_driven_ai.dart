@@ -506,7 +506,24 @@ class ProfileDrivenAi {
             engine.canTarget(attacker, t,
                 trigger: trigger, fromPosition: fromPosition))
         .toList();
-    if (legal.isEmpty) return const [];
+
+    // Bail Out (#2): a body left on the board is worth destroying, because it
+    // denies the enemy squad their Trion Salvage and pays for the action. But
+    // it is never worth *trading* a live shot for, so this only looks once
+    // nothing that can still fight back is in band. Item #7 owns weighing the
+    // two properly; this is the floor that stops the opponent ignoring the
+    // mechanic altogether.
+    if (legal.isEmpty) {
+      if (!TurnEngine.isAttackOnEnemy(trigger)) return const [];
+      final bodies = pool
+          .where((t) =>
+              t.bailOutState == BailOutState.bailingOut &&
+              engine.canTarget(attacker, t,
+                  trigger: trigger, fromPosition: fromPosition))
+          .toList();
+      if (bodies.isEmpty) return const [];
+      return bodies.take(trigger.targetCount).toList();
+    }
 
     final isMistake = _isMistake(config);
     if (isMistake) {

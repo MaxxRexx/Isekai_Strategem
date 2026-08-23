@@ -156,6 +156,23 @@ class LogTargetResult {
   final int healthAfter;
   final bool died;
 
+  /// This hit dropped the target to zero and opened their Bail Out window:
+  /// the operator is leaving, but the body is still on the board for one
+  /// contested turn. The log says so instead of "and is defeated", which is
+  /// not what happened.
+  final bool startedBailingOut;
+
+  /// This hit landed on a body that was already Bailing Out and destroyed it,
+  /// denying that squad the Trion Salvage.
+  final bool bodyDestroyed;
+
+  /// Trion this hit paid the attacker's own squad for destroying the body.
+  final int trionFromBody;
+
+  /// The target refused to bail: they stayed standing at 1 health instead of
+  /// dropping, and are gone for good at the end of their next turn.
+  final bool refusedToBail;
+
   /// The full per-roll breakdown behind [hits]/[crits]/[misses]/[damage] -
   /// what the Battle Log's expand button reveals.
   final List<LogRollBreakdown> rolls;
@@ -170,6 +187,10 @@ class LogTargetResult {
     required this.statusEffectsApplied,
     required this.healthAfter,
     required this.died,
+    this.startedBailingOut = false,
+    this.bodyDestroyed = false,
+    this.trionFromBody = 0,
+    this.refusedToBail = false,
     this.rolls = const [],
   });
 }
@@ -237,16 +258,50 @@ class LogAction {
   });
 }
 
+/// A Bail Out window closing at a turn boundary: either the body was left
+/// alone and the operator was recalled, or a Refuse to Bail has run out of
+/// the turn it bought.
+///
+/// Not a [LogAction], because nobody did it. It is what the turn ending
+/// settled, so it is rendered on its own line under the round it settled in.
+class LogBailOut {
+  final String characterId;
+  final String characterName;
+
+  /// 'A' or 'B': whose squad the body belonged to, which is also whose pool
+  /// the Salvage went into.
+  final String team;
+
+  /// Trion the body's own squad banked. Zero for a spent refusal, which is
+  /// exactly what refusing costs.
+  final int trionSalvaged;
+
+  /// Whether this was a Refuse to Bail expiring rather than a recall.
+  final bool refused;
+
+  const LogBailOut({
+    required this.characterId,
+    required this.characterName,
+    required this.team,
+    required this.trionSalvaged,
+    required this.refused,
+  });
+}
+
 /// One team's turn within a round, holding every action taken in it.
 class LogRound {
   final int roundNumber;
   final String team; // 'A' or 'B'
   final List<LogAction> actions;
 
+  /// Bail Out windows that closed as this turn ended. Usually empty.
+  final List<LogBailOut> bailOuts;
+
   const LogRound({
     required this.roundNumber,
     required this.team,
     required this.actions,
+    this.bailOuts = const [],
   });
 }
 
@@ -258,6 +313,12 @@ class FighterSnapshot {
   final int currentHealth;
   final int maxHealth;
   final bool alive;
+
+  /// The operator is leaving, but the body is still standing on its line:
+  /// targetable by an attack, and still screening whoever is behind it.
+  /// Never true at the same time as [alive].
+  final bool bailingOut;
+
   final bool fatTriggered;
   final List<StatusBadgeInfo> statusEffects;
 
@@ -273,6 +334,7 @@ class FighterSnapshot {
     required this.currentHealth,
     required this.maxHealth,
     required this.alive,
+    this.bailingOut = false,
     this.fatTriggered = false,
     this.statusEffects = const [],
     this.position = BattlePosition.middle,

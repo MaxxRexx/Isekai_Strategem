@@ -57,6 +57,12 @@ enum ReactiveKind {
   /// banked amount as bonus damage, then the bank and this effect reset.
   bankDamage,
 
+  /// Refuse to Bail: pre-declared on yourself. When the holder would be
+  /// reduced to zero health they stay standing at 1 health instead, act for
+  /// one more turn of their own, and are then destroyed for good: no Bailing
+  /// Out window, and no Trion Salvage. Consumed when it fires.
+  refuseToBail,
+
   /// One More Breath: enriches Gravebind's survive-lethal-damage-once.
   /// When the survive-lethal charge fires, doubles all the wielder's
   /// current status durations and Stuns whoever dealt the lethal blow

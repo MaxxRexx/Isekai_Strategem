@@ -25,10 +25,11 @@ battle game plus its accounts and XP backend.
   decides what you can use. Repositioning costs a character their action, and the
   battlefield strip under both squads shows the whole board with its distance
   ruler and the move controls in one place.
-- **Deep combat systems:** 60 Triggers, 10 Black Triggers, 62 status effects, a
+- **Deep combat systems:** 61 Triggers, 10 Black Triggers, 62 status effects, a
   reactive and passive counter system, 17 unique abilities, an 18-entry combo
-  recognizer, Full Arms Trigger burst turns, and a Team Efficiency Grade that
-  scores your build, grants dice advantages, and inversely scales your XP.
+  recognizer, Full Arms Trigger burst turns, a contested Bail Out window when a
+  character reaches 0 Health, and a Team Efficiency Grade that scores your
+  build, grants dice advantages, and inversely scales your XP.
 - **Accounts and XP (online).** A Supabase backend provides stress-free sign-in
   (guest, passwordless email, or Google) and server-authoritative XP, with a
   local-only fallback so the game always runs.
