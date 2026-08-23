@@ -8,9 +8,9 @@ the single source of truth for its rules and content; re-render the PDF beside
 it whenever it changes.
 
 Items #1 (range bands as a real battlefield), 1b (screening, also called RPP)
-and #2 (Bail Out) are built; 1b and #2 are both awaiting the owner's playtest.
-The next item is whatever `current_development_status.md` names as the current
-priority.
+and #2 (Bail Out) are built and merged. **1b has never been playtested, and #2
+has not been re-tested since its playtest fixes landed.** The next item is
+whatever `current_development_status.md` names as the current priority.
 
 # Session setup and handoffs
 

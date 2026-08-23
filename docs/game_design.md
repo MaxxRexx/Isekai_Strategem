@@ -1345,7 +1345,7 @@ cost and cooldown, are first-pass values. The Status Point and Trigger Value pas
 - **Bail Out is built.** Reaching 0 Health is the operator leaving rather than
   dying, and the body they leave behind is worth a turn's argument: recalled for
   Trion Salvage if it is left alone, destroyed if it is not. Refuse to Bail is
-  the counter-play. See section 21. **Not yet playtested.**
+  the counter-play. See section 21.
 - **Still to come on balance:** pull and push effects; explicit points budgets
   for status effects and Triggers; more traps built around position; and a
   steadier Trion economy. All of it is designed and approved, and the running
