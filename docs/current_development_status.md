@@ -11,7 +11,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Playtesting 1b and #2.** Both are built and neither has been played by the owner. #2 is on `claude/task-2-9fj8pc` awaiting a merge; 1b is on main. After the playtests the queue's next buildable item is **#3 (SPTV)**, which also carries 3b's reaction table and 5b's stacking flags. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Playtesting 1b and #2.** #2 has had one playtest and its findings are fixed; it is on `claude/task-2-9fj8pc` awaiting a re-test and a merge. 1b is on main and has still not been played. After the playtests the queue's next buildable item is **#3 (SPTV)**, which also carries 3b's reaction table and 5b's stacking flags. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -170,7 +170,7 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the full-width horizontal battlefield strip (your back line on the left through to theirs on the right, with a distance ruler and the move controls in its own cells), an explicit reason on every ability that cannot be used, a distinct pulsing state for one the queued move has brought into band, plain-English status descriptions with the duration in the player's own turns, and AI positional judgement on both AI paths. Playtested by the owner and revised. | Done |
 | **1b** | **Screening (RPP).** Effective distance to an enemy = my line's step + their line's step + the number of living enemies standing on a line strictly in front of the target. No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule, and goes with 5c's rename rather than here. Being built now as its own item rather than waiting for #4, since the battlefield it changes is already live. Built: the distance rule and the widening (enemy-facing only, so a Close Range ward still reaches just the next line), screening threaded through every reach question, traps deliberately exempt with both of them now checking their reach, the ruler printing the screened number with a pip per screening body, a dash on empty lines, out-of-range copy that names screening and the fix, and the **bending shot** with Trion Backlash and its self-explaining log entry. The design review's decisions are recorded below. **Not yet playtested.** | Merged, awaiting playtest |
 | 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued |
-| **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. **Not yet playtested.** | Built, awaiting playtest |
+| **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. **Playtested by the owner and revised** (the same character on both squads, a body reading as defeated in the text report, and the recall's grammar; all three below). Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. | Built, playtested once, revised |
 | 3b | **Status reactions.** A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. Mechanism and table with #3 so SPTV prices them; the new abilities and Side Effects after #4 with 1c. | Approved, queued |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
 | 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued |
@@ -186,6 +186,7 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 11 | "Close" overloaded as a dialog button label. | Closed, not an issue |
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued |
+| 13b | **Every ability and status explains itself.** Raised by the owner in the #2 playtest, against Guardian's Aegis: it explains Guarded ("You take 25% less damage") and then says of Braced only "You are affected by Braced", which tells the player nothing. The cause is that `describeStatusEffect` renders some of `StatusEffectDefinition`'s fields and falls back to a placeholder for the rest, and Braced's whole effect lives in an unrendered one (`perRemainingTurnStatModifiers`, +1 Defense per remaining turn). Measured off the live catalogue: **16 of the 62 status effects hit that placeholder** (Wet, Sickened, Sapped, Reeling, Prepared, Braced, Focused, Hastened, Chilled, Origin Lockout, Interdict, Forced Critical Miss, Forced Choice, Karmic Bind, Called Shot, Mind's Eye). The standing rule is already written down in the working agreement: a status effect's description says what it does and how long it lasts in the player's own turns, never just its name. Sits with #13 because it is the same job (descriptions people can read) and after #3, which is about to change what several of those magnitudes are. | Queued |
 
 ### More traps, designed around positional play: part of item #4
 
@@ -407,6 +408,54 @@ the last member of the losing squad. The 16 to 19% denial rate is a **floor**,
 because it is what the AI's deliberately conservative rule (D7) produces; a
 player who values denial will push it higher, and that is the number the
 playtest should watch.
+
+### Fixed after the #2 playtest: the same character on both squads
+
+The owner's playtest drafted Ilona Vance on their own squad while the random
+opponent squad also drew her, and the battle came apart: targeting one
+highlighted both, the opponent could be ordered to attack themselves, and when
+the player's Ilona went down the opponent's died with her.
+
+The cause is older than #2 and has nothing to do with it. `Battle.states` is a
+`Map<String, CharacterBattleState>` keyed by the character's own id, so a
+character drafted onto both squads produces **five states for six characters**
+and the two of them are literally the same object: one health pool, and each
+squad counting them as a teammate. Reproduced exactly before fixing.
+
+Fixed in two places, because either alone would leave the door open:
+
+- **The engine refuses the battle.** `Battle`'s constructor throws when an id
+  appears twice across the two squads. It throws rather than asserting, because
+  an assert is compiled out of the release web build and this failure is silent
+  corruption rather than a crash.
+- **The draft cannot produce one.** Play mode and Simulate mode now exclude the
+  other squad's picks from both the randomiser and the manual roster, which is
+  what Quick Battle already did. The Guided Tutorial's two squads never
+  overlapped.
+
+**This makes mirror matches impossible**, which is a real if minor loss and is
+the owner's to overturn. Supporting them properly means a battle-scoped id
+(`A:ilona_vance`) rather than the character's own, and the character id is the
+key to everything: the state map, the equipped-Loadout maps, `teammates`, log
+entries, the interface's target ids. That is its own item, not a hotfix.
+
+### Fixed after the #2 playtest: a body was reading as defeated
+
+Three copy faults the playtest found, all in the same family: the interface knew
+one ending and there are four.
+
+- **The text battle report** (`report.dart`, the shareable one) had not been
+  taught any of them, so it wrote DEFEATED for a drop, for a destroyed body, and
+  even for a miss aimed at a character who was already down. It now writes the
+  same four endings the in-app log does, and prints the recall and its Trion
+  Salvage.
+- **A target still inside the window is no longer "defeated" anywhere.**
+  `logTargets` computes `died` as "not alive **and** not bailing out", so a
+  second action against a body cannot print DEFEATED over a decision the player
+  has not made yet.
+- **"You banks 22 Trion"** was the recall line, built from a squad name that is
+  "You" in the battle screen. Rephrased to "Trion Salvage to You: +22 Trion",
+  which reads properly whatever the squad is called.
 
 ### Found during the #2 build, not fixed: the Quick Battle log reads end-of-turn
 

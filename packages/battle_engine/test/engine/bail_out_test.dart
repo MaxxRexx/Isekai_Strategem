@@ -382,6 +382,37 @@ void main() {
     });
   });
 
+  group('a character can only be in a battle once', () {
+    // Found in a playtest: a mirror-matched Ilona Vance on both squads shared
+    // one battle state, so killing the player's killed the opponent's, both
+    // squads counted her as a teammate, and she could be ordered to attack
+    // herself. The map is keyed by character id; a duplicate silently
+    // collapses two characters into one.
+    test('the same character on both squads is refused, not collapsed', () {
+      final roster = CharacterRoster.defaultRoster;
+      expect(
+        () => Battle(
+          teamA: Team(id: 'a', characters: [
+            roster['sable_whitlock'],
+            roster['marren_osei'],
+            roster['ilona_vance'],
+          ]),
+          teamB: Team(id: 'b', characters: [
+            roster['ilona_vance'],
+            roster['rurik_voss'],
+            roster['haru_ellison'],
+          ]),
+        ),
+        throwsArgumentError,
+        reason: 'six characters cannot share five battle states',
+      );
+    });
+
+    test('two squads with no overlap build normally', () {
+      expect(twoSquads().states, hasLength(6));
+    });
+  });
+
   group('the numbers', () {
     test('Salvage is 20% of base Trion Capacity and the attacker gets half of '
         'that', () {

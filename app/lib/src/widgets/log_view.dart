@@ -266,14 +266,18 @@ class BailOutLogLine extends StatelessWidget {
                   text: ' was left alone and is recalled. The body leaves the '
                       'board and stops screening. ',
                 ),
+                // Phrased so it reads right whatever the squad is called:
+                // the names in play are "You" and "Opponent", and "You banks"
+                // is not a sentence.
+                TextSpan(text: 'Trion Salvage to $squadName: '),
                 TextSpan(
-                  text: '$squadName banks ${entry.trionSalvaged} Trion',
+                  text: '+${entry.trionSalvaged} Trion',
                   style: const TextStyle(
                     color: Palette.gold,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const TextSpan(text: ' in Trion Salvage.'),
+                const TextSpan(text: '.'),
               ],
       ),
     );

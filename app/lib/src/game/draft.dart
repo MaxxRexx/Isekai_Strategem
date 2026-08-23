@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:battle_engine/battle_engine.dart';
 
 import 'battle_models.dart';
@@ -204,7 +206,12 @@ List<LogTargetResult> logTargets(
         damage: t.totalDamageDealt,
         statusEffectsApplied: statusEffectNames(t.statusEffectsApplied),
         healthAfter: state.currentHealth,
-        died: !state.isAlive,
+        // Still in the window is not defeated. Without this clause a later
+        // action aimed at a body - even one that missed it - would print
+        // DEFEATED, which is both wrong and the opposite of the decision the
+        // player still has to make about that body.
+        died: !state.isAlive &&
+            state.bailOutState != BailOutState.bailingOut,
         startedBailingOut:
             !wasBailing && state.bailOutState == BailOutState.bailingOut,
         bodyDestroyed:
@@ -233,3 +240,33 @@ LogAction logActionFor(
   fatTriggered: battle.states[result.characterId]!.fatTriggeredThisTurn,
   targets: logTargets(battle, result.useResult),
 );
+
+
+/// Picks [size] distinct random character ids, avoiding everyone in [taken].
+///
+/// **A character can only be in a battle once.** Their id is the key to their
+/// battle state, their Loadout, their `teammates` wiring, their row in the
+/// squad panel and their target id in the interface, so drafting the same
+/// character onto both squads gives the two of them one shared state: one
+/// health pool, each squad counting them as a teammate, and one of them able
+/// to be ordered to attack themselves. A playtest found exactly that with a
+/// mirror-matched Ilona Vance.
+///
+/// `Battle` now refuses to start such a battle at all. This is the other half:
+/// the squad drafts share one rule rather than each screen writing its own,
+/// which is how the two screens that got it wrong got it wrong.
+///
+/// [taken] accepts nulls so a screen can pass its slot list straight in.
+List<String> randomSquadAvoiding(
+  Random random,
+  Iterable<String?> taken, {
+  int size = 3,
+}) {
+  final excluded = taken.whereType<String>().toSet();
+  final pool = roster.all
+      .map((c) => c.id)
+      .where((id) => !excluded.contains(id))
+      .toList()
+    ..shuffle(random);
+  return pool.take(size).toList();
+}

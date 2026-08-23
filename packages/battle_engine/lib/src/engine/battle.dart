@@ -114,6 +114,33 @@ class Battle {
               for (final c in teamA.characters) c.id: CharacterBattleState(c),
               for (final c in teamB.characters) c.id: CharacterBattleState(c),
             } {
+    // Every character id in a battle has to be unique, because the id is the
+    // key to everything: one entry in [states], one row in the squad panel,
+    // one target id in the interface, one `teammates` wiring. Draft the same
+    // character onto both squads and that map silently holds five states for
+    // six characters, so the two of them share one health pool, both squads
+    // count them as a teammate, and killing yours kills theirs. Found in a
+    // playtest, where a mirror-matched Ilona Vance died on both sides at once.
+    //
+    // This throws rather than asserting, because an assert is compiled out of
+    // the release web build and this failure is silent corruption rather than
+    // a crash. Supporting mirror matches properly needs a battle-scoped id
+    // rather than the character's own, which is its own item.
+    final ids = [
+      for (final c in [...teamA.characters, ...teamB.characters]) c.id,
+    ];
+    final duplicates = <String>{
+      for (final id in ids)
+        if (ids.where((other) => other == id).length > 1) id,
+    };
+    if (duplicates.isNotEmpty) {
+      throw ArgumentError(
+        'The same character cannot be in a battle twice: '
+        '${duplicates.join(', ')}. Every character id has to be unique across '
+        'both squads, since it is the key to their battle state.',
+      );
+    }
+
     // Wire up each character's `teammates` for team-aware CharacterPerks
     // (Kaito's last-one-standing crit bonus, Marren's ally-health-aware
     // Armor bonus, Sable's guardian redirect).

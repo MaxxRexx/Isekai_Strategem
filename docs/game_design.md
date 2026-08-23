@@ -103,7 +103,11 @@ Here is what you actually do, in order, every time you play:
 
 ## 3. Your team: characters and the four types
 
-A squad is always **exactly three characters**, chosen from a roster of **20**.
+A squad is always **exactly three characters**, chosen from a roster of **20**,
+and **no character can be in a battle twice**: if they are on your squad, the
+opponent cannot field them, and the character picker greys them out on the other
+side. (Mirror matches are a later job. A character's identity is what the whole
+battle is keyed to, so two of the same character would share one health pool.)
 Every character belongs to one of four **types**, and the type tells you their
 job and the general shape of their stats. (The exact stats for all 20 characters
 are in Appendix B.)

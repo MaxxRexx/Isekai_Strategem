@@ -9,7 +9,9 @@ String _logLines(List<LogRound> rounds, String Function(String team) teamName) {
   final buf = StringBuffer();
   for (final round in rounds) {
     buf.writeln('Round ${round.roundNumber}, ${teamName(round.team)}:');
-    if (round.actions.isEmpty) {
+    // A turn where nothing was done but a Bail Out window closed is not an
+    // empty turn, so the "nothing happened" line waits until both are empty.
+    if (round.actions.isEmpty && round.bailOuts.isEmpty) {
       buf.writeln('  (no legal action taken)');
       continue;
     }
@@ -37,9 +39,33 @@ String _logLines(List<LogRound> rounds, String Function(String team) teamName) {
         if (t.statusEffectsApplied.isNotEmpty) {
           entry.write(' [${t.statusEffectsApplied.join(', ')}]');
         }
-        entry.write(' -> HP ${t.healthAfter}');
-        if (t.died) entry.write(' DEFEATED');
+        // Four endings, not one. Writing DEFEATED for all of them is what
+        // made a playtest report read as though a body had died twice.
+        if (t.bodyDestroyed) {
+          entry.write(' BODY DESTROYED');
+          if (t.trionFromBody > 0) {
+            entry.write(' (+${t.trionFromBody} Trion)');
+          }
+        } else {
+          entry.write(' -> HP ${t.healthAfter}');
+          if (t.refusedToBail) {
+            entry.write(' REFUSES TO BAIL');
+          } else if (t.startedBailingOut) {
+            entry.write(' BAILING OUT');
+          } else if (t.died) {
+            entry.write(' DEFEATED');
+          }
+        }
         buf.writeln(entry);
+      }
+      for (final b in round.bailOuts) {
+        buf.writeln(
+          b.refused
+              ? '  ${b.characterName} refused to bail: gone for good, no '
+                  'Trion Salvage'
+              : '  ${b.characterName} is recalled '
+                  '(Trion Salvage +${b.trionSalvaged})',
+        );
       }
     }
   }
@@ -49,7 +75,11 @@ String _logLines(List<LogRound> rounds, String Function(String team) teamName) {
 String _finalStateLines(List<FighterSnapshot> fighters) => [
   for (final f in fighters)
     '  ${f.name}: ${f.currentHealth}/${f.maxHealth}'
-        '${f.alive ? '' : ' (defeated)'}',
+        '${f.alive
+            ? ''
+            : f.bailingOut
+            ? ' (bailing out)'
+            : ' (defeated)'}',
 ].join('\n');
 
 String _loadoutLines(Map<String, Loadout> loadouts) {

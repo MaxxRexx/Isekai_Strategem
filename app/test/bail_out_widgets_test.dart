@@ -25,6 +25,9 @@ void main() {
         bailingOut: bailingOut,
       );
 
+  // `died` and `startedBailingOut` are mutually exclusive by construction:
+  // a character in the Bail Out window is not defeated, and the log must not
+  // say they are (see `logTargets`).
   LogTargetResult target({
     bool died = false,
     bool startedBailingOut = false,
@@ -99,7 +102,7 @@ void main() {
     testWidgets('a drop says bailing out, not defeated', (tester) async {
       await tester.pumpWidget(
         wrap(
-          RoundEntry(round: round(target(died: true, startedBailingOut: true))),
+          RoundEntry(round: round(target(startedBailingOut: true))),
         ),
       );
 
@@ -183,7 +186,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.textContaining('Your Squad banks 22 Trion', findRichText: true),
+        find.textContaining('Trion Salvage to Your Squad: ', findRichText: true),
         findsOneWidget,
       );
     });

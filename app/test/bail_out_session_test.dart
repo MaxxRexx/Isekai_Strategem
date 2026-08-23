@@ -126,8 +126,10 @@ void main() {
           .targets
           .single;
 
-      expect(target.died, isTrue);
       expect(target.startedBailingOut, isTrue);
+      expect(target.died, isFalse,
+          reason: 'bailing out is not defeated, and the log must not say it '
+              'is: the body is still a decision');
       expect(target.bodyDestroyed, isFalse);
       expect(victim.bailOutState, BailOutState.bailingOut);
     });
@@ -208,6 +210,74 @@ void main() {
       expect(corpse.bailOutState, isNot(BailOutState.destroyed),
           reason: 'shooting a wreck while somebody can still shoot back is '
               'never the trade');
+    });
+  });
+
+  group('a body is not defeated', () {
+    test('a later action aimed at a body never reads as a defeat', () {
+      final s = session();
+      final corpse = body(s, 'kaito_reyes');
+
+      // Charm Whisper cannot be aimed at a body, so use the attack: the point
+      // is what the *second* action against the same target says.
+      expect(
+        s.queue('marren_osei', 'twin_fang_strike', [corpse.character.id])
+            .success,
+        isTrue,
+      );
+      final round = s.resolveQueue();
+      final target = round.actions
+          .firstWhere((a) => a.triggerId == 'twin_fang_strike')
+          .targets
+          .single;
+
+      expect(target.bodyDestroyed, isTrue);
+      expect(target.died, isTrue, reason: 'the body really is gone now');
+    });
+
+    test('while the window is open, died stays false', () {
+      final s = session();
+      final victim = s.battle.states['kaito_reyes']!..currentHealth = 1;
+      expect(
+        s.queue('marren_osei', 'twin_fang_strike', [victim.character.id])
+            .success,
+        isTrue,
+      );
+      final round = s.resolveQueue();
+      final target = round.actions
+          .firstWhere((a) => a.triggerId == 'twin_fang_strike')
+          .targets
+          .single;
+
+      expect(target.startedBailingOut, isTrue);
+      expect(target.died, isFalse,
+          reason: 'they are bailing out, which is not the same as defeated, '
+              'and the player still has a decision to make about the body');
+    });
+  });
+
+  group('a character can only be in a battle once', () {
+    // The playtest bug: a mirror-matched Ilona Vance on both squads shared one
+    // battle state, so killing the player's killed the opponent's. The engine
+    // now refuses such a battle; this is the draft rule that stops one being
+    // built, checked over enough draws that a rare overlap cannot hide.
+    test('a randomised squad never overlaps the one it is drafted against',
+        () {
+      final random = Random(7);
+      const theirs = ['ilona_vance', 'rurik_voss', 'haru_ellison'];
+      for (var i = 0; i < 2000; i++) {
+        final mine = randomSquadAvoiding(random, theirs);
+        expect(mine, hasLength(3));
+        expect(mine.toSet(), hasLength(3), reason: 'and no repeats within it');
+        expect(mine.toSet().intersection(theirs.toSet()), isEmpty,
+            reason: 'draw $i put ${mine.toSet().intersection(theirs.toSet())} '
+                'on both squads');
+      }
+    });
+
+    test('empty slots on the other squad exclude nobody', () {
+      final picked = randomSquadAvoiding(Random(1), [null, null, null]);
+      expect(picked, hasLength(3));
     });
   });
 
