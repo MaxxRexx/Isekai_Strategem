@@ -26,9 +26,10 @@ older note is gone.
 |---|---|
 | `main` | The trunk. Everything below the "in progress" line has been merged here, item #2 included. |
 | `gh-pages` | The published web build. Deploy target only; never develop on it. |
+| `claude/task-2-9fj8pc` | **Merged into main and finished with.** It survives only because this environment's git proxy refuses to delete a remote branch (`send-pack: unexpected disconnect`, on every attempt). Deleted locally; the remote one is one click in GitHub and is the owner's to remove. |
 
-Every work branch has been deleted once merged, #2's included, so the table
-above is the whole list. The next work branch has not been created yet.
+Every other work branch was deleted once merged. The next work branch has not
+been created yet.
 
 Branch names are deliberately absent from the phase table further down: every
 phase listed there is merged, so the branch it arrived on no longer exists and
