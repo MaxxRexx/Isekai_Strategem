@@ -531,6 +531,7 @@
       <span><b>Stage</b> design, no code written</span>
       <span><b>Measured over</b> 200 AI battles, seed 7</span>
       <span><b>Decisions needed</b> 7</span>
+      <span><b>Revised</b> after the queue was re-sequenced</span>
     </div>
   </header>
 
@@ -539,14 +540,41 @@
     <p class="prose lede">Seven decisions, lettered for reply. Everything after this section is the evidence behind them. If the recommendations all look right, "all as recommended" is a complete answer.</p>
     <div class="ask">
       <ol>
-        <li><span class="s">#A</span><span>What one Status Point <em>is</em>. Recommended: SP is measured in damage-equivalent directly, at face value, with no conversion constant.</span></li>
-        <li><span class="s">#B</span><span>Where a status effect's SP comes from. Recommended: computed from the definition's own fields by a tool, with a hand-written override for the five effects whose behaviour is not in their fields.</span></li>
-        <li><span class="s">#C</span><span>How tight the Trigger Value band is. Recommended: keep the design director's 2.0 to 3.0, and let the SP term do the work rather than moving costs.</span></li>
+        <li><span class="s">#A</span><span>What one Status Point <em>is</em>. Recommended: SP is measured in damage-equivalent directly, at face value, with no conversion constant, and stored as formulas over a re-measurable baseline rather than as frozen numbers.</span></li>
+        <li><span class="s">#B</span><span>Where a status effect's SP comes from. Recommended: computed from the definition's own fields, having first given the five field-less effects real fields, which 13b needs anyway. A two-entry override covers what is left.</span></li>
+        <li><span class="s">#C</span><span>How tight the Trigger Value band is. Recommended: keep the design director's 2.0 to 3.0. Needed at the start of wave 2, not wave 4, because #4 cannot pick costs without a target.</span></li>
         <li><span class="s">#D</span><span>The 1-turn debuff that expires before its victim acts. Recommended: move the countdown to the end of the holder's turn.</span></li>
         <li><span class="s">#E</span><span>The 24 status effects nothing applies. Recommended: price all 62, let 3b's reaction table home four for free, and land a failing-by-design reachability test that names the rest.</span></li>
         <li><span class="s">#F</span><span>How stacking works. Recommended: one instance carrying a stack count, one shared duration, capped at 3.</span></li>
         <li><span class="s">#G</span><span>Whether a status reaction has to win an infliction contest. Recommended: no, reactions fire automatically.</span></li>
       </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>The order changed, and four decisions moved with it</h2>
+    <p class="prose lede">This review was written while #3 sat before #4 in the queue. It no longer does. The audit's own arithmetic is what moved it, and the owner has approved the re-sequencing, so the seven decisions below have been re-read against the new order.</p>
+
+    <div class="note">
+      <p><strong>Why #3 split.</strong> Trigger Value is payload plus SP, divided by Trion cost, scaled by a cooldown factor. Item #4 rewrites the Trion cost and the cooldown of <strong>all 75 active abilities</strong>: range becomes an input to the cost model, Long Range up to three times the Close average, Mid Range carrying cooldowns up to 4. That is the denominator and the scale factor of every Trigger Value in the game. Three of the eight measured baselines move with it too. Pricing first prices everything twice.</p>
+      <p>But #4 cannot pick those costs without the rule, or it picks them by eye and #3 re-prices them anyway. So the rule goes before #4 and the pass goes after. The rule is cheap and durable; the pass is expensive and perishable.</p>
+    </div>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>Decision</th><th>Needed by</th><th>What the re-sequencing did to it</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="id">#A</td><td>Wave 1</td><td><strong>Strengthened.</strong> The rule is now built against an economy that is about to change, so SP has to be stored as formulas over a named baseline, not as frozen numbers</td></tr>
+          <tr><td class="id">#B</td><td>Wave 1</td><td><strong>Recommendation flipped.</strong> 13b is now in the same wave and pays for most of the fix</td></tr>
+          <tr><td class="id">#C</td><td>Wave 2</td><td><strong>Moved earlier, not later.</strong> #4 cannot set costs without a target band; wave 4 verifies rather than chooses</td></tr>
+          <tr><td class="id">#D</td><td>Wave 1</td><td><strong>Argument got stronger.</strong> 13b in the same wave would otherwise have to explain three different meanings of "duration"</td></tr>
+          <tr><td class="id">#E</td><td>Wave 1</td><td>Unchanged, but the orphan list now has a scheduled zero: wave 3</td></tr>
+          <tr><td class="id">#F</td><td>Wave 1</td><td>Unchanged</td></tr>
+          <tr><td class="id">#G</td><td>Wave 1</td><td>Unchanged</td></tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
@@ -760,6 +788,7 @@
             <div class="otext">
               <p>SP <em>is</em> damage-equivalent, at face value. One SP is one point of damage. No conversion constant exists, so it cannot be wrong.</p>
               <p>Face value means SP says what the effect does when it lands. Every probability lives in one place, the rider factor in TV, rather than being smeared through the status catalogue. Cost: SP numbers get bigger and less memorable (a one-turn stun is 12.3, not 4), and the design document's sentence has to be rewritten.</p>
+              <p><strong>What the re-sequencing added.</strong> Wave 1 writes the rule against an economy wave 2 is about to change, so SP cannot be a set of frozen numbers. It has to be <em>formulas over a named baseline</em>: the conversion table says <code>preventsActions = one action</code>, and a <code>SptvBaselines</code> config object holds what an action currently costs. Wave 1 measures that config, wave 2 changes the economy, wave 4 re-measures the same config and re-runs the same rule. The rule survives #4; only its inputs move. This also puts the baselines next to the other <code>*Config</code> classes in <code>constants.dart</code>, where every other tunable in the engine already lives.</p>
             </div>
           </div>
           <div class="option">
@@ -789,17 +818,19 @@
         </div>
         <div class="options">
           <div class="option pick">
-            <span class="oid">B1<span class="rec">Recommended</span></span>
+            <span class="oid">B2<span class="rec">Recommended, changed</span></span>
             <div class="otext">
-              <p>Computed from the definition's fields, with a hand-written override for the five effects whose behaviour is not in their fields.</p>
-              <p>57 statuses price themselves and cannot drift. The five overrides are written down with their reasoning next to them, and a test asserts that an override exists for exactly those five, so a sixth cannot be added quietly. Matches the "bag of parameters, one generic engine" shape the rest of the engine uses.</p>
+              <p>Give the five field-less statuses real declarative fields, then compute every price from the fields. A two-entry override covers the ones whose value is not mechanical.</p>
+              <p><strong>The re-sequencing flipped this.</strong> 13b is now in wave 1, in the same pass, and it has to make those same five describable. The fields it needs are the fields the pricer needs, so 13b pays for most of the work either way. One field each for <code>called_shot_stat_zero</code>, <code>forced_choice</code>, <code>forced_critical_miss</code>, <code>karmic_bind</code> and <code>minds_eye_reveal</code>.</p>
+              <p>It is also an improvement on its own terms. The engine currently finds these by hardcoded id, as in <code>indexWhere((i) =&gt; i.definitionId == 'forced_critical_miss')</code>, which is exactly the switch-on-name shape the engine's own documentation says it avoids. Reading a field instead removes five of them.</p>
+              <p>Two still need a written SP afterwards, because their value is not mechanical: <code>minds_eye_reveal</code> reveals information, and <code>called_shot_stat_zero</code>'s worth depends on which stat was named. Five overrides become two.</p>
             </div>
           </div>
           <div class="option">
-            <span class="oid">B2</span>
+            <span class="oid">B1</span>
             <div class="otext">
-              <p>Computed from the fields with no overrides, and the five marker statuses get new declarative fields so their behaviour becomes readable data.</p>
-              <p>Purer, and it would fix item 13b's descriptions for those five at the same time. Cost: four new fields on <code>StatusEffectDefinition</code> plus the engine changes to read them, inside an item that is meant to be a pricing pass.</p>
+              <p>Leave the definitions alone. Compute from the fields, with a hand-written override for all five.</p>
+              <p>No new fields and no engine change, which keeps the pricing pass a pricing pass. Cost: 13b then has to solve the same five statuses separately, in the same wave, and the hardcoded ids stay.</p>
             </div>
           </div>
           <div class="option">
@@ -818,6 +849,7 @@
           <div class="q">
             <h3>How tight the Trigger Value band is</h3>
             <p>The synthesis proposed 2.0 to 3.0. The live catalogue runs 0.50 to 3.36 with a median of 2.42, and the SP term will lift the bottom of that range on its own without any cost changing.</p>
+            <p><strong>Needed at the start of wave 2, not wave 4.</strong> This looked like the one decision the re-sequencing could defer. It is the opposite: #4 sets the Trion cost of every ability, and it cannot do that without a target to aim at. Wave 4 then verifies against the same band rather than choosing it.</p>
           </div>
         </div>
         <div class="options">
@@ -851,6 +883,7 @@
           <div class="q">
             <h3>The 1-turn debuff that expires before its victim acts</h3>
             <p>Effects tick down at the start of their holder's turn, so a 1-turn Stun put on an enemy is removed at the start of their turn and they act unimpeded. Eleven effects carry a 1-turn default. The status document offers two fixes; the audit adds a third and makes the first cheaper than it looked.</p>
+            <p><strong>Traced against the engine, the problem is worse than one broken duration.</strong> <code>tickStartOfTurn</code> fires the damage tick, then decrements, then removes at zero. So on an enemy, a duration of N delivers <strong>N damage ticks but only N&minus;1 afflicted turns</strong> of a state effect, while the same duration on yourself delivers N of your turns and N of the opponent's answers. One word, "duration", means three different things depending on who holds the effect and whether it ticks.</p>
           </div>
         </div>
         <div class="options">
@@ -859,7 +892,9 @@
             <div class="otext">
               <p>Move the countdown to the end of the holder's turn. Leave the damage and heal ticks at the start where they are.</p>
               <p>Duration then means the same thing for everyone: active during the holder's next N turns. A 1-turn debuff covers exactly the turn it was meant to interrupt. Splitting the countdown from the ticks means damage-over-time is untouched, which the status document's version of this option did not account for: Bleeding still gets its three ticks either way.</p>
-              <p>The real cost is wards. A 2-turn self-buff currently covers two of the opponent's turns and would then cover one, so Guarded and Braced get materially weaker. Since SPTV re-prices every duration in the same pass, that is absorbed rather than added. One ability breaks outright: Illusory Double's 1-turn Untargetable is written as "for the opponent's next turn" and needs 2 turns to keep meaning that.</p>
+              <p>The real cost is wards. A 2-turn self-buff currently covers two of the opponent's turns and would then cover one, so Guarded and Braced get materially weaker. One ability breaks outright: Illusory Double's 1-turn Untargetable is written as "for the opponent's next turn" and needs 2 turns to keep meaning that.</p>
+              <p><strong>The re-sequencing makes that cost payable and the case stronger.</strong> The compensation is derived rather than guessed, which matters because wave 4's pass is now four waves away and cannot be relied on to fix it in time. The conversion table already has to know, for every field, whether its value is realised on the holder's turn (attacks made) or the opponent's (attacks taken). That is the same question as which effects lose coverage, so the fields consumed on the opponent's turn get +1 and the rest keep N, and the answer falls out of the table rather than out of judgement.</p>
+              <p>And 13b now lands in the same wave. Under any option that leaves the inconsistency in place, 13b has to write three different explanations of "duration" for the player, against a working agreement that says a status says how long it lasts in the player's own turns. Making duration mean one thing is what lets 13b write one sentence.</p>
             </div>
           </div>
           <div class="option">
@@ -873,7 +908,7 @@
             <span class="oid">D3</span>
             <div class="otext">
               <p>Change nothing in the engine. Price durations by the turns they actually cover, which for a hostile 1-turn effect is zero, and give every hostile effect a floor of 2 turns.</p>
-              <p>No engine change and no ward nerf. Cost: there is then no way to express "lose one action", because the cheapest hostile interrupt costs two of them, and Stunned becomes a heavy effect rather than a brief one.</p>
+              <p>No engine change and no ward nerf, and the trace above shows this is cheaper than it first appeared: a 2-turn Stun already denies exactly one action, so "duration 2" is how the engine spells "lose one action" today and only the eleven 1-turn entries are actually broken. Cost: duration keeps meaning three things, the pricing tool has to encode all three, and 13b has to explain all three.</p>
             </div>
           </div>
         </div>
@@ -893,6 +928,7 @@
             <div class="otext">
               <p>Price all 62 now. Land 3b's reaction table, which homes four of them for free (Frozen, Electrocuted, Sickened and Acid all become reaction results). Add a reachability test that lists the remaining orphans explicitly, so the list can only ever shrink.</p>
               <p>Keeps this item a pricing pass, honours the standing rule by making every future violation visible, and buys four homes without writing a single new ability. The named list is uncomfortable to look at, which is the point.</p>
+              <p><strong>The re-sequencing gives the list a scheduled zero.</strong> Wave 1's reaction table homes four; wave 3's content pass, which now definitely happens before the pricing pass, homes the rest. So the test's named list is expected to empty in wave 3 rather than sitting open indefinitely, and the pass in wave 4 prices a catalogue where nothing is unreachable.</p>
             </div>
           </div>
           <div class="option">
@@ -968,24 +1004,35 @@
   </section>
 
   <section>
-    <h2>What this item builds, and what it does not</h2>
+    <h2>What this item builds, and when</h2>
+    <p class="prose lede">Split across two waves by the re-sequencing. Wave 1 builds the instrument and everything that does not depend on the Trion economy. Wave 4 runs the pass, once #4 has set the economy and wave 3 has finished the catalogue.</p>
 
-    <h3>In scope</h3>
+    <h3>Wave 1, before the economy</h3>
     <ul class="tight prose">
-      <li>The SP conversion table and a tool that prices the whole catalogue from it, alongside the two audit tools already committed.</li>
-      <li>Re-priced magnitudes and durations for all 62 status effects, and Trion costs and cooldowns for the 60 active Triggers plus the Black Trigger abilities.</li>
+      <li>The SP conversion table, the <code>SptvBaselines</code> config it reads, the tool that prices the catalogue from both, and the SP term in Trigger Value. A measuring instrument, not a re-pricing.</li>
+      <li>3b's mechanism: the <code>StatusReaction</code> field, the twelve-entry table, and Enraged's redesign. Homes four orphans and gives #4's trap pass the primitive it needs.</li>
+      <li>5b's stacking flags, per #F, since stacking changes what a status is worth before anything prices it.</li>
+      <li>13b's descriptions, sharing #B's field work.</li>
+      <li>The duration fix, per #D, so everything after is measured in one meaning of the word.</li>
+      <li>The Trion drain correctness fix. Two lines, and it must be answered before Sapped or Genjutsu Trapped is homed.</li>
+      <li>Spot-fixes for War Chant and Guardian's Aegis, the only two support abilities the audit found badly out, so the wave 2 playtests are not played with support that does nothing.</li>
+      <li>Alongside them in the same wave, though not part of #3: #14 (mirror matches) first, then 5c (the Side Effects rename).</li>
+    </ul>
+
+    <h3>Wave 4, the pass itself</h3>
+    <ul class="tight prose">
+      <li>The baselines re-measured against the shipped economy, and the same rule re-run over them.</li>
+      <li>Re-priced magnitudes and durations for all 62 status effects, and Trion costs and cooldowns for the 61 active Triggers plus the 14 Black Trigger abilities.</li>
       <li>The reactive and trap durations (<code>armsReactiveDefaultTurns</code>), all eleven of which are unpriced first-pass values today.</li>
-      <li>Item #5 folded in: each support ability must pay for its own action within its own duration, which the table above says means lifting War Chant and Guardian's Aegis rather than everything.</li>
-      <li>3b's mechanism: the <code>StatusReaction</code> field, the twelve-entry reaction table, and Enraged's redesign. Evaluated in the two places the spec names.</li>
-      <li>5b's stacking flags, per #F.</li>
-      <li>The tooltip duration setting: 2 to 10 seconds under the volume slider, dismissed by tapping elsewhere. Needs <code>shared_preferences</code>. No design tension, so it is not a decision.</li>
+      <li>Everything wave 3 added: 1c's pull and push, 3b's new abilities and Side Effects, and #4's positional traps.</li>
+      <li>Item #5 in full: each support ability must pay for its own action within its own duration. This is the gate on the wave.</li>
       <li>Bail Out's attacker share, currently an unpriced 10%, which the #2 merge left explicitly to this pass.</li>
     </ul>
 
-    <h3>Not in scope</h3>
+    <h3>Moved out of #3 entirely</h3>
     <ul class="tight prose">
-      <li>3b's new abilities and Side Effects. They stay after #4, alongside 1c, so the catalogue is priced once rather than twice.</li>
-      <li>The Trion economy itself. Income, capacity-gated FAT and the range-band cost identities are #4.</li>
+      <li>The tooltip duration setting (2 to 10 seconds under the volume slider, needing <code>shared_preferences</code>) goes to #6 in wave 5. It is interface work with no pricing in it, and it was only ever bundled here by accident of scheduling.</li>
+      <li>The Trion economy itself: income, capacity-gated FAT and the range-band cost identities are #4, in wave 2.</li>
       <li>The 0.60 abilities per character-turn figure. It is an economy problem and it belongs to #4, but it is recorded here because it softens every "worth an action" claim in this review.</li>
     </ul>
 
