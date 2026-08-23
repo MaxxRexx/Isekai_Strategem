@@ -11,7 +11,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **#3, SPTV**, once the outstanding playtests are done. **#2 is merged**, after one playtest whose three findings were fixed on the branch; **it has not been re-tested since those fixes**, and **1b has never been played at all**. Both are on main, so both can be played from the deployed build. #3 also carries 3b's reaction table and 5b's stacking flags. #14 (mirror matches) is newly queued and is cheaper before #3 than after. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **#3, SPTV**, now in design: the pre-build audit is done and the design review is waiting on seven decisions (see the audit section below). The outstanding playtests are still outstanding. **#2 is merged**, after one playtest whose three findings were fixed on the branch; **it has not been re-tested since those fixes**, and **1b has never been played at all**. Both are on main, so both can be played from the deployed build. #3 also carries 3b's reaction table and 5b's stacking flags. #14 (mirror matches) is newly queued and is cheaper before #3 than after. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -26,10 +26,10 @@ older note is gone.
 |---|---|
 | `main` | The trunk. Everything below the "in progress" line has been merged here, item #2 included. |
 | `gh-pages` | The published web build. Deploy target only; never develop on it. |
+| `claude/tasks-3-3b-r8ceab` | **The work branch for #3, 3b and 5b.** Carries the two audit tools and the design review; no engine or content change yet. |
 | `claude/task-2-9fj8pc` | **Merged into main and finished with.** It survives only because this environment's git proxy refuses to delete a remote branch (`send-pack: unexpected disconnect`, on every attempt). Deleted locally; the remote one is one click in GitHub and is the owner's to remove. |
 
-Every other work branch was deleted once merged. The next work branch has not
-been created yet.
+Every other work branch was deleted once merged.
 
 Branch names are deliberately absent from the phase table further down: every
 phase listed there is merged, so the branch it arrived on no longer exists and
@@ -171,8 +171,8 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | **1b** | **Screening (RPP).** Effective distance to an enemy = my line's step + their line's step + the number of enemies standing on a line strictly in front of the target. (Written as "living enemies" when 1b shipped; item #2 made a dropped character's body screen too, until it is cleared or recalled.) No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule, and goes with 5c's rename rather than here. Being built now as its own item rather than waiting for #4, since the battlefield it changes is already live. Built: the distance rule and the widening (enemy-facing only, so a Close Range ward still reaches just the next line), screening threaded through every reach question, traps deliberately exempt with both of them now checking their reach, the ruler printing the screened number with a pip per screening body, a dash on empty lines, out-of-range copy that names screening and the fix, and the **bending shot** with Trion Backlash and its self-explaining log entry. The design review's decisions are recorded below. **Not yet playtested.** | Merged, awaiting playtest |
 | 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued |
 | **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. **Merged. Playtested by the owner once and revised** (the same character on both squads, a body reading as defeated in the text report, and the recall's grammar; all three below). Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. **Not re-tested since the fixes.** | Merged |
-| 3b | **Status reactions.** A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. Mechanism and table with #3 so SPTV prices them; the new abilities and Side Effects after #4 with 1c. | Approved, queued |
-| 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. | Approved, queued |
+| 3b | **Status reactions.** A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. Mechanism and table with #3 so SPTV prices them; the new abilities and Side Effects after #4 with 1c. **In design with #3: the mechanism and the table are specified, and the review asks whether a reaction has to win an infliction contest.** | In design |
+| 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. **Audited and designed; the review is waiting on seven decisions.** | In design |
 | 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued |
 | 4b | **The long tail of battle length.** The distribution is healthy in the middle and ragged at the end: 200 simulated battles run a median of 14 rounds with 83% inside the 8-20 band, but p90 is 23 and the worst single battle took **118 rounds**. Everything concludes, so it is not a stall, and the 30-round limit in #4 would cut it off rather than explain it. Worth understanding before that limit lands, because a match that would have taken 40 rounds now ends on the health tiebreak instead, and whoever was ahead at round 30 wins a fight they might not have won. Likely suspects: two sustain-heavy squads out-healing each other's damage, or a Trion-starved pair trading single cheap abilities. Diagnose from `tool/balance_report.dart`, which already records the distribution. Sits with #4 because the fix, if there is one, is an economy number. | Queued |
 | 5 | **Support abilities do not pay for their action.** Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced with #3 (SPTV), since it owns every magnitude and duration. | Queued |
@@ -634,6 +634,11 @@ Two things follow that are still open:
 - **The five remaining orphans get homes rather than deletion.** See the status
   reactions spec above. A test asserting every catalogued status is reachable
   should land with that work, once nothing is orphaned.
+  **Superseded: the count is 24, not five.** The #3 pre-build audit re-ran this
+  sweep as a reachability closure and found this one had counted a status as
+  reachable whenever anything in the repository named it, including
+  `combo_catalog.dart`, which only groups statuses for combo recognition, and
+  the tests, which apply them directly. See the audit section below.
 
 `tool/reach_check.dart` now checks the enduring invariant, that no status
 raises maximum health, rather than the specific Rallied case.
@@ -669,6 +674,16 @@ simply attacking, with or without FAT. That is the same root cause as item #5
 (healing is too weak) rather than a separate problem: a full action buys far
 less than an attack does.
 
+**Corrected by the #3 audit: the table above prices stat buffs wrongly.** It
+values +2 Attack as though Attack added damage. It does not; `resolveDamage
+Breakdown` never sees the attacker's Attack stat, so Attack and Defense are
+modifiers on an opposed d20 and nothing else, worth 4.5 percentage points of
+that roll per point. Re-priced against the measured baseline, the four
+abilities are spread across a factor of four rather than being uniformly bad:
+Rally Cry buys 1.05 actions, Cleansing Ward 0.80, Guardian's Aegis 0.51 and
+War Chant 0.25. The acceptance test stands; the diagnosis behind it does not,
+and #5's work is to lift the bottom two rather than all four.
+
 Re-pricing belongs to **#3 (SPTV)**, which owns every magnitude and duration,
 folded together with #5. The rule above is the acceptance test: after the
 re-pricing, each buff must pay for its own action within its own duration on an
@@ -681,6 +696,13 @@ The same sweep measured hostile status riders landing between 10% and 85%, with
 most clustered around 20-25% (Status Effect Infliction 5 against a typical
 Resistance of 6 to 8). That is a pricing question, not a correctness one, and
 belongs with SPTV.
+
+**Re-measured by the #3 audit, and it is not the infliction contest that is
+weak.** Over 200 battles a hostile rider lands **46.0%** of the time, and about
+**89%** of the time once the attack carrying it has hit. The contest is
+attempted inside `resolveHitAgainst`, after the miss branch has already
+returned, so a rider mostly fails because the attack failed and attacks land
+51.8% of the time. Raising Status Effect Infliction would buy very little.
 
 ### Open correctness question: 1-turn effects on an enemy
 
@@ -711,6 +733,73 @@ Two candidate fixes, both a decision for #3 rather than a mechanical one:
 - **Skip the first tick** on the turn an effect is applied. Everything gains
   effectively one more turn of life, which is a balance change across all 62
   effects and needs SPTV to re-price them.
+
+### What the #3 pre-build audit found
+
+Run before any of SPTV was designed, per the working agreement's rule that
+designs are checked against the code rather than against the documents. Two
+tools were written for it and are committed, so every number re-runs:
+`tool/sptv_audit.dart` reads the catalogues, `tool/sptv_baseline.dart` plays
+200 AI battles. The design review that came out of it, with the seven
+decisions it needs, is at
+<https://claude.ai/code/artifact/4b024194-f3ec-4147-a2ab-a4dc49f31d41>.
+
+**Three findings change what #3 has to do.** Each is corrected in place in the
+section it contradicts, above.
+
+- **24 status effects are unreachable, not five.** Reachability is a closure:
+  23 statuses are named on a Trigger, 12 more are applied by engine code, and
+  three (Weakened, Fatigued, Hexed) exist only because Unmaking can invert a
+  buff that is itself reachable. Two inversion pairs are dead at both ends, so
+  Unmaking can never produce them: `prepared -> reeling` and
+  `overcharged -> choked`. Frozen, Sickened, Prone, Marked, Threatened,
+  Petrified and Sapped are all in the 24, alongside the five already known.
+- **Hostile riders land 46%, and about 89% once the attack has hit.** The
+  weakness is the attack missing, not the infliction contest.
+- **The support-ability table prices stat buffs wrongly**, because Attack is a
+  to-hit modifier and never reaches the damage pipeline.
+
+**One latent bug, found by pricing it.** Sapped drains 25% of the target's
+Trion Capacity per turn "to the causer", and Genjutsu Trapped 15%.
+`TurnEngine.tickStatusEffects` credits the causer's pool and **never debits the
+victim's**, so on a typical Capacity of 105 it conjures 26 Trion a turn out of
+nothing against a team income of about 15. It has never fired in a played
+battle only because both statuses are among the 24 nothing applies. Whether
+"drain" means transfer or generation is now a question #3 has to answer before
+it gives either of them a home.
+
+**Two structural notes for the pricing itself.**
+
+- **Five statuses set no mechanical field at all** on their definition:
+  `called_shot_stat_zero`, `forced_choice`, `forced_critical_miss`,
+  `karmic_bind` and `minds_eye_reveal`. Their behaviour lives in engine code
+  reading per-instance `data`. A price computed from the definition's fields
+  values all five at zero, so the method needs an answer for them. They are
+  also five of the sixteen item 13b found rendering as "You are affected by X".
+- **The design director's illustrative SP weights disagree with each other by
+  up to threefold** when checked against the measured baseline: damage over
+  time is underpriced by half, and the damage-taken multiplier is overpriced
+  about threefold. They were offered as illustrative, and the disagreement is
+  the argument for deriving each weight from a measurement.
+
+**The measured baseline**, from 200 battles on seed 7. Every figure is well
+below the catalogue's face value, and pricing off face value is how a status
+rider ends up costing the same as the damage it is bolted to.
+
+| Measure | Value | What it anchors |
+|---|---|---|
+| Damage landed per damaging use | 12.3 | What one attack action buys. Face value is 37.3. |
+| Damage taken per living character-turn | 6.2 | What a point of damage reduction is worth. |
+| Abilities used per living character-turn | 0.60 | Four turns in ten spend nothing at all. |
+| Attack rolls per living character-turn | 1.11 | Made per acting character, and faced per character. |
+| Attacks that land | 51.8% | 10.8 damage per landed roll. |
+| One point of an opposed stat | 4.5pp | Attack, Defense, Infliction and Resistance are the same roll. |
+| Advantage | 4.2 points of modifier | Rolling two and keeping the higher. |
+| Damage per Trion | 1.28 | Income averages 14.6 a turn and buys 18.6 damage. |
+
+The 0.60 is the uncomfortable one: an action is not a reliably available
+resource, so "worth an action" is a softer bar than it sounds. That is #4's
+problem, but every number above that divides by an action inherits it.
 
 ### Where #2 stands, verified honestly
 
