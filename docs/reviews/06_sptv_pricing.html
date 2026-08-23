@@ -1,0 +1,1050 @@
+<title>Pricing the Catalogue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root {
+    --ground: #ffffff;
+    --surface: #f5f7fb;
+    --surface-2: #eaeef6;
+    --ink: #10151f;
+    --ink-body: #2b3243;
+    --ink-soft: #5a6580;
+    --rule: #dfe4ee;
+    --rule-strong: #bcc5d6;
+    --accent: #1a6a6d;
+    --accent-bright: #34a0a4;
+    --accent-wash: #ecf6f6;
+    --bad: #b32f45;
+    --bad-wash: #fbeced;
+    --warn: #9c5d13;
+    --warn-wash: #fdf4e8;
+    --good: #1d7346;
+    --good-wash: #ebf6f0;
+    --shadow: 0 1px 2px rgba(16, 21, 31, .05), 0 8px 24px -16px rgba(16, 21, 31, .3);
+
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0c1118;
+      --surface: #131a24;
+      --surface-2: #1b2430;
+      --ink: #eef2f8;
+      --ink-body: #c3ccda;
+      --ink-soft: #8c97a9;
+      --rule: #222c39;
+      --rule-strong: #384554;
+      --accent: #5cc4c6;
+      --accent-bright: #7ad8d9;
+      --accent-wash: #0f272b;
+      --bad: #ef7f92;
+      --bad-wash: #2a1519;
+      --warn: #dda155;
+      --warn-wash: #271c10;
+      --good: #56bc82;
+      --good-wash: #10251b;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0c1118;
+    --surface: #131a24;
+    --surface-2: #1b2430;
+    --ink: #eef2f8;
+    --ink-body: #c3ccda;
+    --ink-soft: #8c97a9;
+    --rule: #222c39;
+    --rule-strong: #384554;
+    --accent: #5cc4c6;
+    --accent-bright: #7ad8d9;
+    --accent-wash: #0f272b;
+    --bad: #ef7f92;
+    --bad-wash: #2a1519;
+    --warn: #dda155;
+    --warn-wash: #271c10;
+    --good: #56bc82;
+    --good-wash: #10251b;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink-body);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.62;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  .prose { max-width: 42rem; }
+
+  p { margin: 0 0 .9rem; }
+  p:last-child { margin-bottom: 0; }
+
+  a {
+    color: var(--accent);
+    text-underline-offset: 2px;
+  }
+  a:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--accent-bright);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  strong { color: var(--ink); font-weight: 600; }
+
+  code, .num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: .88em;
+  }
+  code {
+    background: var(--surface-2);
+    padding: .1em .35em;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+  }
+
+  .kicker {
+    font-family: var(--display);
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(2.1rem, 5.5vw, 3.1rem);
+    font-weight: 700;
+    letter-spacing: -.022em;
+    line-height: 1.04;
+    color: var(--ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-size: 1.12rem;
+    color: var(--ink-soft);
+    max-width: 44rem;
+    margin: 0;
+  }
+
+  .provenance {
+    font-family: var(--display);
+    font-size: .78rem;
+    color: var(--ink-soft);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem 1.25rem;
+    margin-top: .4rem;
+  }
+  .provenance span { white-space: nowrap; }
+  .provenance b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- section scaffolding ---------- */
+
+  section { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  h2 {
+    font-family: var(--display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -.015em;
+    color: var(--ink);
+    margin: 0;
+    padding-left: .7rem;
+    border-left: 4px solid var(--accent);
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--display);
+    font-size: 1.02rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 .1rem;
+    text-wrap: balance;
+  }
+
+  .lede { font-size: 1.02rem; }
+
+  /* ---------- findings ---------- */
+
+  .findings { display: flex; flex-direction: column; gap: 1rem; }
+
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.15rem 1.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+  .finding.contradicts { border-left: 4px solid var(--bad); }
+  .finding.confirms { border-left: 4px solid var(--good); }
+  .finding.newbug { border-left: 4px solid var(--warn); }
+
+  .finding-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .5rem .8rem;
+  }
+
+  .tag {
+    font-family: var(--display);
+    font-size: .64rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: .18rem .5rem;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .tag.contradicts { background: var(--bad-wash); color: var(--bad); }
+  .tag.confirms { background: var(--good-wash); color: var(--good); }
+  .tag.newbug { background: var(--warn-wash); color: var(--warn); }
+
+  .finding p { font-size: .96rem; margin: 0; }
+  .finding p + p { margin-top: .5rem; }
+
+  /* ---------- data panel ---------- */
+
+  .baseline {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .stat {
+    background: var(--surface);
+    padding: .95rem 1.05rem;
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+  }
+  .stat .v {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1.1;
+  }
+  .stat .k {
+    font-family: var(--display);
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .stat .n { font-size: .82rem; color: var(--ink-soft); line-height: 1.45; }
+
+  /* ---------- tables ---------- */
+
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--surface);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--display);
+    font-size: .87rem;
+  }
+
+  th {
+    background: var(--surface-2);
+    color: var(--ink);
+    text-align: left;
+    font-weight: 600;
+    padding: .6rem .85rem;
+    border-bottom: 1px solid var(--rule-strong);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: .55rem .85rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+
+  td.n, th.n {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+  th.n { font-family: var(--display); }
+
+  td.id { font-family: var(--mono); font-size: .82rem; color: var(--ink); }
+
+  .flag { color: var(--bad); font-weight: 600; }
+  .ok { color: var(--good); font-weight: 600; }
+
+  caption {
+    caption-side: bottom;
+    text-align: left;
+    padding: .7rem .85rem;
+    font-family: var(--display);
+    font-size: .78rem;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--rule);
+  }
+
+  /* ---------- formula ---------- */
+
+  .formula {
+    background: var(--accent-wash);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 1.2rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: .7rem;
+  }
+  .formula .eq {
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+  .formula .gloss { font-size: .92rem; color: var(--ink-body); margin: 0; }
+
+  .label {
+    font-family: var(--display);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- decisions ---------- */
+
+  .decisions { display: flex; flex-direction: column; gap: 1.4rem; }
+
+  .decision {
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .decision-head {
+    display: flex;
+    align-items: flex-start;
+    gap: .9rem;
+    padding: 1.15rem 1.3rem;
+    border-bottom: 1px solid var(--rule);
+    background: var(--ground);
+  }
+
+  .sig {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ground);
+    background: var(--accent);
+    border-radius: 5px;
+    padding: .2rem .55rem;
+    line-height: 1.3;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .decision-head .q { display: flex; flex-direction: column; gap: .25rem; }
+  .decision-head .q p { font-size: .95rem; color: var(--ink-soft); margin: 0; }
+
+  .options { display: flex; flex-direction: column; }
+
+  .option {
+    display: grid;
+    grid-template-columns: 3.4rem 1fr;
+    gap: 0 .9rem;
+    padding: .95rem 1.3rem;
+    border-bottom: 1px solid var(--rule);
+    align-items: start;
+  }
+  .option:last-child { border-bottom: none; }
+  .option.pick { background: var(--accent-wash); }
+
+  .option .oid {
+    font-family: var(--mono);
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--ink);
+    padding-top: .05rem;
+  }
+  .option.pick .oid { color: var(--accent); }
+
+  .option .otext { font-size: .95rem; }
+  .option .otext p { margin: 0; }
+  .option .otext p + p { margin-top: .35rem; color: var(--ink-soft); font-size: .9rem; }
+
+  .rec {
+    font-family: var(--display);
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    padding: .1rem .35rem;
+    margin-left: .45rem;
+    white-space: nowrap;
+    vertical-align: .1em;
+  }
+
+  /* ---------- summary strip ---------- */
+
+  .ask {
+    border: 1px solid var(--rule-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    padding: 1.4rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .ask ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+  .ask li {
+    display: grid;
+    grid-template-columns: 2.1rem 1fr;
+    gap: .7rem;
+    font-size: .95rem;
+    align-items: baseline;
+  }
+  .ask li .s {
+    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* ---------- notes ---------- */
+
+  .note {
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--warn);
+    background: var(--warn-wash);
+    border-radius: 6px;
+    padding: 1.05rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+  }
+  .note.bad { border-left-color: var(--bad); background: var(--bad-wash); }
+  .note p { font-size: .95rem; margin: 0; }
+  .note p + p { margin-top: .5rem; }
+
+  ul.tight { margin: 0; padding-left: 1.2rem; }
+  ul.tight li { margin-bottom: .35rem; }
+  ul.tight li:last-child { margin-bottom: 0; }
+
+  .footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.5rem;
+    font-family: var(--display);
+    font-size: .82rem;
+    color: var(--ink-soft);
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+  }
+  .footer code { font-size: .82rem; }
+
+  @media (max-width: 40rem) {
+    body { font-size: 16px; }
+    .page { padding: 2rem 1.1rem 4rem; gap: 2.5rem; }
+    .option { grid-template-columns: 1fr; gap: .3rem; }
+    .ask li { grid-template-columns: 1.8rem 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="kicker">Isekai Strategem &middot; Design review &middot; Item #3, with 3b and 5b</div>
+    <h1>Pricing the catalogue</h1>
+    <p class="standfirst">SPTV is the rule that decides what every status effect, Trion cost, cooldown and duration in the game is worth. Before proposing it, the code was audited against the documents. Seven things came back different, and three of them change what this item has to do.</p>
+    <div class="provenance">
+      <span><b>Branch</b> claude/tasks-3-3b-r8ceab</span>
+      <span><b>Stage</b> design, no code written</span>
+      <span><b>Measured over</b> 200 AI battles, seed 7</span>
+      <span><b>Decisions needed</b> 7</span>
+      <span><b>Revised</b> after the queue was re-sequenced</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>What is being asked</h2>
+    <p class="prose lede">Seven decisions, lettered for reply. Everything after this section is the evidence behind them. If the recommendations all look right, "all as recommended" is a complete answer.</p>
+    <div class="ask">
+      <ol>
+        <li><span class="s">#A</span><span>What one Status Point <em>is</em>. Recommended: SP is measured in damage-equivalent directly, at face value, with no conversion constant, and stored as formulas over a re-measurable baseline rather than as frozen numbers.</span></li>
+        <li><span class="s">#B</span><span>Where a status effect's SP comes from. Recommended: computed from the definition's own fields, having first given the five field-less effects real fields, which 13b needs anyway. A two-entry override covers what is left.</span></li>
+        <li><span class="s">#C</span><span>How tight the Trigger Value band is. Recommended: keep the design director's 2.0 to 3.0. Needed at the start of wave 2, not wave 4, because #4 cannot pick costs without a target.</span></li>
+        <li><span class="s">#D</span><span>The 1-turn debuff that expires before its victim acts. Recommended: move the countdown to the end of the holder's turn.</span></li>
+        <li><span class="s">#E</span><span>The 24 status effects nothing applies. Recommended: price all 62, let 3b's reaction table home four for free, and land a failing-by-design reachability test that names the rest.</span></li>
+        <li><span class="s">#F</span><span>How stacking works. Recommended: one instance carrying a stack count, one shared duration, capped at 3.</span></li>
+        <li><span class="s">#G</span><span>Whether a status reaction has to win an infliction contest. Recommended: no, reactions fire automatically.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>The order changed, and four decisions moved with it</h2>
+    <p class="prose lede">This review was written while #3 sat before #4 in the queue. It no longer does. The audit's own arithmetic is what moved it, and the owner has approved the re-sequencing, so the seven decisions below have been re-read against the new order.</p>
+
+    <div class="note">
+      <p><strong>Why #3 split.</strong> Trigger Value is payload plus SP, divided by Trion cost, scaled by a cooldown factor. Item #4 rewrites the Trion cost and the cooldown of <strong>all 75 active abilities</strong>: range becomes an input to the cost model, Long Range up to three times the Close average, Mid Range carrying cooldowns up to 4. That is the denominator and the scale factor of every Trigger Value in the game. Three of the eight measured baselines move with it too. Pricing first prices everything twice.</p>
+      <p>But #4 cannot pick those costs without the rule, or it picks them by eye and #3 re-prices them anyway. So the rule goes before #4 and the pass goes after. The rule is cheap and durable; the pass is expensive and perishable.</p>
+    </div>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>Decision</th><th>Needed by</th><th>What the re-sequencing did to it</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="id">#A</td><td>Wave 1</td><td><strong>Strengthened.</strong> The rule is now built against an economy that is about to change, so SP has to be stored as formulas over a named baseline, not as frozen numbers</td></tr>
+          <tr><td class="id">#B</td><td>Wave 1</td><td><strong>Recommendation flipped.</strong> 13b is now in the same wave and pays for most of the fix</td></tr>
+          <tr><td class="id">#C</td><td>Wave 2</td><td><strong>Moved earlier, not later.</strong> #4 cannot set costs without a target band; wave 4 verifies rather than chooses</td></tr>
+          <tr><td class="id">#D</td><td>Wave 1</td><td><strong>Argument got stronger.</strong> 13b in the same wave would otherwise have to explain three different meanings of "duration"</td></tr>
+          <tr><td class="id">#E</td><td>Wave 1</td><td>Unchanged, but the orphan list now has a scheduled zero: wave 3</td></tr>
+          <tr><td class="id">#F</td><td>Wave 1</td><td>Unchanged</td></tr>
+          <tr><td class="id">#G</td><td>Wave 1</td><td>Unchanged</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the audit found</h2>
+    <p class="prose lede">The working agreement asks for designs checked against the code rather than against the documents. Two tools were written to do that: <code>tool/sptv_audit.dart</code> reads the catalogues, and <code>tool/sptv_baseline.dart</code> plays real battles. Both are committed, so every number below can be re-run.</p>
+
+    <div class="findings">
+
+      <article class="finding contradicts">
+        <div class="finding-head">
+          <span class="tag contradicts">Changes the plan</span>
+          <h3>24 status effects have nothing that applies them, not 5</h3>
+        </div>
+        <p>The status document records six unreachable effects, five of them still open and awaiting homes from 3b. The real number is <strong>24 of 62</strong>. The earlier sweep counted a status as reachable when anything in the repository named it, and most of those names are in <code>combo_catalog.dart</code>, which only groups statuses for combo recognition, or in tests, which apply them directly.</p>
+        <p>Reachability is a closure, not a lookup: 23 statuses are listed on a Trigger, 12 more are applied by engine code, and 3 further ones (Weakened, Fatigued, Hexed) exist only because Unmaking can invert a buff that is itself reachable. Two inversion pairs are dead on both ends, so Unmaking can never produce them: <code>prepared &rarr; reeling</code> and <code>overcharged &rarr; choked</code>.</p>
+        <p>Among the 24 are Frozen, Sickened, Prone, Marked, Threatened, Petrified and Sapped. Wet is there too, still the design document's flagship example of damage-type interaction.</p>
+      </article>
+
+      <article class="finding newbug">
+        <div class="finding-head">
+          <span class="tag newbug">Latent bug</span>
+          <h3>Trion drain generates Trion out of nothing</h3>
+        </div>
+        <p>Sapped drains 25% of the target's Trion Capacity each turn "to the causer", and Genjutsu Trapped drains 15%. The engine credits the causer's pool and <strong>never debits the victim's</strong>: <code>tickStatusEffects</code> calls <code>gain</code> on the causer's pool and nothing else. On a typical Capacity of 105 that is 26 Trion a turn conjured from nowhere, against a team income of about 15 a turn.</p>
+        <p>It has never fired in a played battle only because both statuses are among the 24 nothing applies. The moment #3 gives either of them a home, it goes live. Whether "drain" means transfer or generation is a design question this item now has to answer.</p>
+      </article>
+
+      <article class="finding contradicts">
+        <div class="finding-head">
+          <span class="tag contradicts">Changes the plan</span>
+          <h3>Hostile status infliction is not weak. The attack missing is</h3>
+        </div>
+        <p>The status document flags hostile riders landing 10% to 85%, clustered around 20 to 25%, and files it as a pricing problem for SPTV. Measured over 200 battles, a hostile rider lands <strong>46.0%</strong> of the time, and roughly <strong>89%</strong> of the time once the attack it is attached to has hit.</p>
+        <p>The reason is structural: the infliction contest is attempted inside <code>resolveHitAgainst</code>, after the miss branch has already returned. A rider fails mostly because the attack failed, and the attack lands 51.8% of the time. Raising Status Effect Infliction would buy very little. The real problem is the one below.</p>
+      </article>
+
+      <article class="finding contradicts">
+        <div class="finding-head">
+          <span class="tag contradicts">Changes the plan</span>
+          <h3>The support-ability table prices stat buffs wrong</h3>
+        </div>
+        <p>The status document's headline for item #5 is that every buff is a net loss of 26 to 28 damage against simply attacking. That table treats +2 Attack as though Attack added damage. It does not: <code>resolveDamageBreakdown</code> never sees the attacker's Attack stat. Attack and Defense are modifiers on an opposed d20 and nothing else, and one point of either is worth <strong>4.5 percentage points</strong> of that roll.</p>
+        <p>Re-priced off the measured baseline, the four abilities are not uniformly bad. They are spread across a factor of four, and only one of them is badly out.</p>
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr><th>Ability</th><th>What the action buys</th><th class="n">Damage-equivalent</th><th class="n">Actions</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="id">rally_cry</td><td>Inspired, +2 Attack and Defense, 3 allies, 2 turns</td><td class="n">13.0</td><td class="n ok">1.05</td></tr>
+              <tr><td class="id">cleansing_ward</td><td>Regenerating 3 a turn for 3, plus Warded</td><td class="n">9.9</td><td class="n">0.80</td></tr>
+              <tr><td class="id">guardians_aegis</td><td>Guarded and Braced on self</td><td class="n">6.3</td><td class="n">0.51</td></tr>
+              <tr><td class="id">war_chant</td><td>Empowered, +25% outgoing, self, 2 turns</td><td class="n">3.1</td><td class="n flag">0.25</td></tr>
+            </tbody>
+            <caption>An action is worth 1.00. Modelled from the rubric below, not measured directly. Rally Cry gets three targets and a defensive half that nobody sees working, which is likely why it reads as weak in play.</caption>
+          </table>
+        </div>
+        <p>#5's acceptance test survives intact, but its diagnosis does not. The work is to lift War Chant and Guardian's Aegis, not to lift everything.</p>
+      </article>
+
+      <article class="finding confirms">
+        <div class="finding-head">
+          <span class="tag confirms">Confirms the plan</span>
+          <h3>Every ability priced under 1.0 today is a status-only ability</h3>
+        </div>
+        <p><code>tool/balance_report.dart</code> already computes a proto-Trigger Value: payload divided by Trion cost, scaled by a cooldown factor. The median is 2.42. Every ability scoring below 1.0 is one whose real payload is a status effect: <code>scramble</code> 0.50, <code>root_snare</code> 0.56, <code>death_ledger</code> 0.56, <code>mind_shatter</code> 0.56, <code>ashbringer_seal</code> 0.98.</p>
+        <p>They are not underpowered content. They are content whose value the formula does not count. Adding the SP term is the whole fix for that half of the catalogue, and it is exactly what SPTV was designed to do.</p>
+      </article>
+
+      <article class="finding contradicts">
+        <div class="finding-head">
+          <span class="tag contradicts">Changes the plan</span>
+          <h3>The illustrative SP weights disagree with each other by up to threefold</h3>
+        </div>
+        <p>The design director's synthesis proposed a weights table: hard control 3.0 SP per target-turn, a damage-taken multiplier 1.5 per +25%, damage over time 1.2 per 8 damage, a stat swing 0.8 per 10%. Checked against the measured baseline at the proposed 3 damage per SP, hard control comes out about right, damage over time is <strong>underpriced by half</strong> (8 unavoidable damage is worth 8, not 3.6), and the damage-taken multiplier is <strong>overpriced about threefold</strong> (25% of the 6.2 damage a character takes per turn is 1.6, not 4.5).</p>
+        <p>That is not a criticism of the synthesis, which called them illustrative. It is the argument for deriving each weight from a measurement rather than from a plausible-looking table, which is what #B proposes.</p>
+      </article>
+
+      <article class="finding newbug">
+        <div class="finding-head">
+          <span class="tag newbug">Blocks the method</span>
+          <h3>Five statuses have no mechanical effect in their own definition</h3>
+        </div>
+        <p><code>called_shot_stat_zero</code>, <code>forced_choice</code>, <code>forced_critical_miss</code>, <code>karmic_bind</code> and <code>minds_eye_reveal</code> set none of <code>StatusEffectDefinition</code>'s declarative fields. Their behaviour lives in engine code reading per-instance <code>data</code>, or in a separate field on the battle state entirely. A price computed from the definition's fields would value all five at zero.</p>
+        <p>They are also five of the sixteen that item 13b found rendering as "You are affected by X". Same root cause, and #B has to answer for it.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>The baseline everything is priced off</h2>
+    <p class="prose lede">SP prices an effect in damage-equivalent, so it needs to know what a point of damage-equivalent buys in a battle somebody actually played. Every figure here is measured, not assumed, and every one of them is well below the catalogue's face value.</p>
+
+    <div class="baseline">
+      <div class="stat">
+        <span class="v">12.3</span>
+        <span class="k">Damage per damaging use</span>
+        <span class="n">What one attack action buys. The catalogue's face value is 37.3.</span>
+      </div>
+      <div class="stat">
+        <span class="v">6.2</span>
+        <span class="k">Damage taken per turn</span>
+        <span class="n">Per living character. What a point of damage reduction is worth.</span>
+      </div>
+      <div class="stat">
+        <span class="v">0.60</span>
+        <span class="k">Abilities used per turn</span>
+        <span class="n">Per living character. Four turns in ten produce no ability at all.</span>
+      </div>
+      <div class="stat">
+        <span class="v">1.11</span>
+        <span class="k">Attack rolls per turn</span>
+        <span class="n">Made per acting character, and by symmetry faced per character.</span>
+      </div>
+      <div class="stat">
+        <span class="v">51.8%</span>
+        <span class="k">Attacks that land</span>
+        <span class="n">10.8 damage per landed roll.</span>
+      </div>
+      <div class="stat">
+        <span class="v">4.5pp</span>
+        <span class="k">One point of an opposed stat</span>
+        <span class="n">Attack, Defense, Infliction and Resistance all buy the same thing.</span>
+      </div>
+      <div class="stat">
+        <span class="v">4.2</span>
+        <span class="k">Advantage, in points</span>
+        <span class="n">Rolling two and keeping the higher is worth this much flat modifier.</span>
+      </div>
+      <div class="stat">
+        <span class="v">1.28</span>
+        <span class="k">Damage per Trion</span>
+        <span class="n">Team income averages 14.6 a turn and buys 18.6 damage.</span>
+      </div>
+    </div>
+
+    <p class="prose">The 0.60 figure is the uncomfortable one. An action is not a reliably available resource: cooldowns, Trion and range leave four character-turns in ten with nothing spent. It is #4's problem rather than this item's, but it means "worth an action" is a softer bar than it sounds, and every number in this review that divides by an action inherits that.</p>
+  </section>
+
+  <section>
+    <h2>The proposed rule</h2>
+
+    <div class="formula">
+      <span class="label">Status Points</span>
+      <div class="eq">SP = &Sigma; (per-turn damage-equivalent of each field) &times; turns covered &times; targets</div>
+      <p class="gloss">Read off the definition's own fields, one conversion per field, each conversion derived from the measured baseline above. No per-status hand-tuning, so the price cannot drift from the content.</p>
+    </div>
+
+    <div class="formula">
+      <span class="label">Trigger Value</span>
+      <div class="eq">TV = (payload + SP &times; rider factor) &divide; Trion cost &times; cooldown factor</div>
+      <p class="gloss">The existing formula in <code>tool/balance_report.dart</code> with one term added. The rider factor is 0.89 for a status aimed at an opponent, because it has to win an infliction contest that the damage on the same hit does not, and 1.0 for anything aimed at yourself or an ally. The cooldown factor is the synthesis's: 1.5 at cooldown 1, 1.0 at 2, 0.8 at 3, 0.7 beyond.</p>
+    </div>
+
+    <h3>The conversion table</h3>
+    <p class="prose">One row per field on <code>StatusEffectDefinition</code>. This is the part that makes the rule checkable: a tool can walk the catalogue and print every status's price, and the pricing can be re-derived whenever the baseline is re-measured.</p>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr><th>Field</th><th class="n">Damage-equivalent per turn, one target</th><th>Where the conversion comes from</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="id">turnStartDamage</td><td class="n">the average roll</td><td>It is damage, and unlike an attack it cannot miss</td></tr>
+          <tr><td class="id">turnStartHeal</td><td class="n">the average roll</td><td>Health restored is damage undone</td></tr>
+          <tr><td class="id">flatStatModifiers</td><td class="n">0.54 per point</td><td>Attack or Defense: 4.5pp of 1.11 rolls a turn worth 10.8 each</td></tr>
+          <tr><td class="id">flatStatModifiers</td><td class="n">0.58 per point</td><td>Armor: subtracts once per landed hit, 0.58 landed hits a turn</td></tr>
+          <tr><td class="id">perRemainingTurn&hellip;</td><td class="n">0.54 &times; n &times; (D+1) / 2</td><td>Averaged over its own duration, since it decays with it</td></tr>
+          <tr><td class="id">zeroedStats</td><td class="n">0.58 &times; the stat's value</td><td>Armor. Team Spirit, Trion Affinity and FAT Chance need their own conversions and are listed unpriced below</td></tr>
+          <tr><td class="id">preventsActions</td><td class="n">12.3</td><td>One action denied, measured</td></tr>
+          <tr><td class="id">allDamageTakenMultiplier</td><td class="n">(1 &minus; m) &times; 6.2</td><td>Damage taken per living character-turn</td></tr>
+          <tr><td class="id">outgoingDamageMultiplier</td><td class="n">(m &minus; 1) &times; 6.2</td><td>Damage dealt per living character-turn</td></tr>
+          <tr><td class="id">advantageRollTags</td><td class="n">2.3</td><td>Advantage is 4.2 points, at 0.54 a point</td></tr>
+          <tr><td class="id">disadvantageRollTags</td><td class="n">2.3</td><td>Symmetric with advantage</td></tr>
+          <tr><td class="id">damageTypeInteractions</td><td class="n">6.2 &times; P(type)</td><td>Immunity or vulnerability, weighted by how often that damage type appears in the catalogue</td></tr>
+          <tr><td class="id">trionCostMultiplier</td><td class="n">(m &minus; 1) &times; 12.3</td><td>16 Trion a use, 0.60 uses a turn, 1.28 damage a Trion</td></tr>
+          <tr><td class="id">trionCapacityDrain&hellip;</td><td class="n">p &times; 105 &times; 1.28</td><td>Subject to #D's answer on what "drain" means</td></tr>
+          <tr><td class="id">preventsHealing</td><td class="n flag">unpriced</td><td>Needs healing-received per turn, not yet measured</td></tr>
+          <tr><td class="id">misfireChance</td><td class="n flag">unpriced</td><td>Needs the value of a hit landing on your own side</td></tr>
+          <tr><td class="id">preventsTargeting</td><td class="n flag">unpriced</td><td>Needs incoming attacks redirected, not merely avoided</td></tr>
+          <tr><td class="id">cannotTargetSource</td><td class="n flag">unpriced</td><td>Depends on whether the source was the best target anyway</td></tr>
+          <tr><td class="id">locksRandomAbilityEachTurn</td><td class="n flag">unpriced</td><td>Needs the spread between a character's best and average ability</td></tr>
+        </tbody>
+        <caption>Five fields are deliberately left unpriced rather than given a plausible-looking number. Deriving them is build work; each needs a measurement the baseline tool does not yet take.</caption>
+      </table>
+    </div>
+
+    <div class="note">
+      <p><strong>What the rule immediately flags.</strong> Run against the current catalogue, three effects come out far outside anything else. Sapped at 0.25 of Capacity a turn for 3 turns prices at roughly 100 damage-equivalent, about eight actions. Necrotic Wound ticks 12 a turn for 3 turns and prevents healing. Scorched ticks 12 a turn for 2 and doubles incoming Fire. All three are in the unreachable 24, which is why none has ever been felt in a battle.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Decisions</h2>
+
+    <div class="decisions">
+
+      <article class="decision">
+        <div class="decision-head">
+          <span class="sig">#A</span>
+          <div class="q">
+            <h3>What one Status Point is</h3>
+            <p>The design document says SP prices an effect and converts at 3 damage per SP. That constant was chosen by eye, and the working agreement rules out numbers chosen by eye.</p>
+          </div>
+        </div>
+        <div class="options">
+          <div class="option pick">
+            <span class="oid">A1<span class="rec">Recommended</span></span>
+            <div class="otext">
+              <p>SP <em>is</em> damage-equivalent, at face value. One SP is one point of damage. No conversion constant exists, so it cannot be wrong.</p>
+              <p>Face value means SP says what the effect does when it lands. Every probability lives in one place, the rider factor in TV, rather than being smeared through the status catalogue. Cost: SP numbers get bigger and less memorable (a one-turn stun is 12.3, not 4), and the design document's sentence has to be rewritten.</p>
+              <p><strong>What the re-sequencing added.</strong> Wave 1 writes the rule against an economy wave 2 is about to change, so SP cannot be a set of frozen numbers. It has to be <em>formulas over a named baseline</em>: the conversion table says <code>preventsActions = one action</code>, and a <code>SptvBaselines</code> config object holds what an action currently costs. Wave 1 measures that config, wave 2 changes the economy, wave 4 re-measures the same config and re-runs the same rule. The rule survives #4; only its inputs move. This also puts the baselines next to the other <code>*Config</code> classes in <code>constants.dart</code>, where every other tunable in the engine already lives.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">A2</span>
+            <div class="otext">
+              <p>Keep the documented vocabulary: SP is its own unit at 3 damage per SP.</p>
+              <p>Small, authorable numbers, and no document rewrite. Cost: an invented constant sitting between two things measured in the same unit, and one more place for the two halves of TV to be compared wrongly.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">A3</span>
+            <div class="otext">
+              <p>SP is expected value, already discounted by how often the effect lands.</p>
+              <p>The most accurate per ability. Cost: a status's price then moves whenever the roster's Infliction or Resistance changes, so the catalogue's prices stop being stable facts about the catalogue.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="decision">
+        <div class="decision-head">
+          <span class="sig">#B</span>
+          <div class="q">
+            <h3>Where a status effect's SP comes from</h3>
+            <p>Five effects have no mechanical fields to read, and the illustrative weights table disagrees with itself threefold. Both problems land here.</p>
+          </div>
+        </div>
+        <div class="options">
+          <div class="option pick">
+            <span class="oid">B2<span class="rec">Recommended, changed</span></span>
+            <div class="otext">
+              <p>Give the five field-less statuses real declarative fields, then compute every price from the fields. A two-entry override covers the ones whose value is not mechanical.</p>
+              <p><strong>The re-sequencing flipped this.</strong> 13b is now in wave 1, in the same pass, and it has to make those same five describable. The fields it needs are the fields the pricer needs, so 13b pays for most of the work either way. One field each for <code>called_shot_stat_zero</code>, <code>forced_choice</code>, <code>forced_critical_miss</code>, <code>karmic_bind</code> and <code>minds_eye_reveal</code>.</p>
+              <p>It is also an improvement on its own terms. The engine currently finds these by hardcoded id, as in <code>indexWhere((i) =&gt; i.definitionId == 'forced_critical_miss')</code>, which is exactly the switch-on-name shape the engine's own documentation says it avoids. Reading a field instead removes five of them.</p>
+              <p>Two still need a written SP afterwards, because their value is not mechanical: <code>minds_eye_reveal</code> reveals information, and <code>called_shot_stat_zero</code>'s worth depends on which stat was named. Five overrides become two.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">B1</span>
+            <div class="otext">
+              <p>Leave the definitions alone. Compute from the fields, with a hand-written override for all five.</p>
+              <p>No new fields and no engine change, which keeps the pricing pass a pricing pass. Cost: 13b then has to solve the same five statuses separately, in the same wave, and the hardcoded ids stay.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">B3</span>
+            <div class="otext">
+              <p>A hand-assigned SP number on every status definition.</p>
+              <p>Fully authorable and nothing is unpriceable. Cost: the magnitude and its price become two sources of truth that will disagree the first time a magnitude is tuned, which is the failure this whole item exists to prevent.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="decision">
+        <div class="decision-head">
+          <span class="sig">#C</span>
+          <div class="q">
+            <h3>How tight the Trigger Value band is</h3>
+            <p>The synthesis proposed 2.0 to 3.0. The live catalogue runs 0.50 to 3.36 with a median of 2.42, and the SP term will lift the bottom of that range on its own without any cost changing.</p>
+            <p><strong>Needed at the start of wave 2, not wave 4.</strong> This looked like the one decision the re-sequencing could defer. It is the opposite: #4 sets the Trion cost of every ability, and it cannot do that without a target to aim at. Wave 4 then verifies against the same band rather than choosing it.</p>
+          </div>
+        </div>
+        <div class="options">
+          <div class="option pick">
+            <span class="oid">C1<span class="rec">Recommended</span></span>
+            <div class="otext">
+              <p>Keep 2.0 to 3.0. Add the SP term first, re-measure, and only then move the costs of whatever is still outside.</p>
+              <p>The smallest change that could work, and it tests the rule before trusting it. The status-only abilities currently at 0.5 should land in band from the SP term alone, which is a real check on whether the pricing is right.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">C2</span>
+            <div class="otext">
+              <p>Tighten to 2.2 to 2.8 and re-cost everything outside it.</p>
+              <p>A flatter catalogue where no ability is a trap or an obvious pick. Cost: it moves most of the 60 abilities, including ones the #1 playtest already approved, and flatness is not the same as balance.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">C3</span>
+            <div class="otext">
+              <p>Band per range band, since #4 will give Close, Mid and Long different economic identities anyway.</p>
+              <p>Anticipates #4 rather than fighting it. Cost: it prices in a decision #4 has not made yet, and Mid Range's damaging median is already an outlier at 18.0 against 43 for the other two bands, so the bands are not comparable today.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="decision">
+        <div class="decision-head">
+          <span class="sig">#D</span>
+          <div class="q">
+            <h3>The 1-turn debuff that expires before its victim acts</h3>
+            <p>Effects tick down at the start of their holder's turn, so a 1-turn Stun put on an enemy is removed at the start of their turn and they act unimpeded. Eleven effects carry a 1-turn default. The status document offers two fixes; the audit adds a third and makes the first cheaper than it looked.</p>
+            <p><strong>Traced against the engine, the problem is worse than one broken duration.</strong> <code>tickStartOfTurn</code> fires the damage tick, then decrements, then removes at zero. So on an enemy, a duration of N delivers <strong>N damage ticks but only N&minus;1 afflicted turns</strong> of a state effect, while the same duration on yourself delivers N of your turns and N of the opponent's answers. One word, "duration", means three different things depending on who holds the effect and whether it ticks.</p>
+          </div>
+        </div>
+        <div class="options">
+          <div class="option pick">
+            <span class="oid">D1<span class="rec">Recommended</span></span>
+            <div class="otext">
+              <p>Move the countdown to the end of the holder's turn. Leave the damage and heal ticks at the start where they are.</p>
+              <p>Duration then means the same thing for everyone: active during the holder's next N turns. A 1-turn debuff covers exactly the turn it was meant to interrupt. Splitting the countdown from the ticks means damage-over-time is untouched, which the status document's version of this option did not account for: Bleeding still gets its three ticks either way.</p>
+              <p>The real cost is wards. A 2-turn self-buff currently covers two of the opponent's turns and would then cover one, so Guarded and Braced get materially weaker. One ability breaks outright: Illusory Double's 1-turn Untargetable is written as "for the opponent's next turn" and needs 2 turns to keep meaning that.</p>
+              <p><strong>The re-sequencing makes that cost payable and the case stronger.</strong> The compensation is derived rather than guessed, which matters because wave 4's pass is now four waves away and cannot be relied on to fix it in time. The conversion table already has to know, for every field, whether its value is realised on the holder's turn (attacks made) or the opponent's (attacks taken). That is the same question as which effects lose coverage, so the fields consumed on the opponent's turn get +1 and the rest keep N, and the answer falls out of the table rather than out of judgement.</p>
+              <p>And 13b now lands in the same wave. Under any option that leaves the inconsistency in place, 13b has to write three different explanations of "duration" for the player, against a working agreement that says a status says how long it lasts in the player's own turns. Making duration mean one thing is what lets 13b write one sentence.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">D2</span>
+            <div class="otext">
+              <p>Skip the first tick on the turn an effect is applied.</p>
+              <p>Nothing gets weaker, and the fix is one line. Cost: every one of the 62 effects gains a turn of life, so every duration in the catalogue is silently a turn longer than it reads and all of them need re-pricing anyway.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">D3</span>
+            <div class="otext">
+              <p>Change nothing in the engine. Price durations by the turns they actually cover, which for a hostile 1-turn effect is zero, and give every hostile effect a floor of 2 turns.</p>
+              <p>No engine change and no ward nerf, and the trace above shows this is cheaper than it first appeared: a 2-turn Stun already denies exactly one action, so "duration 2" is how the engine spells "lose one action" today and only the eleven 1-turn entries are actually broken. Cost: duration keeps meaning three things, the pricing tool has to encode all three, and 13b has to explain all three.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="decision">
+        <div class="decision-head">
+          <span class="sig">#E</span>
+          <div class="q">
+            <h3>The 24 status effects nothing applies</h3>
+            <p>The standing rule is that every catalogued status must have something that applies it. The plan assumed five orphans and gave them homes in 3b's content pass, which is deferred to after #4. Twenty-four does not fit that.</p>
+          </div>
+        </div>
+        <div class="options">
+          <div class="option pick">
+            <span class="oid">E1<span class="rec">Recommended</span></span>
+            <div class="otext">
+              <p>Price all 62 now. Land 3b's reaction table, which homes four of them for free (Frozen, Electrocuted, Sickened and Acid all become reaction results). Add a reachability test that lists the remaining orphans explicitly, so the list can only ever shrink.</p>
+              <p>Keeps this item a pricing pass, honours the standing rule by making every future violation visible, and buys four homes without writing a single new ability. The named list is uncomfortable to look at, which is the point.</p>
+              <p><strong>The re-sequencing gives the list a scheduled zero.</strong> Wave 1's reaction table homes four; wave 3's content pass, which now definitely happens before the pricing pass, homes the rest. So the test's named list is expected to empty in wave 3 rather than sitting open indefinitely, and the pass in wave 4 prices a catalogue where nothing is unreachable.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">E2</span>
+            <div class="otext">
+              <p>Give all 24 homes now, pulling 3b's content pass forward into this item.</p>
+              <p>The standing rule is satisfied outright and the catalogue becomes honest in one step. Cost: roughly 12 new abilities designed and priced inside a pass whose sequencing deliberately puts new content after #4, so every one of them would be written against Trion costs #4 is about to change.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">E3</span>
+            <div class="otext">
+              <p>Delete the orphans with no design intent behind them and home the rest.</p>
+              <p>A smaller, fully honest catalogue, and Rallied's removal is the precedent. Cost: several of the 24 are load-bearing in the documents or in 3b's own design (Wet, Frozen, Enraged), and deleting a status is much harder to undo than leaving it priced and unreachable.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="decision">
+        <div class="decision-head">
+          <span class="sig">#F</span>
+          <div class="q">
+            <h3>How stacking works</h3>
+            <p>Item 5b lists 12 stackable effects capped at 3. The engine currently refreshes instead, and its comment says a genuinely stacking effect would have to declare itself. This decides what declaring itself means.</p>
+          </div>
+        </div>
+        <div class="options">
+          <div class="option pick">
+            <span class="oid">F1<span class="rec">Recommended</span></span>
+            <div class="otext">
+              <p>One instance carrying a stack count, one shared duration, refreshed on re-application, capped at 3. Magnitudes multiply by the count; SP does too.</p>
+              <p>Reads cleanly as one badge saying "Bleeding x3" with one countdown, which is what the interface needs. It also matches the existing refresh rule rather than replacing it: re-application still refreshes the duration, and now also adds a stack.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">F2</span>
+            <div class="otext">
+              <p>Independent instances, each with its own duration, capped at 3 concurrent.</p>
+              <p>More faithful to "three separate wounds", and stacks fall off one at a time rather than all at once. Cost: three countdowns on one badge is exactly the unreadable strip the engine's current comment says was removed once already.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="decision">
+        <div class="decision-head">
+          <span class="sig">#G</span>
+          <div class="q">
+            <h3>Whether a status reaction has to win an infliction contest</h3>
+            <p>When a Cold hit lands on a Wet target, Wet becomes Frozen. The question is whether that conversion is automatic or has to beat the target's Resistance like any other infliction.</p>
+          </div>
+        </div>
+        <div class="options">
+          <div class="option pick">
+            <span class="oid">G1<span class="rec">Recommended</span></span>
+            <div class="otext">
+              <p>Automatic. The setup already paid for a contest when the first status landed, so the payoff is guaranteed.</p>
+              <p>The arithmetic decides this one. A hostile rider lands 46% of the time, so a contested two-step play would come off 21% of the time, and nobody builds a squad around a one-in-five. Automatic reactions are also what makes the mechanism feel like a mechanism rather than another dice roll, which is the whole appeal of the shape 3b is borrowing.</p>
+            </div>
+          </div>
+          <div class="option">
+            <span class="oid">G2</span>
+            <div class="otext">
+              <p>Contested like any other infliction.</p>
+              <p>Consistent with every other way a status arrives, and Status Effect Resistance stays a defence against everything rather than most things. Cost: the 21% above, and a reaction table nobody can plan around.</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>What this item builds, and when</h2>
+    <p class="prose lede">Split across two waves by the re-sequencing. Wave 1 builds the instrument and everything that does not depend on the Trion economy. Wave 4 runs the pass, once #4 has set the economy and wave 3 has finished the catalogue.</p>
+
+    <h3>Wave 1, before the economy</h3>
+    <ul class="tight prose">
+      <li>The SP conversion table, the <code>SptvBaselines</code> config it reads, the tool that prices the catalogue from both, and the SP term in Trigger Value. A measuring instrument, not a re-pricing.</li>
+      <li>3b's mechanism: the <code>StatusReaction</code> field, the twelve-entry table, and Enraged's redesign. Homes four orphans and gives #4's trap pass the primitive it needs.</li>
+      <li>5b's stacking flags, per #F, since stacking changes what a status is worth before anything prices it.</li>
+      <li>13b's descriptions, sharing #B's field work.</li>
+      <li>The duration fix, per #D, so everything after is measured in one meaning of the word.</li>
+      <li>The Trion drain correctness fix. Two lines, and it must be answered before Sapped or Genjutsu Trapped is homed.</li>
+      <li>Spot-fixes for War Chant and Guardian's Aegis, the only two support abilities the audit found badly out, so the wave 2 playtests are not played with support that does nothing.</li>
+      <li>Alongside them in the same wave, though not part of #3: #14 (mirror matches) first, then 5c (the Side Effects rename).</li>
+    </ul>
+
+    <h3>Wave 4, the pass itself</h3>
+    <ul class="tight prose">
+      <li>The baselines re-measured against the shipped economy, and the same rule re-run over them.</li>
+      <li>Re-priced magnitudes and durations for all 62 status effects, and Trion costs and cooldowns for the 61 active Triggers plus the 14 Black Trigger abilities.</li>
+      <li>The reactive and trap durations (<code>armsReactiveDefaultTurns</code>), all eleven of which are unpriced first-pass values today.</li>
+      <li>Everything wave 3 added: 1c's pull and push, 3b's new abilities and Side Effects, and #4's positional traps.</li>
+      <li>Item #5 in full: each support ability must pay for its own action within its own duration. This is the gate on the wave.</li>
+      <li>Bail Out's attacker share, currently an unpriced 10%, which the #2 merge left explicitly to this pass.</li>
+    </ul>
+
+    <h3>Moved out of #3 entirely</h3>
+    <ul class="tight prose">
+      <li>The tooltip duration setting (2 to 10 seconds under the volume slider, needing <code>shared_preferences</code>) goes to #6 in wave 5. It is interface work with no pricing in it, and it was only ever bundled here by accident of scheduling.</li>
+      <li>The Trion economy itself: income, capacity-gated FAT and the range-band cost identities are #4, in wave 2.</li>
+      <li>The 0.60 abilities per character-turn figure. It is an economy problem and it belongs to #4, but it is recorded here because it softens every "worth an action" claim in this review.</li>
+    </ul>
+
+    <div class="note bad">
+      <p><strong>Two playtests are still outstanding and this item does not clear them.</strong> 1b (screening) has never been played at all, and #2 (Bail Out) has not been re-tested since its playtest fixes landed. Both are on <code>main</code> and playable from the deployed build. SPTV re-prices the durations that screening and the Bail Out window both sit inside, so anything those playtests find will land on top of a re-priced catalogue rather than the one that was tested.</p>
+    </div>
+  </section>
+
+  <div class="footer">
+    <p>Every figure in this review is reproducible from the repository at <code>claude/tasks-3-3b-r8ceab</code>.</p>
+    <p><code>dart run tool/sptv_audit.dart</code> for the catalogue, the reachability closure and the value of a point. <code>dart run tool/sptv_baseline.dart --seed 7 --battles 200</code> for the measured baseline. <code>dart run tool/balance_report.dart --seed 7 --battles 200</code> for pacing and the existing value metric.</p>
+    <p>Design review, item #3 with 3b and 5b. No engine or content code has been written.</p>
+  </div>
+
+</div>
