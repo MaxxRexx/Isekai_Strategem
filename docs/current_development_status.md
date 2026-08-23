@@ -11,7 +11,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Playtesting 1b and #2.** #2 has had one playtest and its findings are fixed; it is on `claude/task-2-9fj8pc` awaiting a re-test and a merge. 1b is on main and has still not been played. After the playtests the queue's next buildable item is **#3 (SPTV)**, which also carries 3b's reaction table and 5b's stacking flags. | The approved queue runs #1 to #13 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Playtesting 1b and #2.** #2 has had one playtest and its findings are fixed; it is on `claude/task-2-9fj8pc` awaiting a re-test and a merge. 1b is on main and has still not been played. After the playtests the queue's next buildable item is **#3 (SPTV)**, which also carries 3b's reaction table and 5b's stacking flags. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -186,6 +186,7 @@ Agreed running order. Items are referred to by these numbers everywhere else.
 | 11 | "Close" overloaded as a dialog button label. | Closed, not an issue |
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued |
+| 14 | **Mirror matches: both squads free to pick any character.** Decided by the owner after the #2 playtest, which found that drafting the same character onto both squads silently corrupted the battle (see the section below). The stopgap forbids it; this item is the real support, so each side can field whoever they want and two Ilona Vances can fight each other. **What it takes:** a battle-scoped combatant id (`A:ilona_vance`, so the character id is still recoverable by stripping the side) replacing the character's own id as the key to everything in a battle. Audited off the live code: **33 maps and sets keyed by a character id** (`Battle.states`, `characterRegistry`, `teamTrionPools`, the TEG profile maps, both `equipped*` maps, the Loadout maps, the Death Ledger swaps, and the per-character id sets on `CharacterBattleState`), **123 reads of `.character.id`**, and 196 mentions of `characterId` across the engine and the app. Three that are not mechanical: **`_teamKeyFor` derives a team's identity by joining its sorted character ids**, so a true mirror (the same three characters both sides) hands both teams the same key and breaks the combo ledger's same-team filter, which means `Team` has to carry its own id; the **interface has to tell two identical characters apart** in the squad panels, the battle log, the target picker and the battlefield strip, which is a copy decision, not a rename; and the **draft screens then drop the cross-squad exclusion** while the engine's duplicate guard stays, re-keyed, since it still catches a genuine repeat within one squad. **Sequencing:** the owner's call, but it is cheaper before #3 and #4 than after, because every line of new content those items add is another line written against the old key. | Queued |
 | 13b | **Every ability and status explains itself.** Raised by the owner in the #2 playtest, against Guardian's Aegis: it explains Guarded ("You take 25% less damage") and then says of Braced only "You are affected by Braced", which tells the player nothing. The cause is that `describeStatusEffect` renders some of `StatusEffectDefinition`'s fields and falls back to a placeholder for the rest, and Braced's whole effect lives in an unrendered one (`perRemainingTurnStatModifiers`, +1 Defense per remaining turn). Measured off the live catalogue: **16 of the 62 status effects hit that placeholder** (Wet, Sickened, Sapped, Reeling, Prepared, Braced, Focused, Hastened, Chilled, Origin Lockout, Interdict, Forced Critical Miss, Forced Choice, Karmic Bind, Called Shot, Mind's Eye). The standing rule is already written down in the working agreement: a status effect's description says what it does and how long it lasts in the player's own turns, never just its name. Sits with #13 because it is the same job (descriptions people can read) and after #3, which is about to change what several of those magnitudes are. | Queued |
 
 ### More traps, designed around positional play: part of item #4
@@ -433,11 +434,13 @@ Fixed in two places, because either alone would leave the door open:
   what Quick Battle already did. The Guided Tutorial's two squads never
   overlapped.
 
-**This makes mirror matches impossible**, which is a real if minor loss and is
-the owner's to overturn. Supporting them properly means a battle-scoped id
-(`A:ilona_vance`) rather than the character's own, and the character id is the
-key to everything: the state map, the equipped-Loadout maps, `teammates`, log
-entries, the interface's target ids. That is its own item, not a hotfix.
+**This makes mirror matches impossible, and that is a stopgap rather than a
+rule.** Put to the owner, who decided: each side should be free to select
+whatever characters they want, even if the other side has the same character.
+Supporting that properly means a battle-scoped id rather than the character's
+own, which is a wide change and not a hotfix, so it is queued as **item #14**
+with its audit. Until it lands, the restriction stands and the design document
+says so as a temporary one.
 
 ### Fixed after the #2 playtest: a body was reading as defeated
 

@@ -256,6 +256,10 @@ LogAction logActionFor(
 /// the squad drafts share one rule rather than each screen writing its own,
 /// which is how the two screens that got it wrong got it wrong.
 ///
+/// A stopgap, not a rule: both sides are meant to be able to pick whoever they
+/// want. Item #14 replaces the character id with a battle-scoped one, and this
+/// exclusion goes with it.
+///
 /// [taken] accepts nulls so a screen can pass its slot list straight in.
 List<String> randomSquadAvoiding(
   Random random,

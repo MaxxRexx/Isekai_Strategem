@@ -124,8 +124,9 @@ class Battle {
     //
     // This throws rather than asserting, because an assert is compiled out of
     // the release web build and this failure is silent corruption rather than
-    // a crash. Supporting mirror matches properly needs a battle-scoped id
-    // rather than the character's own, which is its own item.
+    // a crash. Mirror matches are meant to be allowed: supporting them needs a
+    // battle-scoped id rather than the character's own, which is item #14 in
+    // the work queue. Until then this is the guard that keeps a battle sane.
     final ids = [
       for (final c in [...teamA.characters, ...teamB.characters]) c.id,
     ];
