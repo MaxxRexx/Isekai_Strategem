@@ -212,6 +212,15 @@ class PlaySession {
   /// the real rules - the Guided Tutorial passes 'teamA' so its scripted
   /// walkthrough stays predictable). Player Loadouts must already be
   /// valid; this throws [ArgumentError] otherwise.
+  ///
+  /// [opponentLoadouts] pins the opposing squad's kit instead of letting
+  /// [opponentProfileId]'s builder choose it. [arrange] runs on the fully
+  /// wired battle immediately before the opening turn begins, which is the
+  /// only point where health, positions and standing effects can be set
+  /// without the engine having acted on them yet. Both exist for the Tests
+  /// tab (see `test_scenarios.dart`), where a case is only worth testing if
+  /// the board it needs can be set up in one tap; ordinary play passes
+  /// neither.
   factory PlaySession.start({
     required List<String> playerCharacterIds,
     required Map<String, Loadout> playerLoadouts,
@@ -219,6 +228,8 @@ class PlaySession {
     required String opponentProfileId,
     String firstTurn = 'random',
     TurnEngine? turnEngine,
+    Map<String, Loadout>? opponentLoadouts,
+    void Function(Battle battle)? arrange,
   }) {
     for (final id in playerCharacterIds) {
       final validation = playerLoadouts[id]!.validateFor(roster[id]);
@@ -234,11 +245,17 @@ class PlaySession {
       characterIds: playerCharacterIds,
       loadouts: playerLoadouts,
     );
-    final teamBDraft = DraftedTeam.draftWithProfile(
-      teamId: 'ai',
-      characterIds: opponentCharacterIds,
-      profile: profileById(opponentProfileId),
-    );
+    final teamBDraft = opponentLoadouts == null
+        ? DraftedTeam.draftWithProfile(
+            teamId: 'ai',
+            characterIds: opponentCharacterIds,
+            profile: profileById(opponentProfileId),
+          )
+        : DraftedTeam.fromLoadouts(
+            teamId: 'ai',
+            characterIds: opponentCharacterIds,
+            loadouts: opponentLoadouts,
+          );
 
     final teamAEfficiency = computeTeamEfficiency(
       characterIds: playerCharacterIds,
@@ -307,6 +324,11 @@ class PlaySession {
       teamAEfficiency: teamAEfficiency,
       teamBEfficiency: teamBEfficiency,
     );
+
+    // The last chance to set the board up before anybody acts: after every
+    // engine wiring above, and before the opening turn's Trion roll and
+    // status tick.
+    arrange?.call(battle);
 
     if (teamAGoesFirst) {
       battle.startTurn(equippedActiveTriggers: session.equippedA);

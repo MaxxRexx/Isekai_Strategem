@@ -16,10 +16,12 @@ import '../game/report.dart';
 import '../game/services.dart';
 import '../game/target_selection.dart';
 import '../game/team_efficiency.dart';
+import '../game/test_scenarios.dart';
 import '../game/tutorial.dart';
 import '../game/xp_ledger.dart';
 import '../ui/notched.dart';
 import '../ui/palette.dart';
+import 'test_lab_screen.dart' show ScenarioBriefBody;
 import '../ui/rank.dart';
 import '../widgets/ability_slot.dart';
 import '../widgets/account_sheet.dart';
@@ -57,11 +59,18 @@ class PlayFlowScreen extends StatefulWidget {
   final List<String>? initialTeamAIds;
   final Map<String, LoadoutSelection>? initialSelections;
 
+  /// A pre-arranged board from the Tests tab. Skips setup and Loadout
+  /// entirely, since a scenario pins both squads, both kits and the whole
+  /// starting position, and pins a brief to the battle screen so the tester
+  /// can see what they are looking for without leaving it.
+  final TestScenario? scenario;
+
   const PlayFlowScreen({
     super.key,
     this.tutorial = false,
     this.initialTeamAIds,
     this.initialSelections,
+    this.scenario,
   });
 
   @override
@@ -145,7 +154,14 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.tutorial) {
+    final scenario = widget.scenario;
+    if (scenario != null) {
+      for (var i = 0; i < 3; i++) {
+        _teamAIds[i] = scenario.playerIds[i];
+        _teamBIds[i] = scenario.enemyIds[i];
+      }
+      _startScenario(scenario);
+    } else if (widget.tutorial) {
       _tutorial = TutorialState();
       // The tutorial pins the opponent squad and profile; the player's
       // own slots start empty and are filled by the script's steps.
@@ -248,6 +264,22 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         _startBattle();
       }
     });
+  }
+
+  /// Drops straight into a scenario's arranged battle. Deliberately does not
+  /// go through [_startBattle]: a scenario owns both squads' Loadouts and the
+  /// board, so there is nothing for the setup or Loadout steps to decide.
+  void _startScenario(TestScenario scenario) {
+    // The battle screen reads the opponent's profile to show who it is
+    // playing against, so this has to be set even though the scenario has
+    // already handed the same id to the session.
+    _profileBId = scenario.opponentProfileId;
+    _session = scenario.start();
+    _roundsLog.clear();
+    _clearSelection();
+    _battleLogOpen = false;
+    _step = _PlayStep.battle;
+    _tutorial = null;
   }
 
   void _startBattle() {
@@ -737,16 +769,28 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       appBar: AppBar(
         // No back button: a mid-battle exit goes through Surrender (which
         // ends the match), and the Return to Home button appears once the
-        // match is over.
-        automaticallyImplyLeading: false,
+        // match is over. A scenario is the exception: it is a test, not a
+        // match, so backing out of one costs nothing.
+        automaticallyImplyLeading: widget.scenario != null,
         title: widget.tutorial && _tutorialActive
             ? const Text('Guided Tutorial')
-            : null,
+            : widget.scenario != null
+                ? Text(widget.scenario!.name)
+                : null,
+        actions: [
+          if (widget.scenario != null)
+            IconButton(
+              icon: const Icon(Icons.checklist_rtl),
+              tooltip: 'What to look for',
+              onPressed: _showScenarioBrief,
+            ),
+        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
             if (_tutorialActive) _tutorialBanner(),
+            if (widget.scenario != null) _scenarioBanner(widget.scenario!),
             Expanded(
               child: switch (_step) {
                 _PlayStep.setup => _buildSetupStep(),
@@ -754,6 +798,95 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 _PlayStep.battle => _buildBattleStep(),
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A one-line reminder of what this scenario is for, with the full brief
+  /// one tap away. A tester four turns deep should never have to go back to
+  /// the picker to remember what they are watching.
+  Widget _scenarioBanner(TestScenario scenario) {
+    return InkWell(
+      onTap: _showScenarioBrief,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Palette.accent.withValues(alpha: 0.10),
+          border: const Border(
+            bottom: BorderSide(color: Palette.hairline),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Palette.accent.withValues(alpha: 0.6),
+                ),
+              ),
+              child: Text(
+                scenario.item,
+                style: const TextStyle(
+                  color: Palette.accent,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                scenario.steps.first,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'BRIEF',
+              style: TextStyle(
+                color: Palette.accent,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showScenarioBrief() {
+    final scenario = widget.scenario;
+    if (scenario == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Palette.panel,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
+        builder: (context, controller) => ListView(
+          controller: controller,
+          padding: const EdgeInsets.all(20),
+          children: [
+            Text(
+              scenario.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ScenarioBriefBody(scenario: scenario),
           ],
         ),
       ),

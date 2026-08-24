@@ -201,7 +201,7 @@ Waves are worked in order; everything inside a wave is one branch.
 
 | Wave | Items | Why it sits here |
 |---|---|---|
-| **0** | Playtest **1b** (screening) and **#2** (Bail Out, post-fix) | The owner's, and parallel to everything. Both are on `main` and playable from the deployed build. Their fixes are much cheaper landed before wave 1's two wide refactors than after |
+| **0** | Playtest **1b** (screening) and **#2** (Bail Out, post-fix) | The owner's, and parallel to everything. Both are on `main` and playable from the deployed build, and the **Tests tab** now carries eight pre-arranged boards for exactly these cases (see below). Their fixes are much cheaper landed before wave 1's two wide refactors than after |
 | **1** | **#14** &rarr; **5c** &rarr; the duration fix &rarr; **3b** mechanism &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
@@ -211,6 +211,65 @@ Waves are worked in order; everything inside a wave is one branch.
 | **7** | **#13**, then **#8** | Appendix A prose and the tutorial both want the systems to have stopped moving |
 
 Deferred, unchanged: **#9** (story mode) and **#12** (sign-in branding).
+
+### The Tests tab: pre-arranged boards for the wave 0 playtests
+
+Built because the two outstanding playtests are for cases an ordinary battle
+rarely produces. Screening only bites at a particular formation, and half of
+Bail Out only happens in a one-turn window after a kill. Fishing for those
+across a twenty-round match is how a playtest gets abandoned.
+
+**Where it is.** A fourth mode tab on the Home screen beside Play, Simulate
+and Guided Tutorial. It wraps to two rows of two below 560 logical pixels, so
+four tabs do not crush the labels on a phone. Pick a scenario from the
+dropdown, read what it is for, and start it: the battle runs in the ordinary
+battle screen, because what is being tested is whether the real interface
+explains the rules, and a bespoke harness would only prove the harness works.
+
+**The eight scenarios**, in `app/lib/src/game/test_scenarios.dart`:
+
+| Scenario | Item | What it puts in front of you |
+|---|---|---|
+| Read the board | 1b | The ruler with an empty enemy line, a screening pip, and the same target reading a different distance from each of your lines |
+| The screen holds | 1b | Two enemies in front of a third puts that third outside Close Range entirely, at distance 4 |
+| A body still screens | 1b and #2 | Kill the front and the distance does not drop, because the body screens. Clear the body and it does. The one place the two items meet |
+| The bending shot | 1b | A body is already down. Destroy it and a queued Long Range shot bends to reach a target that just came too close, and the squad pays Trion Backlash |
+| The window: recall or destroy | #2 | One setup, both endings. Leave the body and they bank 20%; hit it and you bank 10% |
+| Only damage may be aimed at a body | #2 | The target picker offers a body to a damaging ability and refuses it to Charm Whisper |
+| Refuse to Bail | #2 | The one thing that has never been equipped and fired outside a test |
+| The last one does not bail | #2 | A squad's final member falls with no window and no Salvage |
+
+**How they are set up.** `PlaySession.start` gained two optional parameters,
+both null in ordinary play: `opponentLoadouts` pins the enemy kit instead of
+letting the profile builder pick it, and `arrange` runs on the fully wired
+battle immediately before the opening turn, which is the only point where
+health, positions and a body already on the board can be set without the
+engine having acted on them. The player always moves first and both squads
+start on 120 Trion, so nothing under test is blocked by an economy #4 has not
+fixed yet.
+
+**Each scenario carries its own brief**: a goal, numbered steps, what should
+happen, and a caveat where the case depends on an attack landing. The brief is
+on the picker and again behind a button in the battle screen's app bar, because
+a tester four turns deep should not have to go back to remember what they are
+watching.
+
+**Verified.** 22 tests in `app/test/test_scenarios_test.dart`, which check that
+every kit is a legal Loadout, that every scenario opens on the player's turn
+with the board arranged as its brief claims, and that each one renders the real
+battle screen rather than an error. The geometry claims in the briefs are
+asserted against the engine's own distance rule, so a brief cannot quietly
+disagree with the game. Driven in a real browser on the built web app: the tab,
+the dropdown, launching a scenario into an arranged battle, and the in-battle
+brief all work. Glyphs did not paint in that container because its proxy blocks
+the Google font, which is a sandbox artefact rather than an app fault.
+
+**Found while building it, and fixed:** the battle screen reads the opponent's
+AI profile to show who you are playing, and the first version of the scenario
+path never set it. A release web build renders a caught exception as a blank
+grey page, so it failed silently. The unit tests missed it because they built
+the session directly; the widget tests that now pump the real screen exist
+because of it.
 
 ### Why the order changed, and what it cost
 
