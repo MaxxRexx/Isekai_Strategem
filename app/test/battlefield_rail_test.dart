@@ -218,4 +218,63 @@ void main() {
 
     expect(tapped, isEmpty);
   });
+
+  group('a narrow rail clips the name rather than overflowing', () {
+    // The deploy went red on a RenderFlex overflow at this widget: a lane cell
+    // 95.2 logical pixels wide could not fit a token's name beside its screen
+    // pips, and "content that cannot be seen" is an error condition in a
+    // widget test. It never reproduced locally because the cell width follows
+    // the surface size, so this pins the width instead of hoping for it.
+    //
+    // The name is the half that gives way. The pips are the whole reason the
+    // token has anything beside a name.
+    Widget narrow(Widget child, double width) => MaterialApp(
+          home: Scaffold(body: SizedBox(width: width, child: child)),
+        );
+
+    for (final width in [560.0, 420.0, 360.0, 300.0]) {
+      testWidgets('at ${width.toInt()} logical pixels wide', (tester) async {
+        await tester.pumpWidget(narrow(
+          BattlefieldRail(
+            teamA: [
+              fighter('a1', 'Celestine Moreau', BattlePosition.front),
+              fighter('a2', 'Mireille Song', BattlePosition.front),
+              fighter('a3', 'Bastian Cole', BattlePosition.front),
+            ],
+            teamB: [
+              fighter('b1', 'Celestine Moreau', BattlePosition.front),
+              fighter('b2', 'Nadia Kessler', BattlePosition.front),
+              // Three deep, so the back-line token carries two pips beside
+              // its name and the row is at its widest.
+              fighter('b3', 'Ren Kobayashi', BattlePosition.back),
+            ],
+          ),
+          width,
+        ));
+
+        expect(tester.takeException(), isNull,
+            reason: 'the rail overflowed at ${width}px');
+      });
+    }
+
+    testWidgets('the pips survive the squeeze even when the name does not',
+        (tester) async {
+      await tester.pumpWidget(narrow(
+        BattlefieldRail(
+          teamA: [fighter('a1', 'Ren Kobayashi', BattlePosition.front)],
+          teamB: [
+            fighter('b1', 'Celestine Moreau', BattlePosition.front),
+            fighter('b2', 'Nadia Kessler', BattlePosition.middle),
+            fighter('b3', 'Bastian Cole', BattlePosition.back),
+          ],
+        ),
+        300,
+      ));
+
+      expect(tester.takeException(), isNull);
+      // One pip for the middle line, two for the back line.
+      expect(screenPips(), findsNWidgets(3));
+    });
+  });
 }
+

@@ -984,10 +984,18 @@ changed, but a green suite is not a played game.
   happens to Bail Out windows, `reach_check` and `formation_matrix` for reach,
   `screening_model` and `trap_screening_sim` for the screening rules,
   `stackable_statuses` and `doc_facts` for catalogue questions.
-- **The app suite has a flaky case.** `widget_test.dart`'s "Play mode: Home
-  screen squad builder" fails perhaps one full-suite run in five and passes on
-  its own. Observed on unmodified `main` before #2 started, so it is not #2's.
-  Re-run before believing it.
+- **The app suite had a flaky case, and it was not a flake.**
+  `widget_test.dart`'s "Play mode: Home screen squad builder" failed perhaps
+  one full-suite run in five, and it took down `main`'s deploy on the #3 merge.
+  The CI log named it exactly: a `RenderFlex` overflow in
+  `battlefield_rail.dart`, where a lane cell 95.2 logical pixels wide could not
+  fit a token's name beside its screen pips. It never reproduced locally
+  because the cell width follows the surface size, and the runner's differs.
+  **Fixed:** the name is now `Flexible` with an ellipsis, so the pips always
+  survive and the name is the half that gives way, which is the right priority
+  for a widget whose whole job is showing what is in the way. Five tests in
+  `battlefield_rail_test.dart` pin the rail at 560, 420, 360 and 300 pixels
+  wide; all five fail without the fix.
 - **The design review for #2**, with the eight decisions as options and
   trade-offs rather than just their answers:
   <https://claude.ai/code/artifact/2f6444f8-b695-42bc-a425-506fec978848>

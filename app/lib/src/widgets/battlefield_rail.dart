@@ -359,19 +359,28 @@ class BattlefieldRail extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '${ghosted ? '> ' : ''}${_shortName(fighter.name)}',
-                style: TextStyle(
-                  color: fighter.alive
-                      ? Colors.white
-                      : (bailing ? Colors.white70 : Colors.white38),
-                  fontSize: 9.5,
-                  fontWeight: focused ? FontWeight.w700 : FontWeight.w500,
-                  // A body has not been struck off the board yet, so it does
-                  // not get the strike-through a defeated character does.
-                  decoration: (fighter.alive || bailing)
-                      ? null
-                      : TextDecoration.lineThrough,
+              // Flexible, because the lane cell is as wide as the strip lets
+              // it be and a long name in a narrow cell overflowed the row.
+              // The name is the half that gives way: a clipped name is still
+              // recognisable, and the pips beside it are the whole reason
+              // this widget exists.
+              Flexible(
+                child: Text(
+                  '${ghosted ? '> ' : ''}${_shortName(fighter.name)}',
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: fighter.alive
+                        ? Colors.white
+                        : (bailing ? Colors.white70 : Colors.white38),
+                    fontSize: 9.5,
+                    fontWeight: focused ? FontWeight.w700 : FontWeight.w500,
+                    // A body has not been struck off the board yet, so it does
+                    // not get the strike-through a defeated character does.
+                    decoration: (fighter.alive || bailing)
+                        ? null
+                        : TextDecoration.lineThrough,
+                  ),
                 ),
               ),
               // One pip per body in the way. The pips answer "who do I have to
