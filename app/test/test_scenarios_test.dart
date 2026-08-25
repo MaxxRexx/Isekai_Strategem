@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
 import 'package:isekai_strategem/src/game/test_scenarios.dart';
 import 'package:isekai_strategem/src/screens/play_flow_screen.dart';
+import 'package:isekai_strategem/src/screens/test_lab_screen.dart';
 
 /// The Tests tab is only useful if every scenario in it actually loads. These
 /// are the checks that a scenario is well-formed, not checks on the rules it
@@ -26,10 +27,46 @@ CharacterBattleState stateFor(
     );
 
 void main() {
+  // Every scenario ever written stays under test, retired or not: a retired
+  // one is still shipped code, it is still what a future round would start
+  // from, and its numbers are still quoted in the docs. What retiring changes
+  // is only whether the Tests tab offers it.
+  group('the Tests tab offers only what still needs playing', () {
+    test('retired scenarios are kept, but not listed', () {
+      expect(allScenarios, isNotEmpty);
+      expect(
+        testScenarios,
+        allScenarios.where((s) => !s.retired),
+        reason: 'the tab lists exactly the unconfirmed cases',
+      );
+      for (final s in testScenarios) {
+        expect(s.retired, isFalse);
+      }
+    });
+
+    testWidgets('an empty list reads as finished, not broken', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(const MaterialApp(home: TestLabScreen()));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ErrorWidget), findsNothing);
+      if (testScenarios.isEmpty) {
+        expect(find.text('Nothing waiting'), findsOneWidget);
+        expect(find.text('START SCENARIO'), findsNothing);
+      } else {
+        expect(find.text('START SCENARIO'), findsOneWidget);
+        expect(find.text('Nothing waiting'), findsNothing);
+      }
+    });
+  });
+
   test('every scenario has a unique id and names a work item', () {
-    final ids = testScenarios.map((s) => s.id).toList();
+    final ids = allScenarios.map((s) => s.id).toList();
     expect(ids.toSet().length, ids.length, reason: 'duplicate scenario id');
-    for (final s in testScenarios) {
+    for (final s in allScenarios) {
       expect(s.name, isNotEmpty);
       expect(s.item, isNotEmpty);
       expect(s.goal, isNotEmpty);
@@ -41,7 +78,7 @@ void main() {
   });
 
   test('every squad is three characters and the two do not overlap', () {
-    for (final s in testScenarios) {
+    for (final s in allScenarios) {
       expect(s.playerIds.length, 3, reason: s.id);
       expect(s.enemyIds.length, 3, reason: s.id);
       // Both squads may field the same character since item #14, and one
@@ -56,7 +93,7 @@ void main() {
   });
 
   test('every character has a kit, and every kit is a legal Loadout', () {
-    for (final s in testScenarios) {
+    for (final s in allScenarios) {
       for (final id in [...s.playerIds, ...s.enemyIds]) {
         expect(s.kits.containsKey(id), isTrue,
             reason: '${s.id} has no kit for $id');
@@ -72,7 +109,7 @@ void main() {
   });
 
   test('every arranged character is actually in the scenario', () {
-    for (final s in testScenarios) {
+    for (final s in allScenarios) {
       final everyone = {...s.playerIds, ...s.enemyIds};
       for (final id in [
         ...s.positions.keys,
@@ -88,7 +125,7 @@ void main() {
   });
 
   test('every scenario starts, and starts on the player turn', () {
-    for (final s in testScenarios) {
+    for (final s in allScenarios) {
       final session = s.start();
       expect(session.battle.isTeamATurn, isTrue,
           reason: '${s.id} does not open on the player');
@@ -99,7 +136,7 @@ void main() {
   });
 
   test('the board is arranged the way the scenario describes', () {
-    for (final s in testScenarios) {
+    for (final s in allScenarios) {
       final session = s.start();
       s.positions.forEach((id, position) {
         expect(stateFor(s, session, id).position, position, reason: s.id);
@@ -125,7 +162,7 @@ void main() {
   });
 
   test('both squads can afford to act on turn one', () {
-    for (final s in testScenarios) {
+    for (final s in allScenarios) {
       final session = s.start();
       // The opening turn has already rolled income on top of the arranged
       // pool, so this is a floor rather than the exact number.
@@ -140,7 +177,7 @@ void main() {
 
   group('the scenarios put the board where their briefs claim', () {
     TestScenario byId(String id) =>
-        testScenarios.firstWhere((s) => s.id == id);
+        allScenarios.firstWhere((s) => s.id == id);
 
     /// A battle keys by combatant id (item #14); a test naming a character
     /// holds their roster id. One place translates, the same as the scenarios
@@ -262,7 +299,7 @@ void main() {
     // the scenario path was not setting, and a release web build renders a
     // caught exception as a blank grey page rather than a crash. Pumping the
     // real screen is the only check that catches that class of miss.
-    for (final scenario in testScenarios) {
+    for (final scenario in allScenarios) {
       testWidgets('${scenario.name} renders a battle, not an error', (
         tester,
       ) async {
@@ -289,7 +326,7 @@ void main() {
     testWidgets('the brief opens from the battle screen', (tester) async {
       await tester.binding.setSurfaceSize(const Size(1400, 2400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final scenario = testScenarios.first;
+      final scenario = allScenarios.first;
 
       await tester.pumpWidget(
         MaterialApp(home: PlayFlowScreen(scenario: scenario)),
@@ -374,7 +411,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: PlayFlowScreen(
-            scenario: testScenarios.firstWhere((s) => s.id == 'screen_holds'),
+            scenario: allScenarios.firstWhere((s) => s.id == 'screen_holds'),
           ),
         ),
       );
@@ -391,7 +428,7 @@ void main() {
     // only some scenarios had a matching assertion. They are computed now,
     // and this is the test that the computation is the engine's own.
     test('every distance a scenario computes matches the live battle', () {
-      for (final s in testScenarios) {
+      for (final s in allScenarios) {
         final session = s.start();
         final everyone = [...s.playerIds, ...s.enemyIds];
         for (final from in everyone) {
@@ -417,7 +454,7 @@ void main() {
     });
 
     test('every screen count a scenario computes matches the live battle', () {
-      for (final s in testScenarios) {
+      for (final s in allScenarios) {
         final session = s.start();
         for (final id in [...s.playerIds, ...s.enemyIds]) {
           if (s.destroyed.contains(id)) continue;
@@ -432,7 +469,7 @@ void main() {
     });
 
     test('every position a scenario computes matches the live battle', () {
-      for (final s in testScenarios) {
+      for (final s in allScenarios) {
         final session = s.start();
         for (final id in [...s.playerIds, ...s.enemyIds]) {
           expect(s.positionOf(id), stateFor(s, session, id).position,
@@ -444,7 +481,7 @@ void main() {
     test('Read the board says two pips, 4 and 6', () {
       // The exact numbers the playtest reported, pinned so the brief that
       // got them wrong can never come back.
-      final s = testScenarios.firstWhere((x) => x.id == 'read_the_board');
+      final s = allScenarios.firstWhere((x) => x.id == 'read_the_board');
       expect(s.screensOn('nadia_kessler'), 2);
       expect(s.distanceBetween('rurik_voss', 'nadia_kessler'), 4);
       expect(s.distanceBetween('mireille_song', 'nadia_kessler'), 6);

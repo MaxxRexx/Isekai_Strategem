@@ -84,6 +84,17 @@ class TestScenario {
   /// profile, so the two would otherwise be able to disagree.
   final String opponentProfileId;
 
+  /// Played, and behaved. Retired scenarios stay in this file but are kept
+  /// out of the picker, because a tab full of cases that already passed
+  /// buries the one that has not.
+  ///
+  /// They are not deleted, for two reasons. #4 re-prices the whole economy
+  /// and #3 re-prices every duration, so these same boards will want
+  /// re-running against the numbers that ship, and rebuilding them each time
+  /// is the expensive way. And their assertions still run in
+  /// `test_scenarios_test.dart`, which is what keeps their briefs honest.
+  final bool retired;
+
   const TestScenario({
     required this.id,
     required this.name,
@@ -101,6 +112,7 @@ class TestScenario {
     this.destroyed = const {},
     this.startingTrion = 120,
     this.opponentProfileId = 'button_masher',
+    this.retired = false,
   });
 
   bool _isPlayer(String id) => playerIds.contains(id);
@@ -256,9 +268,12 @@ const _front = BattlePosition.front;
 const _middle = BattlePosition.middle;
 const _back = BattlePosition.back;
 
-final List<TestScenario> testScenarios = [
+/// Every scenario ever written, retired or not. The tests validate all of
+/// them; the picker shows [testScenarios].
+final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'read_the_board',
+    retired: true,
     name: 'Read the board',
     item: '1b',
     goal:
@@ -304,6 +319,7 @@ final List<TestScenario> testScenarios = [
 
   TestScenario(
     id: 'screen_holds',
+    retired: true,
     name: 'The screen holds',
     item: '1b',
     goal:
@@ -349,6 +365,7 @@ final List<TestScenario> testScenarios = [
 
   TestScenario(
     id: 'body_screens',
+    retired: true,
     name: 'A body still screens',
     item: '1b and #2',
     goal:
@@ -403,6 +420,7 @@ final List<TestScenario> testScenarios = [
 
   TestScenario(
     id: 'bending_shot',
+    retired: true,
     name: 'The bending shot',
     item: '1b',
     goal:
@@ -457,6 +475,7 @@ final List<TestScenario> testScenarios = [
 
   TestScenario(
     id: 'window',
+    retired: true,
     name: 'The window: recall or destroy',
     item: '#2',
     goal:
@@ -507,6 +526,7 @@ final List<TestScenario> testScenarios = [
 
   TestScenario(
     id: 'body_targeting',
+    retired: true,
     name: 'Only damage may be aimed at a body',
     item: '#2',
     goal:
@@ -548,6 +568,7 @@ final List<TestScenario> testScenarios = [
 
   TestScenario(
     id: 'refuse_to_bail',
+    retired: true,
     name: 'Refuse to Bail',
     item: '#2',
     goal:
@@ -597,6 +618,7 @@ final List<TestScenario> testScenarios = [
 
   TestScenario(
     id: 'mirror_match',
+    retired: true,
     name: 'Mirror match',
     item: '#14',
     goal:
@@ -635,6 +657,7 @@ final List<TestScenario> testScenarios = [
 
   TestScenario(
     id: 'last_one_standing',
+    retired: true,
     name: 'The last one does not bail',
     item: '#2',
     goal:
@@ -672,3 +695,11 @@ final List<TestScenario> testScenarios = [
     destroyed: {'vela_ashworth', 'ren_kobayashi'},
   ),
 ];
+
+/// What the Tests tab offers: the cases that have **not** yet been confirmed.
+///
+/// Emptying itself is the intended end state for a round of testing. Wave 1's
+/// features add their own scenarios here as they land; everything already
+/// played is in [allScenarios] with `retired: true`.
+final List<TestScenario> testScenarios =
+    allScenarios.where((s) => !s.retired).toList();

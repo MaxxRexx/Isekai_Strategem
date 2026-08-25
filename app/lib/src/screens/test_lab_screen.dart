@@ -18,11 +18,17 @@ class TestLabScreen extends StatefulWidget {
 }
 
 class _TestLabScreenState extends State<TestLabScreen> {
-  late TestScenario _selected = testScenarios.first;
+  /// Null when there is nothing left to test, which is a real state: a
+  /// scenario is retired once the case it covers has been played and
+  /// confirmed, so the list empties as testing finishes.
+  late TestScenario? _selected =
+      testScenarios.isEmpty ? null : testScenarios.first;
 
   void _launch() {
+    final scenario = _selected;
+    if (scenario == null) return;
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PlayFlowScreen(scenario: _selected)),
+      MaterialPageRoute(builder: (_) => PlayFlowScreen(scenario: scenario)),
     );
   }
 
@@ -42,45 +48,96 @@ class _TestLabScreenState extends State<TestLabScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: [
                 const Text(
-                  'Pre-arranged boards for the two features that are merged '
-                  'but have not been played: screening (1b) and Bail Out '
-                  '(#2). Each one sets up a case that is hard to reach from '
-                  'an ordinary battle, and says what should happen.',
+                  'Pre-arranged boards for cases that are hard to reach from '
+                  'an ordinary battle. Each one sets up the case and says '
+                  'what should happen. A scenario is removed from this list '
+                  'once the case has been played and confirmed, so what is '
+                  'here is what still needs a look.',
                   style: TextStyle(color: Colors.white60, fontSize: 13),
                 ),
                 const SizedBox(height: 16),
-                _ScenarioPicker(
-                  selected: _selected,
-                  onChanged: (s) => setState(() => _selected = s),
-                ),
-                const SizedBox(height: 16),
-                _ScenarioBrief(scenario: _selected),
-                const SizedBox(height: 20),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Palette.accent,
-                    foregroundColor: Palette.background,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                if (_selected == null)
+                  const _NothingToTest()
+                else ...[
+                  _ScenarioPicker(
+                    selected: _selected!,
+                    onChanged: (s) => setState(() => _selected = s),
                   ),
-                  onPressed: _launch,
-                  child: const Text(
-                    'START SCENARIO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.6,
+                  const SizedBox(height: 16),
+                  _ScenarioBrief(scenario: _selected!),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Palette.accent,
+                      foregroundColor: Palette.background,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: _launch,
+                    child: const Text(
+                      'START SCENARIO',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.6,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'You always move first. Both squads start with plenty of '
-                  'Trion so nothing under test is blocked by the economy.',
-                  style: TextStyle(color: Colors.white38, fontSize: 12),
-                ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'You always move first. Both squads start with plenty of '
+                    'Trion so nothing under test is blocked by the economy.',
+                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                  ),
+                ],
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Shown when every scenario has been played and confirmed. Not an error and
+/// not a placeholder: an empty list is the finished state of a testing round,
+/// and saying so is more useful than an empty panel.
+class _NothingToTest extends StatelessWidget {
+  const _NothingToTest();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Palette.panel,
+        border: Border.all(color: Palette.hairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.check_circle_outline,
+                  size: 18, color: Palette.good),
+              const SizedBox(width: 8),
+              Text(
+                'Nothing waiting',
+                style: const TextStyle(
+                  color: Palette.good,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Every scenario written so far has been played and behaved '
+            'correctly, so they have all been retired. New ones appear here '
+            'as new rules land, or when you ask for a case to be set up.',
+            style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.45),
+          ),
+        ],
       ),
     );
   }

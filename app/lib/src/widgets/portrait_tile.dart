@@ -104,6 +104,16 @@ class PortraitTile extends StatelessWidget {
   }
 }
 
+/// A one-pixel dark outline, drawn as four offset shadows. Keeps the health
+/// readout legible over the bright fill and the near-black empty track alike,
+/// which a single flat colour cannot do.
+const List<Shadow> _healthLabelOutline = [
+  Shadow(offset: Offset(-1, 0), color: Colors.black87),
+  Shadow(offset: Offset(1, 0), color: Colors.black87),
+  Shadow(offset: Offset(0, -1), color: Colors.black87),
+  Shadow(offset: Offset(0, 1), color: Colors.black87),
+];
+
 /// The portrait tile plus its HP bar, stacked to a fixed [size] width, with
 /// the HP value overlaid on the bar's right edge (not centered on it).
 class PortraitHealthBar extends StatelessWidget {
@@ -201,6 +211,14 @@ class PortraitHealthBar extends StatelessWidget {
                   widthFactor: frac == 0 ? 0.001 : frac,
                   child: Container(color: barColor),
                 ),
+                // The readout sits on top of both halves of the bar, and the
+                // two halves are at opposite ends of the value range: a bright
+                // green or amber fill on the left, a near-black empty track on
+                // the right. Dark text was legible on the fill and invisible
+                // on the track, so at 31/100 the number could not be read at
+                // all. White with a dark outline is the one treatment that
+                // works over both, and it stops depending on how hurt the
+                // character happens to be.
                 Align(
                   alignment: Alignment.centerRight,
                   child: Padding(
@@ -208,9 +226,10 @@ class PortraitHealthBar extends StatelessWidget {
                     child: Text(
                       '$currentHealth/$maxHealth',
                       style: const TextStyle(
-                        color: Colors.black87,
+                        color: Colors.white,
                         fontSize: 8.5,
                         fontWeight: FontWeight.bold,
+                        shadows: _healthLabelOutline,
                       ),
                     ),
                   ),

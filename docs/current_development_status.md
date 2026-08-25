@@ -319,6 +319,50 @@ a 52% hit rate, identical to the run before it. Driven in a browser on the
 built web app through the new **Mirror match** scenario in the Tests tab, with
 both "(yours)" and "(theirs)" on screen and no console errors.
 
+### Found in the #14 playtest, and fixed
+
+The owner played the **Mirror match** scenario on the built web app. It behaved
+correctly: two Ilona Vances, two health pools, "(yours)" and "(theirs)" telling
+them apart. One defect came out of it, and it is not a mirror-match defect at
+all.
+
+**The health readout was unreadable on a hurt character.** The number on the
+portrait's health bar (`79/100`) sits on top of the whole bar, and the bar is
+two colours at once: a bright green, amber or red fill on the left and a
+near-black empty track on the right. The label was dark, so it read on the fill
+and vanished into the track. The more damage a character had taken, the less
+legible their health became, on both squads. Exactly backwards, and worst at
+the moment the number matters most.
+
+Fixed in `PortraitHealthBar`: the label is white with a one-pixel dark outline
+drawn as four offset shadows, which is the one treatment that holds over both
+halves of the bar. The treatment no longer varies with health at all. Four
+tests in `app/test/health_readout_test.dart` pin it, three of which fail
+without the fix. Quick Battle's own bar is unaffected: it puts its label beside
+the bar rather than on it.
+
+### Retiring a scenario once its case has been confirmed
+
+The Tests tab was listing all nine scenarios, including the eight already
+played and confirmed in wave 0 and the mirror match confirmed since. The owner
+asked for it to carry only what still needs playing.
+
+`TestScenario` gained a `retired` flag. `allScenarios` is every scenario ever
+written and stays under test; `testScenarios`, which is what the tab lists, is
+the unretired ones. All nine are retired as of now, so the tab currently shows
+an explicit **"Nothing waiting"** panel rather than an empty control, because
+an empty list here is the finished state of a testing round and not a fault.
+
+A retired scenario is kept rather than deleted for three reasons: it is still
+shipped code that must stay well-formed, it is what a re-check after #4
+re-prices the economy would start from, and its numbers are quoted in this
+document. The tests were repointed at `allScenarios` so retiring one does not
+quietly stop checking it, and two new tests assert that the tab lists exactly
+the unretired set and that the empty state renders.
+
+Wave 1's features add new scenarios here as they land. The duration fix (#D),
+3b's reactions and 5b's stacking are each worth one.
+
 ### The seven SPTV decisions, as approved
 
 Approved by the owner as recommended, after the review was re-read against the
@@ -338,9 +382,12 @@ the options and trade-offs behind each.
 ### The Tests tab: pre-arranged boards for the wave 0 playtests
 
 **Used, and wave 0 closed with it.** All eight scenarios were played and all
-eight resolved correctly. It stays in the app rather than being removed: the
-same cases will need re-checking after #4 re-prices the economy and after #14
-re-keys battle state, and rebuilding this each time is the expensive way.
+eight resolved correctly. A ninth, the mirror match, was added and confirmed
+with #14. All nine are now **retired**: they stay in the code and under test,
+but the tab lists only cases that still need playing (see the section above).
+They are kept rather than deleted because the same cases will need re-checking
+after #4 re-prices the economy, and rebuilding this each time is the expensive
+way.
 
 Built because the two outstanding playtests are for cases an ordinary battle
 rarely produces. Screening only bites at a particular formation, and half of
@@ -382,7 +429,7 @@ on the picker and again behind a button in the battle screen's app bar, because
 a tester four turns deep should not have to go back to remember what they are
 watching.
 
-**Verified.** 22 tests in `app/test/test_scenarios_test.dart`, which check that
+**Verified.** 31 tests in `app/test/test_scenarios_test.dart`, which check that
 every kit is a legal Loadout, that every scenario opens on the player's turn
 with the board arranged as its brief claims, and that each one renders the real
 battle screen rather than an error. The geometry claims in the briefs are
