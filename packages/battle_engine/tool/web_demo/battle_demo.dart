@@ -37,7 +37,7 @@ CharacterBattleState _buildBattleState(Character character, Loadout loadout) {
     damageResistances: character.damageResistances,
     statusInvulnerabilities: character.statusInvulnerabilities,
     blackTrigger: loadout.blackTrigger,
-    perk: character.perk,
+    sideEffect: character.sideEffect,
   );
 
   return CharacterBattleState(
@@ -89,8 +89,8 @@ Map<String, dynamic> _characterSummary(Character c) => {
       'id': c.id,
       'name': c.name,
       'type': c.type.name,
-      'perkName': c.perk?.name,
-      'perkDescription': c.perk?.description,
+      'sideEffectName': c.sideEffect?.name,
+      'sideEffectDescription': c.sideEffect?.description,
       'trionCapacity': c.baseStats.trionCapacity,
       'trionAffinity': c.baseStats.trionAffinity,
       'teamSpirit': c.baseStats.teamSpirit,

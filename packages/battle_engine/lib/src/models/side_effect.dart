@@ -1,17 +1,16 @@
 /// A character's innate, always-on trait - distinct from anything a
-/// Trigger/Black Trigger grants, and never removed by re-equipping.
-/// Every field is optional/off by default; a given [CharacterPerk] sets
-/// only the ones relevant to its own effect, mirroring the "bespoke
-/// enumerable options" shape used by `WorldAbilityEffect` rather than a
-/// single generic mechanism - twenty individually-flavored perks don't
-/// share enough structure to generalize further without forcing a fake
-/// abstraction.
+/// Trigger/Black Trigger grants, and never removed by re-equipping. Every field
+/// is optional/off by default; a given [SideEffect] sets only the ones relevant
+/// to its own effect, mirroring the "bespoke enumerable options" shape used by
+/// `WorldAbilityEffect` rather than a single generic mechanism - twenty
+/// individually-flavored Side Effects don't share enough structure to
+/// generalize further without forcing a fake abstraction.
 ///
-/// Perks interact with whatever a player equips rather than being tied to
-/// a specific Trigger: e.g. an incoming-heal bonus applies no matter what
-/// heals the character, including a drain-style Trigger that heals its
-/// user off someone else's health.
-class CharacterPerk {
+/// Side Effects interact with whatever a player equips rather than being tied
+/// to a specific Trigger: e.g. an incoming-heal bonus applies no matter what
+/// heals the character, including a drain-style Trigger that heals its user off
+/// someone else's health.
+class SideEffect {
   final String id;
   final String name;
   final String description;
@@ -98,7 +97,7 @@ class CharacterPerk {
   /// Infliction) matches the category of ability this character last used.
   final bool grantsBonusForLastUsedAbilityCategory;
 
-  const CharacterPerk({
+  const SideEffect({
     required this.id,
     required this.name,
     required this.description,

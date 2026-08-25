@@ -40,7 +40,7 @@ class AiPlannedAction {
 /// Plays one [AiProfile]'s strategy for a [Battle]'s active team: which
 /// ability, which target, and whether to keep chaining FAT-triggered
 /// extra actions, all read from the profile's data rather than
-/// hardcoded per-type logic (mirrors `CharacterPerk`'s "bag of
+/// hardcoded per-type logic (mirrors `SideEffect`'s "bag of
 /// parameters, one generic engine" shape).
 ///
 /// [AiSkillClassConfig.mistakeChance] makes lower classes occasionally
@@ -619,7 +619,7 @@ class ProfileDrivenAi {
 
   /// A rough expected-damage estimate for [trigger] used by [attacker]
   /// against [target] - the dice expression's average, scaled by Team
-  /// Spirit's damage bonus and any outgoing-damage perk/status
+  /// Spirit's damage bonus and any outgoing-damage Side Effect/status
   /// multiplier, then mitigated by [target]'s Armor and damage-type
   /// multiplier/resistance. Assumes the hit lands (no miss-chance
   /// modeling) - a lookahead heuristic, not a full simulation.

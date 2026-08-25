@@ -2,7 +2,7 @@
 /// default Loadout via [LoadoutBuilder.build] - not a claim that "this AI
 /// plays this character", just reusing its Loadout-building preferences
 /// (preferred Trigger tags, Black Trigger bias) because they're the
-/// closest fit to each character's own perk/flavor. This lets a player
+/// closest fit to each character's own Side Effect/flavor. This lets a player
 /// draft a squad and hit Play without ever touching Triggers; every pick
 /// stays fully editable afterward, including via the existing Auto-fill
 /// (which re-rolls a random profile instead of this fixed one).

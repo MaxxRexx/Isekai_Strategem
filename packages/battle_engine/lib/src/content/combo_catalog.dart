@@ -116,7 +116,7 @@ class ComboCatalog {
   ];
 
   /// Layer 2: signature / authored combos (Phase I4). These name specific
-  /// triggers (and can name characters/perks) for bespoke, higher-reward
+  /// triggers (and can name characters/Side Effects) for bespoke, higher-reward
   /// plays. Seeded here with thematic trigger chains; the full set is
   /// designer content added incrementally. Strengths run above the generic
   /// tier so a signature play amplifies harder (still capped at 20% by the

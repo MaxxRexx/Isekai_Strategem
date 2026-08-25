@@ -50,7 +50,7 @@ class LogDamageDetail {
   /// summed plus diceFlatBonus.
   final int diceTotal;
 
-  /// Combined Team Spirit/perk/status outgoing-damage multiplier applied
+  /// Combined Team Spirit/Side Effect/status outgoing-damage multiplier applied
   /// to [diceTotal] before the critical bonus (1.0 if nothing applies).
   final double preCritMultiplier;
 

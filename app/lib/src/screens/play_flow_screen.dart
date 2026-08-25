@@ -2324,8 +2324,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   /// The portrait-preview state of the description panel: a tapped
   /// character's identity, health, flavor, and active status effects.
   /// The clickable-portrait detail panel (combat-v2 §10). Your own fighters
-  /// show full intel (stats, perk, and the equipped loadout). Opponent
-  /// fighters show public intel only (type, base stats, perk, current HP,
+  /// show full intel (stats, Side Effect, and the equipped loadout). Opponent
+  /// fighters show public intel only (type, base stats, Side Effect,
+  /// current HP,
   /// visible statuses, account rank); their loadout stays hidden unless a
   /// Mind's Eye has revealed it, at which point their abilities are listed.
   Widget _characterInfoPanel(String id) {
@@ -2420,10 +2421,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ),
             ],
           ),
-          if (character?.perk != null) ...[
+          if (character?.sideEffect != null) ...[
             const SizedBox(height: 8),
             Text(
-              character!.perk!.name,
+              character!.sideEffect!.name,
               style: const TextStyle(
                 color: Palette.gold,
                 fontSize: 11.5,
@@ -2431,7 +2432,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ),
             ),
             Text(
-              character.perk!.description,
+              character.sideEffect!.description,
               style: const TextStyle(color: Colors.white54, fontSize: 10.5),
             ),
           ],

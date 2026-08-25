@@ -1,5 +1,5 @@
 import 'black_trigger.dart';
-import 'character_perk.dart';
+import 'side_effect.dart';
 import 'character_type.dart';
 import 'damage_type.dart';
 import 'stats.dart';
@@ -25,8 +25,8 @@ class Character {
   final BlackTrigger? blackTrigger;
 
   /// This character's innate trait, always active regardless of Loadout.
-  /// Null for a character with no perk.
-  final CharacterPerk? perk;
+  /// Null for a character with no Side Effect.
+  final SideEffect? sideEffect;
 
   const Character({
     required this.id,
@@ -36,6 +36,6 @@ class Character {
     this.damageResistances = const {},
     this.statusInvulnerabilities = const {},
     this.blackTrigger,
-    this.perk,
+    this.sideEffect,
   });
 }

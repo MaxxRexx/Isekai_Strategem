@@ -10,7 +10,7 @@ import 'portrait_tile.dart';
 
 /// A tappable slot that opens a grouped bottom-sheet picker of rich
 /// character cards (the Flutter analogue of the demo's custom picker,
-/// since a bare dropdown can't show stats/perk/flavor on mobile).
+/// since a bare dropdown can't show stats/Side Effect/flavor on mobile).
 class CharacterSlot extends StatelessWidget {
   final String label;
   final String? selectedId;
@@ -96,7 +96,9 @@ class CharacterSlot extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '${typeLabel[character.type]} · ${character.perk?.name ?? 'No perk'}',
+                              '${typeLabel[character.type]} · '
+                              '${character.sideEffect?.name ?? ''
+                                  'No Side Effect'}',
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white54,
@@ -139,7 +141,7 @@ class CharacterSlot extends StatelessWidget {
 
 /// The picker sheet's body: a roster grid of portrait tiles grouped by
 /// Character Type, with a bottom detail panel that fills in on tap
-/// (previewing stats/perk) and a Draft button that commits the pick.
+/// (previewing stats/Side Effect) and a Draft button that commits the pick.
 class _CharacterPickerSheet extends StatefulWidget {
   final ScrollController scrollController;
   final String? selectedId;
@@ -257,7 +259,8 @@ class RosterGrid extends StatelessWidget {
 }
 
 /// The always-visible bottom panel showing a previewed character's full
-/// stats/perk/flavor, with a CTA button to commit the pick. Shared by the
+/// stats/Side Effect/flavor, with a CTA button to commit the pick. Shared
+/// by the
 /// modal character picker and the inline Squad Select page.
 class CharacterDetailPanel extends StatelessWidget {
   final Character? character;
@@ -284,7 +287,7 @@ class CharacterDetailPanel extends StatelessWidget {
           border: Border(top: BorderSide(color: Colors.white12)),
         ),
         child: const Text(
-          'Tap an Agent to preview stats and perk.',
+          'Tap an Agent to preview stats and Side Effect.',
           style: TextStyle(color: Colors.white38, fontSize: 12),
         ),
       );
@@ -318,7 +321,7 @@ class CharacterDetailPanel extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  character.perk?.name ?? 'No perk',
+                  character.sideEffect?.name ?? 'No Side Effect',
                   style: const TextStyle(
                     color: Palette.gold,
                     fontSize: 12,
@@ -490,7 +493,7 @@ class _RosterTile extends StatelessWidget {
                 ),
               ),
               Text(
-                character.perk?.name ?? 'No perk',
+                character.sideEffect?.name ?? 'No Side Effect',
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white38, fontSize: 9),
               ),

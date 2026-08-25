@@ -78,7 +78,7 @@ class _TegBadgeState extends State<TegBadge> {
               _subScore('Team Spirit Alignment', teg.teamSpiritAlignment),
               _subScore('Stat Coherence', teg.statCoherence),
               _subScore('Loadout Synergy', teg.loadoutSynergy),
-              _subScore('Perk Utilization', teg.perkUtilization),
+              _subScore('Side Effect Utilization', teg.sideEffectUtilization),
               _subScore('Trion Economy', teg.trionEconomy),
               if (teg.resonanceFit != null)
                 _subScore('Resonance Fit', teg.resonanceFit!),

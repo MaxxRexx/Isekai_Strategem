@@ -392,13 +392,13 @@ class _LogLineState extends State<LogLine> {
             children: [
               Text(
                 '${typeLabel[character.type] ?? ''}  ·  '
-                '${character.perk?.name ?? 'No perk'}',
+                '${character.sideEffect?.name ?? 'No Side Effect'}',
                 style: const TextStyle(color: Palette.gold, fontSize: 12),
               ),
-              if (character.perk != null) ...[
+              if (character.sideEffect != null) ...[
                 const SizedBox(height: 2),
                 Text(
-                  character.perk!.description,
+                  character.sideEffect!.description,
                   style: const TextStyle(color: Colors.white54, fontSize: 11),
                 ),
               ],
@@ -872,7 +872,7 @@ class RollBreakdownView extends StatelessWidget {
     if (d.preCritMultiplier != 1.0) {
       final after = (d.diceTotal * d.preCritMultiplier).round();
       spans.addAll([
-        const TextSpan(text: '. Team Spirit / perk bonus '),
+        const TextSpan(text: '. Team Spirit / Side Effect bonus '),
         TextSpan(
           text: '×${d.preCritMultiplier.toStringAsFixed(2)}',
           style: _stat,

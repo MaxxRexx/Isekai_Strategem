@@ -20,9 +20,9 @@ void main() {
       expect(ids.toSet(), hasLength(ids.length));
     });
 
-    test('every character has a perk', () {
+    test('every character has a Side Effect', () {
       for (final c in roster.all) {
-        expect(c.perk, isNotNull, reason: c.id);
+        expect(c.sideEffect, isNotNull, reason: c.id);
       }
     });
 

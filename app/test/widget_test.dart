@@ -140,7 +140,7 @@ void main() {
     // Each catalog now sits behind its own instant sub-tab switcher rather
     // than one long scroll, so switch tabs to reach each one.
     for (final tabLabel in const [
-      'Character Perks',
+      'Side Effects',
       'Status Effects',
       'Triggers',
       'Black Triggers',

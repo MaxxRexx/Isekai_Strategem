@@ -10,10 +10,11 @@ import '../widgets/game_icons.dart';
 import '../widgets/trigger_icons.dart';
 
 /// A condensed reference for the rules: Loadout drafting, Resonance, turn
-/// structure, Trion, FAT, Team Spirit, combat resolution, stats, perks,
+/// structure, Trion, FAT, Team Spirit, combat resolution, stats, Side Effects,
 /// status effects, and the full Trigger/Black Trigger catalogs.
 ///
-/// Presented as an instant sub-tab switcher (Rules / Perks / Status Effects
+/// Presented as an instant sub-tab switcher (Rules / Side Effects /
+/// Status Effects
 /// / Triggers / Black Triggers) rather than one long scrolling strip, the
 /// same pattern the app's top-level Play/Simulate/Guide tabs already use.
 class GuideScreen extends StatefulWidget {
@@ -49,7 +50,7 @@ class _GuideScreenState extends State<GuideScreen>
           unselectedLabelColor: Colors.white54,
           tabs: const [
             Tab(text: 'Rules'),
-            Tab(text: 'Character Perks'),
+            Tab(text: 'Side Effects'),
             Tab(text: 'Status Effects'),
             Tab(text: 'Triggers'),
             Tab(text: 'Black Triggers'),
@@ -61,7 +62,7 @@ class _GuideScreenState extends State<GuideScreen>
           controller: _tabController,
           children: [
             _rulesTab(),
-            _perksTab(),
+            _sideEffectsTab(),
             _statusEffectsTab(),
             _triggersTab(),
             _blackTriggersTab(),
@@ -277,17 +278,18 @@ class _GuideScreenState extends State<GuideScreen>
     );
   }
 
-  Widget _perksTab() {
+  Widget _sideEffectsTab() {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
         const Padding(
           padding: EdgeInsets.only(bottom: 8),
           child: Text(
-            'Every character has one innate perk, always active regardless '
-            'of Loadout, that combines with whatever you equip. Nothing in '
-            'the engine special-cases a perk by name, they\'re just data '
-            'read by the same generic rules as everything else.',
+            'Every character has one innate Side Effect, always active '
+            'regardless of Loadout, that combines with whatever you equip. '
+            'Nothing in the engine special-cases a Side Effect by name, '
+            'they\'re just data read by the same generic rules as everything '
+            'else.',
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ),
@@ -300,7 +302,8 @@ class _GuideScreenState extends State<GuideScreen>
             ),
             title: c.name,
             meta: typeLabel[c.type]!,
-            body: '${c.perk?.name ?? 'No perk'}. ${c.perk?.description ?? ''}',
+            body: '${c.sideEffect?.name ?? 'No Side Effect'}. '
+                '${c.sideEffect?.description ?? ''}',
           ),
       ],
     );
@@ -342,7 +345,8 @@ class _GuideScreenState extends State<GuideScreen>
             '40 regular Triggers (active and passive) form the shared '
             'draft pool, any character may equip any of them regardless of '
             'their own type. "Avg" damage/heal figures are the expected '
-            'value of the dice before Armor/resistances/Team Spirit/perk '
+            'value of the dice before Armor/resistances/Team Spirit/'
+            'Side Effect '
             'modifiers are applied.',
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),

@@ -170,7 +170,7 @@ class Battle {
       );
     }
 
-    // Wire up each character's `teammates` for team-aware CharacterPerks
+    // Wire up each character's `teammates` for team-aware SideEffects
     // (Kaito's last-one-standing crit bonus, Marren's ally-health-aware
     // Armor bonus, Sable's guardian redirect).
     for (final team in [teamA, teamB]) {

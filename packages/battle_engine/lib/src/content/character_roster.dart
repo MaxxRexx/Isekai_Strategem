@@ -1,10 +1,10 @@
 import '../models/character.dart';
-import '../models/character_perk.dart';
+import '../models/side_effect.dart';
 import '../models/character_type.dart';
 import '../models/stats.dart';
 
 /// The built-in 20-character roster (5 per [CharacterType]), each with a
-/// unique, always-on [CharacterPerk] loosely inspired by World Trigger
+/// unique, always-on [SideEffect] loosely inspired by World Trigger
 /// character beats. Any character can equip any Trigger or Black
 /// Trigger regardless of their own [CharacterType] - nothing here
 /// restricts that; resonance only scales how strong a character's *own*
@@ -76,7 +76,7 @@ class CharacterRoster {
           statusEffectInfliction: 8,
           statusEffectResistance: 3,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'last_ace',
           name: 'Last Ace',
           description:
@@ -102,7 +102,7 @@ class CharacterRoster {
           statusEffectInfliction: 9,
           statusEffectResistance: 3,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'first_blood',
           name: 'First Blood',
           description: "Vela's first attack of the battle gains bonus Critical "
@@ -127,7 +127,7 @@ class CharacterRoster {
           statusEffectInfliction: 7,
           statusEffectResistance: 3,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'overwhelm',
           name: 'Overwhelm',
           description:
@@ -153,7 +153,7 @@ class CharacterRoster {
           statusEffectInfliction: 8,
           statusEffectResistance: 2,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'first_strike',
           name: 'First Strike',
           description:
@@ -179,7 +179,7 @@ class CharacterRoster {
           statusEffectInfliction: 9,
           statusEffectResistance: 4,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'feint',
           name: 'Feint',
           description:
@@ -207,7 +207,7 @@ class CharacterRoster {
           statusEffectInfliction: 5,
           statusEffectResistance: 6,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'bulwark',
           name: 'Bulwark',
           description: "Marren's Armor is doubled while any living teammate is "
@@ -232,7 +232,7 @@ class CharacterRoster {
           statusEffectInfliction: 6,
           statusEffectResistance: 6,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'riposte',
           name: 'Riposte',
           description:
@@ -258,7 +258,7 @@ class CharacterRoster {
           statusEffectInfliction: 5,
           statusEffectResistance: 7,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'absorb',
           name: 'Absorb',
           description:
@@ -284,7 +284,7 @@ class CharacterRoster {
           statusEffectInfliction: 5,
           statusEffectResistance: 5,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'immovable',
           name: 'Immovable',
           description:
@@ -310,7 +310,7 @@ class CharacterRoster {
           statusEffectInfliction: 5,
           statusEffectResistance: 6,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'guardians_instinct',
           name: "Guardian's Instinct",
           description:
@@ -338,7 +338,7 @@ class CharacterRoster {
           statusEffectInfliction: 10,
           statusEffectResistance: 5,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'combat_medic',
           name: 'Combat Medic',
           description:
@@ -364,7 +364,7 @@ class CharacterRoster {
           statusEffectInfliction: 16,
           statusEffectResistance: 5,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'weaken_resolve',
           name: 'Weaken Resolve',
           description:
@@ -390,7 +390,7 @@ class CharacterRoster {
           statusEffectInfliction: 9,
           statusEffectResistance: 6,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'devoted_aid',
           name: 'Devoted Aid',
           description: 'Yuki receives 10% bonus to all healing regardless of '
@@ -416,7 +416,7 @@ class CharacterRoster {
           statusEffectInfliction: 8,
           statusEffectResistance: 5,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'battery',
           name: 'Battery',
           description: "While Haru is alive, her team's Trion gain roll gets a "
@@ -441,7 +441,7 @@ class CharacterRoster {
           statusEffectInfliction: 10,
           statusEffectResistance: 6,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'warding_presence',
           name: 'Warding Presence',
           description: "Celestine's ally-targeted buffs also grant a bonus to "
@@ -468,7 +468,7 @@ class CharacterRoster {
           statusEffectInfliction: 12,
           statusEffectResistance: 5,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'foresight',
           name: 'Foresight',
           description:
@@ -494,7 +494,7 @@ class CharacterRoster {
           statusEffectInfliction: 9,
           statusEffectResistance: 4,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'chain_reaction',
           name: 'Chain Reaction',
           description: 'Each additional ability Nadia uses in the same '
@@ -519,7 +519,7 @@ class CharacterRoster {
           statusEffectInfliction: 7,
           statusEffectResistance: 2,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'all_or_nothing',
           name: 'All or Nothing',
           description:
@@ -545,7 +545,7 @@ class CharacterRoster {
           statusEffectInfliction: 9,
           statusEffectResistance: 5,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'decoy',
           name: 'Decoy',
           description:
@@ -571,7 +571,7 @@ class CharacterRoster {
           statusEffectInfliction: 10,
           statusEffectResistance: 4,
         ),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'versatile',
           name: 'Versatile',
           description:

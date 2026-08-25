@@ -461,7 +461,7 @@ void main() {
           reason: 'Sable is two positions away and cannot intercept');
       expect(protectee.currentHealth,
           lessThan(protectee.character.baseStats.maxHealth));
-      expect(guardian.perkChargeUsed, isFalse,
+      expect(guardian.sideEffectChargeUsed, isFalse,
           reason: 'a redirect that cannot happen must not burn the charge');
     });
 

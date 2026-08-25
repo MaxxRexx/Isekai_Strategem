@@ -2,10 +2,11 @@
 
 **What this is.** A single, plain-language explanation of the entire game as it
 exists on the `main` branch. It is written to be read start to finish by someone
-who has never seen the game before. Every system is explained in normal English,
-every number that matters is given, and every piece of content (each Trigger,
-each Black Trigger ability, each status effect, each perk, each counter, each
-unique ability, each combo) is described so you know exactly what it does.
+who has never seen the game before. Every system is explained in normal
+English, every number that matters is given, and every piece of content (each
+Trigger, each Black Trigger ability, each status effect, each Side Effect,
+each counter, each unique ability, each combo) is described so you know
+exactly what it does.
 
 This is the single source of truth for how the game works. If a rule is not in
 here, it is not documented anywhere else.
@@ -43,7 +44,7 @@ advantage or disadvantage, critical hits, and a big list of status conditions).
 15. Combos: rewarding setups
 16. Team Efficiency Grade: your build score
 17. Black Triggers: the ultimate gear, and Resonance
-18. Character perks: innate traits
+18. Side Effects: innate traits
 19. The AI opponent: 20 profiles across 5 skill classes
 20. Accounts and XP: the online part
 21. Bail Out: what happens when a character reaches 0 Health
@@ -84,7 +85,8 @@ about the battle game.
 Here is what you actually do, in order, every time you play:
 
 1. **Pick your three characters.** Each has fixed starting stats, a type
-   (Attack, Defense, Support, or Unique), and one built-in perk that is always on.
+   (Attack, Defense, Support, or Unique), and one built-in Side Effect that
+   is always on.
 2. **Build each character's Loadout.** You equip Triggers into their slots. Every
    Trigger has an equip cost, and the total must fit inside that character's Trion
    Capacity. You must end up with exactly four usable abilities (more on the rules
@@ -125,7 +127,7 @@ genuinely be one person in two places.*
   fuel the team's resource) and high Team Spirit (so they lean toward sustaining
   the team), with low Attack. They keep everyone alive and topped up.
 - **Unique (5 characters).** Specialists. Each is built around one signature
-  "unique" ability and a distinctive perk, so they do something no plain
+  "unique" ability and a distinctive Side Effect, so they do something no plain
   character can.
 
 Your choice of types also feeds the Team Efficiency Grade: a team whose stats and
@@ -694,10 +696,10 @@ it **hits**, then a completely separate roll for **how much damage** it does.
 - The defender rolls their die and adds their Defense stat.
 - If the attacker's total is greater than or equal to the defender's total, the
   attack **hits**. Otherwise it **misses**.
-- Some perks and status effects grant **advantage** (roll two dice, keep the
-  higher) or **disadvantage** (roll two, keep the lower). For instance, Airi
-  Tanaka's perk Feint makes the first attacker against her roll with
-  disadvantage.
+- Some Side Effects and status effects grant **advantage** (roll two dice,
+  keep the higher) or **disadvantage** (roll two, keep the lower). For
+  instance, Airi Tanaka's Side Effect Feint makes the first attacker against
+  her roll with disadvantage.
 
 **Critical hits.** A hit becomes a **critical hit** when the attacker's raw die
 lands in the critical range. With no Critical Chance you only crit on a natural
@@ -713,7 +715,8 @@ it passes through a short chain of adjustments (the battle log shows every step)
 
 1. Start with the **dice total** (the Trigger rolls its dice, like two 6-sided
    dice plus a flat bonus).
-2. Multiply by any **outgoing-damage bonus** from Team Spirit, perks, or statuses.
+2. Multiply by any **outgoing-damage bonus** from Team Spirit, Side Effects,
+   or statuses.
 3. If it was a critical hit, roll the ability's damage dice again and add them
    (the flat bonus is not doubled).
 4. Subtract the target's **Armor**.
@@ -1053,7 +1056,8 @@ number from 0 to 100, which maps to a tier:
 - **Stat Coherence:** do a character's stats reinforce the job you are asking them
   to do?
 - **Loadout Synergy:** do the equipped Triggers work well together?
-- **Perk Utilization:** does the Loadout actually enable that character's perk?
+- **Side Effect Utilization:** does the Loadout actually enable that
+  character's Side Effect?
 - **Trion Economy:** do the costs of the build fit its income?
 - **Resonance Fit:** how well the Black Trigger suits the character (this is blank
   if there is no Black Trigger).
@@ -1143,13 +1147,14 @@ Trigger down a resonance grade for the rest of the battle.
 
 ---
 
-## 18. Character perks: innate traits
+## 18. Side Effects: innate traits
 
-Every character has one **perk** that is always active and that a good Loadout
-should try to make use of (the grade's Perk Utilization sub-score rewards this).
-Here is every perk and what it does:
+Every character has one **Side Effect** (SE) that is always active and that a
+good Loadout should try to make use of (the grade's Side Effect Utilization
+sub-score rewards this). It is innate: nothing you equip grants it, and
+nothing you equip takes it away. Here is every Side Effect and what it does:
 
-| Character (type) | Perk | What it does |
+| Character (type) | Side Effect | What it does |
 |---|---|---|
 | Kaito Reyes (Attack) | Last Ace | His Critical Chance is **doubled** while he is the last living member of his team. |
 | Vela Ashworth (Attack) | First Blood | Her first attack of the battle gains **+25 Critical Chance**, but only if the target is at full health. |
@@ -1439,7 +1444,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 
 ## Appendix B: The full character roster (20)
 
-| Character | Type | Attack | Defense | Armor | Health | Trion Cap | Trion Aff | Team Spirit | Crit | FAT | Perk |
+| Character | Type | Attack | Defense | Armor | Health | Trion Cap | Trion Aff | Team Spirit | Crit | FAT | Side Effect |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|
 | Kaito Reyes | attack | 13 | 4 | 1 | 100 | 110 | 20 | 35 | 15 | 12 | Last Ace |
 | Vela Ashworth | attack | 12 | 3 | 1 | 100 | 105 | 18 | 40 | 12 | 10 | First Blood |

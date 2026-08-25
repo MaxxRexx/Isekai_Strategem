@@ -52,6 +52,8 @@ Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
   together, with its in-battle dice effects and inverse XP.
 - **FAT**, Full Arms Trigger: the burst turn that grants up to three ability uses
   instead of one.
+- **SE**, Side Effect: a character's one innate, always-on trait, which the
+  Loadout is built to play to. Called a "perk" until item 5c renamed it.
 - **SPTV**, Status Points and Trigger Value: the two-part pricing rule from item
   #3. SP prices an effect by magnitude times duration times targets; TV prices a
   whole ability as (damage + SP) divided by Trion cost, adjusted for cooldown. SP
@@ -181,7 +183,7 @@ document.
 | 4b | **The long tail of battle length.** The distribution is healthy in the middle and ragged at the end: 200 simulated battles run a median of 14 rounds with 83% inside the 8-20 band, but p90 is 23 and the worst single battle took **118 rounds**. Everything concludes, so it is not a stall, and the 30-round limit in #4 would cut it off rather than explain it. Worth understanding before that limit lands, because a match that would have taken 40 rounds now ends on the health tiebreak instead, and whoever was ahead at round 30 wins a fight they might not have won. Likely suspects: two sustain-heavy squads out-healing each other's damage, or a Trion-starved pair trading single cheap abilities. Diagnose from `tool/balance_report.dart`, which already records the distribution. Sits with #4 because the fix, if there is one, is an economy number. | Queued | 2 |
 | 5 | **Support abilities do not pay for their action.** Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced in #3's wave 4 pass, which owns every magnitude and duration. The #3 audit re-derived this table and found the four are not uniformly bad: Rally Cry buys 1.05 actions, Cleansing Ward 0.80, Guardian's Aegis 0.51 and War Chant 0.25, so the work is to lift the bottom two. The bottom two get an interim spot-fix in wave 1 so the wave 2 playtests are not played with support that does nothing. | Queued | 4 |
 | 5b | **Stackable statuses.** 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be. A stackable effect is worth more Status Points, so the flags land in wave 1 ahead of the rule that reads them, and wave 4 prices them. | Approved, queued | 1 |
-| 5c | **Rename perks to Side Effects (SEs).** `CharacterPerk` to `SideEffect`, the `perk` field, the charge-tracking flags, the Loadout panel copy and the abbreviation list. Mechanical and wide, so it goes in one commit of its own where it cannot hide a behaviour change. | Approved, queued | 1 |
+| 5c | **Rename perks to Side Effects (SEs).** `CharacterPerk` to `SideEffect`, the `perk` field, the charge-tracking flags, the Loadout panel copy and the abbreviation list. Mechanical and wide, so it goes in one commit of its own where it cannot hide a behaviour change. **Built, wave 1.** One commit, 34 files, no behaviour change: the class, its file, the `sideEffect` field, `sideEffectChargeUsed` and `consumeSideEffectChargeIfAvailable`, the TEG sub-score, the guide tab, the picker and log copy, the simulator's JSON keys and page, and the design document. `'perk:feint'`, the one id in a string, became `'side_effect:feint'`. | Done | 1 |
 | 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. Also carries the deferred battlefield layout: **lay the squads out on the board itself**, so each character's portrait sits in the lane column their position puts them in and moving one visibly moves them, replacing the separate diagram. Deferred out of #1 deliberately: it rewrites the squad panels, portrait selection, target picking and the tutorial's step targeting, which is the machinery every other feature sits on. | Queued | 5 |
 | 7 | **AI tuning (Phase G).** Teach the AI to value counters, uniques and statuses, and to play positions once #1 lands. | Queued | 6 |
 | 8 | **Tutorialize the depth.** A step-by-step tutorial introducing one system per beat. | Queued | 7 |
@@ -202,7 +204,7 @@ Waves are worked in order; everything inside a wave is one branch.
 | Wave | Items | Why it sits here |
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
-| **1** | ~~#14~~ **done** &rarr; **5c** &rarr; the duration fix &rarr; **3b** mechanism &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
+| **1** | ~~#14~~ ~~5c~~ **done** &rarr; the duration fix &rarr; **3b** mechanism &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
@@ -318,6 +320,34 @@ change and did not move: median 14 rounds, 80% in band, 14847 attack rolls at
 a 52% hit rate, identical to the run before it. Driven in a browser on the
 built web app through the new **Mirror match** scenario in the Tests tab, with
 both "(yours)" and "(theirs)" on screen and no console errors.
+
+### 5c as built: a rename that had to prove it changed nothing
+
+A character's innate trait is a **Side Effect (SE)** now, not a perk. The word
+was the only thing wrong with it: the mechanism, the once-per-battle charge and
+every one of the twenty traits are untouched.
+
+**What it touched.** 34 files. `CharacterPerk` became `SideEffect` and its file
+`side_effect.dart`; `Character.perk` became `Character.sideEffect`; the
+charge-tracking pair became `sideEffectChargeUsed` and
+`consumeSideEffectChargeIfAvailable`; the TEG's fifth sub-score became
+`sideEffectUtilization`, reading "Side Effect Utilization" on the badge; the
+guide's tab, the two pickers, the loadout panel, the log's character popup and
+the intel popup all say Side Effect; the simulator page and the JSON its tool
+emits use `sideEffectName` and `sideEffectDescription`; and `game_design.md`'s
+section 18, its TEG table and its roster table follow. The one id living in a
+string, the Feint disadvantage source, went from `'perk:feint'` to
+`'side_effect:feint'`.
+
+**Why it is one commit of its own.** A wide mechanical rename is the easiest
+place in a codebase to hide a behaviour change, and the only defence is a diff
+where every hunk is obviously the same edit. Nothing else rides along in it.
+
+**Verified.** 956 engine tests and 365 app tests pass unchanged, and both
+analyzers sit at their pre-existing 3 and 6 warnings. No test was edited beyond
+the rename itself, which is the point: the suite that passed before the rename
+is the suite that passes after it. Not checked by running: the built web app,
+since no rendering path changed.
 
 ### Found in the #14 playtest, and fixed
 
@@ -1190,7 +1220,7 @@ caught five things worth recording:
 
 - **Bail Out's window was inert.** As first written the body could not act, be
   targeted or be healed, so neither player made a decision, and it would have
-  made three existing perks ambiguous for a turn. It became contested (see #2),
+  made three existing Side Effects ambiguous for a turn. It became contested (see #2),
   and that is the version that shipped.
 - **Trion Salvage had no base to be a share of.** Trion Capacity is a per
   character Loadout budget spent at draft time; in battle there is only the
@@ -1369,7 +1399,7 @@ tunable):
 | Team Spirit Alignment | 25% | Whether each character's loadout leans offense or sustain, and whether their TS sits on the matching pole. Committed matching extremes score highest; a mismatch tanks it. This is the "is high or low TS actually right for this squad" factor. |
 | Stat Coherence | 20% | Each character's raw stats fitting their loadout's role (attacker kit wants ATK/Crit, defender kit wants Armor/DEF, afflictor wants Infliction). |
 | Loadout Synergy | 20% | Complementary abilities across the three: setup to payoff chains, debuff-applier plus debuff-exploiter, protector plus carry, counters that fit the plan. |
-| Perk Utilization | 15% | How well the loadout plays to each character's Perk. |
+| Side Effect Utilization | 15% | How well the loadout plays to each character's Side Effect. |
 | Trion Economy | 10% | Whether the squad can afford its per-turn ability costs given Capacity/Affinity. |
 | Resonance Fit | 10% | Only if Black Triggers are equipped: each BT's resonance grade with its wielder's type. No BT means this weight is dropped and the other five renormalize. |
 
@@ -1587,7 +1617,7 @@ Unique is the bespoke-resolution subtype: each Unique ability defines its own
 targeting (chosen, auto, self, or none) and its own resolution rule. It is
 now legal for melee, ranged, and psychic (a one-line change to
 AttackTypeSubtypes.validSubtypes). Engine-wise it is a closed set of named
-behaviors the engine dispatches on (mirrors WorldAbilityEffect / CharacterPerk),
+behaviors the engine dispatches on (mirrors WorldAbilityEffect / SideEffect),
 not open scripting.
 
 ### Melee unique (5)
@@ -1708,14 +1738,14 @@ inverse-TEG battle XP scaling.
   breakdown is plain-English (to-hit, step-by-step damage buildup, status-effect
   explanations, result) with colour-coded numbers (die roll / stat / total /
   damage); and character names, ability names, and target names are clickable
-  to open an info popup (character stats/perk/flavor, or the ability's
+  to open an info popup (character stats/Side Effect/flavor, or the ability's
   description). See `widgets/log_view.dart`.
 - Clickable portraits (both teams) open the home-screen character detail
   panel. Your own characters: full detail. Opponent characters: public info
-  only (type, base stats, perk, current HP, visible statuses, rank); equipped
+  only (type, base stats, Side Effect, current HP, visible statuses, rank); equipped
   loadout stays hidden unless Mind's Eye has revealed it. (done:
   `_characterInfoPanel` gates on own vs enemy - own shows FULL INTEL with the
-  equipped loadout, enemy shows PUBLIC INTEL with base stats/perk/rank and a
+  equipped loadout, enemy shows PUBLIC INTEL with base stats/Side Effect/rank and a
   hidden-loadout hint.)
 - Mind's Eye: populate a revealed enemy's abilities in their panel,
   clickable, for the duration. (done: once `PlaySession.revealedEnemyIds`
@@ -1802,7 +1832,7 @@ branch for the next phase.
   - I2: **Condition primitives + recognizer.** A closed set of composable
     predicates (`allOf` / `anyOf` / `not` + leaf matchers over the ledger,
     the payoff action, and the target's live state: ally-applied status
-    present, ally used tag/origin, target hp threshold, character/perk
+    present, ally used tag/origin, target hp threshold, character/Side Effect
     identity, same target, within-turn). `ComboRecognizer.recognize(payoff,
     ledger, state) -> List<RecognizedCombo>`, deterministic and unit-tested.
   - I3: **Layer 1 - generic/emergent combos.** A seed catalog of combos
@@ -1810,7 +1840,7 @@ branch for the next phase.
     same-origin chain). Satisfies Effect 3 and unblocks Effect 4.
   - I4: **Layer 2 - signature/authored combos.** Named `ComboDefinition`
     entries in a `combo_catalog.dart` referencing specific characters,
-    perks, triggers, and world/story context, each with flavor and a
+    Side Effects, triggers, and world/story context, each with flavor and a
     stronger reward. Added incrementally as content.
   - I5 (optional): **authoring tooling** (may be AI-assisted at design
     time, never at runtime) that proposes signature combos from the content

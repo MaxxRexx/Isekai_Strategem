@@ -821,12 +821,12 @@
     line-height: 1.4;
     margin-top: 2px;
   }
-  .perk-desc {
+  .side-effect-desc {
     font-size: 11px;
     color: var(--ink-dim);
     line-height: 1.4;
   }
-  .perk-name { color: var(--ink); font-weight: 600; }
+  .side-effect-name { color: var(--ink); font-weight: 600; }
   .char-name { color: var(--ink); font-weight: 700; font-size: 13px; }
 
   .char-stats-line {
@@ -1334,9 +1334,9 @@
   </section>
 
   <section class="panel guide-section">
-    <h2><svg class="icon lg"><use href="#icon-unique"/></svg>Character Perks</h2>
-    <p>Every character has one innate perk, always active regardless of Loadout, that combines with whatever you equip. Nothing in the engine special-cases a perk by name, they're just data read by the same generic rules as everything else (stat modifiers, roll advantage/disadvantage, damage multipliers, action prevention, etc).</p>
-    <div class="guide-list" id="guide-perks-list"></div>
+    <h2><svg class="icon lg"><use href="#icon-unique"/></svg>Side Effects</h2>
+    <p>Every character has one innate Side Effect, always active regardless of Loadout, that combines with whatever you equip. Nothing in the engine special-cases a Side Effect by name, they're just data read by the same generic rules as everything else (stat modifiers, roll advantage/disadvantage, damage multipliers, action prevention, etc).</p>
+    <div class="guide-list" id="guide-side-effects-list"></div>
   </section>
 
   <section class="panel guide-section">
@@ -1347,7 +1347,7 @@
 
   <section class="panel guide-section">
     <h2><svg class="icon lg"><use href="#icon-burst"/></svg>Triggers</h2>
-    <p>40 regular Triggers (active and passive) plus 10 Black Triggers form the shared draft pool, any character may equip any of them regardless of their own type (see Resonance, above, for how well a Black Trigger suits a given character). "Avg" damage/heal figures below are the expected value of the dice before Armor/resistances/Team Spirit/perk modifiers are applied.</p>
+    <p>40 regular Triggers (active and passive) plus 10 Black Triggers form the shared draft pool, any character may equip any of them regardless of their own type (see Resonance, above, for how well a Black Trigger suits a given character). "Avg" damage/heal figures below are the expected value of the dice before Armor/resistances/Team Spirit/Side Effect modifiers are applied.</p>
     <div class="guide-list" id="guide-triggers-list"></div>
 
     <h3>Black Triggers</h3>
@@ -1614,14 +1614,14 @@ BATTLE_DEMO_JS_PLACEHOLDER
         '<div><span class="char-name">' + escapeHtml(c.name) + '</span> ' +
           '<span class="type-tag">' + typeLabel[c.type] + '</span></div>' +
         charStatsLineHtml(c) +
-        '<div><span class="perk-name">' + (c.perkName ? c.perkName : 'No perk') + '</span></div>' +
+        '<div><span class="side-effect-name">' + (c.sideEffectName ? c.sideEffectName : 'No Side Effect') + '</span></div>' +
         (CHARACTER_FLAVOR[c.id] ? '<div class="flavor-text">' + escapeHtml(CHARACTER_FLAVOR[c.id]) + '</div>' : '') +
-        (c.perkDescription ? '<div class="perk-desc">' + escapeHtml(c.perkDescription) + '</div>' : '') +
+        (c.sideEffectDescription ? '<div class="side-effect-desc">' + escapeHtml(c.sideEffectDescription) + '</div>' : '') +
       '</div>';
   }
 
   // A native <select> hides its option list behind the OS's own picker on
-  // mobile (just names, no room for icons/flavor/perk text), so character
+  // mobile (just names, no room for icons/flavor/Side Effect text), so character
   // slots use a custom rich list instead: the <select> stays in the DOM
   // (hidden) as the single source of truth so all the existing value/
   // change-event/option-disabling logic below keeps working unmodified,
@@ -1685,7 +1685,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
   function profileCardHtml(p) {
     return '<div><span class="char-name">' + escapeHtml(p.name) + '</span> ' +
         '<span class="type-tag">' + skillClassLabel[p.skillClass] + '</span></div>' +
-      '<div class="perk-desc">' + escapeHtml(p.description) + '</div>';
+      '<div class="side-effect-desc">' + escapeHtml(p.description) + '</div>';
   }
 
   function profilePickerPanelHtml() {
@@ -2026,13 +2026,13 @@ BATTLE_DEMO_JS_PLACEHOLDER
     table.innerHTML = html;
   })();
 
-  (function renderGuidePerks() {
-    const el = document.getElementById('guide-perks-list');
+  (function renderGuideSideEffects() {
+    const el = document.getElementById('guide-side-effects-list');
     el.innerHTML = characters.map((c) =>
       '<div class="guide-entry">' + icon(typeIcon[c.type]) +
         '<strong>' + escapeHtml(c.name) + '</strong> <span class="t-meta">' + typeLabel[c.type] + '</span>' +
-        '<div><strong>' + escapeHtml(c.perkName || 'No perk') + '.</strong> ' +
-        escapeHtml(c.perkDescription || '') + '</div>' +
+        '<div><strong>' + escapeHtml(c.sideEffectName || 'No Side Effect') + '.</strong> ' +
+        escapeHtml(c.sideEffectDescription || '') + '</div>' +
       '</div>'
     ).join('');
   })();

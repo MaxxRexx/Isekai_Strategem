@@ -19,7 +19,7 @@ export 'src/models/battle_position.dart';
 export 'src/models/black_trigger.dart';
 export 'src/models/character.dart';
 export 'src/models/combatant_id.dart';
-export 'src/models/character_perk.dart';
+export 'src/models/side_effect.dart';
 export 'src/models/combo.dart';
 export 'src/models/character_type.dart';
 export 'src/models/damage_type.dart';

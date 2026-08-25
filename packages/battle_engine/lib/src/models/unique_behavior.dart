@@ -1,6 +1,6 @@
 /// The closed set of unique-subtype resolution behaviors the engine
 /// dispatches on. Each maps 1:1 to a specific Unique ability in the
-/// trigger catalog. Mirrors the [CharacterPerk] / [WorldAbilityEffect]
+/// trigger catalog. Mirrors the [SideEffect] / [WorldAbilityEffect]
 /// pattern: a named enum the engine switches on, not open scripting.
 enum UniqueBehavior {
   // --- Melee unique (5) ---

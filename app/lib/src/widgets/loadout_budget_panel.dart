@@ -7,7 +7,8 @@ import 'pickers.dart' show CharacterStatRow;
 import 'portrait_tile.dart';
 
 /// The character-info + Trion budget/active-ability-count readout shown
-/// above a [LoadoutBuilderPanel]: portrait, perk, flavor, and full battle
+/// above a [LoadoutBuilderPanel]: portrait, Side Effect, flavor, and full
+/// battle
 /// stats, then how much of the character's Trion Capacity is spent,
 /// whether the required Active ability count is met, any validation
 /// errors, and an optional Auto-fill shortcut. Shared by the Guided
@@ -74,9 +75,9 @@ class LoadoutBudgetPanel extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
-                    if (character.perk != null)
+                    if (character.sideEffect != null)
                       Text(
-                        character.perk!.name,
+                        character.sideEffect!.name,
                         style: const TextStyle(
                           color: Palette.gold,
                           fontSize: 12,

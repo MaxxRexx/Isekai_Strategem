@@ -113,7 +113,7 @@ class TeamEfficiency {
   final double teamSpiritAlignment;
   final double statCoherence;
   final double loadoutSynergy;
-  final double perkUtilization;
+  final double sideEffectUtilization;
   final double trionEconomy;
 
   /// Null when the squad equips no Black Triggers (its weight is then
@@ -128,7 +128,7 @@ class TeamEfficiency {
     required this.teamSpiritAlignment,
     required this.statCoherence,
     required this.loadoutSynergy,
-    required this.perkUtilization,
+    required this.sideEffectUtilization,
     required this.trionEconomy,
     required this.resonanceFit,
     required this.composite,
@@ -140,7 +140,7 @@ class TeamEfficiency {
 const _wAlignment = 0.25;
 const _wStat = 0.20;
 const _wSynergy = 0.20;
-const _wPerk = 0.15;
+const _wSideEffect = 0.15;
 const _wEconomy = 0.10;
 const _wResonance = 0.10;
 
@@ -156,7 +156,7 @@ TeamEfficiency computeTeamEfficiency({
   final alignment = _alignment(chars, los);
   final coherence = _statCoherence(chars, los);
   final synergy = _loadoutSynergy(los);
-  final perk = _perkUtilization(chars, los);
+  final sideEffect = _sideEffectUtilization(chars, los);
   final economy = _trionEconomy(chars, los);
   final resonance = _resonanceFit(chars, los);
 
@@ -165,10 +165,10 @@ TeamEfficiency computeTeamEfficiency({
       alignment * _wAlignment +
       coherence * _wStat +
       synergy * _wSynergy +
-      perk * _wPerk +
+      sideEffect * _wSideEffect +
       economy * _wEconomy;
   if (resonance == null) {
-    weightSum = _wAlignment + _wStat + _wSynergy + _wPerk + _wEconomy;
+    weightSum = _wAlignment + _wStat + _wSynergy + _wSideEffect + _wEconomy;
   } else {
     weighted += resonance * _wResonance;
     weightSum = 1.0;
@@ -179,7 +179,7 @@ TeamEfficiency computeTeamEfficiency({
     teamSpiritAlignment: alignment,
     statCoherence: coherence,
     loadoutSynergy: synergy,
-    perkUtilization: perk,
+    sideEffectUtilization: sideEffect,
     trionEconomy: economy,
     resonanceFit: resonance,
     composite: composite,
@@ -285,12 +285,12 @@ double _loadoutSynergy(List<Loadout> los) {
   return signals / 4 * 100;
 }
 
-/// Whether each character's loadout plays to its Perk.
-double _perkUtilization(List<Character> chars, List<Loadout> los) {
+/// Whether each character's loadout plays to its Side Effect.
+double _sideEffectUtilization(List<Character> chars, List<Loadout> los) {
   var sum = 0.0;
   for (var i = 0; i < chars.length; i++) {
-    final perk = chars[i].perk;
-    if (perk == null) {
+    final sideEffect = chars[i].sideEffect;
+    if (sideEffect == null) {
       sum += 50;
       continue;
     }
@@ -302,32 +302,32 @@ double _perkUtilization(List<Character> chars, List<Loadout> los) {
         .where((t) => t.attackSubtype == AttackSubtype.aoe)
         .length;
 
-    double score = 50; // neutral default when a perk fits no clear kit
-    if (perk.firstAttackCritBonusVsFullHealthTarget != null ||
-        perk.doublesCritChanceWhenLastAlive ||
-        perk.firstTurnAttackBonus != null ||
-        perk.maxDamageBonusPercentAtZeroHealth != null ||
-        perk.perExtraAbilityDamageBonusPercent != null ||
-        perk.canRerollOwnAttackRollOncePerBattle) {
+    double score = 50; // neutral default when a sideEffect fits no clear kit
+    if (sideEffect.firstAttackCritBonusVsFullHealthTarget != null ||
+        sideEffect.doublesCritChanceWhenLastAlive ||
+        sideEffect.firstTurnAttackBonus != null ||
+        sideEffect.maxDamageBonusPercentAtZeroHealth != null ||
+        sideEffect.perExtraAbilityDamageBonusPercent != null ||
+        sideEffect.canRerollOwnAttackRollOncePerBattle) {
       score = dmg / 4 * 100;
-    } else if (perk.aoeDamageBonusPercentVsDebuffedTarget != null) {
+    } else if (sideEffect.aoeDamageBonusPercentVsDebuffedTarget != null) {
       score = (aoe > 0 && debuff > 0)
           ? 100
           : aoe > 0
           ? 70
           : 30;
-    } else if (perk.incomingHealBonusPercent != null ||
-        perk.healBonusPercentVsAllyBelowHalfHealth != null ||
-        perk.bonusStatusResistanceGrantedByAllyBuffs != null ||
-        perk.teamTrionGainModifierWhileAlive != null) {
+    } else if (sideEffect.incomingHealBonusPercent != null ||
+        sideEffect.healBonusPercentVsAllyBelowHalfHealth != null ||
+        sideEffect.bonusStatusResistanceGrantedByAllyBuffs != null ||
+        sideEffect.teamTrionGainModifierWhileAlive != null) {
       score = support / 4 * 100;
-    } else if (perk.bonusDurationVsAlreadyAffectedTarget != null) {
+    } else if (sideEffect.bonusDurationVsAlreadyAffectedTarget != null) {
       score = debuff / 4 * 100;
-    } else if (perk.doublesArmorWhileAllyBelowQuarterHealth ||
-        perk.firstDamageInstanceReductionPercent != null ||
-        perk.attackStackBonusOnMeleeMissAgainstSelf != null ||
-        perk.firstIncomingAttackHasDisadvantage) {
-      score = 60; // defensive perks reward a non-glass-cannon kit
+    } else if (sideEffect.doublesArmorWhileAllyBelowQuarterHealth ||
+        sideEffect.firstDamageInstanceReductionPercent != null ||
+        sideEffect.attackStackBonusOnMeleeMissAgainstSelf != null ||
+        sideEffect.firstIncomingAttackHasDisadvantage) {
+      score = 60; // a defensive SE rewards a non-glass-cannon kit
     }
     sum += score.clamp(0.0, 100.0);
   }

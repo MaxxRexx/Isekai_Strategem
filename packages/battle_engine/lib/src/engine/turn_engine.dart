@@ -24,13 +24,13 @@ import 'status_effect_engine.dart';
 import 'team_spirit_curve.dart';
 import 'trion_gain_engine.dart';
 
-/// The full damage-formula trail behind one damaging hit: the trigger's
-/// own dice roll, the combined pre-critical multiplier applied to it
-/// (Team Spirit's damage bonus, any perk/status outgoing multiplier), and
-/// the resulting [DamageBreakdown] (crit doubling -> Armor -> damage-type
-/// multipliers). This is what actually answers "how did this attack deal
-/// this much damage" - the attack/defense roll shown alongside it only
-/// ever decided hit/miss/crit, never the damage amount itself.
+/// The full damage-formula trail behind one damaging hit: the trigger's own
+/// dice roll, the combined pre-critical multiplier applied to it (Team Spirit's
+/// damage bonus, any Side Effect/status outgoing multiplier), and the resulting
+/// [DamageBreakdown] (crit doubling -> Armor -> damage-type multipliers). This
+/// is what actually answers "how did this attack deal this much damage" - the
+/// attack/defense roll shown alongside it only ever decided hit/miss/crit,
+/// never the damage amount itself.
 class HitDamageDetail {
   final DiceExpressionRollResult diceRoll;
 
@@ -380,15 +380,16 @@ class TurnEngine {
         (total, s) =>
             total + s.effectiveStats(fatConfig: fatConfig).trionAffinity);
 
-    // Haru-style "Battery" perk: a living character can grant their whole
-    // team a positive modifier on this roll.
-    final perkModifier = living.fold<double>(
+    // Haru-style "Battery" Side Effect: a living character can grant their
+    // whole team a positive modifier on this roll.
+    final sideEffectModifier = living.fold<double>(
         0,
         (total, s) =>
-            total + (s.character.perk?.teamTrionGainModifierWhileAlive ?? 0));
+            total +
+            (s.character.sideEffect?.teamTrionGainModifierWhileAlive ?? 0));
 
     final result = trionGainEngine.rollTier(
-        sumLivingTrionAffinity: sum, modifier: modifier + perkModifier);
+        sumLivingTrionAffinity: sum, modifier: modifier + sideEffectModifier);
     team.trionPool.gain(result.amount);
     return result;
   }
@@ -439,11 +440,12 @@ class TurnEngine {
   int _scaledHealAmount(CharacterBattleState recipient, int baseAmount) {
     final stats = recipient.effectiveStats(fatConfig: fatConfig);
     final bonus = teamSpiritCurve.bonusesFor(stats.teamSpirit).healthRegenBonus;
-    // Yuki-style "Devoted Aid" perk: a bonus to all healing received,
+    // Yuki-style "Devoted Aid" Side Effect: a bonus to all healing received,
     // regardless of source (including a drain-style Trigger that heals
     // its user off someone else's health).
-    final perkBonus = recipient.character.perk?.incomingHealBonusPercent ?? 0;
-    return (baseAmount * (1 + bonus + perkBonus)).round();
+    final sideEffectBonus =
+        recipient.character.sideEffect?.incomingHealBonusPercent ?? 0;
+    return (baseAmount * (1 + bonus + sideEffectBonus)).round();
   }
 
   /// Resolves damage against [target] and applies it to their health,
@@ -452,10 +454,10 @@ class TurnEngine {
   /// and the charge is still available, health is clamped to 1 instead
   /// and the charge is consumed.
   ///
-  /// Returns the step-by-step breakdown behind the pre-perk/pre-clamp
+  /// Returns the step-by-step breakdown behind the pre-SE/pre-clamp
   /// damage number (see [DamageBreakdown]) - a UI showing "why was the
   /// damage this number" reads this rather than just the health delta,
-  /// since Bastian's Absorb perk and the survive-lethal clamp below can
+  /// since Bastian's Absorb Side Effect and the survive-lethal clamp below can
   /// still adjust the actual health lost after this math runs.
   ///
   /// [criticalDiceComponent] is the dice-only half of [baseDamage], which
@@ -497,13 +499,13 @@ class TurnEngine {
     );
     var damage = breakdown.finalDamage;
 
-    // Bastian-style "Absorb" perk: the first damage instance of the
+    // Bastian-style "Absorb" Side Effect: the first damage instance of the
     // battle is reduced further, on top of any other mitigation.
     final reduction =
-        target.character.perk?.firstDamageInstanceReductionPercent;
-    if (reduction != null && !target.perkChargeUsed) {
+        target.character.sideEffect?.firstDamageInstanceReductionPercent;
+    if (reduction != null && !target.sideEffectChargeUsed) {
       damage = (damage * (1 - reduction)).round();
-      target.consumePerkChargeIfAvailable();
+      target.consumeSideEffectChargeIfAvailable();
     }
 
     // Stored Retribution: bank damage while Guarded or Braced.
@@ -694,7 +696,7 @@ class TurnEngine {
   int maxRangedTargets(CharacterBattleState attacker, ActiveTrigger trigger,
       {StatusEffectCatalog? catalog}) {
     if (!trigger.rangeTag.isAtRange) return trigger.targetCount;
-    if (attacker.character.perk?.immuneToTargetCountReduction == true) {
+    if (attacker.character.sideEffect?.immuneToTargetCountReduction == true) {
       return trigger.targetCount;
     }
     final cat = catalog ?? StatusEffectCatalog.defaultCatalog;
@@ -1079,7 +1081,7 @@ class TurnEngine {
     return merged;
   }
 
-  /// Sable-style "Guardian's Instinct" perk: if [target] has a living
+  /// Sable-style "Guardian's Instinct" Side Effect: if [target] has a living
   /// teammate with an unused redirect charge, the attack is rerouted onto
   /// that teammate instead, consuming their charge. Returns [target]
   /// unchanged if no redirect applies.
@@ -1091,17 +1093,18 @@ class TurnEngine {
     for (final teammate in target.teammates) {
       if (identical(teammate, target)) continue;
       if (!teammate.isAlive) continue;
-      if (teammate.character.perk?.canRedirectAllyAttackOncePerBattle != true) {
+      if (teammate.character.sideEffect?.canRedirectAllyAttackOncePerBattle !=
+          true) {
         continue;
       }
-      if (teammate.perkChargeUsed) continue;
+      if (teammate.sideEffectChargeUsed) continue;
       // Protection needs proximity: you cannot step in front of someone you
       // are not standing near. A bodyguard has to actually be there.
       if (BattleDistance.betweenAllies(teammate.position, target.position) >
           1) {
         continue;
       }
-      teammate.consumePerkChargeIfAvailable();
+      teammate.consumeSideEffectChargeIfAvailable();
       return teammate;
     }
     return target;
@@ -1110,7 +1113,7 @@ class TurnEngine {
   /// The Phase-4 reactive-stack remap: before a hit resolves against
   /// [target], the target's standing reactive effects (combat v2 counters)
   /// get a chance to reroute, negate, or modify it. Dispatches on
-  /// [ReactiveKind] in priority order. Falls through to the perk-based
+  /// [ReactiveKind] in priority order. Falls through to the SE-based
   /// Guardian redirect when no reactive effect applies. Returns the
   /// character the hit should actually resolve against, or null if the hit
   /// is negated entirely.
@@ -1333,20 +1336,20 @@ class TurnEngine {
     }).toList();
   }
 
-  /// Combined outgoing-damage multiplier from [attacker]'s perk (Rurik's
+  /// Combined outgoing-damage multiplier from [attacker]'s Side Effect (Rurik's
   /// low-health scaling, Dross's AOE-vs-debuffed bonus, Nadia's
-  /// stacking-per-extra-FAT-use bonus). 1.0 if [attacker] has no perk or
+  /// stacking-per-extra-FAT-use bonus). 1.0 if [attacker] has no Side Effect or
   /// none of its fields apply to this hit.
-  double _perkOutgoingDamageMultiplier(
+  double _sideEffectOutgoingDamageMultiplier(
     CharacterBattleState attacker,
     CharacterBattleState target,
     ActiveTrigger trigger,
   ) {
-    final perk = attacker.character.perk;
-    if (perk == null) return 1.0;
+    final sideEffect = attacker.character.sideEffect;
+    if (sideEffect == null) return 1.0;
     var multiplier = 1.0;
 
-    final lowHealthBonus = perk.maxDamageBonusPercentAtZeroHealth;
+    final lowHealthBonus = sideEffect.maxDamageBonusPercentAtZeroHealth;
     if (lowHealthBonus != null) {
       final maxHealth = attacker.effectiveStats(fatConfig: fatConfig).maxHealth;
       final missingFraction =
@@ -1354,14 +1357,14 @@ class TurnEngine {
       multiplier += lowHealthBonus * missingFraction.clamp(0.0, 1.0);
     }
 
-    final aoeBonus = perk.aoeDamageBonusPercentVsDebuffedTarget;
+    final aoeBonus = sideEffect.aoeDamageBonusPercentVsDebuffedTarget;
     if (aoeBonus != null &&
         trigger.attackSubtype == AttackSubtype.aoe &&
         target.statusEffects.isNotEmpty) {
       multiplier += aoeBonus;
     }
 
-    final chainBonus = perk.perExtraAbilityDamageBonusPercent;
+    final chainBonus = sideEffect.perExtraAbilityDamageBonusPercent;
     if (chainBonus != null) {
       final extraUses = attacker.abilitiesUsedThisTurnCount - 1;
       if (extraUses > 0) multiplier += chainBonus * extraUses;
@@ -1484,16 +1487,17 @@ class TurnEngine {
     final bonuses = teamSpiritCurve.bonusesFor(stats.teamSpirit);
     final isBurst = trigger.attackSubtype == AttackSubtype.burst;
 
-    // Ren-style "First Strike" perk: a flat Attack bonus on this
-    // character's first ability use of the battle. Gated on the perk
+    // Ren-style "First Strike" Side Effect: a flat Attack bonus on this
+    // character's first ability use of the battle. Gated on the Side Effect
     // charge (consumed here, once per ability use regardless of how many
     // targets/hits it resolves), not `hasActedThisBattle` - by the time
     // this method runs, `useAbility` has already flipped that flag.
     var effectiveAttack = stats.attack;
-    final firstStrikeBonus = attacker.character.perk?.firstTurnAttackBonus;
-    if (firstStrikeBonus != null && !attacker.perkChargeUsed) {
+    final firstStrikeBonus =
+        attacker.character.sideEffect?.firstTurnAttackBonus;
+    if (firstStrikeBonus != null && !attacker.sideEffectChargeUsed) {
       effectiveAttack += firstStrikeBonus;
-      attacker.consumePerkChargeIfAvailable();
+      attacker.consumeSideEffectChargeIfAvailable();
     }
 
     final hitsByTargetId = <String, List<_SingleHitResult>>{};
@@ -1502,10 +1506,11 @@ class TurnEngine {
       final advantageContext = _advantageContextAgainst(attacker, target);
       var attackerContext = _mergedContext(baseContext, advantageContext);
 
-      // Airi-style "Feint" perk: the first attack roll made against her
+      // Airi-style "Feint" Side Effect: the first attack roll made against her
       // each battle is rolled with disadvantage.
-      if (target.character.perk?.firstIncomingAttackHasDisadvantage == true &&
-          !target.perkChargeUsed) {
+      if (target.character.sideEffect?.firstIncomingAttackHasDisadvantage ==
+              true &&
+          !target.sideEffectChargeUsed) {
         final withFeint = RollContext();
         for (final s in attackerContext.advantageSources) {
           withFeint.addAdvantage(s);
@@ -1513,39 +1518,39 @@ class TurnEngine {
         for (final s in attackerContext.disadvantageSources) {
           withFeint.addDisadvantage(s);
         }
-        withFeint.addDisadvantage('perk:feint');
+        withFeint.addDisadvantage('side_effect:feint');
         attackerContext = withFeint;
-        target.consumePerkChargeIfAvailable();
+        target.consumeSideEffectChargeIfAvailable();
       }
 
-      // Vela-style "First Blood" perk: bonus Critical Chance on this
+      // Vela-style "First Blood" Side Effect: bonus Critical Chance on this
       // character's first attack of the battle, if that target is at
       // full health.
       var attackerCriticalChancePercent =
           stats.criticalChance + bonuses.criticalChanceBonus;
       final firstBloodBonus =
-          attacker.character.perk?.firstAttackCritBonusVsFullHealthTarget;
-      if (firstBloodBonus != null && !attacker.perkChargeUsed) {
+          attacker.character.sideEffect?.firstAttackCritBonusVsFullHealthTarget;
+      if (firstBloodBonus != null && !attacker.sideEffectChargeUsed) {
         final targetMaxHealth =
             target.effectiveStats(fatConfig: fatConfig).maxHealth;
         if (target.currentHealth >= targetMaxHealth) {
           attackerCriticalChancePercent += firstBloodBonus;
         }
-        attacker.consumePerkChargeIfAvailable();
+        attacker.consumeSideEffectChargeIfAvailable();
       }
 
-      // Mireille-style "Decoy" perk: once per battle, an incoming attack
+      // Mireille-style "Decoy" Side Effect: once per battle, an incoming attack
       // has a flat chance to miss entirely, independent of the to-hit
       // roll. The roll is still made (for realistic telemetry); a
       // successful dodge just overrides the outcome.
       var forcedMiss = false;
-      final dodgeChance = target.character.perk?.dodgeChanceOncePerBattle;
-      if (dodgeChance != null && !target.perkChargeUsed) {
+      final dodgeChance = target.character.sideEffect?.dodgeChanceOncePerBattle;
+      if (dodgeChance != null && !target.sideEffectChargeUsed) {
         if (combatEngine.diceRoller.rollPercent() <=
             (dodgeChance * 100).round()) {
           forcedMiss = true;
         }
-        target.consumePerkChargeIfAvailable();
+        target.consumeSideEffectChargeIfAvailable();
       }
 
       // TEG Effects 1/2/5: coordination advantage on the attacker's roll,
@@ -1581,12 +1586,12 @@ class TurnEngine {
         );
       }
 
-      // Zheng-style "Foresight" perk: once per battle, reroll a missed
+      // Zheng-style "Foresight" Side Effect: once per battle, reroll a missed
       // attack roll.
       if (!outcome.isHit &&
-          attacker.character.perk?.canRerollOwnAttackRollOncePerBattle ==
+          attacker.character.sideEffect?.canRerollOwnAttackRollOncePerBattle ==
               true &&
-          !attacker.perkChargeUsed) {
+          !attacker.sideEffectChargeUsed) {
         outcome = combatEngine.resolveAttackRoll(
           attackerAttack: effectiveAttack,
           defenderDefense: target.effectiveStats(fatConfig: fatConfig).defense,
@@ -1595,7 +1600,7 @@ class TurnEngine {
           defenderContext: tegDefenderContext,
           maxCritThreshold: tegMaxCrit,
         );
-        attacker.consumePerkChargeIfAvailable();
+        attacker.consumeSideEffectChargeIfAvailable();
       }
 
       void record(
@@ -1609,10 +1614,10 @@ class TurnEngine {
       }
 
       // A heal, a ward or a buff aimed at your own side is not an attack. It
-      // was being run through the whole hostile pipeline: rolled to hit
-      // against the recipient's own Defense, and subject to the dodge perk.
-      // The roll is still made above so telemetry and perk charges behave the
-      // same, but it cannot make the ability fizzle on a teammate.
+      // was being run through the whole hostile pipeline: rolled to hit against
+      // the recipient's own Defense, and subject to the dodge Side Effect. The
+      // roll is still made above so telemetry and Side Effect charges behave
+      // the same, but it cannot make the ability fizzle on a teammate.
       if (trigger.targetAffiliation != TargetAffiliation.opponent) {
         outcome = AttackRollOutcome(
           attackerRoll: outcome.attackerRoll,
@@ -1631,10 +1636,10 @@ class TurnEngine {
         return;
       }
       if (forcedMiss || !outcome.isHit) {
-        // Ilona-style "Riposte" perk: a melee attack that misses her
+        // Ilona-style "Riposte" Side Effect: a melee attack that misses her
         // grants a stacking Attack buff for her next turn.
         final riposteBonus =
-            target.character.perk?.attackStackBonusOnMeleeMissAgainstSelf;
+            target.character.sideEffect?.attackStackBonusOnMeleeMissAgainstSelf;
         if (riposteBonus != null && trigger.attackType == AttackType.melee) {
           target.applyFlatBonus(
               ModifiableStat.attack, riposteBonus.toDouble(), 2);
@@ -1651,14 +1656,14 @@ class TurnEngine {
         final damageBonus = isBurst
             ? bonuses.burstDamageBonus
             : bonuses.singleTargetDamageBonus;
-        final perkMultiplier =
-            _perkOutgoingDamageMultiplier(attacker, target, trigger);
+        final sideEffectMultiplier =
+            _sideEffectOutgoingDamageMultiplier(attacker, target, trigger);
         final interdictMultiplier =
             _interdictDamageMultiplier(attacker, trigger);
         final preCritMultiplier = (1 + damageBonus) *
             damageMultiplier *
             attacker.outgoingDamageMultiplier() *
-            perkMultiplier *
+            sideEffectMultiplier *
             interdictMultiplier;
         final adjustedBaseDamage = (baseDamage * preCritMultiplier).round();
         // A crit doubles the dice, not the flat bonus, so the dice half of
@@ -1696,11 +1701,11 @@ class TurnEngine {
         final recipient = trigger.healsCasterInstead ? attacker : target;
         if (!recipient.isHealingPrevented()) {
           final baseHeal = trigger.healAmount!.roll(combatEngine.diceRoller);
-          // Priya-style "Combat Medic" perk: bonus heal when the
+          // Priya-style "Combat Medic" Side Effect: bonus heal when the
           // recipient is below 50% health.
           var priyaBonus = 1.0;
-          final medicBonus =
-              attacker.character.perk?.healBonusPercentVsAllyBelowHalfHealth;
+          final medicBonus = attacker
+              .character.sideEffect?.healBonusPercentVsAllyBelowHalfHealth;
           if (medicBonus != null &&
               trigger.targetAffiliation == TargetAffiliation.ally) {
             final recipientMax =
@@ -1758,11 +1763,11 @@ class TurnEngine {
               )
             : null;
         if (!contested || inflictionOutcome!.applies) {
-          // Soren-style "Weaken Resolve" perk: bonus duration when the
+          // Soren-style "Weaken Resolve" Side Effect: bonus duration when the
           // target already carries an effect from this same attacker.
           var durationOverride = application.durationTurnsOverride;
-          final resolveBonus =
-              attacker.character.perk?.bonusDurationVsAlreadyAffectedTarget;
+          final resolveBonus = attacker
+              .character.sideEffect?.bonusDurationVsAlreadyAffectedTarget;
           if (resolveBonus != null &&
               target.statusEffects
                   .any((i) => i.sourceCharacterId == attacker.combatantId)) {
@@ -1781,10 +1786,10 @@ class TurnEngine {
           );
           if (applied) {
             appliedIds.add(application.statusEffectId);
-            // Celestine-style "Warding Presence" perk: an ally-targeted
+            // Celestine-style "Warding Presence" Side Effect: an ally-targeted
             // buff also grants a Status Effect Resistance bonus.
             final wardBonus = attacker
-                .character.perk?.bonusStatusResistanceGrantedByAllyBuffs;
+                .character.sideEffect?.bonusStatusResistanceGrantedByAllyBuffs;
             if (wardBonus != null &&
                 trigger.targetAffiliation == TargetAffiliation.ally) {
               target.applyFlatBonus(ModifiableStat.statusEffectResistance,

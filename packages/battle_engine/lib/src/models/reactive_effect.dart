@@ -7,7 +7,7 @@
 /// during the opponent's turn, then is consumed.
 ///
 /// Following the same "bespoke enumerable behaviours" shape as
-/// [CharacterPerk] / `WorldAbilityEffect`, the engine dispatches on [kind]
+/// [SideEffect] / `WorldAbilityEffect`, the engine dispatches on [kind]
 /// rather than running open scripts. New counters add a [ReactiveKind] and a
 /// handler at the matching resolution seam.
 library;

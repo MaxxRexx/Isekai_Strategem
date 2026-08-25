@@ -27,7 +27,7 @@ CharacterBattleState buildBattleState(Character character, Loadout loadout) {
     damageResistances: character.damageResistances,
     statusInvulnerabilities: character.statusInvulnerabilities,
     blackTrigger: loadout.blackTrigger,
-    perk: character.perk,
+    sideEffect: character.sideEffect,
   );
 
   return CharacterBattleState(

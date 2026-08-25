@@ -54,7 +54,7 @@ void main() {
           'fatChance': c.baseStats.fatChance,
           'statusEffectInfliction': c.baseStats.statusEffectInfliction,
           'statusEffectResistance': c.baseStats.statusEffectResistance,
-          'perk': c.perk?.name,
+          'sideEffect': c.sideEffect?.name,
         }
     ],
     'triggers': [

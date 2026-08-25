@@ -56,7 +56,7 @@ enum BailOutState {
   destroyed,
 }
 
-/// A temporary flat bonus to a stat (e.g. Ilona's Riposte perk: a
+/// A temporary flat bonus to a stat (e.g. Ilona's Riposte Side Effect: a
 /// stacking Attack buff after a melee miss against her). The additive
 /// counterpart to [TempPercentPenalty].
 class TempFlatBonus {
@@ -155,25 +155,26 @@ class CharacterBattleState {
 
   /// The other living-or-dead members of this character's own team,
   /// populated by whoever sets up the battle (see `Battle`'s
-  /// constructor) - needed for [CharacterPerk]s that read team state
+  /// constructor) - needed for [SideEffect]s that read team state
   /// (Kaito's "last one standing" crit bonus, Marren's ally-health-aware
-  /// Armor bonus). Empty until wired up; perks that need it are simply
+  /// Armor bonus). Empty until wired up; Side Effects that need it are simply
   /// inactive until then.
   List<CharacterBattleState> teammates = [];
 
-  /// Whether this character's [CharacterPerk]'s once-per-battle charge
+  /// Whether this character's [SideEffect]'s once-per-battle charge
   /// (whichever mechanic it grants - reroll, dodge, redirect, first-hit
-  /// mitigation, etc.) has already been spent. Each perk uses at most one
+  /// mitigation, etc.) has already been spent. Each Side Effect uses at
+  /// most one
   /// such charge, so a single flag is enough rather than per-mechanic
   /// bookkeeping.
-  bool perkChargeUsed = false;
+  bool sideEffectChargeUsed = false;
 
   /// The category of the last [ActiveTrigger] this character used, for
-  /// Tobias's "Versatile" perk. Null until their first ability use.
+  /// Tobias's "Versatile" Side Effect. Null until their first ability use.
   TriggerCategory? lastActiveTriggerCategory;
 
   /// Whether this character has used any ability yet this battle, for
-  /// Ren's "First Strike" perk (a first-turn-only Attack bonus).
+  /// Ren's "First Strike" Side Effect (a first-turn-only Attack bonus).
   bool hasActedThisBattle = false;
 
   /// Running total of damage this character has personally dealt this
@@ -280,7 +281,7 @@ class CharacterBattleState {
   /// the body rather than the fighter: **who screens** (a body in the way is
   /// still in the way), and **what a damaging enemy ability may be aimed at**.
   /// Everything else - Trion income, ally counts, whether a team is defeated,
-  /// every perk that reads the squad - keeps reading [isAlive] and keeps
+  /// every Side Effect that reads the squad - keeps reading [isAlive] and keeps
   /// treating a bailing character as gone, because they are.
   bool get isOnBoard => isAlive || bailOutState == BailOutState.bailingOut;
 
@@ -360,7 +361,8 @@ class CharacterBattleState {
   /// Deliberately does not touch `lastUsedTriggerId`, `triggersUsedThisTurn`
   /// or `lastActiveTriggerCategory`: moving is not using an ability, so it
   /// must not feed the combo ledger, satisfy Forced Repetition, or count as
-  /// the "category of ability last used" that Tobias's Versatile perk reads.
+  /// the "category of ability last used" that Tobias's Versatile Side
+  /// Effect reads.
   /// It only occupies the action slot, and its sentinel record carries a
   /// zero cooldown so end-of-turn bookkeeping ignores it.
   void recordRepositionUse() {
@@ -368,19 +370,19 @@ class CharacterBattleState {
     hasActedThisBattle = true;
   }
 
-  /// Consumes this character's [CharacterPerk] once-per-battle charge if
+  /// Consumes this character's [SideEffect] once-per-battle charge if
   /// it hasn't been used yet, returning whether it was available. Callers
-  /// check the specific perk field that gates their mechanic first (e.g.
-  /// `character.perk?.canRerollOwnAttackRollOncePerBattle`) and only call
+  /// check the specific Side Effect field that gates their mechanic first (e.g.
+  /// `character.sideEffect?.canRerollOwnAttackRollOncePerBattle`) and only call
   /// this once they know the mechanic applies.
-  bool consumePerkChargeIfAvailable() {
-    if (perkChargeUsed) return false;
-    perkChargeUsed = true;
+  bool consumeSideEffectChargeIfAvailable() {
+    if (sideEffectChargeUsed) return false;
+    sideEffectChargeUsed = true;
     return true;
   }
 
   /// Applies a temporary flat bonus to [stat] (e.g. Ilona's Riposte
-  /// perk). Multiple active bonuses on the same stat stack additively.
+  /// Side Effect). Multiple active bonuses on the same stat stack additively.
   void applyFlatBonus(ModifiableStat stat, double amount, int turns) {
     tempFlatBonuses.add(TempFlatBonus(stat, amount, turns));
   }
@@ -471,14 +473,14 @@ class CharacterBattleState {
       deltas[bonus.stat] = (deltas[bonus.stat] ?? 0) + bonus.amount;
     }
 
-    // Tobias-style "Versatile" perk: a small bonus to whichever stat
+    // Tobias-style "Versatile" Side Effect: a small bonus to whichever stat
     // matches the category of the last ability used. Attacker/Sniper/
     // Shooter categories are offense-flavored (Attack), Trapper is
     // affliction-flavored (Status Effect Infliction), Optional is
     // support/defense-flavored (Defense).
-    final perk = character.perk;
-    if (perk != null &&
-        perk.grantsBonusForLastUsedAbilityCategory &&
+    final sideEffect = character.sideEffect;
+    if (sideEffect != null &&
+        sideEffect.grantsBonusForLastUsedAbilityCategory &&
         lastActiveTriggerCategory != null) {
       const bonusMagnitude = 2.0;
       final stat = switch (lastActiveTriggerCategory!) {
@@ -513,16 +515,16 @@ class CharacterBattleState {
 
     var criticalChance =
         resolve(ModifiableStat.criticalChance, base.criticalChance);
-    if (perk != null &&
-        perk.doublesCritChanceWhenLastAlive &&
+    if (sideEffect != null &&
+        sideEffect.doublesCritChanceWhenLastAlive &&
         teammates.isNotEmpty &&
         teammates.every((t) => !t.isAlive)) {
       criticalChance *= 2;
     }
 
     var armor = resolve(ModifiableStat.armor, base.armor);
-    if (perk != null &&
-        perk.doublesArmorWhileAllyBelowQuarterHealth &&
+    if (sideEffect != null &&
+        sideEffect.doublesArmorWhileAllyBelowQuarterHealth &&
         teammates.any((t) =>
             t.isAlive &&
             t.currentHealth < t.character.baseStats.maxHealth * 0.25)) {

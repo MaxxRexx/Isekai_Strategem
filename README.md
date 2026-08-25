@@ -40,7 +40,7 @@ battle game plus its accounts and XP backend.
 
 - **[Complete Game Design Document](docs/game_design.md)** is the single, current,
   plain-language explanation of every system and every piece of content (each
-  Trigger, Black Trigger ability, status effect, perk, counter, unique ability,
+  Trigger, Black Trigger ability, status effect, Side Effect, counter, unique ability,
   and combo), with all the numbers. A rendered PDF sits next to it at
   [`docs/Isekai_Strategem_Game_Design_Document.pdf`](docs/Isekai_Strategem_Game_Design_Document.pdf).
 - **[Current Development Status](docs/current_development_status.md)** shows what

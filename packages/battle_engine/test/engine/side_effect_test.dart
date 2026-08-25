@@ -5,7 +5,7 @@ import '../test_helpers.dart';
 
 /// Builds a 3-member [Battle] whose team A consists of [protagonist] plus
 /// two filler teammates, and team B is three filler opponents - enough
-/// for team-aware perks (teammates, redirect) to have something to work
+/// for team-aware Side Effects (teammates, redirect) to have something to work
 /// with, while keeping each test focused on one character.
 Battle _battleWith(Character protagonist) {
   final teamA = Team(id: 'team-a', characters: [
@@ -27,7 +27,7 @@ void main() {
       final kaito = testCharacter(
         id: 'kaito',
         stats: testStats(criticalChance: 10),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'last_ace',
           name: 'Last Ace',
           description: '',
@@ -52,7 +52,7 @@ void main() {
       final marren = testCharacter(
         id: 'marren',
         stats: testStats(armor: 10),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'bulwark',
           name: 'Bulwark',
           description: '',
@@ -73,7 +73,7 @@ void main() {
     test('keeps full ranged target count while Blinded', () {
       final dorian = testCharacter(
         id: 'dorian',
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'immovable',
           name: 'Immovable',
           description: '',
@@ -101,7 +101,7 @@ void main() {
       final haru = testCharacter(
         id: 'haru',
         stats: testStats(trionAffinity: 0),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'battery',
           name: 'Battery',
           description: '',
@@ -129,7 +129,7 @@ void main() {
 
       // Team A's very first turn is the whole battle's first turn, which
       // the first-move handicap forces to Low regardless of any modifier -
-      // advance to team A's second turn to observe Haru's perk cleanly.
+      // advance to team A's second turn to observe Haru's Side Effect cleanly.
       battle.startTurn();
       battle.endTurn();
       battle.startTurn();
@@ -149,7 +149,7 @@ void main() {
       final yuki = testCharacter(
         id: 'yuki',
         stats: testStats(maxHealth: 200),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'devoted_aid',
           name: 'Devoted Aid',
           description: '',
@@ -187,7 +187,7 @@ void main() {
     test('heals more when the target ally is below 50% health', () {
       final priya = testCharacter(
         id: 'priya',
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'combat_medic',
           name: 'Combat Medic',
           description: '',
@@ -233,7 +233,7 @@ void main() {
       final soren = testCharacter(
         id: 'soren',
         stats: testStats(statusEffectInfliction: 1000),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'weaken_resolve',
           name: 'Weaken Resolve',
           description: '',
@@ -284,7 +284,7 @@ void main() {
       final celestine = testCharacter(
         id: 'celestine',
         stats: testStats(statusEffectInfliction: 1000),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'warding_presence',
           name: 'Warding Presence',
           description: '',
@@ -322,7 +322,7 @@ void main() {
       final rurik = testCharacter(
         id: 'rurik',
         stats: testStats(attack: 1000, maxHealth: 100),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'all_or_nothing',
           name: 'All or Nothing',
           description: '',
@@ -363,7 +363,7 @@ void main() {
       final dross = testCharacter(
         id: 'dross',
         stats: testStats(attack: 1000),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'overwhelm',
           name: 'Overwhelm',
           description: '',
@@ -406,7 +406,7 @@ void main() {
       final nadia = testCharacter(
         id: 'nadia',
         stats: testStats(attack: 1000),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'chain_reaction',
           name: 'Chain Reaction',
           description: '',
@@ -449,7 +449,7 @@ void main() {
       final zheng = testCharacter(
         id: 'zheng',
         stats: testStats(attack: -1000),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'foresight',
           name: 'Foresight',
           description: '',
@@ -464,14 +464,14 @@ void main() {
           combatEngine:
               CombatEngine(diceRoller: DiceRoller(const FixedRandom(0))));
       final state = battle.states['zheng']!;
-      expect(state.perkChargeUsed, isFalse);
+      expect(state.sideEffectChargeUsed, isFalse);
 
       final target = battle.states['foe-1']!;
       final trigger = testTrigger(attackType: AttackType.melee);
       engine.resolveAbilityUse(
           attacker: state, trigger: trigger, targets: [target]);
 
-      expect(state.perkChargeUsed, isTrue);
+      expect(state.sideEffectChargeUsed, isTrue);
     });
   });
 
@@ -479,7 +479,7 @@ void main() {
     test('consumes the charge on the first incoming attack', () {
       final mireille = testCharacter(
         id: 'mireille',
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'decoy',
           name: 'Decoy',
           description: '',
@@ -491,11 +491,11 @@ void main() {
       final attackerState = battle.states['foe-1']!;
       final trigger = testTrigger(attackType: AttackType.melee);
 
-      expect(state.perkChargeUsed, isFalse);
+      expect(state.sideEffectChargeUsed, isFalse);
       final result = battle.turnEngine.resolveAbilityUse(
           attacker: attackerState, trigger: trigger, targets: [state]);
 
-      expect(state.perkChargeUsed, isTrue);
+      expect(state.sideEffectChargeUsed, isTrue);
       // A 100% dodge chance guarantees a miss regardless of the roll.
       expect(result.targetResults.single.totalDamageDealt, 0);
     });
@@ -506,7 +506,7 @@ void main() {
     test('redirects an attack from a teammate onto Sable once per battle', () {
       final sable = testCharacter(
         id: 'sable',
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'guardians_instinct',
           name: "Guardian's Instinct",
           description: '',
@@ -534,7 +534,7 @@ void main() {
       );
 
       expect(result.targetResults.single.targetCharacterId, 'sable');
-      expect(battle.states['sable']!.perkChargeUsed, isTrue);
+      expect(battle.states['sable']!.sideEffectChargeUsed, isTrue);
     });
   });
 
@@ -543,7 +543,7 @@ void main() {
       final ilona = testCharacter(
         id: 'ilona',
         stats: testStats(attack: 10, defense: 1000),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'riposte',
           name: 'Riposte',
           description: '',
@@ -573,7 +573,7 @@ void main() {
       final bastian = testCharacter(
         id: 'bastian',
         stats: testStats(armor: 0, maxHealth: 1000),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'absorb',
           name: 'Absorb',
           description: '',
@@ -590,10 +590,10 @@ void main() {
           attackType: AttackType.melee,
           damage: const DiceExpression(0, 1, flatBonus: 100));
 
-      expect(state.perkChargeUsed, isFalse);
+      expect(state.sideEffectChargeUsed, isFalse);
       final firstResult = engine.resolveAbilityUse(
           attacker: attackerState, trigger: trigger, targets: [state]);
-      expect(state.perkChargeUsed, isTrue);
+      expect(state.sideEffectChargeUsed, isTrue);
 
       state.currentHealth = state.effectiveStats().maxHealth;
       final secondResult = engine.resolveAbilityUse(
@@ -612,7 +612,7 @@ void main() {
     test("consumes her charge on her first attack of the battle", () {
       final vela = testCharacter(
         id: 'vela',
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'first_blood',
           name: 'First Blood',
           description: '',
@@ -624,10 +624,10 @@ void main() {
       final target = battle.states['foe-1']!;
       final trigger = testTrigger();
 
-      expect(state.perkChargeUsed, isFalse);
+      expect(state.sideEffectChargeUsed, isFalse);
       battle.turnEngine.resolveAbilityUse(
           attacker: state, trigger: trigger, targets: [target]);
-      expect(state.perkChargeUsed, isTrue);
+      expect(state.sideEffectChargeUsed, isTrue);
     });
   });
 
@@ -635,7 +635,7 @@ void main() {
     test('the first attack against her rolls with disadvantage', () {
       final airi = testCharacter(
         id: 'airi',
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'feint',
           name: 'Feint',
           description: '',
@@ -647,11 +647,11 @@ void main() {
       final attackerState = battle.states['foe-1']!;
       final trigger = testTrigger();
 
-      expect(state.perkChargeUsed, isFalse);
+      expect(state.sideEffectChargeUsed, isFalse);
       final result = battle.turnEngine.resolveAbilityUse(
           attacker: attackerState, trigger: trigger, targets: [state]);
 
-      expect(state.perkChargeUsed, isTrue);
+      expect(state.sideEffectChargeUsed, isTrue);
       expect(result.targetResults.single.attackRolls.single.attackerRoll.mode,
           RollMode.disadvantage);
     });
@@ -662,7 +662,7 @@ void main() {
       final ren = testCharacter(
         id: 'ren',
         stats: testStats(attack: 10),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'first_strike',
           name: 'First Strike',
           description: '',
@@ -674,10 +674,10 @@ void main() {
       final target = battle.states['foe-1']!;
       final trigger = testTrigger(attackType: AttackType.melee);
 
-      expect(state.perkChargeUsed, isFalse);
+      expect(state.sideEffectChargeUsed, isFalse);
       final firstUse = battle.turnEngine.resolveAbilityUse(
           attacker: state, trigger: trigger, targets: [target]);
-      expect(state.perkChargeUsed, isTrue);
+      expect(state.sideEffectChargeUsed, isTrue);
       expect(
           firstUse
               .targetResults.single.attackRolls.single.attackerRoll.modifier,
@@ -699,7 +699,7 @@ void main() {
       final tobias = testCharacter(
         id: 'tobias',
         stats: testStats(attack: 10),
-        perk: const CharacterPerk(
+        sideEffect: const SideEffect(
           id: 'versatile',
           name: 'Versatile',
           description: '',

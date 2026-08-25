@@ -296,7 +296,8 @@ void main() {
       final battle = twoSquads();
       // Sable's Guardian's Instinct would redirect a hit aimed at an ally.
       final guardian = battle.states.values.firstWhere(
-        (s) => s.character.perk?.canRedirectAllyAttackOncePerBattle == true,
+        (s) =>
+            s.character.sideEffect?.canRedirectAllyAttackOncePerBattle == true,
         orElse: () => battle.states['ilona_vance']!,
       );
       final body = drop(battle, 'marren_osei');
@@ -310,7 +311,7 @@ void main() {
         targets: [body],
       );
 
-      expect(guardian.perkChargeUsed, isFalse,
+      expect(guardian.sideEffectChargeUsed, isFalse,
           reason: 'spending a once-per-battle charge to save a wreck would be '
               'the worst trade in the game');
       expect(body.bailOutState, BailOutState.destroyed);
