@@ -1,3 +1,4 @@
+import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/loadout_selection.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
@@ -48,19 +49,20 @@ void main() {
     }
     expect(s.teamBTrion, trionBefore);
     for (final id in opponentIds) {
-      expect(s.battle.states[id]!.abilitiesUsedThisTurnCount, 0);
+      expect(s.battle.stateById(id).abilitiesUsedThisTurnCount, 0);
     }
     // Every planned action names a living owner, and either an equipped
     // ability or (for a planned move) a destination line.
     for (final action in plan) {
-      expect(opponentIds, contains(action.characterId));
+      expect([for (final id in opponentIds) CombatantIds.of('ai', id)],
+          contains(action.characterId));
       if (action.isReposition) {
         expect(action.destination, isNotNull);
         expect(action.targetIds, isEmpty);
         continue;
       }
       expect(
-        s.equippedB[action.characterId]!.map((t) => t.id),
+        s.equippedFor(action.characterId).map((t) => t.id),
         contains(action.triggerId),
       );
     }
@@ -76,8 +78,8 @@ void main() {
     // Moves are free in Trion, so they do not count towards the spend.
     final expectedSpend = plan.fold<int>(0, (sum, a) {
       if (a.isReposition) return sum;
-      final state = s.battle.states[a.characterId]!;
-      final trigger = s.equippedB[a.characterId]!.firstWhere(
+      final state = s.battle.stateById(a.characterId);
+      final trigger = s.equippedFor(a.characterId).firstWhere(
         (t) => t.id == a.triggerId,
       );
       return sum + (trigger.trionCost * state.trionCostMultiplier()).round();
@@ -92,7 +94,7 @@ void main() {
     // The uses are now recorded (so end-of-turn cooldowns will be set).
     for (final action in plan) {
       expect(
-        s.battle.states[action.characterId]!.abilitiesUsedThisTurnCount,
+        s.battle.stateById(action.characterId).abilitiesUsedThisTurnCount,
         greaterThan(0),
       );
     }

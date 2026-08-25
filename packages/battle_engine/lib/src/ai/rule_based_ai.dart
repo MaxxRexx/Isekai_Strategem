@@ -59,11 +59,10 @@ class RuleBasedAi {
     final engine = battle.turnEngine;
     final results = <AiActionResult>[];
 
-    for (final character in battle.activeTeam.characters) {
-      final state = battle.states[character.id]!;
+    for (final state in battle.statesOf(battle.activeTeam)) {
       if (!state.isAlive) continue;
 
-      final triggers = equippedActiveTriggers[character.id] ?? const [];
+      final triggers = equippedActiveTriggers[state.combatantId] ?? const [];
       if (triggers.isEmpty) continue;
 
       final unusableThisTurn = <String>{};
@@ -93,7 +92,7 @@ class RuleBasedAi {
           targets: targets,
         );
         results.add(AiActionResult(
-          characterId: character.id,
+          characterId: state.combatantId,
           triggerId: trigger.id,
           useResult: useResult,
         ));
@@ -131,8 +130,8 @@ class RuleBasedAi {
     }
 
     final pool = trigger.targetAffiliation == TargetAffiliation.opponent
-        ? battle.inactiveTeam.characters.map((c) => battle.states[c.id]!)
-        : battle.activeTeam.characters.map((c) => battle.states[c.id]!);
+        ? battle.statesOf(battle.inactiveTeam)
+        : battle.statesOf(battle.activeTeam);
 
     final legal = pool
         .where((t) =>

@@ -22,7 +22,14 @@ List<String> statusEffectNames(List<String> ids) => [
 /// Loadout's Black Trigger choice into a battle-ready [Character]
 /// (`Character.blackTrigger` and `Loadout.blackTrigger` are separate
 /// fields today - nothing wires them together automatically).
-CharacterBattleState buildBattleState(Character character, Loadout loadout) {
+CharacterBattleState buildBattleState(
+  Character character,
+  Loadout loadout, {
+  // The battle-scoped id (see `CombatantIds`). Null keys this state by
+  // the character's own id, which is what a harness with one of each
+  // character wants; the draft below always supplies one.
+  String? combatantId,
+}) {
   final passiveEffects = <PassiveEffect>[
     for (final t in loadout.triggers.whereType<PassiveTrigger>()) t.effect,
     if (loadout.blackTrigger != null)
@@ -42,6 +49,7 @@ CharacterBattleState buildBattleState(Character character, Loadout loadout) {
 
   return CharacterBattleState(
     wieldingCharacter,
+    combatantId: combatantId,
     equippedPassiveEffects: passiveEffects,
     worldAbility: loadout.blackTrigger?.worldAbility,
     // Start where this Loadout can actually operate: a Close Range kit at
@@ -59,13 +67,22 @@ class DraftedTeam {
   final Team team;
   final Map<String, CharacterBattleState> states;
   final Map<String, List<ActiveTrigger>> equippedActiveTriggers;
+
+  /// Keyed by **combatant id**, like everything else a battle holds.
   final Map<String, Loadout> loadouts;
+
+  /// The same Loadouts keyed by the **character's own id**, which is what
+  /// anything computed about the squad's *build* rather than about the battle
+  /// wants: the Team Efficiency Grade is a property of what you drafted, and
+  /// it is worked out from character ids.
+  final Map<String, Loadout> loadoutsByCharacterId;
 
   const DraftedTeam(
     this.team,
     this.states,
     this.equippedActiveTriggers,
     this.loadouts,
+    this.loadoutsByCharacterId,
   );
 
   /// Drafts via the AI [profile]'s Loadout-building preferences, same as
@@ -92,6 +109,10 @@ class DraftedTeam {
   }
 
   /// Drafts from explicit, already-validated player [loadouts].
+  /// [loadouts] is keyed by the character's own id, which is what the draft
+  /// screens hand over. Everything this returns is keyed by **combatant id**
+  /// instead, because from here on the squad is real and two squads may be
+  /// fielding the same character (item #14).
   factory DraftedTeam.fromLoadouts({
     required String teamId,
     required List<String> characterIds,
@@ -101,29 +122,69 @@ class DraftedTeam {
     final team = Team(id: teamId, characters: characters);
     final states = <String, CharacterBattleState>{};
     final equipped = <String, List<ActiveTrigger>>{};
+    final scopedLoadouts = <String, Loadout>{};
 
     for (final character in characters) {
       final loadout = loadouts[character.id]!;
-      states[character.id] = buildBattleState(character, loadout);
+      final combatantId = CombatantIds.of(teamId, character.id);
+      scopedLoadouts[combatantId] = loadout;
+      states[combatantId] =
+          buildBattleState(character, loadout, combatantId: combatantId);
       // A Black Trigger's own active abilities count toward the Loadout
       // rule's required active-ability total (Loadout.totalActiveAbilityCount
       // already includes them) and are just as usable in battle as a
       // regular equipped ActiveTrigger - drop them here and a character
       // whose Loadout satisfies the rule only via its Black Trigger ends up
       // with fewer usable abilities in play than the rule requires.
-      equipped[character.id] = [
+      equipped[combatantId] = [
         ...loadout.triggers.whereType<ActiveTrigger>(),
         ...?loadout.blackTrigger?.activeAbilities,
       ];
     }
 
-    return DraftedTeam(team, states, equipped, loadouts);
+    return DraftedTeam(team, states, equipped, scopedLoadouts, loadouts);
   }
 }
 
-FighterSnapshot fighterSnapshot(CharacterBattleState s) => FighterSnapshot(
-  id: s.character.id,
-  name: s.character.name,
+/// Display names for every combatant in [battle], disambiguated **only where
+/// two squads field the same character** (item #14).
+///
+/// An ordinary battle reads exactly as it always did: one Ilona Vance is just
+/// "Ilona Vance". A mirror match would otherwise print "Ilona Vance uses Twin
+/// Fang Strike on Ilona Vance", which tells the player nothing, so there the
+/// squad is named too.
+Map<String, String> combatantDisplayNames(
+  Battle battle, {
+  required String teamALabel,
+  required String teamBLabel,
+}) {
+  final counts = <String, int>{};
+  for (final team in [battle.teamA, battle.teamB]) {
+    for (final state in battle.statesOf(team)) {
+      counts[state.character.id] = (counts[state.character.id] ?? 0) + 1;
+    }
+  }
+  return {
+    for (final (team, label) in [
+      (battle.teamA, teamALabel),
+      (battle.teamB, teamBLabel),
+    ])
+      for (final state in battle.statesOf(team))
+        state.combatantId: (counts[state.character.id] ?? 0) > 1
+            ? '${state.character.name} ($label)'
+            : state.character.name,
+  };
+}
+
+FighterSnapshot fighterSnapshot(
+  CharacterBattleState s, {
+  /// Overrides the displayed name, for a mirror match where the character's
+  /// own name no longer identifies them. See [combatantDisplayNames].
+  String? displayName,
+}) =>
+    FighterSnapshot(
+  id: s.combatantId,
+  name: displayName ?? s.character.name,
   type: s.character.type,
   currentHealth: s.currentHealth,
   maxHealth: s.effectiveStats().maxHealth,
@@ -165,11 +226,11 @@ List<LogRollBreakdown> rollBreakdownsFor(TargetHitResult t) => [
 BailOutSnapshot bailOutSnapshot(Battle battle) => BailOutSnapshot(
   bailing: {
     for (final s in battle.states.values)
-      if (s.bailOutState == BailOutState.bailingOut) s.character.id,
+      if (s.bailOutState == BailOutState.bailingOut) s.combatantId,
   },
   refused: {
     for (final s in battle.states.values)
-      if (s.hasRefusedToBail) s.character.id,
+      if (s.hasRefusedToBail) s.combatantId,
   },
 );
 
@@ -187,19 +248,23 @@ class BailOutSnapshot {
 /// is what turns "this target is Bailing Out" into "this hit is what put them
 /// there". Omit it and the Bail Out fields simply stay false, which is what an
 /// older caller with no bodies on the board wants anyway.
+/// [displayNames] disambiguates a mirror match; omit it and each target is
+/// named by their character's own name, which is right for every other battle.
 List<LogTargetResult> logTargets(
   Battle battle,
   AbilityUseResult useResult, {
   BailOutSnapshot before = BailOutSnapshot.empty,
+  Map<String, String> displayNames = const {},
 }) => [
   for (final t in useResult.targetResults)
     () {
-      final state = battle.states[t.targetCharacterId]!;
+      final state = battle.stateById(t.targetCharacterId);
       final id = t.targetCharacterId;
       final wasBailing = before.bailing.contains(id);
       return LogTargetResult(
         targetId: id,
-        targetName: state.character.name,
+        targetName:
+            displayNames[t.targetCharacterId] ?? state.character.name,
         hits: t.attackRolls.length,
         crits: t.attackRolls.where((r) => r.isCriticalHit).length,
         misses: t.attackRolls.where((r) => !r.isHit && !r.isCriticalMiss).length,
@@ -234,7 +299,7 @@ LogAction logActionFor(
   AiActionResult result,
 ) => LogAction(
   characterId: result.characterId,
-  characterName: battle.states[result.characterId]!.character.name,
+  characterName: battle.stateById(result.characterId).character.name,
   triggerId: trigger.id,
   triggerName: trigger.name,
   fatTriggered: battle.states[result.characterId]!.fatTriggeredThisTurn,
@@ -242,23 +307,15 @@ LogAction logActionFor(
 );
 
 
-/// Picks [size] distinct random character ids, avoiding everyone in [taken].
+/// A random squad of [size] distinct characters, avoiding everyone in
+/// [taken].
 ///
-/// **A character can only be in a battle once.** Their id is the key to their
-/// battle state, their Loadout, their `teammates` wiring, their row in the
-/// squad panel and their target id in the interface, so drafting the same
-/// character onto both squads gives the two of them one shared state: one
-/// health pool, each squad counting them as a teammate, and one of them able
-/// to be ordered to attack themselves. A playtest found exactly that with a
-/// mirror-matched Ilona Vance.
-///
-/// `Battle` now refuses to start such a battle at all. This is the other half:
-/// the squad drafts share one rule rather than each screen writing its own,
-/// which is how the two screens that got it wrong got it wrong.
-///
-/// A stopgap, not a rule: both sides are meant to be able to pick whoever they
-/// want. Item #14 replaces the character id with a battle-scoped one, and this
-/// exclusion goes with it.
+/// [taken] is **this squad's** other slots, not the opposing squad's. Both
+/// sides may field the same character since item #14: two Ilona Vances on
+/// opposite squads are two combatants with their own health, statuses and
+/// position, keyed apart by their combatant ids (see `CombatantIds`). One
+/// squad still cannot field her twice, which is what this avoids and what
+/// `Battle` still refuses outright.
 ///
 /// [taken] accepts nulls so a screen can pass its slot list straight in.
 List<String> randomSquadAvoiding(

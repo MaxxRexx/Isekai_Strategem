@@ -51,16 +51,16 @@ void main() {
   test('the ruler-facing distance counts the bodies in the way', () {
     final s = session();
     for (final c in s.battle.teamA.characters) {
-      s.battle.states[c.id]!.position = BattlePosition.front;
+      s.battle.stateById(c.id).position = BattlePosition.front;
     }
     final theirs = s.battle.teamB.characters;
-    s.battle.states[theirs[0].id]!.position = BattlePosition.front;
-    s.battle.states[theirs[1].id]!.position = BattlePosition.front;
-    s.battle.states[theirs[2].id]!.position = BattlePosition.back;
+    s.battle.stateById(theirs[0].id).position = BattlePosition.front;
+    s.battle.stateById(theirs[1].id).position = BattlePosition.front;
+    s.battle.stateById(theirs[2].id).position = BattlePosition.back;
 
     final engine = s.battle.turnEngine;
-    final me = s.battle.states['marren_osei']!;
-    expect(engine.distanceBetween(me, s.battle.states[theirs[2].id]!), 4,
+    final me = s.battle.stateById('marren_osei');
+    expect(engine.distanceBetween(me, s.battle.stateById(theirs[2].id)), 4,
         reason: '0 + 2 lines, plus the two bodies screening them');
   });
 
@@ -72,12 +72,12 @@ void main() {
     // would have been comfortably inside it. So every target is out of band,
     // and screening is the reason for the only one worth talking about.
     for (final c in s.battle.teamA.characters) {
-      s.battle.states[c.id]!.position = BattlePosition.middle;
+      s.battle.stateById(c.id).position = BattlePosition.middle;
     }
     final theirs = s.battle.teamB.characters;
-    s.battle.states[theirs[0].id]!.position = BattlePosition.front;
-    s.battle.states[theirs[1].id]!.position = BattlePosition.front;
-    s.battle.states[theirs[2].id]!.position = BattlePosition.back;
+    s.battle.stateById(theirs[0].id).position = BattlePosition.front;
+    s.battle.stateById(theirs[1].id).position = BattlePosition.front;
+    s.battle.stateById(theirs[2].id).position = BattlePosition.back;
 
     final display = s
         .abilityDisplaysFor('marren_osei')
@@ -115,15 +115,15 @@ void main() {
       committedBend() {
     final s = session();
     for (final c in s.battle.teamA.characters) {
-      s.battle.states[c.id]!.position = BattlePosition.front;
+      s.battle.stateById(c.id).position = BattlePosition.front;
     }
     final theirs = s.battle.teamB.characters;
-    final screen = s.battle.states[theirs[0].id]!
+    final screen = s.battle.stateById(theirs[0].id)
       ..position = BattlePosition.front
       ..currentHealth = 0;
-    final sniper = s.battle.states[theirs[1].id]!
+    final sniper = s.battle.stateById(theirs[1].id)
       ..position = BattlePosition.middle;
-    s.battle.states[theirs[2].id]!
+    s.battle.stateById(theirs[2].id)
       ..position = BattlePosition.middle
       ..currentHealth = 0;
     // Their front-liner is already bailing: on the board, screening, and one
@@ -132,16 +132,16 @@ void main() {
     expect(screen.bailOutState, BailOutState.bailingOut);
 
     expect(s.battle.turnEngine.distanceBetween(
-            s.battle.states['ilona_vance']!, sniper), 2,
+            s.battle.stateById('ilona_vance'), sniper), 2,
         reason: 'their middle line, plus the one body screening it');
 
     expect(
-      s.queue('marren_osei', 'twin_fang_strike', [screen.character.id]).success,
+      s.queue('marren_osei', 'twin_fang_strike', [screen.combatantId]).success,
       isTrue,
       reason: 'a body is a legal target for an attack, and nothing else',
     );
     expect(
-      s.queue('ilona_vance', 'suppressing_fire', [sniper.character.id]).success,
+      s.queue('ilona_vance', 'suppressing_fire', [sniper.combatantId]).success,
       isTrue,
       reason: 'the shot is legal at the moment it is committed',
     );
@@ -155,24 +155,24 @@ void main() {
     // that was committed at 2 is still a shot at 2. Nothing bends.
     final s = session();
     for (final c in s.battle.teamA.characters) {
-      s.battle.states[c.id]!.position = BattlePosition.front;
+      s.battle.stateById(c.id).position = BattlePosition.front;
     }
     final theirs = s.battle.teamB.characters;
-    final screen = s.battle.states[theirs[0].id]!
+    final screen = s.battle.stateById(theirs[0].id)
       ..position = BattlePosition.front
       ..currentHealth = 1;
-    final sniper = s.battle.states[theirs[1].id]!
+    final sniper = s.battle.stateById(theirs[1].id)
       ..position = BattlePosition.middle;
-    s.battle.states[theirs[2].id]!
+    s.battle.stateById(theirs[2].id)
       ..position = BattlePosition.middle
       ..currentHealth = 0;
 
     expect(
-      s.queue('marren_osei', 'twin_fang_strike', [screen.character.id]).success,
+      s.queue('marren_osei', 'twin_fang_strike', [screen.combatantId]).success,
       isTrue,
     );
     expect(
-      s.queue('ilona_vance', 'suppressing_fire', [sniper.character.id]).success,
+      s.queue('ilona_vance', 'suppressing_fire', [sniper.combatantId]).success,
       isTrue,
     );
     final round = s.resolveQueue();
@@ -181,7 +181,7 @@ void main() {
     expect(screen.bailOutState, BailOutState.bailingOut,
         reason: 'and is now a body rather than gone');
     expect(s.battle.turnEngine.distanceBetween(
-            s.battle.states['ilona_vance']!, sniper), 2,
+            s.battle.stateById('ilona_vance'), sniper), 2,
         reason: 'the body is still in the way, so the distance did not move');
     expect(
       round.actions.firstWhere((a) => a.triggerId == 'suppressing_fire').bend,
@@ -201,7 +201,7 @@ void main() {
     expect(f.screen.bailOutState, BailOutState.destroyed,
         reason: 'the body was cleared off the line first');
     expect(f.session.battle.turnEngine.distanceBetween(
-            f.session.battle.states['ilona_vance']!, f.sniper), 1,
+            f.session.battle.stateById('ilona_vance'), f.sniper), 1,
         reason: 'which dragged the sniper under Long Range\'s minimum of 2');
 
 
@@ -242,7 +242,7 @@ void main() {
     final before = team.trionPool.current;
 
     final result = s.battle.turnEngine
-        .resolveTeamTrionGain(team, s.battle.states);
+        .resolveTeamTrionGain(team, s.battle.statesOf(team));
     expect(result.tier, TrionTier.low);
     expect(team.trionPool.current - before, 10);
     expect(team.trionBacklash, isFalse,
@@ -256,7 +256,7 @@ void main() {
     final f = committedBend();
     final s = f.session;
     expect(
-      s.queue('bastian_cole', 'suppressing_fire', [f.sniper.character.id])
+      s.queue('bastian_cole', 'suppressing_fire', [f.sniper.combatantId])
           .success,
       isTrue,
     );
@@ -267,7 +267,7 @@ void main() {
 
     final team = s.battle.teamA;
     final before = team.trionPool.current;
-    s.battle.turnEngine.resolveTeamTrionGain(team, s.battle.states);
+    s.battle.turnEngine.resolveTeamTrionGain(team, s.battle.statesOf(team));
     expect(team.trionPool.current - before, 10,
         reason: 'two bends cost the same as one: the Low tier, not twice over');
   });
@@ -277,13 +277,13 @@ void main() {
     // target, so the refund path must not fire.
     final s = session();
     for (final c in s.battle.teamA.characters) {
-      s.battle.states[c.id]!.position = BattlePosition.front;
+      s.battle.stateById(c.id).position = BattlePosition.front;
     }
     final theirs = s.battle.teamB.characters;
-    s.battle.states[theirs[0].id]!.position = BattlePosition.front;
-    final sniper = s.battle.states[theirs[1].id]!
+    s.battle.stateById(theirs[0].id).position = BattlePosition.front;
+    final sniper = s.battle.stateById(theirs[1].id)
       ..position = BattlePosition.middle;
-    s.battle.states[theirs[2].id]!
+    s.battle.stateById(theirs[2].id)
       ..position = BattlePosition.middle
       ..currentHealth = 0;
 
@@ -291,7 +291,7 @@ void main() {
     expect(
       s
           .queue('marren_osei', 'suppressing_fire',
-              [sniper.character.id])
+              [sniper.combatantId])
           .success,
       isTrue,
     );

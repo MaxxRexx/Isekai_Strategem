@@ -1,6 +1,7 @@
 import '../constants.dart';
 import '../models/battle_position.dart';
 import '../models/character.dart';
+import '../models/combatant_id.dart';
 import '../models/damage_type.dart';
 import '../models/passive_counter.dart';
 import '../models/passive_effect.dart';
@@ -71,6 +72,19 @@ class TempFlatBonus {
 /// across battles/tests.
 class CharacterBattleState {
   final Character character;
+
+  /// This character's identity **within this battle** (see [CombatantIds]).
+  ///
+  /// Everything a battle keys by identity keys by this rather than by
+  /// [Character.id], because both squads may field the same character and
+  /// two Ilona Vances have to be two combatants rather than one shared one.
+  ///
+  /// Defaults to the character's own id, so a battle that never needed the
+  /// distinction (an engine test, a tool harness, a squad drafted before
+  /// mirror matches existed) behaves exactly as it always did: one Ilona
+  /// Vance keyed by `ilona_vance`. The draft supplies the scoped id.
+  final String combatantId;
+
   int currentHealth;
 
   /// Where this character is standing (see [BattlePosition]). Chosen at
@@ -236,11 +250,13 @@ class CharacterBattleState {
 
   CharacterBattleState(
     this.character, {
+    String? combatantId,
     List<PassiveEffect> equippedPassiveEffects = const [],
     List<String> equippedTriggerIds = const [],
     WorldAbilityEffect? worldAbility,
     this.position = BattlePosition.middle,
-  })  : currentHealth = character.baseStats.maxHealth,
+  })  : combatantId = combatantId ?? character.id,
+        currentHealth = character.baseStats.maxHealth,
         equippedPassiveEffects = equippedPassiveEffects,
         equippedTriggerIds = equippedTriggerIds,
         remainingDamagePreventionInstances =

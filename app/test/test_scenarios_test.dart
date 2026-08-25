@@ -2,6 +2,7 @@ import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/draft.dart';
 import 'package:flutter/material.dart';
+import 'package:isekai_strategem/src/game/play_session.dart';
 import 'package:isekai_strategem/src/game/test_scenarios.dart';
 import 'package:isekai_strategem/src/screens/play_flow_screen.dart';
 
@@ -10,6 +11,20 @@ import 'package:isekai_strategem/src/screens/play_flow_screen.dart';
 /// exists to exercise: a scenario naming a Trigger that does not exist, or a
 /// kit that busts a character's Trion Capacity, would otherwise only be found
 /// by tapping it.
+/// A battle keys by combatant id (item #14); a test naming a character holds
+/// their roster id. One place translates.
+CharacterBattleState stateFor(
+  TestScenario scenario,
+  PlaySession session,
+  String characterId,
+) =>
+    session.battle.stateOf(
+      scenario.playerIds.contains(characterId)
+          ? session.battle.teamA
+          : session.battle.teamB,
+      characterId,
+    );
+
 void main() {
   test('every scenario has a unique id and names a work item', () {
     final ids = testScenarios.map((s) => s.id).toList();
@@ -29,14 +44,14 @@ void main() {
     for (final s in testScenarios) {
       expect(s.playerIds.length, 3, reason: s.id);
       expect(s.enemyIds.length, 3, reason: s.id);
-      // The mirror-match stopgap is still in force until item #14, and a
-      // scenario that trips it throws at battle construction rather than
-      // failing gracefully.
-      expect(
-        s.playerIds.toSet().intersection(s.enemyIds.toSet()),
-        isEmpty,
-        reason: '${s.id} drafts the same character onto both squads',
-      );
+      // Both squads may field the same character since item #14, and one
+      // scenario exists to exercise exactly that. What still throws at battle
+      // construction is the same character twice on **one** squad, because
+      // that really would be one shared state.
+      expect(s.playerIds.toSet(), hasLength(3),
+          reason: '${s.id} drafts a character twice onto the player squad');
+      expect(s.enemyIds.toSet(), hasLength(3),
+          reason: '${s.id} drafts a character twice onto the enemy squad');
     }
   });
 
@@ -87,16 +102,16 @@ void main() {
     for (final s in testScenarios) {
       final session = s.start();
       s.positions.forEach((id, position) {
-        expect(session.battle.states[id]!.position, position, reason: s.id);
+        expect(stateFor(s, session, id).position, position, reason: s.id);
       });
       for (final id in s.bailingOut) {
-        final state = session.battle.states[id]!;
+        final state = stateFor(s, session, id);
         expect(state.bailOutState, BailOutState.bailingOut, reason: s.id);
         expect(state.isOnBoard, isTrue, reason: s.id);
         expect(state.isAlive, isFalse, reason: s.id);
       }
       for (final id in s.destroyed) {
-        expect(session.battle.states[id]!.bailOutState,
+        expect(stateFor(s, session, id).bailOutState,
             BailOutState.destroyed,
             reason: s.id);
       }
@@ -104,7 +119,7 @@ void main() {
       // and a status tick. Neither touches health on a clean board, so the
       // arranged values should still be standing.
       s.health.forEach((id, value) {
-        expect(session.battle.states[id]!.currentHealth, value, reason: s.id);
+        expect(stateFor(s, session, id).currentHealth, value, reason: s.id);
       });
     }
   });
@@ -127,12 +142,30 @@ void main() {
     TestScenario byId(String id) =>
         testScenarios.firstWhere((s) => s.id == id);
 
+    /// A battle keys by combatant id (item #14); a test naming a character
+    /// holds their roster id. One place translates, the same as the scenarios
+    /// themselves do.
+    CharacterBattleState stateOf(
+      TestScenario scenario,
+      PlaySession session,
+      String characterId,
+    ) =>
+        session.battle.stateOf(
+          scenario.playerIds.contains(characterId)
+              ? session.battle.teamA
+              : session.battle.teamB,
+          characterId,
+        );
+
+    List<ActiveTrigger> kitOf(PlaySession session, String characterId) =>
+        session.equippedA[CombatantIds.of('player', characterId)]!;
+
     test('The screen holds: the enemy back line is out of Close Range', () {
       final s = byId('screen_holds');
       final session = s.start();
       final engine = session.battle.turnEngine;
-      final rurik = session.battle.states['rurik_voss']!;
-      final nadia = session.battle.states['nadia_kessler']!;
+      final rurik = stateOf(s, session, 'rurik_voss');
+      final nadia = stateOf(s, session, 'nadia_kessler');
 
       final distance = engine.distanceBetween(rurik, nadia);
       expect(distance, 4,
@@ -144,9 +177,9 @@ void main() {
       final s = byId('body_screens');
       final session = s.start();
       final engine = session.battle.turnEngine;
-      final rurik = session.battle.states['rurik_voss']!;
-      final vela = session.battle.states['vela_ashworth']!;
-      final nadia = session.battle.states['nadia_kessler']!;
+      final rurik = stateOf(s, session, 'rurik_voss');
+      final vela = stateOf(s, session, 'vela_ashworth');
+      final nadia = stateOf(s, session, 'nadia_kessler');
 
       expect(engine.distanceBetween(rurik, nadia), 3,
           reason: 'one enemy screening the back line');
@@ -170,9 +203,9 @@ void main() {
       final s = byId('bending_shot');
       final session = s.start();
       final engine = session.battle.turnEngine;
-      final mireille = session.battle.states['mireille_song']!;
-      final ren = session.battle.states['ren_kobayashi']!;
-      final vela = session.battle.states['vela_ashworth']!;
+      final mireille = stateOf(s, session, 'mireille_song');
+      final ren = stateOf(s, session, 'ren_kobayashi');
+      final vela = stateOf(s, session, 'vela_ashworth');
 
       expect(vela.bailOutState, BailOutState.bailingOut,
           reason: 'the body has to be there before turn one');
@@ -192,7 +225,7 @@ void main() {
       final s = byId('last_one_standing');
       final session = s.start();
       final living = session.battle.teamB.characters
-          .where((c) => session.battle.states[c.id]!.isAlive)
+          .where((c) => session.battle.stateOf(session.battle.teamB, c.id).isAlive)
           .toList();
       expect(living.length, 1);
       expect(living.single.id, 'nadia_kessler');
@@ -202,9 +235,9 @@ void main() {
     test('Refuse to Bail is equipped and the holder is one hit from zero', () {
       final s = byId('refuse_to_bail');
       final session = s.start();
-      expect(session.battle.states['rurik_voss']!.currentHealth, 1);
+      expect(stateOf(s, session, 'rurik_voss').currentHealth, 1);
       expect(
-        session.equippedA['rurik_voss']!.map((t) => t.id),
+        kitOf(session, 'rurik_voss').map((t) => t.id),
         contains('refuse_to_bail'),
       );
     });
@@ -213,12 +246,12 @@ void main() {
         () {
       final s = byId('body_targeting');
       final session = s.start();
-      final kit = session.equippedA['kaito_reyes']!;
+      final kit = kitOf(session, 'kaito_reyes');
       final charm = kit.firstWhere((t) => t.id == 'charm_whisper');
       final strike = kit.firstWhere((t) => t.id == 'twin_fang_strike');
       expect(charm.damage, isNull, reason: 'the ability that must be refused');
       expect(strike.damage, isNotNull, reason: 'the ability that must work');
-      expect(session.battle.states['vela_ashworth']!.bailOutState,
+      expect(stateOf(s, session, 'vela_ashworth').bailOutState,
           BailOutState.bailingOut);
     });
   });
@@ -373,8 +406,8 @@ void main() {
             expect(
               s.distanceBetween(from, to),
               session.battle.turnEngine.distanceBetween(
-                session.battle.states[from]!,
-                session.battle.states[to]!,
+                stateFor(s, session, from),
+                stateFor(s, session, to),
               ),
               reason: '${s.id}: $from to $to',
             );
@@ -388,7 +421,7 @@ void main() {
         final session = s.start();
         for (final id in [...s.playerIds, ...s.enemyIds]) {
           if (s.destroyed.contains(id)) continue;
-          final state = session.battle.states[id]!;
+          final state = stateFor(s, session, id);
           final live = BattleDistance.screensFor(
             state.position,
             session.battle.turnEngine.screeningLinesFor(state),
@@ -402,7 +435,7 @@ void main() {
       for (final s in testScenarios) {
         final session = s.start();
         for (final id in [...s.playerIds, ...s.enemyIds]) {
-          expect(s.positionOf(id), session.battle.states[id]!.position,
+          expect(s.positionOf(id), stateFor(s, session, id).position,
               reason: '${s.id}: position of $id');
         }
       }

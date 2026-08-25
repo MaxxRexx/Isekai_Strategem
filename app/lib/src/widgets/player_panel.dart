@@ -1,3 +1,4 @@
+import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
 import '../data/placeholder_ranks.dart';
@@ -284,7 +285,7 @@ class _SquadMemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final character = roster[characterId];
+    final character = roster[CombatantIds.characterOf(characterId)];
     final tile = PortraitTile(
       characterId: characterId,
       name: character.name,

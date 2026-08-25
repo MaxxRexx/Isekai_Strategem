@@ -85,7 +85,7 @@ String _finalStateLines(List<FighterSnapshot> fighters) => [
 String _loadoutLines(Map<String, Loadout> loadouts) {
   final buf = StringBuffer();
   for (final entry in loadouts.entries) {
-    buf.writeln('${roster[entry.key].name}:');
+    buf.writeln('${roster[CombatantIds.characterOf(entry.key)].name}:');
     buf.writeln('  Black Trigger: ${entry.value.blackTrigger?.name ?? 'none'}');
     buf.writeln(
       '  Triggers: ${entry.value.triggers.map((t) => t.name).join(', ')}',

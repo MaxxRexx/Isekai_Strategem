@@ -92,9 +92,11 @@ void main() {
     ]);
 
     final round = s.resolveQueue();
+    // Combatant ids (item #14): inside a battle a character is identified
+    // by their squad and their roster id together.
     expect(round.actions.map((a) => a.characterId).toList(), [
-      'marren_osei',
-      'ilona_vance',
+      CombatantIds.of('player', 'marren_osei'),
+      CombatantIds.of('player', 'ilona_vance'),
     ]);
   });
 
@@ -111,8 +113,8 @@ void main() {
 
     final round = s.resolveQueue();
     expect(round.actions.map((a) => a.characterId).toList(), [
-      'bastian_cole',
-      'ilona_vance',
+      CombatantIds.of('player', 'bastian_cole'),
+      CombatantIds.of('player', 'ilona_vance'),
     ]);
   });
 }

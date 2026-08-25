@@ -29,9 +29,9 @@ void main() {
     final session = freshSession();
     // Simulate a Mind's Eye reveal landing on the engine state, the same
     // mutation _resolveMindsEye performs.
-    session.battle.states[playerIds.first]!.revealedEnemyIds
+    session.battle.stateById(playerIds.first).revealedEnemyIds
         .add(opponentIds.first);
-    session.battle.states[playerIds[1]]!.revealedEnemyIds
+    session.battle.stateById(playerIds[1]).revealedEnemyIds
         .add(opponentIds[1]);
 
     final revealed = session.revealedEnemyIds;

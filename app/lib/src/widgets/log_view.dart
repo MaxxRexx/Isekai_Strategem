@@ -375,7 +375,7 @@ class _LogLineState extends State<LogLine> {
   static const _linkUnderline = TextDecoration.underline;
 
   void _showCharacterInfo(String characterId) {
-    final character = roster[characterId];
+    final character = roster[CombatantIds.characterOf(characterId)];
     if (character == null) return;
     showDialog<void>(
       context: context,

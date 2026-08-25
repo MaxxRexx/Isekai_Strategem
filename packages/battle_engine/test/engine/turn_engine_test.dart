@@ -32,7 +32,7 @@ void main() {
             TrionGainEngine(config: config, diceRoller: DiceRoller(Random(1))),
       );
 
-      final result = engine.resolveTeamTrionGain(team, states);
+      final result = engine.resolveTeamTrionGain(team, states.values.toList());
       expect(result.tier,
           TrionTier.medium); // always upgrades from low, never to high
       expect(team.trionPool.current, config.mediumAmount);

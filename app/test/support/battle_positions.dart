@@ -13,16 +13,17 @@ import 'package:isekai_strategem/src/game/play_session.dart';
 /// Tests that are about range should place characters themselves rather than
 /// call this.
 void spreadForFullRangeCoverage(PlaySession session) {
-  for (final character in session.battle.teamA.characters) {
-    session.battle.states[character.id]!.position = BattlePosition.front;
+  final battle = session.battle;
+  for (final state in battle.statesOf(battle.teamA)) {
+    state.position = BattlePosition.front;
   }
   const spread = [
     BattlePosition.front,
     BattlePosition.middle,
     BattlePosition.back,
   ];
-  final teamB = session.battle.teamB.characters;
+  final teamB = battle.statesOf(battle.teamB);
   for (var i = 0; i < teamB.length; i++) {
-    session.battle.states[teamB[i].id]!.position = spread[i % spread.length];
+    teamB[i].position = spread[i % spread.length];
   }
 }

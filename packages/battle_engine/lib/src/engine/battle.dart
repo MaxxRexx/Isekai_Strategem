@@ -1,3 +1,5 @@
+import '../models/character.dart';
+import '../models/combatant_id.dart';
 import '../models/passive_counter.dart';
 import '../models/team.dart';
 import '../models/trigger.dart';
@@ -109,26 +111,51 @@ class Battle {
     Map<String, CharacterBattleState>? states,
   })  : turnEngine = turnEngine ?? TurnEngine(),
         isTeamATurn = teamAGoesFirst,
+        // Built without states, a battle keys by the character's own id and
+        // nothing is scoped. That is the honest default: with no states handed
+        // in there is nothing to tell two identical characters apart with, so
+        // the duplicate guard below correctly still refuses them. Scoped
+        // combatant ids come from the draft, where the squads are real (see
+        // `DraftedTeam`).
         states = states ??
             {
-              for (final c in teamA.characters) c.id: CharacterBattleState(c),
-              for (final c in teamB.characters) c.id: CharacterBattleState(c),
+              for (final c in [...teamA.characters, ...teamB.characters])
+                c.id: CharacterBattleState(c),
             } {
-    // Every character id in a battle has to be unique, because the id is the
-    // key to everything: one entry in [states], one row in the squad panel,
-    // one target id in the interface, one `teammates` wiring. Draft the same
-    // character onto both squads and that map silently holds five states for
-    // six characters, so the two of them share one health pool, both squads
-    // count them as a teammate, and killing yours kills theirs. Found in a
-    // playtest, where a mirror-matched Ilona Vance died on both sides at once.
+    if (teamA.id == teamB.id) {
+      throw ArgumentError(
+        'Both squads have the id "${teamA.id}". A squad id is half of every '
+        'combatant id in the battle (see CombatantIds), so two squads sharing '
+        'one would put both of their characters on the same keys.',
+      );
+    }
+
+    // Index each squad's states once, in squad order. Everything that wants
+    // "this team's states" reads it from here rather than looking each
+    // character up, which is what used to force every such site to know how
+    // the map was keyed.
+    for (final team in [teamA, teamB]) {
+      _statesByTeamId[team.id] = [
+        for (final c in team.characters) _stateFor(team, c),
+      ];
+    }
+
+    // A combatant id has to be unique, because it is the key to everything:
+    // one entry in [states], one row in the squad panel, one target id in the
+    // interface, one `teammates` wiring. Since a combatant id carries the
+    // squad's id, the same character on *opposite* squads is now two
+    // combatants, which is the whole of item #14. The same character twice
+    // **within one squad** still collides, and that is still a genuine
+    // mistake, so this guard stays and now catches exactly that.
     //
-    // This throws rather than asserting, because an assert is compiled out of
+    // It throws rather than asserting, because an assert is compiled out of
     // the release web build and this failure is silent corruption rather than
-    // a crash. Mirror matches are meant to be allowed: supporting them needs a
-    // battle-scoped id rather than the character's own, which is item #14 in
-    // the work queue. Until then this is the guard that keeps a battle sane.
+    // a crash: the map would hold five states for six characters, so two of
+    // them would share one health pool and killing one would kill the other.
+    // That is what the #2 playtest found.
     final ids = [
-      for (final c in [...teamA.characters, ...teamB.characters]) c.id,
+      for (final team in [teamA, teamB])
+        for (final c in team.characters) _stateFor(team, c).combatantId,
     ];
     final duplicates = <String>{
       for (final id in ids)
@@ -136,9 +163,10 @@ class Battle {
     };
     if (duplicates.isNotEmpty) {
       throw ArgumentError(
-        'The same character cannot be in a battle twice: '
-        '${duplicates.join(', ')}. Every character id has to be unique across '
-        'both squads, since it is the key to their battle state.',
+        'The same character cannot be on one squad twice: '
+        '${duplicates.map(CombatantIds.characterOf).join(', ')}. Every '
+        'combatant id has to be unique, since it is the key to their battle '
+        'state. Both squads fielding the same character is fine.',
       );
     }
 
@@ -146,8 +174,7 @@ class Battle {
     // (Kaito's last-one-standing crit bonus, Marren's ally-health-aware
     // Armor bonus, Sable's guardian redirect).
     for (final team in [teamA, teamB]) {
-      final teamStates =
-          team.characters.map((c) => this.states[c.id]!).toList();
+      final teamStates = statesOf(team);
       for (final state in teamStates) {
         state.teammates =
             teamStates.where((s) => !identical(s, state)).toList();
@@ -161,14 +188,96 @@ class Battle {
     this.turnEngine.teamTrionPools = _teamPoolsByCharacterId;
   }
 
+  /// Each squad's states, in squad order, keyed by the squad's id.
+  final Map<String, List<CharacterBattleState>> _statesByTeamId = {};
+
+  /// [team]'s states, in the order its characters were drafted.
+  ///
+  /// This is the way to ask. Looking a character up in [states] by hand needs
+  /// the caller to know whether the battle was keyed by combatant ids or by
+  /// plain character ids, and the answer differs between a drafted battle and
+  /// a test harness.
+  List<CharacterBattleState> statesOf(Team team) =>
+      _statesByTeamId[team.id] ??
+      [for (final c in team.characters) _stateFor(team, c)];
+
+  /// The state for the character [characterId] on [team].
+  ///
+  /// For a caller holding a **character** id rather than a combatant id: a
+  /// scenario setting a board up, a draft screen, anything that knew who it
+  /// wanted before the battle scoped them. Throws if that character is not on
+  /// that squad.
+  CharacterBattleState stateOf(Team team, String characterId) {
+    final character = team.characters.firstWhere(
+      (c) => c.id == characterId,
+      orElse: () => throw ArgumentError(
+        '$characterId is not on squad ${team.id}.',
+      ),
+    );
+    return _stateFor(team, character);
+  }
+
+  /// The state for [id], which may be a combatant id or a character id.
+  ///
+  /// For callers that hold an id but not the squad it belongs to: mostly
+  /// tests, and anything reading an id back out of a log. A character id is
+  /// resolved by searching both squads, and **throws if both are fielding
+  /// them**, because that is precisely the question a character id cannot
+  /// answer once mirror matches exist. Ask with a combatant id, or with
+  /// [stateOf] and the squad, when that can happen.
+  CharacterBattleState stateById(String id) =>
+      stateByIdOrNull(id) ??
+      (throw ArgumentError('No combatant in this battle for "$id".'));
+
+  /// [stateById], or null when nobody in this battle answers to [id].
+  ///
+  /// Still throws when [id] is a character id and **both** squads are
+  /// fielding them: that is not "not found", it is a question a character id
+  /// cannot answer, and answering it with either one would be the silent
+  /// corruption item #14 exists to remove.
+  CharacterBattleState? stateByIdOrNull(String id) {
+    final direct = states[id];
+    if (direct != null) return direct;
+
+    final matches = [
+      for (final team in [teamA, teamB])
+        for (final c in team.characters)
+          if (c.id == id) _stateFor(team, c),
+    ];
+    if (matches.isEmpty) return null;
+    if (matches.length == 1) return matches.single;
+    throw ArgumentError(
+      'Both squads are fielding "$id", so a character id does not say which '
+      'one you mean. Use a combatant id (see CombatantIds) or stateOf(team, '
+      'id).',
+    );
+  }
+
+  /// The state for [character] on [team], whichever convention [states] was
+  /// keyed by.
+  ///
+  /// A drafted battle keys by combatant id; an engine test or a tool harness
+  /// hands over a map keyed by the character's own id and gets states whose
+  /// `combatantId` defaults to the same thing. Both are legitimate, so this
+  /// tries the scoped key first and falls back to the plain one.
+  CharacterBattleState _stateFor(Team team, Character character) {
+    final scoped = states[CombatantIds.of(team.id, character.id)];
+    if (scoped != null) return scoped;
+    final plain = states[character.id];
+    if (plain != null) return plain;
+    throw ArgumentError(
+      'No battle state for ${character.id} on squad ${team.id}. The states '
+      'map has to hold one entry per character, keyed either by their '
+      'combatant id or by their character id.',
+    );
+  }
+
   Team get activeTeam => isTeamATurn ? teamA : teamB;
   Team get inactiveTeam => isTeamATurn ? teamB : teamA;
   TrionPool get activeTeamPool => activeTeam.trionPool;
 
-  List<CharacterBattleState> get activeTeamStates =>
-      activeTeam.characters.map((c) => states[c.id]!).toList();
-  List<CharacterBattleState> get inactiveTeamStates =>
-      inactiveTeam.characters.map((c) => states[c.id]!).toList();
+  List<CharacterBattleState> get activeTeamStates => statesOf(activeTeam);
+  List<CharacterBattleState> get inactiveTeamStates => statesOf(inactiveTeam);
 
   /// Records that the active team dealt damage this turn.
   void recordDamageDealt() {
@@ -179,15 +288,15 @@ class Battle {
   /// belong to - used to credit Trion-draining status effects (Sapped) to
   /// the causer's own team pool regardless of which team they're on.
   Map<String, TrionPool> get _teamPoolsByCharacterId => {
-        for (final c in teamA.characters) c.id: teamA.trionPool,
-        for (final c in teamB.characters) c.id: teamB.trionPool,
+        for (final s in statesOf(teamA)) s.combatantId: teamA.trionPool,
+        for (final s in statesOf(teamB)) s.combatantId: teamB.trionPool,
       };
 
   /// A team is defeated once every member's current health is at or below
   /// 0 - not necessarily all 3 characters having ever acted, just their
   /// health.
   bool isTeamDefeated(Team team) =>
-      team.characters.every((c) => states[c.id]!.currentHealth <= 0);
+      statesOf(team).every((s) => s.currentHealth <= 0);
 
   BattleOutcome get outcome {
     final aDefeated = isTeamDefeated(teamA);
@@ -245,15 +354,15 @@ class Battle {
   /// ability resolves so charges are granted the instant an ally falls.
   void checkForDefeats() {
     for (final team in [teamA, teamB]) {
-      for (final character in team.characters) {
-        final state = states[character.id]!;
+      final teamStates = statesOf(team);
+      for (final state in teamStates) {
         if (state.isAlive) continue;
-        if (!_processedDefeats.add(character.id)) continue;
-        for (final ally in team.characters) {
-          if (ally.id == character.id) continue;
-          final allyState = states[ally.id]!;
-          if (allyState.isAlive && _illusoryDoubleHolders.contains(ally.id)) {
-            allyState.illusoryDoubleCharges += 1;
+        if (!_processedDefeats.add(state.combatantId)) continue;
+        for (final ally in teamStates) {
+          if (identical(ally, state)) continue;
+          if (ally.isAlive &&
+              _illusoryDoubleHolders.contains(ally.combatantId)) {
+            ally.illusoryDoubleCharges += 1;
           }
         }
       }
@@ -283,27 +392,26 @@ class Battle {
     turnEngine.tickTegBoost();
     final isFirstTurnOfBattle = !_firstTurnHandicapApplied;
     _firstTurnHandicapApplied = true;
-    final trionGain = turnEngine.resolveTeamTrionGain(team, states,
+    final trionGain = turnEngine.resolveTeamTrionGain(team, statesOf(team),
         forceLowestTier: isFirstTurnOfBattle);
 
     final statusTicks = <String, StatusTickResult>{};
     final fatTriggered = <String, bool>{};
     final causerPools = _teamPoolsByCharacterId;
 
-    for (final character in team.characters) {
-      final state = states[character.id]!;
+    for (final state in statesOf(team)) {
       if (!state.isAlive) continue;
 
-      statusTicks[character.id] =
+      statusTicks[state.combatantId] =
           turnEngine.tickStatusEffects(state, causerTrionPools: causerPools);
       if (!state.isAlive) continue;
 
-      final equipped = equippedActiveTriggers[character.id];
+      final equipped = equippedActiveTriggers[state.combatantId];
       if (equipped != null) {
         turnEngine.statusEffectEngine.refreshAbilityLocks(state, equipped);
       }
 
-      fatTriggered[character.id] = turnEngine.rollFatTrigger(state);
+      fatTriggered[state.combatantId] = turnEngine.rollFatTrigger(state);
     }
 
     // Phase B4: start-of-turn passive counter hooks.
@@ -369,8 +477,7 @@ class Battle {
       activeTeamDealtDamage: activeTeamDealtDamageThisTurn,
     );
 
-    for (final character in activeTeam.characters) {
-      final state = states[character.id]!;
+    for (final state in activeTeamStates) {
       if (state.isAlive) turnEngine.endCharacterTurn(state);
     }
 
@@ -397,8 +504,7 @@ class Battle {
     // had their turn with the body standing there and left it alone.
     for (final team in [teamA, teamB]) {
       final isActive = identical(team, activeTeam);
-      for (final character in team.characters) {
-        final state = states[character.id]!;
+      for (final state in statesOf(team)) {
 
         if (!isActive &&
             state.bailOutState == BailOutState.bailingOut &&
@@ -406,10 +512,10 @@ class Battle {
           state.bailOutState = BailOutState.recalled;
           state.bailOutWindowArmed = false;
           final salvage =
-              config.salvageFor(character.baseStats.trionCapacity);
+              config.salvageFor(state.character.baseStats.trionCapacity);
           team.trionPool.gain(salvage);
           settled.add(BailOutResolution(
-            characterId: character.id,
+            characterId: state.combatantId,
             trionSalvaged: salvage,
             refused: false,
           ));
@@ -420,7 +526,7 @@ class Battle {
           state.refuseToBailFinalTurn = false;
           state.currentHealth = 0;
           settled.add(BailOutResolution(
-            characterId: character.id,
+            characterId: state.combatantId,
             trionSalvaged: 0,
             refused: true,
           ));

@@ -108,12 +108,13 @@ Every character belongs to one of four **types**, and the type tells you their
 job and the general shape of their stats. (The exact stats for all 20 characters
 are in Appendix B.)
 
-*For now, no character can be in a battle twice: if they are on your squad, the
-opponent cannot field them, and the picker greys them out on the other side.
-This is a temporary restriction rather than a rule of the game. A character's
-identity is currently what the whole battle is keyed to, so two of the same
-character would share one set of health and status. Letting both sides pick
-freely is item #14 in the work queue.*
+*Both squads may field the same character. Two Ilona Vances can fight each
+other: inside a battle a character is identified by their squad and their name
+together, so the two of them are two separate combatants with their own health,
+statuses and position. Where that happens the interface names the squad too, so
+you read "Ilona Vance (yours)" against "Ilona Vance (theirs)" rather than
+guessing. One squad still cannot field the same character twice, which would
+genuinely be one person in two places.*
 
 - **Attack (5 characters).** Front-line damage dealers. High Attack (10 to 13),
   low Defense, and low Team Spirit, which as you will see leans them toward

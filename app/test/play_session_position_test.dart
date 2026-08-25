@@ -38,10 +38,10 @@ void main() {
     );
     s.battle.teamA.trionPool.gain(500);
     for (final c in s.battle.teamA.characters) {
-      s.battle.states[c.id]!.position = BattlePosition.back;
+      s.battle.stateById(c.id).position = BattlePosition.back;
     }
     for (final c in s.battle.teamB.characters) {
-      s.battle.states[c.id]!.position = BattlePosition.middle;
+      s.battle.stateById(c.id).position = BattlePosition.middle;
     }
     return s;
   }
@@ -52,7 +52,7 @@ void main() {
   /// line is still 2 away after one step, which Long Range reaches.
   void pullEnemiesToTheFront(PlaySession s) {
     for (final c in s.battle.teamB.characters) {
-      s.battle.states[c.id]!.position = BattlePosition.front;
+      s.battle.stateById(c.id).position = BattlePosition.front;
     }
   }
 
@@ -89,7 +89,7 @@ void main() {
     expect(s.queueReposition(actor, BattlePosition.middle).success, isTrue);
 
     expect(s.projectedPositionOf(actor), BattlePosition.middle);
-    expect(s.battle.states[actor]!.position, BattlePosition.back,
+    expect(s.battle.stateById(actor).position, BattlePosition.back,
         reason: 'nothing moves until the queue resolves');
   });
 
@@ -131,7 +131,7 @@ void main() {
     // triggers on its own roll at the start of a turn, so the limit is not
     // fixed across runs.
     final maxUses = s.battle.turnEngine.fatEngine
-        .maxAbilitiesThisTurn(s.battle.states[actor]!);
+        .maxAbilitiesThisTurn(s.battle.stateById(actor));
 
     // Pace back and forth so every step stays adjacent to the last.
     for (var i = 0; i < maxUses; i++) {
@@ -189,13 +189,13 @@ void main() {
 
     expect(round.actions.map((a) => a.triggerId).toList(),
         [repositionActionId, 'twin_fang_strike']);
-    expect(s.battle.states[actor]!.position, BattlePosition.middle);
+    expect(s.battle.stateById(actor).position, BattlePosition.middle);
     expect(s.queuedActions, isEmpty);
   });
 
   test('a zone-locked character cannot queue a move', () {
     final s = session();
-    final state = s.battle.states[actor]!;
+    final state = s.battle.stateById(actor);
     state.statusEffects.add(
       StatusEffectInstance(
         definitionId: 'forced_repetition',
@@ -213,7 +213,7 @@ void main() {
     // Pin the limit to one action: FAT rolls on its own at the start of a
     // turn, and with it the move would leave a use spare and the ability
     // would simply be usable.
-    s.battle.states[actor]!.fatTriggeredThisTurn = false;
+    s.battle.stateById(actor).fatTriggeredThisTurn = false;
     s.queueReposition(actor, BattlePosition.middle); // spends the only action
 
     final display = s

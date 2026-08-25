@@ -38,29 +38,29 @@ class _SimulateScreenState extends State<SimulateScreen> {
   @override
   void initState() {
     super.initState();
-    _randomizeTeam(_teamAIds, (id) => _profileAId = id, avoid: _teamBIds);
-    _randomizeTeam(_teamBIds, (id) => _profileBId = id, avoid: _teamAIds);
+    _randomizeTeam(_teamAIds, (id) => _profileAId = id);
+    _randomizeTeam(_teamBIds, (id) => _profileBId = id);
   }
 
-  /// [avoid] is the other squad: see [randomSquadAvoiding] for why a character
-  /// can only be in a battle once.
+  /// Each squad only has to avoid itself: both may field the same character
+  /// since item #14.
   void _randomizeTeam(
     List<String?> slots,
-    void Function(String) setProfile, {
-    required List<String?> avoid,
-  }) {
+    void Function(String) setProfile,
+  ) {
     final random = Random();
-    final picked = randomSquadAvoiding(random, avoid);
+    final picked = randomSquadAvoiding(random, slots);
     for (var i = 0; i < 3; i++) {
       slots[i] = picked[i];
     }
     setProfile(AiProfile.all[random.nextInt(AiProfile.all.length)].id);
   }
 
+  /// Every other slot on the same squad. The opposing squad is not excluded:
+  /// mirror matches are supported since item #14.
   Set<String> _takenExcept(List<String?> slots, int slot) => {
     for (var i = 0; i < slots.length; i++)
       if (i != slot && slots[i] != null) slots[i]!,
-    for (final id in (identical(slots, _teamAIds) ? _teamBIds : _teamAIds)) ?id,
   };
 
   void _engage() {
@@ -125,8 +125,7 @@ class _SimulateScreenState extends State<SimulateScreen> {
               slots: _teamAIds,
               profileId: _profileAId,
               onRandomize: () => setState(
-                () => _randomizeTeam(_teamAIds, (id) => _profileAId = id,
-                    avoid: _teamBIds),
+                () => _randomizeTeam(_teamAIds, (id) => _profileAId = id),
               ),
               onProfileChanged: (id) => setState(() => _profileAId = id),
             ),
@@ -172,8 +171,7 @@ class _SimulateScreenState extends State<SimulateScreen> {
               slots: _teamBIds,
               profileId: _profileBId,
               onRandomize: () => setState(
-                () => _randomizeTeam(_teamBIds, (id) => _profileBId = id,
-                    avoid: _teamAIds),
+                () => _randomizeTeam(_teamBIds, (id) => _profileBId = id),
               ),
               onProfileChanged: (id) => setState(() => _profileBId = id),
             ),
@@ -319,7 +317,7 @@ class _SimulateScreenState extends State<SimulateScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      roster[entry.key].name,
+                      roster[CombatantIds.characterOf(entry.key)].name,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

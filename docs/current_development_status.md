@@ -190,7 +190,7 @@ document.
 | 11 | "Close" overloaded as a dialog button label. | Closed, not an issue | - |
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred | - |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued | 7 |
-| 14 | **Mirror matches: both squads free to pick any character.** Decided by the owner after the #2 playtest, which found that drafting the same character onto both squads silently corrupted the battle (see the section below). The stopgap forbids it; this item is the real support, so each side can field whoever they want and two Ilona Vances can fight each other. **What it takes:** a battle-scoped combatant id (`A:ilona_vance`, so the character id is still recoverable by stripping the side) replacing the character's own id as the key to everything in a battle. Audited off the live code: **33 maps and sets keyed by a character id** (`Battle.states`, `characterRegistry`, `teamTrionPools`, the TEG profile maps, both `equipped*` maps, the Loadout maps, the Death Ledger swaps, and the per-character id sets on `CharacterBattleState`), **123 reads of `.character.id`**, and 196 mentions of `characterId` across the engine and the app. Three that are not mechanical: **`_teamKeyFor` derives a team's identity by joining its sorted character ids**, so a true mirror (the same three characters both sides) hands both teams the same key and breaks the combo ledger's same-team filter, which means `Team` has to carry its own id; the **interface has to tell two identical characters apart** in the squad panels, the battle log, the target picker and the battlefield strip, which is a copy decision, not a rename; and the **draft screens then drop the cross-squad exclusion** while the engine's duplicate guard stays, re-keyed, since it still catches a genuine repeat within one squad. **Sequencing: wave 1, first (#Q4).** Every line written after it is then written against the battle-scoped id, and the stopgap is retired before the wave 2 playtests rather than after them. The accepted cost is that #6 rewrites the squad panels, portrait selection and the target picker, so the copy that tells two identical characters apart gets written twice. That is part of the interface half and none of the engine half. | Queued | 1 |
+| 14 | **Mirror matches: both squads free to pick any character.** Decided by the owner after the #2 playtest, which found that drafting the same character onto both squads silently corrupted the battle (see the section below). The stopgap forbids it; this item is the real support, so each side can field whoever they want and two Ilona Vances can fight each other. **What it takes:** a battle-scoped combatant id (`A:ilona_vance`, so the character id is still recoverable by stripping the side) replacing the character's own id as the key to everything in a battle. Audited off the live code: **33 maps and sets keyed by a character id** (`Battle.states`, `characterRegistry`, `teamTrionPools`, the TEG profile maps, both `equipped*` maps, the Loadout maps, the Death Ledger swaps, and the per-character id sets on `CharacterBattleState`), **123 reads of `.character.id`**, and 196 mentions of `characterId` across the engine and the app. Three that are not mechanical: **`_teamKeyFor` derives a team's identity by joining its sorted character ids**, so a true mirror (the same three characters both sides) hands both teams the same key and breaks the combo ledger's same-team filter, which means `Team` has to carry its own id; the **interface has to tell two identical characters apart** in the squad panels, the battle log, the target picker and the battlefield strip, which is a copy decision, not a rename; and the **draft screens then drop the cross-squad exclusion** while the engine's duplicate guard stays, re-keyed, since it still catches a genuine repeat within one squad. **Built, wave 1.** A combatant id is the squad's id and the character's joined (`player:ilona_vance`), held on `CharacterBattleState.combatantId` and defaulting to the character's own id so a battle that never needed the distinction is unchanged. The 123 reads of `.character.id` were a mechanical rename; the 42 `states[c.id]` lookups collapsed into one `Battle.statesOf(team)`, which is the thing every one of them actually wanted. `_teamKeyFor` needed nothing: scoped ids distinguish the two squads on their own. The draft screens no longer exclude the other squad, the interface names the squad only where a character is mirrored, and a ninth Tests tab scenario plays one. | Done | 1 |
 | 13b | **Every ability and status explains itself.** Raised by the owner in the #2 playtest, against Guardian's Aegis: it explains Guarded ("You take 25% less damage") and then says of Braced only "You are affected by Braced", which tells the player nothing. The cause is that `describeStatusEffect` renders some of `StatusEffectDefinition`'s fields and falls back to a placeholder for the rest, and Braced's whole effect lives in an unrendered one (`perRemainingTurnStatModifiers`, +1 Defense per remaining turn). Measured off the live catalogue: **16 of the 62 status effects hit that placeholder** (Wet, Sickened, Sapped, Reeling, Prepared, Braced, Focused, Hastened, Chilled, Origin Lockout, Interdict, Forced Critical Miss, Forced Choice, Karmic Bind, Called Shot, Mind's Eye). The standing rule is already written down in the working agreement: a status effect's description says what it does and how long it lasts in the player's own turns, never just its name. **Moved to wave 1 (#Q3).** It sat after #3 on the grounds that #3 was about to change those magnitudes, but `describeStatusEffect` renders from the definition at runtime, so a re-priced magnitude updates its own description for nothing. It is also the same audit as #3's rule: five of the sixteen set no declarative field at all, which is exactly what a field-derived price values at zero. Doing it in wave 1 makes every playtest from there on readable. | Queued | 1 |
 
 ### The running order
@@ -202,7 +202,7 @@ Waves are worked in order; everything inside a wave is one branch.
 | Wave | Items | Why it sits here |
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
-| **1** | **#14** &rarr; **5c** &rarr; the duration fix &rarr; **3b** mechanism &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
+| **1** | ~~#14~~ **done** &rarr; **5c** &rarr; the duration fix &rarr; **3b** mechanism &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
@@ -258,6 +258,66 @@ the scenario itself, so a claim about a distance calls
 scenario's arithmetic agrees with a live battle for **every pair of characters,
 every screen count and every position in every scenario**, and a fourth pins
 the specific numbers the playtest reported.
+
+### #14 as built: a combatant id, and what it did not cost
+
+The design was approved as "a battle-scoped combatant id replacing the
+character's own id as the key to everything in a battle", audited at 33 maps,
+123 reads of `.character.id` and 196 mentions of `characterId`. That is the
+blast radius, and it turned out to be much cheaper to cross than the count
+suggests, because almost none of it needed judgement.
+
+**The id.** `CombatantIds.of(teamId, characterId)` gives `player:ilona_vance`
+against `ai:ilona_vance`. The squad's own id is the prefix rather than a
+separate side enum, so the two can never disagree about which squad a
+combatant is on. `CharacterBattleState.combatantId` carries it and **defaults
+to the character's own id**, which is what kept this affordable: 130 test
+constructions and every tool harness went on working untouched, and a battle
+that never needed the distinction behaves exactly as it always did.
+
+**The 123 reads were mechanical.** Every one was `<a state>.character.id`, so
+all 123 became `<a state>.combatantId` by one substitution, in the engine, the
+app and both test trees. Not one needed a decision.
+
+**The 42 lookups collapsed rather than converted.** Every `states[c.id]` was
+some spelling of "give me this squad's states", written out longhand because
+each site had to know how the map was keyed. `Battle.statesOf(team)` answers it
+once, and `Battle.stateOf(team, characterId)` and `stateById(id)` cover the
+callers that hold an id instead. `stateById` **throws** when handed a character
+id both squads are fielding, rather than guessing: that is precisely the
+question a character id cannot answer, and answering it either way is the
+silent corruption this item exists to remove.
+
+**Two of the three "not mechanical" problems dissolved.** `_teamKeyFor` joins
+sorted ids, and scoped ids are already distinct per squad, so a true mirror no
+longer hands both teams the same key and `Team` needed no new id (it had one
+already). The draft screens' cross-squad exclusion was three call sites and a
+helper, all deleted; the within-squad rule stays, and `Battle` still refuses
+the same character twice on one squad.
+
+**The third was real work, and small.** The interface names the squad **only
+where a character is mirrored**: "Ilona Vance (yours)" against "Ilona Vance
+(theirs)", computed once per battle by `combatantDisplayNames` and threaded
+through the snapshots and the log. An ordinary battle reads exactly as before,
+which is the point: nobody should pay for a feature they are not using.
+
+**The boundary is where the care went.** A combatant id must never reach the
+roster, which is keyed by character. `roster[]` throws on an unknown id, so a
+leak is loud rather than silent, and it caught the one that got through
+(Simulate mode's results table). Five sites now strip the prefix with
+`CombatantIds.characterOf`, which is tolerant of a plain id and so is safe
+wherever it is called.
+
+**Verified.** 956 engine tests and 359 app tests pass, analyzers unchanged at
+their 3 and 6 pre-existing warnings. Fourteen new tests in
+`mirror_match_test.dart` play a **true** mirror, the same three characters on
+both sides: six states not three, separate health, separate teammates,
+separate statuses, separate positions, defeating one squad not the other, and
+a full battle running to a conclusion. Pacing was measured either side of the
+change and did not move: median 14 rounds, 80% in band, 14847 attack rolls at
+a 52% hit rate, identical to the run before it. Driven in a browser on the
+built web app through the new **Mirror match** scenario in the Tests tab, with
+both "(yours)" and "(theirs)" on screen and no console errors.
 
 ### The seven SPTV decisions, as approved
 

@@ -81,7 +81,7 @@ void main() {
 
     var succeeded = 0;
     QueueOutcome? overflow;
-    for (final trigger in session.equippedA[charId]!) {
+    for (final trigger in session.equippedFor(charId)) {
       final legal = session
           .legalActionsFor(charId)
           .where((a) => a.trigger.id == trigger.id);

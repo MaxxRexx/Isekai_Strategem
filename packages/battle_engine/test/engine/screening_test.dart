@@ -60,7 +60,7 @@ void main() {
           final state = battle.states[character.id]!;
           expect(state.teammates, hasLength(2),
               reason: '${character.id} must know its own squad');
-          expect(state.teammates.map((t) => t.character.id),
+          expect(state.teammates.map((t) => t.combatantId),
               isNot(contains(character.id)),
               reason: 'nobody is their own teammate, or they would screen '
                   'themselves');
@@ -229,7 +229,7 @@ void main() {
         v.position = BattlePosition.front;
       }
       final before = {
-        for (final v in victims) v.character.id: v.currentHealth,
+        for (final v in victims) v.combatantId: v.currentHealth,
       };
       battle.turnEngine.resolveAbilityUse(
         attacker: holder,
@@ -237,7 +237,7 @@ void main() {
         targets: victims,
       );
 
-      expect(victims.any((v) => v.currentHealth < before[v.character.id]!),
+      expect(victims.any((v) => v.currentHealth < before[v.combatantId]!),
           isTrue,
           reason: 'the trap is out of reach, so the blast goes through');
       expect(armed(battle, 'bastian_cole', ReactiveKind.nullifyAoe), isTrue,

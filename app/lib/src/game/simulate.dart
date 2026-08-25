@@ -42,11 +42,11 @@ SimulationResult runSimulation(SimulationConfig config) {
   // same rule the player-facing session uses (see `openingTurnChanceFor`).
   final teamAEfficiency = computeTeamEfficiency(
     characterIds: config.teamAIds,
-    loadouts: teamADraft.loadouts,
+    loadouts: teamADraft.loadoutsByCharacterId,
   );
   final teamBEfficiency = computeTeamEfficiency(
     characterIds: config.teamBIds,
-    loadouts: teamBDraft.loadouts,
+    loadouts: teamBDraft.loadoutsByCharacterId,
   );
 
   final battle = Battle(
@@ -119,12 +119,10 @@ SimulationResult runSimulation(SimulationConfig config) {
     roundsPlayed: battle.roundNumber,
     rounds: rounds,
     finalTeamA: [
-      for (final c in teamADraft.team.characters)
-        fighterSnapshot(battle.states[c.id]!),
+      for (final s in battle.statesOf(teamADraft.team)) fighterSnapshot(s),
     ],
     finalTeamB: [
-      for (final c in teamBDraft.team.characters)
-        fighterSnapshot(battle.states[c.id]!),
+      for (final s in battle.statesOf(teamBDraft.team)) fighterSnapshot(s),
     ],
     teamALoadouts: teamADraft.loadouts,
     teamBLoadouts: teamBDraft.loadouts,

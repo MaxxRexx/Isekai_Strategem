@@ -63,11 +63,10 @@ class ProfileDrivenAi {
     final config = profile.skillConfig;
     final results = <AiActionResult>[];
 
-    for (final character in battle.activeTeam.characters) {
-      final state = battle.states[character.id]!;
+    for (final state in battle.statesOf(battle.activeTeam)) {
       if (!state.isAlive) continue;
 
-      final triggers = equippedActiveTriggers[character.id] ?? const [];
+      final triggers = equippedActiveTriggers[state.combatantId] ?? const [];
       if (triggers.isEmpty) continue;
 
       // Decide the step before swinging, so a character who closes the gap
@@ -104,7 +103,7 @@ class ProfileDrivenAi {
         }
 
         final healthBefore = {
-          for (final t in targets) t.character.id: t.currentHealth
+          for (final t in targets) t.combatantId: t.currentHealth
         };
         final useResult = engine.resolveAbilityUse(
           attacker: state,
@@ -112,7 +111,7 @@ class ProfileDrivenAi {
           targets: targets,
         );
         results.add(AiActionResult(
-          characterId: character.id,
+          characterId: state.combatantId,
           triggerId: trigger.id,
           useResult: useResult,
         ));
@@ -157,8 +156,7 @@ class ProfileDrivenAi {
 
     final predictedHealth = <String, int>{
       for (final team in [battle.activeTeam, battle.inactiveTeam])
-        for (final c in team.characters)
-          c.id: battle.states[c.id]!.currentHealth,
+        for (final s in battle.statesOf(team)) s.combatantId: s.currentHealth,
     };
     var trionBudget = battle.activeTeamPool.current;
     final usesPerChar = <String, int>{};
@@ -168,11 +166,10 @@ class ProfileDrivenAi {
     // like the player can.
     final plannedPositions = <String, BattlePosition>{};
 
-    for (final character in battle.activeTeam.characters) {
-      final state = battle.states[character.id]!;
+    for (final state in battle.statesOf(battle.activeTeam)) {
       if (!state.isAlive) continue;
 
-      final triggers = equippedActiveTriggers[character.id] ?? const [];
+      final triggers = equippedActiveTriggers[state.combatantId] ?? const [];
       if (triggers.isEmpty) continue;
 
       final step = _planStep(
@@ -184,10 +181,10 @@ class ProfileDrivenAi {
             state.abilitiesUsedThisTurnCount,
       );
       if (step != null) {
-        plannedPositions[character.id] = step;
-        usesPerChar[character.id] = (usesPerChar[character.id] ?? 0) + 1;
+        plannedPositions[state.combatantId] = step;
+        usesPerChar[state.combatantId] = (usesPerChar[state.combatantId] ?? 0) + 1;
         plan.add(AiPlannedAction(
-          characterId: character.id,
+          characterId: state.combatantId,
           triggerId: repositionActionId,
           targetIds: const [],
           destination: step,
@@ -196,7 +193,7 @@ class ProfileDrivenAi {
 
       final unusableThisTurn = <String>{};
       while (true) {
-        if ((usesPerChar[character.id] ?? 0) >=
+        if ((usesPerChar[state.combatantId] ?? 0) >=
             engine.fatEngine.maxAbilitiesThisTurn(state)) {
           break;
         }
@@ -216,7 +213,7 @@ class ProfileDrivenAi {
           battle,
           config,
           predictedHealth: predictedHealth,
-          fromPosition: plannedPositions[character.id],
+          fromPosition: plannedPositions[state.combatantId],
         );
         if (targets.isEmpty) {
           unusableThisTurn.add(trigger.id);
@@ -225,17 +222,17 @@ class ProfileDrivenAi {
 
         final cost = (trigger.trionCost * state.trionCostMultiplier()).round();
         trionBudget -= cost;
-        usesPerChar[character.id] = (usesPerChar[character.id] ?? 0) + 1;
+        usesPerChar[state.combatantId] = (usesPerChar[state.combatantId] ?? 0) + 1;
         plan.add(AiPlannedAction(
-          characterId: character.id,
+          characterId: state.combatantId,
           triggerId: trigger.id,
-          targetIds: [for (final t in targets) t.character.id],
+          targetIds: [for (final t in targets) t.combatantId],
         ));
 
         // Update the overlay with predicted damage so later choices avoid
         // predicted-dead targets and the chaining check can see kills.
         for (final t in targets) {
-          final id = t.character.id;
+          final id = t.combatantId;
           final dmg = _predictedDamage(engine, state, t, trigger).round();
           predictedHealth[id] = (predictedHealth[id]! - dmg).clamp(0, 1 << 30);
         }
@@ -315,8 +312,9 @@ class ProfileDrivenAi {
     // whatever TriggerCategory the opponent team most recently acted
     // with - copying, not reading the board independently.
     if (profile.mirrorsOpponentLastCategory) {
-      final opponentCategories = battle.inactiveTeam.characters
-          .map((c) => battle.states[c.id]!.lastActiveTriggerCategory)
+      final opponentCategories = battle
+          .statesOf(battle.inactiveTeam)
+          .map((s) => s.lastActiveTriggerCategory)
           .whereType<TriggerCategory>()
           .toSet();
       final mirrored =
@@ -368,8 +366,8 @@ class ProfileDrivenAi {
         // at least two legal enemies predicted lethal from this hit -
         // otherwise focus fire like normal.
         final engine = battle.turnEngine;
-        final livingEnemies = battle.inactiveTeam.characters
-            .map((c) => battle.states[c.id]!)
+        final livingEnemies = battle
+            .statesOf(battle.inactiveTeam)
             .where((s) => s.isAlive)
             .toList();
         for (final candidate in byPower(aoe)) {
@@ -397,8 +395,8 @@ class ProfileDrivenAi {
         // of committing to one fixed strategy - AOE once it'd hit
         // multiple enemies, debuff setup on an undebuffed enemy, else
         // whatever hits hardest.
-        final aliveEnemyStates = battle.inactiveTeam.characters
-            .map((c) => battle.states[c.id]!)
+        final aliveEnemyStates = battle
+            .statesOf(battle.inactiveTeam)
             .where((s) => s.isAlive)
             .toList();
         if (aliveEnemyStates.length >= 2) {
@@ -433,7 +431,7 @@ class ProfileDrivenAi {
   ) {
     final pool = trigger.targetAffiliation == TargetAffiliation.self
         ? [attacker]
-        : battle.activeTeam.characters.map((c) => battle.states[c.id]!);
+        : battle.statesOf(battle.activeTeam);
 
     for (final candidate in pool) {
       if (!candidate.isAlive) continue;
@@ -473,12 +471,12 @@ class ProfileDrivenAi {
   int _healthOf(CharacterBattleState t, Map<String, int>? predicted) =>
       predicted == null
           ? t.currentHealth
-          : (predicted[t.character.id] ?? t.currentHealth);
+          : (predicted[t.combatantId] ?? t.currentHealth);
 
   bool _aliveOf(CharacterBattleState t, Map<String, int>? predicted) =>
       predicted == null
           ? t.isAlive
-          : (predicted[t.character.id] ?? t.currentHealth) > 0;
+          : (predicted[t.combatantId] ?? t.currentHealth) > 0;
 
   List<CharacterBattleState> _chooseTargets(
     TurnEngine engine,
@@ -494,8 +492,8 @@ class ProfileDrivenAi {
     }
 
     final pool = trigger.targetAffiliation == TargetAffiliation.opponent
-        ? battle.inactiveTeam.characters.map((c) => battle.states[c.id]!)
-        : battle.activeTeam.characters.map((c) => battle.states[c.id]!);
+        ? battle.statesOf(battle.inactiveTeam)
+        : battle.statesOf(battle.activeTeam);
 
     // The range band is part of legality, on ally-targeted abilities as much
     // as opponent-targeted ones. Without it the AI picks targets the engine
@@ -561,7 +559,7 @@ class ProfileDrivenAi {
     // always an opponent's id.
     if (profile.fixatesOnLastDamagedTarget && !isMistake) {
       final fixation =
-          legal.where((t) => t.character.id == attacker.lastDamagedTargetId);
+          legal.where((t) => t.combatantId == attacker.lastDamagedTargetId);
       if (fixation.isNotEmpty) {
         final target = fixation.first;
         legal.remove(target);
@@ -677,8 +675,7 @@ class ProfileDrivenAi {
   double _teamHealthFraction(Battle battle, Team team) {
     var current = 0;
     var max = 0;
-    for (final c in team.characters) {
-      final s = battle.states[c.id]!;
+    for (final s in battle.statesOf(team)) {
       current += s.currentHealth;
       max += s.effectiveStats().maxHealth;
     }
@@ -699,7 +696,7 @@ class ProfileDrivenAi {
         return false;
       case AiFatPolicy.killOrTempoOnly:
         final securedKill =
-            targets.any((t) => (predicted[t.character.id] ?? 1) <= 0);
+            targets.any((t) => (predicted[t.combatantId] ?? 1) <= 0);
         if (securedKill) return true;
         return _predictedTeamHealthFraction(
                 battle, battle.activeTeam, predicted) >
@@ -715,9 +712,8 @@ class ProfileDrivenAi {
   ) {
     var current = 0;
     var max = 0;
-    for (final c in team.characters) {
-      final s = battle.states[c.id]!;
-      current += predicted[c.id] ?? s.currentHealth;
+    for (final s in battle.statesOf(team)) {
+      current += predicted[s.combatantId] ?? s.currentHealth;
       max += s.effectiveStats().maxHealth;
     }
     return max == 0 ? 0 : current / max;

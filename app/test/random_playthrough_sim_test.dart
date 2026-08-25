@@ -45,7 +45,7 @@ void main() {
           teamId: 'p',
           characterIds: playerIds,
           profile: profileById(pProfile),
-        ).loadouts;
+        ).loadoutsByCharacterId;
 
         final s = PlaySession.start(
           playerCharacterIds: playerIds,
@@ -65,7 +65,7 @@ void main() {
             break;
           }
           for (final c in playerIds) {
-            final st = s.battle.states[c]!;
+            final st = s.battle.stateById(c);
             if (!st.isAlive) continue;
             final legal = s
                 .legalActionsFor(c)
@@ -130,7 +130,7 @@ void main() {
 void _checkInvariants(PlaySession s, String where, List<String> out) {
   for (final team in [s.battle.teamA, s.battle.teamB]) {
     for (final c in team.characters) {
-      final st = s.battle.states[c.id]!;
+      final st = s.battle.stateById(c.id);
       final maxHp = st.character.baseStats.maxHealth;
       if (st.currentHealth < 0) {
         out.add('$where: ${c.id} HP ${st.currentHealth} < 0');

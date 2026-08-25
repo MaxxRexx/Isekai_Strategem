@@ -189,15 +189,24 @@ class TestScenario {
   /// Sets the board up on the built battle, immediately before the opening
   /// turn. Public so a test can arrange a battle without going through the
   /// interface.
+  /// A scenario names characters by their roster id, which is what its briefs
+  /// and its author read. The battle keys by combatant id, so this is the one
+  /// place that translates.
+  CharacterBattleState _state(Battle battle, String characterId) =>
+      battle.stateOf(
+        _isPlayer(characterId) ? battle.teamA : battle.teamB,
+        characterId,
+      );
+
   void arrange(Battle battle) {
     battle.teamA.trionPool.gain(startingTrion);
     battle.teamB.trionPool.gain(startingTrion);
 
     positions.forEach((id, position) {
-      battle.states[id]!.position = position;
+      _state(battle, id).position = position;
     });
     health.forEach((id, value) {
-      battle.states[id]!.currentHealth = value;
+      _state(battle, id).currentHealth = value;
     });
 
     // A body already on the board. Set directly rather than by dealing
@@ -206,13 +215,13 @@ class TestScenario {
     // effects for it to clear, and the window's own arming happens at the
     // turn boundary either way.
     for (final id in bailingOut) {
-      final state = battle.states[id]!;
+      final state = _state(battle, id);
       state.currentHealth = 0;
       state.bailOutState = BailOutState.bailingOut;
     }
 
     for (final id in destroyed) {
-      final state = battle.states[id]!;
+      final state = _state(battle, id);
       state.currentHealth = 0;
       state.bailOutState = BailOutState.destroyed;
     }
@@ -584,6 +593,44 @@ final List<TestScenario> testScenarios = [
       'nadia_kessler': _middle,
     },
     health: {'rurik_voss': 1},
+  ),
+
+  TestScenario(
+    id: 'mirror_match',
+    name: 'Mirror match',
+    item: '#14',
+    goal:
+        'Both squads field the same three characters. Until item #14 the draft '
+        'screens forbade this, because the two of them shared one battle '
+        'state.',
+    steps: (s) => [
+      'Look at both squad panels. Every character appears twice, once on each '
+          'side.',
+      'Attack the enemy Ilona Vance with your own Ilona Vance.',
+      'Read the log line, then check your own Ilona\'s health.',
+    ],
+    expect: (s) => [
+      'Your Ilona reads "Ilona Vance (yours)" and theirs reads "Ilona Vance '
+          '(theirs)". Only a mirrored character is named this way; in an '
+          'ordinary battle the names are plain.',
+      'The log names both of them unambiguously, so "Ilona Vance hits Ilona '
+          'Vance" never appears.',
+      'Damage lands on theirs only. Your own Ilona is untouched, which is the '
+          'whole bug this item fixes.',
+      'A status, a move or a Bail Out on one of them does nothing to the '
+          'other.',
+      'The battle plays and concludes normally.',
+    ],
+    caveat:
+        'The attack still has to land. Both Ilonas have Defense 11, so expect '
+        'to miss more often than in the other scenarios.',
+    playerIds: const ['ilona_vance', 'marren_osei', 'bastian_cole'],
+    enemyIds: const ['ilona_vance', 'marren_osei', 'bastian_cole'],
+    kits: {
+      for (final id in const ['ilona_vance', 'marren_osei', 'bastian_cole'])
+        id: _brawler,
+    },
+    positions: const {},
   ),
 
   TestScenario(

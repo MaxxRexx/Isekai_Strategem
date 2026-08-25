@@ -45,14 +45,14 @@ void main() {
   test('resolving a queued ability advances Draegor Enmity in-game', () {
     final s = session();
     const id = 'marren_osei';
-    s.battle.states[id]!.passiveCounters[PassiveCounterKind.draegor] =
+    s.battle.stateById(id).passiveCounters[PassiveCounterKind.draegor] =
         PassiveCounterState(PassiveCounterKind.draegor);
 
     s.queue(id, 'twin_fang_strike', [oppTarget(s, id, 'twin_fang_strike')]);
     s.resolveQueue();
 
     expect(
-      s.battle.states[id]!.passiveCounters[PassiveCounterKind.draegor]!.counter,
+      s.battle.stateById(id).passiveCounters[PassiveCounterKind.draegor]!.counter,
       1,
       reason: 'notifyAbilityResolved now fires from the resolution loop',
     );
@@ -65,13 +65,13 @@ void main() {
     final ironvow = PassiveCounterState(PassiveCounterKind.ironvow);
     ironvow.sanctionedType =
         (triggerCatalog['twin_fang_strike'] as ActiveTrigger).attackType;
-    s.battle.states[id]!.passiveCounters[PassiveCounterKind.ironvow] = ironvow;
+    s.battle.stateById(id).passiveCounters[PassiveCounterKind.ironvow] = ironvow;
 
     s.queue(id, 'twin_fang_strike', [oppTarget(s, id, 'twin_fang_strike')]);
     s.resolveQueue();
 
     expect(
-      s.battle.states[id]!
+      s.battle.stateById(id)
           .passiveCounters[PassiveCounterKind.ironvow]!.chargesUsed,
       1,
       reason: 'checkSanctionedStrike now fires from the resolution loop',

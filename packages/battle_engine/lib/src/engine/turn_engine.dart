@@ -185,23 +185,23 @@ class TurnEngine {
   int _btUseOrder = 0;
 
   TegRollProfile _tegFor(CharacterBattleState c) {
-    if ((_tegBoostRemaining[c.character.id] ?? 0) > 0) {
-      final boosted = tegBoostedProfiles[c.character.id];
+    if ((_tegBoostRemaining[c.combatantId] ?? 0) > 0) {
+      final boosted = tegBoostedProfiles[c.combatantId];
       if (boosted != null) return boosted;
     }
-    return tegProfiles[c.character.id] ?? TegRollProfile.none;
+    return tegProfiles[c.combatantId] ?? TegRollProfile.none;
   }
 
   /// Whether [holder]'s team is eligible for Draegor's 2-tier TEG boost (the
   /// app injected boosted profiles only for teams at tier <= S).
   bool _canTegBoost(CharacterBattleState holder) =>
       [holder, ...holder.teammates]
-          .any((a) => tegBoostedProfiles.containsKey(a.character.id));
+          .any((a) => tegBoostedProfiles.containsKey(a.combatantId));
 
   /// Activates Draegor's 2-tier TEG boost on [holder]'s living team for [turns].
   void _activateTegBoost(CharacterBattleState holder, int turns) {
     for (final a in [holder, ...holder.teammates]) {
-      if (a.isAlive) _tegBoostRemaining[a.character.id] = turns;
+      if (a.isAlive) _tegBoostRemaining[a.combatantId] = turns;
     }
   }
 
@@ -227,8 +227,8 @@ class TurnEngine {
   /// the engine needing an explicit team id.
   String _teamKeyFor(CharacterBattleState c) {
     final ids = <String>[
-      c.character.id,
-      for (final t in c.teammates) t.character.id,
+      c.combatantId,
+      for (final t in c.teammates) t.combatantId,
     ]..sort();
     return ids.join('|');
   }
@@ -242,14 +242,14 @@ class TurnEngine {
     CharacterBattleState target,
   ) =>
       ComboLedgerEntry(
-        actorId: attacker.character.id,
+        actorId: attacker.combatantId,
         teamId: _teamKeyFor(attacker),
         triggerId: trigger.id,
         originTag: trigger.originTag,
         attackType: trigger.attackType,
         attackSubtype: trigger.attackSubtype,
         targetAffiliation: trigger.targetAffiliation,
-        targetIds: [target.character.id],
+        targetIds: [target.combatantId],
         statusesApplied: const [],
         dealtDamage: false,
         sequence: 1 << 30, // above any recorded entry; excluded from priors
@@ -344,9 +344,13 @@ class TurnEngine {
   /// single turn only, mirroring Naruto-Arena's "first player only draws
   /// 1 random Chakra instead of 3" offset for the tempo advantage of
   /// acting first.
+  /// [teamStates] is [team]'s own states, which is all this needs: the map
+  /// it used to take was only ever indexed to find them, and doing that here
+  /// meant this had to know how the battle was keyed. `Battle.statesOf` is
+  /// the one place that answers that now.
   TrionGainResult resolveTeamTrionGain(
     Team team,
-    Map<String, CharacterBattleState> states, {
+    List<CharacterBattleState> teamStates, {
     double modifier = 0,
     bool forceLowestTier = false,
   }) {
@@ -369,8 +373,7 @@ class TurnEngine {
       return result;
     }
 
-    final living =
-        team.characters.map((c) => states[c.id]!).where((s) => s.isAlive);
+    final living = teamStates.where((s) => s.isAlive);
 
     final sum = living.fold<int>(
         0,
@@ -599,7 +602,7 @@ class TurnEngine {
   ) {
     body.bailOutState = BailOutState.destroyed;
     if (destroyer == null) return;
-    teamTrionPools[destroyer.character.id]
+    teamTrionPools[destroyer.combatantId]
         ?.gain(bailOutConfig.attackerGainFor(body.character.baseStats.trionCapacity));
   }
 
@@ -1006,7 +1009,7 @@ class TurnEngine {
     for (final instance in attacker.statusEffects) {
       final def = cat[instance.definitionId];
       if (def.cannotTargetSource &&
-          instance.sourceCharacterId == target.character.id) {
+          instance.sourceCharacterId == target.combatantId) {
         return false;
       }
     }
@@ -1014,7 +1017,7 @@ class TurnEngine {
     if (attacker.duelTargetId != null) {
       final isOpponent =
           !identical(attacker, target) && !attacker.teammates.contains(target);
-      if (isOpponent && target.character.id != attacker.duelTargetId) {
+      if (isOpponent && target.combatantId != attacker.duelTargetId) {
         return false;
       }
     }
@@ -1036,7 +1039,7 @@ class TurnEngine {
     for (final instance in target.statusEffects) {
       final def = cat[instance.definitionId];
       if (def.sourceHasAdvantageAgainstTarget &&
-          instance.sourceCharacterId == attacker.character.id) {
+          instance.sourceCharacterId == attacker.combatantId) {
         context.addAdvantage('status:${def.id}:source-advantage');
       }
     }
@@ -1206,7 +1209,7 @@ class TurnEngine {
     CharacterBattleState target,
     Map<String, bool> burstFirstHitLanded,
   ) {
-    final key = target.character.id;
+    final key = target.combatantId;
     if (burstFirstHitLanded.containsKey(key)) return true;
     final mitigationIndex = target.reactiveEffects
         .indexWhere((r) => r.kind == ReactiveKind.burstMitigation);
@@ -1412,7 +1415,7 @@ class TurnEngine {
     // ability entirely before it resolves.
     if (_checkAttackerReactives(attacker, trigger)) {
       return AbilityUseResult(
-        attackerCharacterId: attacker.character.id,
+        attackerCharacterId: attacker.combatantId,
         triggerId: trigger.id,
         targetResults: const [],
       );
@@ -1424,7 +1427,7 @@ class TurnEngine {
     if (trigger.targetAffiliation == TargetAffiliation.opponent &&
         attacker.isNextAttackForced()) {
       _consumeEchoingDoubt(attacker);
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
 
     final maxTargets = maxRangedTargets(attacker, trigger);
@@ -1601,7 +1604,7 @@ class TurnEngine {
         List<String> appliedIds,
       ) {
         hitsByTargetId
-            .putIfAbsent(target.character.id, () => [])
+            .putIfAbsent(target.combatantId, () => [])
             .add(_SingleHitResult(outcome, damage, damageDetail, appliedIds));
       }
 
@@ -1682,9 +1685,9 @@ class TurnEngine {
         damageDealt = healthBefore - target.currentHealth;
         if (damageDealt > 0) {
           attacker.cumulativeDamageDealt += damageDealt;
-          attacker.lastDamagedTargetId = target.character.id;
+          attacker.lastDamagedTargetId = target.combatantId;
           if (trigger.attackType == AttackType.melee) {
-            attacker.meleeHitEnemyIds.add(target.character.id);
+            attacker.meleeHitEnemyIds.add(target.combatantId);
           }
         }
       }
@@ -1762,7 +1765,7 @@ class TurnEngine {
               attacker.character.perk?.bonusDurationVsAlreadyAffectedTarget;
           if (resolveBonus != null &&
               target.statusEffects
-                  .any((i) => i.sourceCharacterId == attacker.character.id)) {
+                  .any((i) => i.sourceCharacterId == attacker.combatantId)) {
             final base = durationOverride ??
                 statusEffectEngine
                     .catalog[application.statusEffectId].defaultDurationTurns;
@@ -1772,7 +1775,7 @@ class TurnEngine {
           final applied = statusEffectEngine.apply(
             target,
             application.statusEffectId,
-            sourceCharacterId: attacker.character.id,
+            sourceCharacterId: attacker.combatantId,
             durationOverride: durationOverride,
             instanceData: statusEffectData,
           );
@@ -1822,10 +1825,10 @@ class TurnEngine {
 
     final targetResults = <TargetHitResult>[];
     for (final target in clampedTargets) {
-      final hits = hitsByTargetId[target.character.id];
+      final hits = hitsByTargetId[target.combatantId];
       if (hits == null || hits.isEmpty) continue;
       targetResults.add(TargetHitResult(
-        targetCharacterId: target.character.id,
+        targetCharacterId: target.combatantId,
         attackRolls: hits.map((h) => h.outcome).toList(),
         damagePerHit: hits.map((h) => h.damage).toList(),
         damageDetails: hits.map((h) => h.damageDetail).toList(),
@@ -1841,7 +1844,7 @@ class TurnEngine {
       final saboIdx = target.reactiveEffects
           .indexWhere((r) => r.kind == ReactiveKind.cooldownSabotage);
       if (saboIdx >= 0 && trigger.rangeTag.isAtRange) {
-        final hits = hitsByTargetId[target.character.id];
+        final hits = hitsByTargetId[target.combatantId];
         final anyHit = hits != null && hits.any((h) => h.outcome.isHit);
         if (anyHit) {
           target.reactiveEffects.removeAt(saboIdx);
@@ -1887,7 +1890,7 @@ class TurnEngine {
     // Combat-v2 Phase I/J: record this resolved action so a later same-team
     // payoff can recognize a setup->payoff / focus-fire combo (Effects 3/4).
     comboLedger.record(
-      actorId: attacker.character.id,
+      actorId: attacker.combatantId,
       teamId: _teamKeyFor(attacker),
       trigger: trigger,
       targetIds: [for (final r in targetResults) r.targetCharacterId],
@@ -1898,7 +1901,7 @@ class TurnEngine {
     );
 
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: targetResults,
       trionRefund: trionRefund,
@@ -1944,7 +1947,7 @@ class TurnEngine {
     // alongside magnitude and target count.
     holder.reactiveEffects.add(ReactiveEffect(
       kind: kind,
-      sourceCharacterId: caster.character.id,
+      sourceCharacterId: caster.combatantId,
       data: {
         ...?reactiveData,
         _trapBandKey: trigger.rangeTag.name,
@@ -2101,11 +2104,11 @@ class TurnEngine {
         if (reckoning != null && !reckoning.lockedOut) {
           if (anyCrit) {
             _reckoningIncrementDebt(
-                reckoning, attacker.character.id, cfg);
+                reckoning, attacker.combatantId, cfg);
           }
           if (trigger.cooldownTurns >= 2) {
             _reckoningIncrementDebt(
-                reckoning, attacker.character.id, cfg);
+                reckoning, attacker.combatantId, cfg);
           }
         }
 
@@ -2121,7 +2124,7 @@ class TurnEngine {
             defender.getPassiveCounter(PassiveCounterKind.coldread);
         if (coldread != null &&
             coldread.pendingResolution &&
-            coldread.markedEnemyId == attacker.character.id &&
+            coldread.markedEnemyId == attacker.combatantId &&
             anyDamage) {
           coldread.markedEnemyActedDamaging = true;
         }
@@ -2170,7 +2173,7 @@ class TurnEngine {
         if (livingEnemies.isNotEmpty) {
           final target = livingEnemies[
               combatEngine.diceRoller.random.nextInt(livingEnemies.length)];
-          coldread.markedEnemyId = target.character.id;
+          coldread.markedEnemyId = target.combatantId;
           coldread.pendingResolution = true;
           coldread.markedEnemyActedDamaging = false;
         }
@@ -2396,7 +2399,7 @@ class TurnEngine {
 
     if (topEnemyId != null) {
       final topEnemy = enemyTeamStates
-          .where((s) => s.character.id == topEnemyId)
+          .where((s) => s.combatantId == topEnemyId)
           .firstOrNull;
       if (topEnemy != null) {
         // Extend all current cooldowns +1.
@@ -2484,7 +2487,7 @@ class TurnEngine {
       }
       if (topSourceId != null) {
         final target = enemyTeamStates
-            .where((s) => s.character.id == topSourceId && s.isAlive)
+            .where((s) => s.combatantId == topSourceId && s.isAlive)
             .firstOrNull;
         if (target != null) {
           for (final debuff in debuffsToReflect) {
@@ -2492,7 +2495,7 @@ class TurnEngine {
               statusEffectEngine.apply(
                 target,
                 debuff.definitionId,
-                sourceCharacterId: holder.character.id,
+                sourceCharacterId: holder.combatantId,
                 durationOverride: debuff.remainingTurns,
               );
             }
@@ -2527,7 +2530,7 @@ class TurnEngine {
     statusEffectEngine.apply(
       target,
       'cursed',
-      sourceCharacterId: holder.character.id,
+      sourceCharacterId: holder.combatantId,
       durationOverride: cfg.gravehourHealPreventionDurationTurns,
     );
 
@@ -2600,7 +2603,7 @@ class TurnEngine {
     statusEffectEngine.apply(
       target,
       'interdict',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
     );
 
     // Cost: allies Vulnerable (Exposed) until next turn.
@@ -2610,7 +2613,7 @@ class TurnEngine {
         ally,
         'exposed',
         durationOverride: 1,
-        sourceCharacterId: attacker.character.id,
+        sourceCharacterId: attacker.combatantId,
       );
     }
 
@@ -2681,10 +2684,10 @@ class TurnEngine {
     // Auto-target: pick a random living enemy the caster has melee-hit.
     final eligibleTargets = targets
         .where((t) =>
-            t.isAlive && attacker.meleeHitEnemyIds.contains(t.character.id))
+            t.isAlive && attacker.meleeHitEnemyIds.contains(t.combatantId))
         .toList();
     if (eligibleTargets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final enemy = eligibleTargets[
         combatEngine.diceRoller.random.nextInt(eligibleTargets.length)];
@@ -2714,15 +2717,15 @@ class TurnEngine {
     final enemyDamageDealt = healthBefore - enemy.currentHealth;
     if (enemyDamageDealt > 0) {
       attacker.cumulativeDamageDealt += enemyDamageDealt;
-      attacker.lastDamagedTargetId = enemy.character.id;
+      attacker.lastDamagedTargetId = enemy.combatantId;
     }
 
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: [
         TargetHitResult(
-          targetCharacterId: enemy.character.id,
+          targetCharacterId: enemy.combatantId,
           attackRolls: const [],
           damagePerHit: [enemyDamageDealt],
           damageDetails: const [null],
@@ -2739,7 +2742,7 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
 
@@ -2758,15 +2761,15 @@ class TurnEngine {
 
     if (damageDealt > 0) {
       attacker.cumulativeDamageDealt += damageDealt;
-      attacker.lastDamagedTargetId = target.character.id;
+      attacker.lastDamagedTargetId = target.combatantId;
     }
 
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: [
         TargetHitResult(
-          targetCharacterId: target.character.id,
+          targetCharacterId: target.combatantId,
           attackRolls: const [],
           damagePerHit: [damageDealt],
           damageDetails: const [null],
@@ -2785,7 +2788,7 @@ class TurnEngine {
     // Only usable below the HP threshold.
     final maxHp = attacker.effectiveStats(fatConfig: fatConfig).maxHealth;
     if (attacker.currentHealth > maxHp * uniqueConfig.martyrsEndHpThreshold) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
 
     // The caster is removed from battle. Uniformly with every other way to
@@ -2808,7 +2811,7 @@ class TurnEngine {
       );
       final damageDealt = healthBefore - enemy.currentHealth;
       targetResults.add(TargetHitResult(
-        targetCharacterId: enemy.character.id,
+        targetCharacterId: enemy.combatantId,
         attackRolls: const [],
         damagePerHit: [damageDealt],
         damageDetails: const [null],
@@ -2818,7 +2821,7 @@ class TurnEngine {
     }
 
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: targetResults,
     );
@@ -2830,26 +2833,26 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
 
     // Bind to the target: 2x outgoing damage + healing prevention come
     // from the vow_of_the_duel status effect; targeting restriction is
     // enforced by canTarget via duelTargetId.
-    attacker.duelTargetId = target.character.id;
+    attacker.duelTargetId = target.combatantId;
     statusEffectEngine.apply(
       attacker,
       'vow_of_the_duel',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
     );
 
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: [
         TargetHitResult(
-          targetCharacterId: target.character.id,
+          targetCharacterId: target.combatantId,
           attackRolls: const [],
           damagePerHit: const [0],
           damageDetails: const [null],
@@ -2874,7 +2877,7 @@ class TurnEngine {
 
     // The vow has expired. Check if the duel target is still alive.
     final duelTarget = enemyStates
-        .where((s) => s.character.id == caster.duelTargetId)
+        .where((s) => s.combatantId == caster.duelTargetId)
         .firstOrNull;
     if (duelTarget != null && duelTarget.isAlive) {
       _applyStun(caster, StatusEffectMagnitudes.defaults.vowOfTheDuelStunDurationTurns);
@@ -2889,7 +2892,7 @@ class TurnEngine {
     Map<String, Object?>? uniqueData,
   ]) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
 
@@ -2940,8 +2943,8 @@ class TurnEngine {
         damageDealt = healthBefore - target.currentHealth;
         if (damageDealt > 0) {
           attacker.cumulativeDamageDealt += damageDealt;
-          attacker.lastDamagedTargetId = target.character.id;
-          attacker.meleeHitEnemyIds.add(target.character.id);
+          attacker.lastDamagedTargetId = target.combatantId;
+          attacker.meleeHitEnemyIds.add(target.combatantId);
         }
       }
 
@@ -2974,11 +2977,11 @@ class TurnEngine {
     }
 
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: [
         TargetHitResult(
-          targetCharacterId: target.character.id,
+          targetCharacterId: target.combatantId,
           attackRolls: [outcome],
           damagePerHit: [damageDealt],
           damageDetails: const [null],
@@ -2995,7 +2998,7 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
 
@@ -3026,7 +3029,7 @@ class TurnEngine {
       damageDealt = healthBefore - target.currentHealth;
       if (damageDealt > 0) {
         attacker.cumulativeDamageDealt += damageDealt;
-        attacker.lastDamagedTargetId = target.character.id;
+        attacker.lastDamagedTargetId = target.combatantId;
       }
     }
 
@@ -3056,7 +3059,7 @@ class TurnEngine {
         final applied = statusEffectEngine.apply(
           target,
           application.statusEffectId,
-          sourceCharacterId: attacker.character.id,
+          sourceCharacterId: attacker.combatantId,
           durationOverride: application.durationTurnsOverride,
         );
         if (applied) appliedIds.add(application.statusEffectId);
@@ -3064,11 +3067,11 @@ class TurnEngine {
     }
 
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: [
         TargetHitResult(
-          targetCharacterId: target.character.id,
+          targetCharacterId: target.combatantId,
           attackRolls: const [],
           damagePerHit: [damageDealt],
           damageDetails: const [null],
@@ -3086,7 +3089,7 @@ class TurnEngine {
     Map<String, Object?>? uniqueData,
   ]) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
 
@@ -3101,16 +3104,16 @@ class TurnEngine {
     statusEffectEngine.apply(
       target,
       'called_shot_stat_zero',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
       instanceData: {'zeroedStat': zeroedStat},
     );
 
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: [
         TargetHitResult(
-          targetCharacterId: target.character.id,
+          targetCharacterId: target.combatantId,
           attackRolls: const [],
           damagePerHit: const [0],
           damageDetails: const [null],
@@ -3130,11 +3133,11 @@ class TurnEngine {
     List<String> appliedStatusIds,
   ) {
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: [
         TargetHitResult(
-          targetCharacterId: target.character.id,
+          targetCharacterId: target.combatantId,
           attackRolls: const [],
           damagePerHit: const [0],
           damageDetails: const [null],
@@ -3151,18 +3154,18 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
     // Cannot be used on the caster.
-    if (target.character.id == attacker.character.id) {
-      return _emptyResult(attacker.character.id, trigger.id);
+    if (target.combatantId == attacker.combatantId) {
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
-    attacker.revealedEnemyIds.add(target.character.id);
+    attacker.revealedEnemyIds.add(target.combatantId);
     statusEffectEngine.apply(
       target,
       'minds_eye_reveal',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
     );
     return _singleStatusResult(
         attacker, trigger, target, const ['minds_eye_reveal']);
@@ -3175,7 +3178,7 @@ class TurnEngine {
     Map<String, Object?>? uniqueData,
   ]) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
     final mode = uniqueData?['forcedChoiceMode'] as String? ?? 'cheapest';
@@ -3195,7 +3198,7 @@ class TurnEngine {
     statusEffectEngine.apply(
       target,
       'forced_choice',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
       instanceData: data,
     );
     return _singleStatusResult(
@@ -3208,7 +3211,7 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
     // Copy the target's last-used ability; the caller offers it to the
@@ -3226,7 +3229,7 @@ class TurnEngine {
     // Needs two characters: move one active status from the first to the
     // second (enemy to enemy, or self to enemy).
     if (targets.length < 2) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final source = targets[0];
     final dest = targets[1];
@@ -3236,7 +3239,7 @@ class TurnEngine {
             .indexWhere((i) => i.definitionId == statusId)
         : (source.statusEffects.isNotEmpty ? 0 : -1);
     if (idx < 0) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     // Move the live instance so remaining turns / source are preserved.
     final moved = source.statusEffects.removeAt(idx);
@@ -3251,7 +3254,7 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
     // Damage scales with the total damage the target has dealt this battle.
@@ -3272,14 +3275,14 @@ class TurnEngine {
     final dealt = healthBefore - target.currentHealth;
     if (dealt > 0) {
       attacker.cumulativeDamageDealt += dealt;
-      attacker.lastDamagedTargetId = target.character.id;
+      attacker.lastDamagedTargetId = target.combatantId;
     }
     return AbilityUseResult(
-      attackerCharacterId: attacker.character.id,
+      attackerCharacterId: attacker.combatantId,
       triggerId: trigger.id,
       targetResults: [
         TargetHitResult(
-          targetCharacterId: target.character.id,
+          targetCharacterId: target.combatantId,
           attackRolls: const [],
           damagePerHit: [dealt],
           damageDetails: const [null],
@@ -3296,13 +3299,13 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
     statusEffectEngine.apply(
       target,
       'isolation',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
     );
     return _singleStatusResult(attacker, trigger, target, const ['isolation']);
   }
@@ -3313,11 +3316,11 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     // Needs an available charge (starts at 1, +1 per ally defeated).
     if (attacker.illusoryDoubleCharges <= 0) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     attacker.illusoryDoubleCharges -= 1;
     // Target self or an ally: make them untargetable for the opponent's
@@ -3326,7 +3329,7 @@ class TurnEngine {
     statusEffectEngine.apply(
       target,
       'untargetable',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
     );
     return _singleStatusResult(
         attacker, trigger, target, const ['untargetable']);
@@ -3338,7 +3341,7 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
     // Force the target's next attack to whiff; the backlash + Silence fire
@@ -3346,7 +3349,7 @@ class TurnEngine {
     statusEffectEngine.apply(
       target,
       'echoing_doubt',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
     );
     return _singleStatusResult(
         attacker, trigger, target, const ['echoing_doubt']);
@@ -3366,7 +3369,7 @@ class TurnEngine {
     statusEffectEngine.apply(
       attacker,
       'silenced',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
     );
   }
 
@@ -3376,7 +3379,7 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
     // Both link fractions scale with the caster's Team Spirit: about 25% at
@@ -3388,7 +3391,7 @@ class TurnEngine {
             (uniqueConfig.karmicBindHighTsFraction -
                 uniqueConfig.karmicBindLowTsFraction);
 
-    attacker.karmicBindTargetId = target.character.id;
+    attacker.karmicBindTargetId = target.combatantId;
     // The live damage/heal propagation across the 3-turn link needs a
     // battle-wide character registry (TurnEngine has no cross-team lookup);
     // it is a Battle-layer hook, so here we record the link and fraction on
@@ -3397,19 +3400,19 @@ class TurnEngine {
     statusEffectEngine.apply(
       target,
       'karmic_bind',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
       instanceData: {
         'karmicBindFraction': fraction,
-        'partnerId': attacker.character.id,
+        'partnerId': attacker.combatantId,
       },
     );
     statusEffectEngine.apply(
       attacker,
       'karmic_bind',
-      sourceCharacterId: attacker.character.id,
+      sourceCharacterId: attacker.combatantId,
       instanceData: {
         'karmicBindFraction': fraction,
-        'partnerId': target.character.id,
+        'partnerId': target.combatantId,
       },
     );
     return _singleStatusResult(
@@ -3436,7 +3439,7 @@ class TurnEngine {
     List<CharacterBattleState> targets,
   ) {
     if (targets.isEmpty) {
-      return _emptyResult(attacker.character.id, trigger.id);
+      return _emptyResult(attacker.combatantId, trigger.id);
     }
     final target = targets.first;
 
@@ -3456,7 +3459,7 @@ class TurnEngine {
       final applied = statusEffectEngine.apply(
         target,
         debuffId,
-        sourceCharacterId: attacker.character.id,
+        sourceCharacterId: attacker.combatantId,
         durationOverride: turns,
       );
       if (applied) inverted.add(debuffId);

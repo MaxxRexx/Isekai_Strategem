@@ -42,14 +42,14 @@ void main() {
     );
     s.battle.teamA.trionPool.gain(500);
     for (final c in [...s.battle.teamA.characters, ...s.battle.teamB.characters]) {
-      s.battle.states[c.id]!.position = BattlePosition.front;
+      s.battle.stateById(c.id).position = BattlePosition.front;
     }
     return s;
   }
 
   /// Puts one of their squad into the Bail Out window and returns it.
   CharacterBattleState body(PlaySession s, String id) {
-    final state = s.battle.states[id]!;
+    final state = s.battle.stateById(id);
     state.currentHealth = 0;
     s.battle.turnEngine.noteHealthChanged(state);
     expect(state.bailOutState, BailOutState.bailingOut);
@@ -64,11 +64,11 @@ void main() {
 
       final attack =
           actions.firstWhere((a) => a.trigger.id == 'twin_fang_strike');
-      expect(attack.legalTargetIds, contains(corpse.character.id),
+      expect(attack.legalTargetIds, contains(corpse.combatantId),
           reason: 'clearing a body is a real choice, so it has to be offered');
 
       final control = actions.firstWhere((a) => a.trigger.id == 'charm_whisper');
-      expect(control.legalTargetIds, isNot(contains(corpse.character.id)),
+      expect(control.legalTargetIds, isNot(contains(corpse.combatantId)),
           reason: 'there is nothing left to charm');
 
       // Ally-targeted abilities never see the other squad at all, so the
@@ -77,7 +77,7 @@ void main() {
       final ward = s
           .legalActionsFor('marren_osei')
           .firstWhere((a) => a.trigger.id == 'cleansing_ward');
-      expect(ward.legalTargetIds, isNot(contains(ownBody.character.id)),
+      expect(ward.legalTargetIds, isNot(contains(ownBody.combatantId)),
           reason: 'Bail Out is not a revive, and the interface should never '
               'suggest otherwise');
     });
@@ -88,7 +88,7 @@ void main() {
       final poolBefore = s.battle.teamA.trionPool.current;
 
       expect(
-        s.queue('marren_osei', 'twin_fang_strike', [corpse.character.id])
+        s.queue('marren_osei', 'twin_fang_strike', [corpse.combatantId])
             .success,
         isTrue,
       );
@@ -113,10 +113,10 @@ void main() {
   group('the log says which of the endings happened', () {
     test('a drop reads as bailing out, not as defeated', () {
       final s = session();
-      final victim = s.battle.states['kaito_reyes']!..currentHealth = 1;
+      final victim = s.battle.stateById('kaito_reyes')..currentHealth = 1;
 
       expect(
-        s.queue('marren_osei', 'twin_fang_strike', [victim.character.id])
+        s.queue('marren_osei', 'twin_fang_strike', [victim.combatantId])
             .success,
         isTrue,
       );
@@ -144,7 +144,7 @@ void main() {
       final round = s.endTurn();
 
       final recall = round.bailOuts
-          .where((b) => b.characterId == own.character.id)
+          .where((b) => b.characterId == own.combatantId)
           .toList();
       expect(recall, hasLength(1), reason: 'the recall has to appear once');
       expect(recall.single.refused, isFalse);
@@ -167,12 +167,12 @@ void main() {
       // out to distance 4; the opponent is pressed to their own front line
       // with Close Range work only, which reaches 0 to 2.
       for (final c in s.battle.teamB.characters) {
-        s.battle.states[c.id]!.position = BattlePosition.front;
-        s.equippedB[c.id] = [triggerCatalog['twin_fang_strike'] as ActiveTrigger];
+        s.battle.stateById(c.id).position = BattlePosition.front;
+        s.equippedB[s.battle.stateById(c.id).combatantId] = [triggerCatalog['twin_fang_strike'] as ActiveTrigger];
       }
-      s.battle.states['marren_osei']!.position = BattlePosition.front;
-      s.battle.states['ilona_vance']!.position = BattlePosition.middle;
-      s.battle.states['bastian_cole']!.position = BattlePosition.back;
+      s.battle.stateById('marren_osei').position = BattlePosition.front;
+      s.battle.stateById('ilona_vance').position = BattlePosition.middle;
+      s.battle.stateById('bastian_cole').position = BattlePosition.back;
       final front = body(s, 'marren_osei');
       body(s, 'ilona_vance');
       s.battle.teamB.trionPool.gain(500);
@@ -180,7 +180,7 @@ void main() {
       final engine = s.battle.turnEngine;
       expect(
         engine.distanceBetween(
-            s.battle.states['kaito_reyes']!, s.battle.states['bastian_cole']!),
+            s.battle.stateById('kaito_reyes'), s.battle.stateById('bastian_cole')),
         4,
         reason: 'the survivor is screened right out of Close Range',
       );
@@ -200,7 +200,7 @@ void main() {
       // has no living target either, and reaching for the body would then be
       // the rule working rather than failing.
       for (final c in s.battle.teamB.characters) {
-        s.equippedB[c.id] = [triggerCatalog['twin_fang_strike'] as ActiveTrigger];
+        s.equippedB[s.battle.stateById(c.id).combatantId] = [triggerCatalog['twin_fang_strike'] as ActiveTrigger];
       }
       final corpse = body(s, 'marren_osei');
       s.battle.teamB.trionPool.gain(500);
@@ -221,7 +221,7 @@ void main() {
       // Charm Whisper cannot be aimed at a body, so use the attack: the point
       // is what the *second* action against the same target says.
       expect(
-        s.queue('marren_osei', 'twin_fang_strike', [corpse.character.id])
+        s.queue('marren_osei', 'twin_fang_strike', [corpse.combatantId])
             .success,
         isTrue,
       );
@@ -237,9 +237,9 @@ void main() {
 
     test('while the window is open, died stays false', () {
       final s = session();
-      final victim = s.battle.states['kaito_reyes']!..currentHealth = 1;
+      final victim = s.battle.stateById('kaito_reyes')..currentHealth = 1;
       expect(
-        s.queue('marren_osei', 'twin_fang_strike', [victim.character.id])
+        s.queue('marren_osei', 'twin_fang_strike', [victim.combatantId])
             .success,
         isTrue,
       );

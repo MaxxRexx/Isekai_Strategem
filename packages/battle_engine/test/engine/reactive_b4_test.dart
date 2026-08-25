@@ -59,7 +59,7 @@ void main() {
           attacker: holder,
           trigger: trigger,
           result: AbilityUseResult(
-            attackerCharacterId: holder.character.id,
+            attackerCharacterId: holder.combatantId,
             triggerId: trigger.id,
             targetResults: const [],
           ),
@@ -173,7 +173,7 @@ void main() {
           attacker: enemy,
           trigger: trigger,
           result: AbilityUseResult(
-            attackerCharacterId: enemy.character.id,
+            attackerCharacterId: enemy.combatantId,
             triggerId: trigger.id,
             targetResults: const [],
           ),
@@ -221,7 +221,7 @@ void main() {
           attacker: enemy,
           trigger: trigger,
           result: AbilityUseResult(
-            attackerCharacterId: enemy.character.id,
+            attackerCharacterId: enemy.combatantId,
             triggerId: trigger.id,
             targetResults: const [],
           ),
@@ -283,11 +283,11 @@ void main() {
 
       final e = engine();
       final critResult = AbilityUseResult(
-        attackerCharacterId: enemy.character.id,
+        attackerCharacterId: enemy.combatantId,
         triggerId: trigger.id,
         targetResults: [
           TargetHitResult(
-            targetCharacterId: holder.character.id,
+            targetCharacterId: holder.combatantId,
             attackRolls: [
               AttackRollOutcome(
                 attackerRoll: D20RollResult(

@@ -21,7 +21,11 @@ List<String> _statusEffectNames(List<String> ids) => [
 /// [CharacterBattleState.equippedPassiveEffects], its World ability into
 /// [CharacterBattleState.worldAbility], and bridges the Loadout's Black
 /// Trigger choice into a battle-ready [Character].
-CharacterBattleState _buildBattleState(Character character, Loadout loadout) {
+CharacterBattleState _buildBattleState(
+  Character character,
+  Loadout loadout, {
+  String? combatantId,
+}) {
   final passiveEffects = <PassiveEffect>[
     for (final t in loadout.triggers.whereType<PassiveTrigger>()) t.effect,
     if (loadout.blackTrigger != null)
@@ -41,6 +45,7 @@ CharacterBattleState _buildBattleState(Character character, Loadout loadout) {
 
   return CharacterBattleState(
     wieldingCharacter,
+    combatantId: combatantId,
     equippedPassiveEffects: passiveEffects,
     worldAbility: loadout.blackTrigger?.worldAbility,
   );
@@ -52,11 +57,16 @@ class _DraftedTeam {
   final Map<String, List<ActiveTrigger>> equippedActiveTriggers;
   final Map<String, Loadout> loadouts;
 
+  /// The same Loadouts keyed by the character's own id, for anything about
+  /// the squad's build rather than the battle (the Team Efficiency Grade).
+  final Map<String, Loadout> loadoutsByCharacterId;
+
   const _DraftedTeam(
     this.team,
     this.states,
     this.equippedActiveTriggers,
     this.loadouts,
+    this.loadoutsByCharacterId,
   );
 
   factory _DraftedTeam.draft({
@@ -69,6 +79,7 @@ class _DraftedTeam {
     final states = <String, CharacterBattleState>{};
     final equipped = <String, List<ActiveTrigger>>{};
     final loadouts = <String, Loadout>{};
+    final loadoutsByCharacterId = <String, Loadout>{};
 
     for (final character in characters) {
       final loadout = _builder.build(
@@ -78,14 +89,20 @@ class _DraftedTeam {
         blackTriggerPool: _blackTriggers.all,
         profile: profile,
       );
-      states[character.id] = _buildBattleState(character, loadout);
-      equipped[character.id] = loadout.triggers
+      // Keyed by combatant id, like every other draft (item #14), so Quick
+      // Battle can field a mirror match too.
+      final combatantId = CombatantIds.of(teamId, character.id);
+      states[combatantId] =
+          _buildBattleState(character, loadout, combatantId: combatantId);
+      equipped[combatantId] = loadout.triggers
           .whereType<ActiveTrigger>()
           .toList();
-      loadouts[character.id] = loadout;
+      loadouts[combatantId] = loadout;
+      loadoutsByCharacterId[character.id] = loadout;
     }
 
-    return _DraftedTeam(team, states, equipped, loadouts);
+    return _DraftedTeam(
+        team, states, equipped, loadouts, loadoutsByCharacterId);
   }
 }
 
@@ -143,11 +160,11 @@ QuickBattleResult runQuickBattle({int maxRounds = 60}) {
   // same rule the player-facing session uses (see `openingTurnChanceFor`).
   final teamAEfficiency = computeTeamEfficiency(
     characterIds: teamAIds,
-    loadouts: teamADraft.loadouts,
+    loadouts: teamADraft.loadoutsByCharacterId,
   );
   final teamBEfficiency = computeTeamEfficiency(
     characterIds: teamBIds,
-    loadouts: teamBDraft.loadouts,
+    loadouts: teamBDraft.loadoutsByCharacterId,
   );
 
   final battle = Battle(
@@ -253,12 +270,10 @@ QuickBattleResult runQuickBattle({int maxRounds = 60}) {
     roundsPlayed: battle.roundNumber,
     rounds: rounds,
     finalTeamA: [
-      for (final c in teamADraft.team.characters)
-        _fighterSummary(battle.states[c.id]!),
+      for (final s in battle.statesOf(teamADraft.team)) _fighterSummary(s),
     ],
     finalTeamB: [
-      for (final c in teamBDraft.team.characters)
-        _fighterSummary(battle.states[c.id]!),
+      for (final s in battle.statesOf(teamBDraft.team)) _fighterSummary(s),
     ],
   );
 }

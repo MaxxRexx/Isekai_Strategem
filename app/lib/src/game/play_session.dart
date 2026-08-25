@@ -257,13 +257,16 @@ class PlaySession {
             loadouts: opponentLoadouts,
           );
 
+    // The grade is a property of the squad you drafted, not of the battle,
+    // so it reads the character-keyed Loadouts rather than the combatant-keyed
+    // ones the battle itself runs on.
     final teamAEfficiency = computeTeamEfficiency(
       characterIds: playerCharacterIds,
-      loadouts: teamADraft.loadouts,
+      loadouts: teamADraft.loadoutsByCharacterId,
     );
     final teamBEfficiency = computeTeamEfficiency(
       characterIds: opponentCharacterIds,
-      loadouts: teamBDraft.loadouts,
+      loadouts: teamBDraft.loadoutsByCharacterId,
     );
 
     // Who moves first is weighted by the Team Efficiency Grade rather than
@@ -349,8 +352,8 @@ class PlaySession {
   /// `teamBWins` through the same defeat-detection every other loss uses,
   /// rather than needing a separate "surrendered" outcome variant.
   void surrender() {
-    for (final c in battle.teamA.characters) {
-      battle.states[c.id]!.currentHealth = 0;
+    for (final state in battle.statesOf(battle.teamA)) {
+      state.currentHealth = 0;
     }
   }
 
@@ -383,14 +386,61 @@ class PlaySession {
   int get teamATrion => battle.teamA.trionPool.current;
   int get teamBTrion => battle.teamB.trionPool.current;
 
-  List<FighterSnapshot> get teamA => [
-    for (final c in battle.teamA.characters)
-      fighterSnapshot(battle.states[c.id]!),
-  ];
-  List<FighterSnapshot> get teamB => [
-    for (final c in battle.teamB.characters)
-      fighterSnapshot(battle.states[c.id]!),
-  ];
+  /// Normalises an id the interface or a test handed in to the combatant id
+  /// the battle's maps are keyed by. A combatant id passes straight through;
+  /// a character id is resolved through the battle, which throws if both
+  /// squads are fielding them.
+  /// The active abilities equipped by [characterId] on the player's squad.
+  ///
+  /// Takes either kind of id: the interface hands over a combatant id from a
+  /// snapshot, a test names a character. The map itself is keyed by combatant
+  /// id, like everything else a battle holds.
+  List<ActiveTrigger> equippedFor(String characterId) =>
+      equippedA[_scoped(characterId)] ??
+      equippedB[_scoped(characterId)] ??
+      const [];
+
+  /// Whether the combatant [id] belongs to the player's squad.
+  ///
+  /// Reads combatant ids on both sides. Comparing a character id against one
+  /// is always false, which is a wrong answer rather than an error, so this
+  /// is the only place that asks.
+  bool _isOnTeamA(String id) =>
+      battle.statesOf(battle.teamA).any((s) => s.combatantId == id);
+
+  String _scoped(String id) =>
+      battle.stateByIdOrNull(id)?.combatantId ?? id;
+
+  /// Display names for this battle's combatants, which differ from the
+  /// character's own name only in a mirror match. Computed once per read
+  /// rather than cached, since a squad cannot change mid-battle.
+  Map<String, String> get _displayNames => combatantDisplayNames(
+        battle,
+        teamALabel: 'yours',
+        teamBLabel: 'theirs',
+      );
+
+  /// The name to print for [combatantId], which is the character's own unless
+  /// both squads are fielding them.
+  String displayNameOf(String combatantId) =>
+      _displayNames[_scoped(combatantId)] ??
+      battle.stateById(combatantId).character.name;
+
+  List<FighterSnapshot> get teamA {
+    final names = _displayNames;
+    return [
+      for (final s in battle.statesOf(battle.teamA))
+        fighterSnapshot(s, displayName: names[s.combatantId]),
+    ];
+  }
+
+  List<FighterSnapshot> get teamB {
+    final names = _displayNames;
+    return [
+      for (final s in battle.statesOf(battle.teamB))
+        fighterSnapshot(s, displayName: names[s.combatantId]),
+    ];
+  }
 
   /// Where [characterId] will be standing once this turn's queue resolves:
   /// their current position, stepped by every Reposition they have queued.
@@ -405,9 +455,10 @@ class PlaySession {
   /// are standing, which is what makes it safe to call on any character.
   BattlePosition projectedPositionOf(String characterId) {
     var position =
-        battle.states[characterId]?.position ?? BattlePosition.middle;
+        battle.stateByIdOrNull(characterId)?.position ?? BattlePosition.middle;
     for (final queued in _queue) {
-      if (queued.characterId == characterId && queued.destination != null) {
+      if (queued.characterId == _scoped(characterId) &&
+          queued.destination != null) {
         position = queued.destination!;
       }
     }
@@ -419,7 +470,7 @@ class PlaySession {
   /// of ability uses.
   List<BattlePosition> legalRepositionsFor(String characterId) {
     if (!battle.isTeamATurn) return const [];
-    final state = battle.states[characterId];
+    final state = battle.stateByIdOrNull(characterId);
     if (state == null) return const [];
     final engine = battle.turnEngine;
     if (!engine.canRepositionAtAll(state)) return const [];
@@ -433,7 +484,7 @@ class PlaySession {
   bool _hasUsesLeft(CharacterBattleState state) {
     final maxUses = battle.turnEngine.fatEngine.maxAbilitiesThisTurn(state);
     return state.abilitiesUsedThisTurnCount +
-            queuedCountFor(state.character.id) <
+            queuedCountFor(state.combatantId) <
         maxUses;
   }
 
@@ -444,10 +495,10 @@ class PlaySession {
     ActiveTrigger trigger,
   ) {
     final engine = battle.turnEngine;
-    final from = projectedPositionOf(state.character.id);
+    final from = projectedPositionOf(state.combatantId);
     final pool = trigger.targetAffiliation == TargetAffiliation.opponent
-        ? battle.teamB.characters.map((c) => battle.states[c.id]!)
-        : battle.teamA.characters.map((c) => battle.states[c.id]!);
+        ? battle.statesOf(battle.teamB)
+        : battle.statesOf(battle.teamA);
     final squadLines = _projectedLinesOf(pool);
     // A Bailing Out body is a legal target for an attack and for nothing
     // else. It has no health left to take a debuff's word for, nothing to
@@ -462,10 +513,10 @@ class PlaySession {
               t,
               trigger: trigger,
               fromPosition: from,
-              targetPosition: projectedPositionOf(t.character.id),
+              targetPosition: projectedPositionOf(t.combatantId),
               targetSquad: squadLines,
             ))
-          t.character.id,
+          t.combatantId,
     ];
   }
 
@@ -477,10 +528,8 @@ class PlaySession {
   /// gap really is empty. Picks the least-screened enemy, since that is the
   /// cheapest one to open up.
   String _rangeDetailFor(CharacterBattleState state, ActiveTrigger trigger) {
-    final from = projectedPositionOf(state.character.id);
-    final enemies = [
-      for (final c in battle.teamB.characters) battle.states[c.id]!,
-    ];
+    final from = projectedPositionOf(state.combatantId);
+    final enemies = battle.statesOf(battle.teamB);
     final lines = _projectedLinesOf(enemies);
 
     BattlePosition? bestLine;
@@ -488,7 +537,7 @@ class PlaySession {
     var distanceThere = 0;
     for (final enemy in enemies) {
       if (!enemy.isAlive) continue;
-      final to = projectedPositionOf(enemy.character.id);
+      final to = projectedPositionOf(enemy.combatantId);
       final screens = BattleDistance.screensFor(to, lines);
       if (screens == 0) continue;
       final screened =
@@ -525,18 +574,18 @@ class PlaySession {
   List<BattlePosition> _projectedLinesOf(Iterable<CharacterBattleState> squad) =>
       [
         for (final t in squad)
-          if (t.isOnBoard) projectedPositionOf(t.character.id),
+          if (t.isOnBoard) projectedPositionOf(t.combatantId),
       ];
 
   /// Only meaningful during the player's own turn, for one of their own
   /// living characters; returns an empty list otherwise.
   List<LegalAction> legalActionsFor(String characterId) {
-    final state = battle.states[characterId]!;
+    final state = battle.stateById(characterId);
     final engine = battle.turnEngine;
     if (!battle.isTeamATurn || !state.isAlive) return const [];
 
     final actions = <LegalAction>[];
-    for (final trigger in equippedA[characterId] ?? const <ActiveTrigger>[]) {
+    for (final trigger in equippedA[_scoped(characterId)] ?? const <ActiveTrigger>[]) {
       if (!engine.canUseAbility(state, trigger)) continue;
 
       List<String> legalTargetIds;
@@ -572,13 +621,13 @@ class PlaySession {
   /// otherwise blocked right now, so the battle UI can render it grayed
   /// out (with a cooldown overlay) instead of making it disappear.
   List<AbilityDisplay> abilityDisplaysFor(String characterId) {
-    final state = battle.states[characterId]!;
+    final state = battle.stateById(characterId);
     final legalById = {
       for (final action in legalActionsFor(characterId))
         action.trigger.id: action,
     };
     return [
-      for (final trigger in equippedA[characterId] ?? const <ActiveTrigger>[])
+      for (final trigger in equippedA[_scoped(characterId)] ?? const <ActiveTrigger>[])
         () {
           final legal = legalById[trigger.id];
           final cooldown = state.cooldowns[trigger.id] ?? 0;
@@ -608,16 +657,16 @@ class PlaySession {
     LegalAction? legal,
   ) {
     if (legal == null || !legal.hasTargets) return false;
-    final projected = projectedPositionOf(state.character.id);
+    final projected = projectedPositionOf(state.combatantId);
     if (projected == state.position) return false;
     if (trigger.targetAffiliation == TargetAffiliation.self) return false;
     // Same question asked from the live position: if it already reached from
     // there, the move is not what put it in band.
     final engine = battle.turnEngine;
-    final pool = trigger.targetAffiliation == TargetAffiliation.opponent
-        ? battle.teamB.characters
-        : battle.teamA.characters;
-    final states = [for (final c in pool) battle.states[c.id]!];
+    final states = battle.statesOf(
+        trigger.targetAffiliation == TargetAffiliation.opponent
+            ? battle.teamB
+            : battle.teamA);
     final squadLines = _projectedLinesOf(states);
     for (final target in states) {
       if (!target.isAlive) continue;
@@ -626,7 +675,7 @@ class PlaySession {
         target,
         trigger: trigger,
         fromPosition: state.position,
-        targetPosition: projectedPositionOf(target.character.id),
+        targetPosition: projectedPositionOf(target.combatantId),
         targetSquad: squadLines,
       )) {
         return false;
@@ -691,9 +740,8 @@ class PlaySession {
   /// set the battle UI may show the opponent's abilities for.
   Set<String> get revealedEnemyIds {
     final out = <String>{};
-    for (final c in battle.teamA.characters) {
-      final state = battle.states[c.id];
-      if (state != null) out.addAll(state.revealedEnemyIds);
+    for (final state in battle.statesOf(battle.teamA)) {
+      out.addAll(state.revealedEnemyIds);
     }
     return out;
   }
@@ -704,8 +752,8 @@ class PlaySession {
     List<String> targetIds,
   ) {
     final engine = battle.turnEngine;
-    final state = battle.states[characterId]!;
-    final trigger = equippedA[characterId]!.firstWhere(
+    final state = battle.stateById(characterId);
+    final trigger = equippedA[_scoped(characterId)]!.firstWhere(
       (t) => t.id == triggerId,
     );
 
@@ -718,7 +766,7 @@ class PlaySession {
       return const UseAbilityOutcome.failure('Not enough Trion.');
     }
 
-    final targets = [for (final id in targetIds) battle.states[id]!];
+    final targets = [for (final id in targetIds) battle.stateById(id)];
     if (trigger.targetAffiliation == TargetAffiliation.opponent &&
         targets.isNotEmpty) {
       engine.checkSanctionedStrike(state, trigger, targets.first);
@@ -737,11 +785,11 @@ class PlaySession {
     return UseAbilityOutcome.done(
       LogAction(
         characterId: characterId,
-        characterName: state.character.name,
+        characterName: displayNameOf(state.combatantId),
         triggerId: trigger.id,
         triggerName: trigger.name,
         fatTriggered: state.fatTriggeredThisTurn,
-        targets: logTargets(battle, useResult),
+        targets: logTargets(battle, useResult, displayNames: _displayNames),
       ),
     );
   }
@@ -752,7 +800,7 @@ class PlaySession {
   /// How many actions [characterId] currently has queued, counted against
   /// its per-turn ability limit.
   int queuedCountFor(String characterId) =>
-      _queue.where((q) => q.characterId == characterId).length;
+      _queue.where((q) => q.characterId == _scoped(characterId)).length;
 
   /// Commits one of the player's abilities to the turn queue: validates
   /// legality, spends its Trion cost now (refunded by [unqueue]), and
@@ -766,12 +814,12 @@ class PlaySession {
     if (!battle.isTeamATurn) {
       return const QueueOutcome.failure('It is not your turn.');
     }
-    final state = battle.states[characterId];
+    final state = battle.stateByIdOrNull(characterId);
     if (state == null || !state.isAlive) {
       return const QueueOutcome.failure('That character cannot act.');
     }
     ActiveTrigger? trigger;
-    for (final t in equippedA[characterId] ?? const <ActiveTrigger>[]) {
+    for (final t in equippedA[_scoped(characterId)] ?? const <ActiveTrigger>[]) {
       if (t.id == triggerId) {
         trigger = t;
         break;
@@ -787,7 +835,7 @@ class PlaySession {
       );
     }
     if (_queue.any(
-      (q) => q.characterId == characterId && q.triggerId == triggerId,
+      (q) => q.characterId == _scoped(characterId) && q.triggerId == triggerId,
     )) {
       return const QueueOutcome.failure('That ability is already queued.');
     }
@@ -819,9 +867,13 @@ class PlaySession {
     }
     _queue.add(
       QueuedAction(
-        characterId: characterId,
+        // Normalised on the way in, so only combatant ids ever live inside
+        // the queue. The interface hands over one already; a test may name a
+        // character. Mixing the two is how "the queue says this character
+        // moved" stops matching "this state moved".
+        characterId: _scoped(characterId),
         triggerId: triggerId,
-        targetIds: List.of(targetIds),
+        targetIds: [for (final id in targetIds) _scoped(id)],
         trionSpent: cost,
       ),
     );
@@ -835,10 +887,10 @@ class PlaySession {
   /// would just be rejected.
   bool canQueueAbility(String characterId, String triggerId) {
     if (!battle.isTeamATurn) return false;
-    final state = battle.states[characterId];
+    final state = battle.stateByIdOrNull(characterId);
     if (state == null || !state.isAlive) return false;
     ActiveTrigger? trigger;
-    for (final t in equippedA[characterId] ?? const <ActiveTrigger>[]) {
+    for (final t in equippedA[_scoped(characterId)] ?? const <ActiveTrigger>[]) {
       if (t.id == triggerId) {
         trigger = t;
         break;
@@ -848,7 +900,7 @@ class PlaySession {
     final engine = battle.turnEngine;
     if (!engine.canUseAbility(state, trigger)) return false;
     if (_queue.any(
-      (q) => q.characterId == characterId && q.triggerId == triggerId,
+      (q) => q.characterId == _scoped(characterId) && q.triggerId == triggerId,
     )) {
       return false;
     }
@@ -872,7 +924,7 @@ class PlaySession {
     if (!battle.isTeamATurn) {
       return const QueueOutcome.failure('It is not your turn.');
     }
-    final state = battle.states[characterId];
+    final state = battle.stateByIdOrNull(characterId);
     if (state == null || !state.isAlive) {
       return const QueueOutcome.failure('That character cannot act.');
     }
@@ -888,7 +940,11 @@ class PlaySession {
     }
     _queue.add(
       QueuedAction(
-        characterId: characterId,
+        // Normalised on the way in, so only combatant ids ever live inside
+        // the queue. The interface hands over one already; a test may name a
+        // character. Mixing the two is how "the queue says this character
+        // moved" stops matching "this state moved".
+        characterId: _scoped(characterId),
         triggerId: repositionActionId,
         targetIds: const [],
         trionSpent: 0,
@@ -912,13 +968,13 @@ class PlaySession {
   /// anything?" without the player counting squares.
   BattlePosition? suggestRepositionFor(String characterId) {
     if (!battle.isTeamATurn) return null;
-    final state = battle.states[characterId];
+    final state = battle.stateByIdOrNull(characterId);
     if (state == null || !state.isAlive) return null;
     if (!_hasUsesLeft(state)) return null;
     return battle.turnEngine.suggestReposition(
       state,
-      equippedA[characterId] ?? const [],
-      [for (final c in battle.teamB.characters) battle.states[c.id]!],
+      equippedA[_scoped(characterId)] ?? const [],
+      battle.statesOf(battle.teamB),
       from: projectedPositionOf(characterId),
     );
   }
@@ -942,11 +998,11 @@ class PlaySession {
   /// Refunds and removes every queued ability of [characterId] whose targets
   /// are no longer inside its band from the current projected position.
   void _dropUnreachableQueued(String characterId) {
-    final state = battle.states[characterId];
+    final state = battle.stateByIdOrNull(characterId);
     if (state == null) return;
-    final equipped = equippedA[characterId] ?? const <ActiveTrigger>[];
+    final equipped = equippedA[_scoped(characterId)] ?? const <ActiveTrigger>[];
     _queue.removeWhere((queued) {
-      if (queued.characterId != characterId || queued.isReposition) {
+      if (queued.characterId != _scoped(characterId) || queued.isReposition) {
         return false;
       }
       ActiveTrigger? trigger;
@@ -994,12 +1050,12 @@ class PlaySession {
     final moves = <LogAction>[];
     for (final queued in _queue) {
       if (!queued.isReposition) continue;
-      final state = battle.states[queued.characterId]!;
+      final state = battle.stateById(queued.characterId);
       if (!battle.turnEngine.reposition(state, queued.destination!)) continue;
       moves.add(
         LogAction(
           characterId: queued.characterId,
-          characterName: state.character.name,
+          characterName: displayNameOf(state.combatantId),
           triggerId: repositionActionId,
           triggerName: 'Reposition to the '
               '${queued.destination!.label.toLowerCase()} line',
@@ -1040,14 +1096,13 @@ class PlaySession {
   /// forever.
   void _repositionIdleAi(List<AiPlannedAction> plan) {
     final acted = plan.map((a) => a.characterId).toSet();
-    for (final character in battle.teamB.characters) {
-      if (acted.contains(character.id)) continue;
-      final state = battle.states[character.id]!;
+    for (final state in battle.statesOf(battle.teamB)) {
+      if (acted.contains(state.combatantId)) continue;
       if (!state.isAlive) continue;
       final destination = battle.turnEngine.suggestReposition(
         state,
-        equippedB[character.id] ?? const [],
-        battle.teamA.characters.map((c) => battle.states[c.id]!).toList(),
+        equippedB[state.combatantId] ?? const [],
+        battle.statesOf(battle.teamA).toList(),
       );
       if (destination != null) {
         battle.turnEngine.reposition(state, destination);
@@ -1065,12 +1120,12 @@ class PlaySession {
     final moves = <LogAction>[];
     for (final a in plan) {
       if (!a.isReposition) continue;
-      final state = battle.states[a.characterId]!;
+      final state = battle.stateById(a.characterId);
       if (!battle.turnEngine.reposition(state, a.destination!)) continue;
       moves.add(
         LogAction(
           characterId: a.characterId,
-          characterName: state.character.name,
+          characterName: displayNameOf(state.combatantId),
           triggerId: repositionActionId,
           triggerName: 'Reposition to the '
               '${a.destination!.label.toLowerCase()} line',
@@ -1083,7 +1138,7 @@ class PlaySession {
     final pool = battle.teamB.trionPool;
     for (final a in plan) {
       if (a.isReposition) continue; // moves are free in Trion
-      final state = battle.states[a.characterId]!;
+      final state = battle.stateById(a.characterId);
       final trigger = equippedB[a.characterId]!.firstWhere(
         (t) => t.id == a.triggerId,
       );
@@ -1131,7 +1186,7 @@ class PlaySession {
     final phase = <int, int>{};
     final deviation = <int, num>{};
     for (var i = 0; i < ordered.length; i++) {
-      final state = battle.states[ordered[i].characterId]!;
+      final state = battle.stateById(ordered[i].characterId);
       phase[i] = _phaseFor(triggerAt(i)).index;
       deviation[i] =
           (state.effectiveStats(fatConfig: engine.fatConfig).teamSpirit -
@@ -1209,9 +1264,9 @@ class PlaySession {
       final aoe = state.deathLedgerSwapPending;
       if (aoe == null) continue;
       state.deathLedgerSwapPending = null;
-      final wielderId = state.character.id;
+      final wielderId = state.combatantId;
       if (_deathLedgerSwaps.containsKey(wielderId)) continue; // one at a time
-      final onTeamA = battle.teamA.characters.any((c) => c.id == wielderId);
+      final onTeamA = _isOnTeamA(wielderId);
       final equipped = onTeamA ? equippedA : equippedB;
       final loadout = equipped[wielderId];
       if (loadout == null || loadout.isEmpty) continue;
@@ -1234,7 +1289,7 @@ class PlaySession {
   /// Decays swaps whose wielder is on [team]; reverts any that expire.
   void _tickDeathLedgerSwaps(String team) {
     for (final wielderId in _deathLedgerSwaps.keys.toList()) {
-      final onTeamA = battle.teamA.characters.any((c) => c.id == wielderId);
+      final onTeamA = _isOnTeamA(wielderId);
       if ((onTeamA ? 'A' : 'B') != team) continue;
       final swap = _deathLedgerSwaps[wielderId]!;
       final remaining = swap.turnsRemaining - 1;
@@ -1271,8 +1326,8 @@ class PlaySession {
     LogBend? bend,
   }) {
     final engine = battle.turnEngine;
-    final state = battle.states[characterId]!;
-    final targets = [for (final id in targetIds) battle.states[id]!];
+    final state = battle.stateById(characterId);
+    final targets = [for (final id in targetIds) battle.stateById(id)];
     // Who was already a body, so the log can tell "this hit put them there"
     // apart from "they were already there when this hit landed".
     final bailBefore = bailOutSnapshot(battle);
@@ -1297,7 +1352,7 @@ class PlaySession {
     // TEG Effect 3: credit any setup->payoff Trion refund to the acting team.
     if (useResult.trionRefund > 0) {
       final actingOnTeamA =
-          battle.teamA.characters.any((c) => c.id == characterId);
+          _isOnTeamA(characterId);
       (actingOnTeamA ? battle.teamA : battle.teamB)
           .trionPool
           .gain(useResult.trionRefund);
@@ -1305,11 +1360,12 @@ class PlaySession {
     _feedPassiveCounters(state, trigger, useResult);
     return LogAction(
       characterId: characterId,
-      characterName: state.character.name,
+      characterName: displayNameOf(state.combatantId),
       triggerId: trigger.id,
       triggerName: trigger.name,
       fatTriggered: state.fatTriggeredThisTurn,
-      targets: logTargets(battle, useResult, before: bailBefore),
+      targets: logTargets(battle, useResult,
+          before: bailBefore, displayNames: _displayNames),
       bend: bend,
     );
   }
@@ -1326,7 +1382,7 @@ class PlaySession {
     ActiveTrigger trigger,
     List<String> targetIds,
   ) {
-    final actor = battle.states[characterId];
+    final actor = battle.stateByIdOrNull(characterId);
     if (actor == null ||
         trigger.targetAffiliation != TargetAffiliation.opponent) {
       return const _ReachSnapshot({}, {});
@@ -1335,13 +1391,13 @@ class PlaySession {
     final distances = <String, int>{};
     final screens = <String, List<String>>{};
     for (final id in targetIds) {
-      final target = battle.states[id];
+      final target = battle.stateByIdOrNull(id);
       if (target == null) continue;
       distances[id] = engine.distanceBetween(actor, target);
       screens[id] = [
         for (final mate in target.teammates)
           if (mate.isOnBoard && mate.position.step < target.position.step)
-            mate.character.name,
+            displayNameOf(mate.combatantId),
       ];
     }
     return _ReachSnapshot(distances, screens);
@@ -1361,7 +1417,7 @@ class PlaySession {
   ) {
     if (before == null) return null;
     if (trigger.targetAffiliation != TargetAffiliation.opponent) return null;
-    final actor = battle.states[characterId];
+    final actor = battle.stateByIdOrNull(characterId);
     if (actor == null || !actor.isAlive) return null;
 
     final engine = battle.turnEngine;
@@ -1372,7 +1428,7 @@ class PlaySession {
     // Bailing Out body. Breaking a screen never costs you the attack it set up.
     final living = [
       for (final id in targetIds)
-        if (battle.states[id]?.isOnBoard ?? false) battle.states[id]!,
+        if (battle.stateByIdOrNull(id)?.isOnBoard ?? false) battle.stateById(id),
     ];
     if (living.isEmpty) return null;
 
@@ -1394,15 +1450,15 @@ class PlaySession {
     }
     if (bendTarget == null) return null;
 
-    final id = bendTarget.character.id;
+    final id = bendTarget.combatantId;
     final wasScreening = before.screens[id] ?? const <String>[];
     final stillScreening = {
       for (final mate in bendTarget.teammates)
         if (mate.isOnBoard && mate.position.step < bendTarget.position.step)
-          mate.character.name,
+          displayNameOf(mate.combatantId),
     };
     return LogBend(
-      targetName: bendTarget.character.name,
+      targetName: displayNameOf(bendTarget.combatantId),
       bandLabel: band.label,
       bandWindow: band.windowLabel,
       bandMinimum: band.minDistance,
@@ -1432,10 +1488,10 @@ class PlaySession {
   ) {
     final engine = battle.turnEngine;
     final onTeamA =
-        battle.teamA.characters.any((c) => c.id == state.character.id);
+        _isOnTeamA(state.combatantId);
     final defenderTeam = onTeamA ? battle.teamB : battle.teamA;
     final defenderStates =
-        defenderTeam.characters.map((c) => battle.states[c.id]!).toList();
+        battle.statesOf(defenderTeam);
     final isBt = state.character.blackTrigger?.activeAbilities
             .any((t) => t.id == trigger.id) ??
         false;
@@ -1450,7 +1506,7 @@ class PlaySession {
 
     for (final tr in useResult.targetResults) {
       if (tr.statusEffectsApplied.isEmpty) continue;
-      final target = battle.states[tr.targetCharacterId];
+      final target = battle.stateByIdOrNull(tr.targetCharacterId);
       if (target == null) continue;
       for (final statusId in tr.statusEffectsApplied) {
         engine.notifyStatusInflicted(target, statusId);
@@ -1499,8 +1555,8 @@ class PlaySession {
     for (final r in result.bailOuts)
       LogBailOut(
         characterId: r.characterId,
-        characterName: battle.states[r.characterId]!.character.name,
-        team: battle.teamA.characters.any((c) => c.id == r.characterId)
+        characterName: displayNameOf(r.characterId),
+        team: _isOnTeamA(r.characterId)
             ? 'A'
             : 'B',
         trionSalvaged: r.trionSalvaged,
@@ -1523,7 +1579,7 @@ class PlaySession {
   /// real rules; exists solely so the Guided Tutorial can demonstrate the
   /// FAT mechanic deterministically.
   void forceFat(String characterId) {
-    battle.states[characterId]!.fatTriggeredThisTurn = true;
+    battle.stateById(characterId).fatTriggeredThisTurn = true;
   }
 
   /// Resolves consecutive AI (team B) turns - normally just one - stopping

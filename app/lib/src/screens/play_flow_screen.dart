@@ -177,23 +177,22 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         _teamAIds[i] = widget.initialTeamAIds![i];
       }
       _selections.addAll(widget.initialSelections!);
-      _randomizeTeam(_teamBIds, withProfile: true, avoid: _teamAIds);
+      _randomizeTeam(_teamBIds, withProfile: true);
       _startBattle();
     } else {
-      _randomizeTeam(_teamAIds, withProfile: false, avoid: _teamBIds);
-      _randomizeTeam(_teamBIds, withProfile: true, avoid: _teamAIds);
+      _randomizeTeam(_teamAIds, withProfile: false);
+      _randomizeTeam(_teamBIds, withProfile: true);
     }
   }
 
-  /// [avoid] is the other squad's slots: see [randomSquadAvoiding] for why a
-  /// character can only be in a battle once.
+  /// Each squad only has to avoid itself: both may field the same character
+  /// since item #14.
   void _randomizeTeam(
     List<String?> slots, {
     required bool withProfile,
-    required List<String?> avoid,
   }) {
     final random = Random();
-    final picked = randomSquadAvoiding(random, avoid);
+    final picked = randomSquadAvoiding(random, slots);
     for (var i = 0; i < 3; i++) {
       slots[i] = picked[i];
     }
@@ -943,12 +942,14 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     final setupStep = _tutorialActive ? _tutorial!.currentSetupStep : null;
     final lockedByTutorial = _tutorialActive;
 
-    // Every other slot on this squad, plus the whole of the other squad: a
-    // character can only be in the battle once (see [_randomizeTeam]).
+    // Every other slot on **this** squad. The other squad is deliberately
+    // not here: since item #14 both sides may field the same character, and
+    // two Ilona Vances are two combatants with their own health, statuses and
+    // position. One squad still cannot field her twice, which is what this
+    // greys out.
     Set<String> takenExcept(List<String?> slots, int slot) => {
       for (var i = 0; i < slots.length; i++)
         if (i != slot && slots[i] != null) slots[i]!,
-      for (final id in (identical(slots, _teamAIds) ? _teamBIds : _teamAIds)) ?id,
     };
 
     final activeSlotA = lockedByTutorial
@@ -973,7 +974,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ? null
               : () => setState(() {
                   _randomizeTeam(_teamAIds,
-                      withProfile: false, avoid: _teamBIds);
+                      withProfile: false);
                   _activeSlotA = 0;
                   _previewIdA = null;
                 }),
@@ -1004,7 +1005,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ? null
               : () => setState(() {
                   _randomizeTeam(_teamBIds,
-                      withProfile: true, avoid: _teamAIds);
+                      withProfile: true);
                   _activeSlotB = 0;
                   _previewIdB = null;
                 }),
@@ -2330,8 +2331,12 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   Widget _characterInfoPanel(String id) {
     final fighter = _fighterById(id);
     if (fighter == null) return const SizedBox.shrink();
-    final character = roster[id];
-    final flavor = characterFlavor[id];
+    // `id` is a combatant id here (item #14). The roster, the flavour text
+    // and the portrait art are all properties of the character, not of the
+    // combatant, so they are asked for by the character's own id.
+    final characterId = CombatantIds.characterOf(id);
+    final character = roster[characterId];
+    final flavor = characterFlavor[characterId];
     final isOwn = _session!.teamA.any((f) => f.id == id);
     final revealed = isOwn || _session!.revealedEnemyIds.contains(id);
     final loadout = isOwn ? _session!.loadoutsA[id] : _session!.loadoutsB[id];
