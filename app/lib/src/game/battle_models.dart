@@ -70,10 +70,17 @@ class LogDamageDetail {
   final bool damageResistanceApplied;
   final int finalDamage;
 
+  /// How many faces each of [diceRawRolls] had, so the log can name the
+  /// expression ("6d6") instead of printing a chain of numbers in which the
+  /// flat bonus looks like one more die. A playtester read
+  /// `1+6+2+3+2+6+23` and asked, reasonably, what it meant.
+  final int diceSides;
+
   const LogDamageDetail({
     required this.diceRawRolls,
     required this.diceFlatBonus,
     required this.diceTotal,
+    required this.diceSides,
     required this.preCritMultiplier,
     required this.prevented,
     required this.criticalHitApplied,
@@ -91,6 +98,7 @@ class LogDamageDetail {
     diceRawRolls: detail.diceRoll.rawRolls,
     diceFlatBonus: detail.diceRoll.flatBonus,
     diceTotal: detail.diceRoll.total,
+    diceSides: detail.diceRoll.sides,
     preCritMultiplier: detail.preCritMultiplier,
     prevented: detail.breakdown.prevented,
     criticalHitApplied: detail.breakdown.criticalHitApplied,
@@ -104,15 +112,24 @@ class LogDamageDetail {
     finalDamage: detail.breakdown.finalDamage,
   );
 
-  /// Dice notation for display, e.g. "14+27+3" for a 2d20+3 roll.
-  String get diceDescribe {
-    final sign = diceFlatBonus > 0
-        ? '+$diceFlatBonus'
-        : diceFlatBonus < 0
-        ? '$diceFlatBonus'
-        : '';
-    return '${diceRawRolls.join('+')}$sign';
-  }
+  /// The expression the ability rolls, e.g. "6d6".
+  String get diceNotation => '${diceRawRolls.length}d$diceSides';
+
+  /// Just the dice, summed: "1+6+2+3+2+6". The flat bonus is deliberately
+  /// not in here, because running the two together is what made this
+  /// unreadable.
+  String get diceRollsDescribe => diceRawRolls.join('+');
+
+  /// What the dice alone came to, before the ability's flat bonus.
+  int get diceRollsTotal => diceRawRolls.fold(0, (sum, d) => sum + d);
+
+  /// The ability's flat bonus with its sign, or an empty string when it has
+  /// none.
+  String get flatBonusDescribe => diceFlatBonus > 0
+      ? '+$diceFlatBonus'
+      : diceFlatBonus < 0
+          ? '$diceFlatBonus'
+          : '';
 }
 
 /// One resolved attack roll within a [LogTargetResult]: the attacker's and

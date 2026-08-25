@@ -135,11 +135,20 @@ class DiceExpressionRollResult {
   final int flatBonus;
   final int total;
 
+  /// How many faces each die in [rawRolls] had. Carried so a log can say
+  /// "6d6" rather than printing seven numbers in a row and leaving the
+  /// reader to work out which of them was not a die.
+  final int sides;
+
   const DiceExpressionRollResult({
     required this.rawRolls,
     required this.flatBonus,
     required this.total,
+    required this.sides,
   });
+
+  /// The expression this came from, in dice notation.
+  String get notation => '${rawRolls.length}d$sides';
 }
 
 /// A simple NdM+K dice expression, used for damage rolls like status
@@ -159,6 +168,7 @@ class DiceExpression {
       rawRolls: raw,
       flatBonus: flatBonus,
       total: raw.fold(0, (sum, d) => sum + d) + flatBonus,
+      sides: sides,
     );
   }
 

@@ -73,7 +73,7 @@ void main() {
         wrap(FighterRow(fighter: fighter(alive: false, bailingOut: true))),
       );
 
-      expect(find.text('BAILING'), findsOneWidget);
+      expect(find.text('BAILING OUT'), findsOneWidget);
       final name = tester.widget<Text>(find.text('Vela Ashworth'));
       expect(
         name.style?.decoration,
@@ -87,14 +87,14 @@ void main() {
     ) async {
       await tester.pumpWidget(wrap(FighterRow(fighter: fighter(alive: false))));
 
-      expect(find.text('BAILING'), findsNothing);
+      expect(find.text('BAILING OUT'), findsNothing);
       final name = tester.widget<Text>(find.text('Vela Ashworth'));
       expect(name.style?.decoration, TextDecoration.lineThrough);
     });
 
     testWidgets('a living character has neither', (tester) async {
       await tester.pumpWidget(wrap(FighterRow(fighter: fighter())));
-      expect(find.text('BAILING'), findsNothing);
+      expect(find.text('BAILING OUT'), findsNothing);
     });
   });
 
@@ -149,7 +149,7 @@ void main() {
         find.textContaining('DEFEATED', findRichText: true),
         findsOneWidget,
       );
-      expect(find.textContaining('BAILING', findRichText: true), findsNothing);
+      expect(find.textContaining('BAILING OUT', findRichText: true), findsNothing);
     });
   });
 

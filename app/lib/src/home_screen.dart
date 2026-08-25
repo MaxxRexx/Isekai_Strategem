@@ -12,6 +12,7 @@ import 'quick_battle/quick_battle_screen.dart';
 import 'screens/guide_screen.dart';
 import 'screens/play_flow_screen.dart';
 import 'screens/simulate_screen.dart';
+import 'screens/test_lab_screen.dart';
 import 'ui/notched.dart';
 import 'ui/palette.dart';
 import 'widgets/account_sheet.dart';
@@ -251,6 +252,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (_) => const PlayFlowScreen(tutorial: true),
                     ),
                   ),
+                  onTests: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const TestLabScreen()),
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -315,37 +319,66 @@ class _ModeTabsRow extends StatelessWidget {
   final VoidCallback? onPlay;
   final VoidCallback onSimulate;
   final VoidCallback onTutorial;
+  final VoidCallback onTests;
 
   const _ModeTabsRow({
     required this.onPlay,
     required this.onSimulate,
     required this.onTutorial,
+    required this.onTests,
   });
+
+  /// The row wraps to two rows of two below this width. Four tabs abreast
+  /// fits a desktop and squeezes "Guided Tutorial" down to an ellipsis on a
+  /// phone, which is where this game is actually played.
+  static const double _oneRowMinWidth = 560;
 
   @override
   Widget build(BuildContext context) {
+    final tabs = [
+      _ModeTab(icon: Icons.gps_fixed, label: 'Play', onTap: onPlay),
+      _ModeTab(
+        icon: Icons.auto_awesome,
+        label: 'Simulate',
+        iconColor: Palette.teamB,
+        onTap: onSimulate,
+      ),
+      _ModeTab(
+        icon: Icons.view_column_outlined,
+        label: 'Guided Tutorial',
+        onTap: onTutorial,
+      ),
+      _ModeTab(
+        icon: Icons.science_outlined,
+        label: 'Tests',
+        iconColor: Palette.warn,
+        onTap: onTests,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= _oneRowMinWidth) {
+          return _row(tabs);
+        }
+        return Column(
+          children: [
+            _row(tabs.sublist(0, 2)),
+            const SizedBox(height: 8),
+            _row(tabs.sublist(2)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _row(List<Widget> tabs) {
     return Row(
       children: [
-        Expanded(
-          child: _ModeTab(icon: Icons.gps_fixed, label: 'Play', onTap: onPlay),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _ModeTab(
-            icon: Icons.auto_awesome,
-            label: 'Simulate',
-            iconColor: Palette.teamB,
-            onTap: onSimulate,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _ModeTab(
-            icon: Icons.view_column_outlined,
-            label: 'Guided Tutorial',
-            onTap: onTutorial,
-          ),
-        ),
+        for (var i = 0; i < tabs.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(child: tabs[i]),
+        ],
       ],
     );
   }

@@ -11,7 +11,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1**, which is #14, 5c, the duration fix, 3b's mechanism, 5b, 13b and #3's rule (not its pass). The queue was re-sequenced after the #3 audit: the numbers are names, and the running order is now its own table below. #3 is split, its pass moving behind #4, because #4 rewrites the Trion cost and cooldown of all 75 abilities and pricing them first prices them twice. The design review is waiting on seven decisions. The outstanding playtests are still outstanding and are wave 0. **#2 is merged**, after one playtest whose three findings were fixed on the branch; **it has not been re-tested since those fixes**, and **1b has never been played at all**. Both are on main, so both can be played from the deployed build. #3 also carries 3b's reaction table and 5b's stacking flags. #14 (mirror matches) is newly queued and is cheaper before #3 than after. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1**, which is #14, 5c, the duration fix, 3b's mechanism, 5b, 13b and #3's rule (not its pass). The queue was re-sequenced after the #3 audit: the numbers are names, and the running order is now its own table below. #3 is split, its pass moving behind #4, because #4 rewrites the Trion cost and cooldown of all 75 abilities and pricing them first prices them twice. All seven of the design review's decisions are **approved as recommended**. Wave 0 is **done**: 1b and #2 were both playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. **#2 is merged**, after one playtest whose three findings were fixed on the branch; **it has not been re-tested since those fixes**, and **1b has never been played at all**. Both are on main, so both can be played from the deployed build. #3 also carries 3b's reaction table and 5b's stacking flags. #14 (mirror matches) is newly queued and is cheaper before #3 than after. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -172,9 +172,9 @@ document.
 |---|---|---|---|
 | 0 | **Pacing target: 8 to 20 rounds.** Agreed band, replacing the old 15-20 (design section 11). `tool/balance_report.dart` now checks it: 200 simulated battles run a median of 14 with 83% of them inside the band. The engine's round-robin integration test asserts the same band. | Set | - |
 | 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the full-width horizontal battlefield strip (your back line on the left through to theirs on the right, with a distance ruler and the move controls in its own cells), an explicit reason on every ability that cannot be used, a distinct pulsing state for one the queued move has brought into band, plain-English status descriptions with the duration in the player's own turns, and AI positional judgement on both AI paths. Playtested by the owner and revised. | Done | - |
-| **1b** | **Screening (RPP).** Effective distance to an enemy = my line's step + their line's step + the number of enemies standing on a line strictly in front of the target. (Written as "living enemies" when 1b shipped; item #2 made a dropped character's body screen too, until it is cleared or recalled.) No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule, and goes with 5c's rename rather than here. Being built now as its own item rather than waiting for #4, since the battlefield it changes is already live. Built: the distance rule and the widening (enemy-facing only, so a Close Range ward still reaches just the next line), screening threaded through every reach question, traps deliberately exempt with both of them now checking their reach, the ruler printing the screened number with a pip per screening body, a dash on empty lines, out-of-range copy that names screening and the fix, and the **bending shot** with Trion Backlash and its self-explaining log entry. The design review's decisions are recorded below. **Not yet playtested.** | Merged, awaiting playtest | 0 |
+| **1b** | **Screening (RPP).** Effective distance to an enemy = my line's step + their line's step + the number of enemies standing on a line strictly in front of the target. (Written as "living enemies" when 1b shipped; item #2 made a dropped character's body screen too, until it is cleared or recalled.) No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule, and goes with 5c's rename rather than here. Being built now as its own item rather than waiting for #4, since the battlefield it changes is already live. Built: the distance rule and the widening (enemy-facing only, so a Close Range ward still reaches just the next line), screening threaded through every reach question, traps deliberately exempt with both of them now checking their reach, the ruler printing the screened number with a pip per screening body, a dash on empty lines, out-of-range copy that names screening and the fix, and the **bending shot** with Trion Backlash and its self-explaining log entry. The design review's decisions are recorded below. **Playtested** through the Tests tab's four screening scenarios: reading the ruler, a screen holding at distance 4, a body going on screening after its owner falls, and the bending shot with its Trion Backlash. All four resolved correctly. | Merged and playtested | 0 |
 | 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued | 3 |
-| **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. **Merged. Playtested by the owner once and revised** (the same character on both squads, a body reading as defeated in the text report, and the recall's grammar; all three below). Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. **Not re-tested since the fixes.** | Merged | 0 |
+| **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. **Merged. Playtested by the owner once and revised** (the same character on both squads, a body reading as defeated in the text report, and the recall's grammar; all three below). Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. **Re-tested** through the Tests tab's four Bail Out scenarios: the contested window with both endings, what may be aimed at a body, Refuse to Bail (equipped and fired in the real app for the first time), and a squad's last member falling with no window. All four resolved correctly. | Merged and re-tested | 0 |
 | 3b | **Status reactions.** A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. **Split across two waves.** The mechanism, the table and Enraged land in wave 1, because #4's trap pass already includes a reaction-armed trap and the primitive has to exist first, and because none of it depends on the economy. The new abilities and Side Effects land in wave 3 with 1c, and wave 4 prices the lot. **In design: the review asks whether a reaction has to win an infliction contest.** | In design | 1 and 3 |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. **Split across two waves (#Q1).** Wave 1 builds the rule only: the SP conversion table, the measured baselines it reads, the tool that prices the catalogue from them, and the SP term in Trigger Value. Wave 4 runs the pass over the finished catalogue. The tooltip setting moves to #6, being interface work with no pricing in it. **Audited; the review is waiting on seven decisions.** | In design | 1 and 4 |
 | 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued | 2 |
@@ -201,7 +201,7 @@ Waves are worked in order; everything inside a wave is one branch.
 
 | Wave | Items | Why it sits here |
 |---|---|---|
-| **0** | Playtest **1b** (screening) and **#2** (Bail Out, post-fix) | The owner's, and parallel to everything. Both are on `main` and playable from the deployed build. Their fixes are much cheaper landed before wave 1's two wide refactors than after |
+| **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
 | **1** | **#14** &rarr; **5c** &rarr; the duration fix &rarr; **3b** mechanism &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
@@ -211,6 +211,133 @@ Waves are worked in order; everything inside a wave is one branch.
 | **7** | **#13**, then **#8** | Appendix A prose and the tutorial both want the systems to have stopped moving |
 
 Deferred, unchanged: **#9** (story mode) and **#12** (sign-in branding).
+
+### Found in the second #2 playtest, and fixed
+
+The owner ran the Tests tab scenarios. All eight resolved correctly. Three
+things came out of it.
+
+**Your own bailing body was painted as a corpse.** The opponent's squad panel
+is `TeamPanel` / `FighterRow`, which had the pill, the softer dimming and the
+no-strike-through rule. The player's own rows are a separate widget in
+`play_flow_screen.dart` that read only `alive`, so a bailing character of yours
+was faded to 0.4, struck through and given no badge: identical to a defeated
+one, and the exact miscommunication item #2 exists to prevent. Every existing
+test pumped the opponent's widget, which is why nothing saw it. Fixed, with a
+test that pumps the real battle screen with a body on the player's side and
+fails without the fix.
+
+**The badge said BAILING; it now says BAILING OUT**, matching the battle log
+and the design document, which both already used the full phrase.
+
+**The damage line was unreadable.** It printed
+`Damage starts from the ability's own dice: 1+6+2+3+2+6+23 = 43`, running the
+dice and the ability's flat bonus together in one additive chain, so the 23
+read as a seventh die. The owner asked, reasonably, what the line meant.
+`DiceExpressionRollResult` now carries the die size, and the log renders two
+steps instead of one: **"The ability rolls 6d6: 1+6+2+3+2+6 = 20, plus the
+ability's flat +23 -> 43."** Six tests in `damage_workings_test.dart` pin it,
+including one asserting the old chain cannot come back.
+
+### The scenario briefs compute their own numbers
+
+The "Read the board" brief shipped claiming one screening pip and distances of
+3 and 5. The game correctly showed **two pips, 4 and 6**. The scenario was
+right and the prose describing it was wrong, which is the worst way round: a
+tester who trusts the brief reports a bug that is not there, or misses one that
+is.
+
+The cause was that a brief was hand-written prose while only some scenarios had
+a matching assertion, and `read_the_board` had none. Writing the correct
+numbers in would have fixed this instance and left the class of error open.
+
+**A brief's numbers are now computed.** `steps` and `expect` are builders taking
+the scenario itself, so a claim about a distance calls
+`s.reachReading('rurik_voss', 'nadia_kessler')`, which computes it through
+`BattleDistance`, the engine's own rule. Three tests then assert that the
+scenario's arithmetic agrees with a live battle for **every pair of characters,
+every screen count and every position in every scenario**, and a fourth pins
+the specific numbers the playtest reported.
+
+### The seven SPTV decisions, as approved
+
+Approved by the owner as recommended, after the review was re-read against the
+re-sequenced queue. Wave 1 builds against these; the review artifact carries
+the options and trade-offs behind each.
+
+| | Decision | What was approved |
+|---|---|---|
+| **#A** | What one Status Point is | SP **is** damage-equivalent, at face value, with no conversion constant. Stored as formulas over a named, re-measurable baseline (an `SptvBaselines` config beside the other `*Config` classes) rather than as frozen numbers, so the rule outlives the economy #4 is about to change |
+| **#B** | Where a status effect's SP comes from | Give the five field-less statuses real declarative fields, then compute every price from the fields. 13b is in the same wave and needs those fields anyway, and it removes five hardcoded-id lookups from the engine. Two written overrides remain, for `minds_eye_reveal` and `called_shot_stat_zero`, whose value is not mechanical |
+| **#C** | The Trigger Value band | Keep the design director's 2.0 to 3.0. **Needed at the start of wave 2**, not wave 4: #4 cannot set costs without a target. Wave 4 verifies rather than chooses |
+| **#D** | The 1-turn debuff timing | Move the countdown to the end of the holder's turn, leaving the damage and heal ticks at the start. Duration then means one thing for everyone. Defensive wards get +1, derived from the conversion table's own answer to whether a field is realised on your turn or theirs; Illusory Double's 1-turn Untargetable becomes 2 |
+| **#E** | The 24 unreachable statuses | Price all 62, let the reaction table home four for free, and land a reachability test naming the rest. The list is expected to empty in wave 3 |
+| **#F** | Stacking | One instance carrying a stack count, one shared duration, refreshed on re-application, capped at 3. Magnitudes and SP both multiply by the count |
+| **#G** | Whether a reaction is contested | No. Reactions fire automatically. A contested two-step play would come off 21% of the time, which nobody builds around |
+
+### The Tests tab: pre-arranged boards for the wave 0 playtests
+
+**Used, and wave 0 closed with it.** All eight scenarios were played and all
+eight resolved correctly. It stays in the app rather than being removed: the
+same cases will need re-checking after #4 re-prices the economy and after #14
+re-keys battle state, and rebuilding this each time is the expensive way.
+
+Built because the two outstanding playtests are for cases an ordinary battle
+rarely produces. Screening only bites at a particular formation, and half of
+Bail Out only happens in a one-turn window after a kill. Fishing for those
+across a twenty-round match is how a playtest gets abandoned.
+
+**Where it is.** A fourth mode tab on the Home screen beside Play, Simulate
+and Guided Tutorial. It wraps to two rows of two below 560 logical pixels, so
+four tabs do not crush the labels on a phone. Pick a scenario from the
+dropdown, read what it is for, and start it: the battle runs in the ordinary
+battle screen, because what is being tested is whether the real interface
+explains the rules, and a bespoke harness would only prove the harness works.
+
+**The eight scenarios**, in `app/lib/src/game/test_scenarios.dart`:
+
+| Scenario | Item | What it puts in front of you |
+|---|---|---|
+| Read the board | 1b | The ruler with an empty enemy line, a screening pip, and the same target reading a different distance from each of your lines |
+| The screen holds | 1b | Two enemies in front of a third puts that third outside Close Range entirely, at distance 4 |
+| A body still screens | 1b and #2 | Kill the front and the distance does not drop, because the body screens. Clear the body and it does. The one place the two items meet |
+| The bending shot | 1b | A body is already down. Destroy it and a queued Long Range shot bends to reach a target that just came too close, and the squad pays Trion Backlash |
+| The window: recall or destroy | #2 | One setup, both endings. Leave the body and they bank 20%; hit it and you bank 10% |
+| Only damage may be aimed at a body | #2 | The target picker offers a body to a damaging ability and refuses it to Charm Whisper |
+| Refuse to Bail | #2 | The one thing that has never been equipped and fired outside a test |
+| The last one does not bail | #2 | A squad's final member falls with no window and no Salvage |
+
+**How they are set up.** `PlaySession.start` gained two optional parameters,
+both null in ordinary play: `opponentLoadouts` pins the enemy kit instead of
+letting the profile builder pick it, and `arrange` runs on the fully wired
+battle immediately before the opening turn, which is the only point where
+health, positions and a body already on the board can be set without the
+engine having acted on them. The player always moves first and both squads
+start on 120 Trion, so nothing under test is blocked by an economy #4 has not
+fixed yet.
+
+**Each scenario carries its own brief**: a goal, numbered steps, what should
+happen, and a caveat where the case depends on an attack landing. The brief is
+on the picker and again behind a button in the battle screen's app bar, because
+a tester four turns deep should not have to go back to remember what they are
+watching.
+
+**Verified.** 22 tests in `app/test/test_scenarios_test.dart`, which check that
+every kit is a legal Loadout, that every scenario opens on the player's turn
+with the board arranged as its brief claims, and that each one renders the real
+battle screen rather than an error. The geometry claims in the briefs are
+asserted against the engine's own distance rule, so a brief cannot quietly
+disagree with the game. Driven in a real browser on the built web app: the tab,
+the dropdown, launching a scenario into an arranged battle, and the in-battle
+brief all work. Glyphs did not paint in that container because its proxy blocks
+the Google font, which is a sandbox artefact rather than an app fault.
+
+**Found while building it, and fixed:** the battle screen reads the opponent's
+AI profile to show who you are playing, and the first version of the scenario
+path never set it. A release web build renders a caught exception as a blank
+grey page, so it failed silently. The unit tests missed it because they built
+the session directly; the widget tests that now pump the real screen exist
+because of it.
 
 ### Why the order changed, and what it cost
 
@@ -896,17 +1023,25 @@ AI's floor rule, and the four log endings. There are 18 engine tests and 21 app
 tests in its own files, plus the 1b screening and battlefield-rail cases it
 changed, but a green suite is not a played game.
 
-**Not checked at all.**
+**Closed by the second playtest.** Every item that stood in this bucket has
+since been played through the Tests tab, and all of them behaved:
 
-- **#2 has not been re-tested since the playtest fixes landed.** The one
-  playtest was against the first build; the mirror-match corruption it found
-  was fixed afterwards and nobody has played it since.
-- **Refuse to Bail has never been equipped and fired in the real app.** It is
-  covered by engine tests only.
-- **1b has never been playtested at all**, which was already true before #2 and
-  is still the older gap of the two.
-- The battlefield strip and squad panel showing a live bailing body were seen
-  only in widget tests, not on screen in a real Play-mode battle.
+- ~~#2 has not been re-tested since the playtest fixes landed.~~ Re-tested
+  across four scenarios.
+- ~~Refuse to Bail has never been equipped and fired in the real app.~~
+  Equipped, armed and fired. It behaved as designed, and the owner read the
+  log's account of it.
+- ~~1b has never been playtested at all.~~ Played across four scenarios.
+- ~~The battlefield strip and squad panel showing a live bailing body were seen
+  only in widget tests.~~ Seen on screen, and this is where the player-side
+  panel's missing pill was found.
+
+**What is still not checked, honestly.** The scenarios are arranged boards,
+each isolating one rule in a turn or two. What has *not* been played is a full
+ordinary battle that happens to contain screening and a Bail Out along the way:
+the interactions between these rules and a twenty-round match's Trion pressure,
+cooldowns and AI decisions. #4 (wave 2) is the first item that will be
+playtested that way, and it will exercise both of these in passing.
 
 ### What the next session will trip over
 
@@ -925,10 +1060,18 @@ changed, but a green suite is not a played game.
   happens to Bail Out windows, `reach_check` and `formation_matrix` for reach,
   `screening_model` and `trap_screening_sim` for the screening rules,
   `stackable_statuses` and `doc_facts` for catalogue questions.
-- **The app suite has a flaky case.** `widget_test.dart`'s "Play mode: Home
-  screen squad builder" fails perhaps one full-suite run in five and passes on
-  its own. Observed on unmodified `main` before #2 started, so it is not #2's.
-  Re-run before believing it.
+- **The app suite had a flaky case, and it was not a flake.**
+  `widget_test.dart`'s "Play mode: Home screen squad builder" failed perhaps
+  one full-suite run in five, and it took down `main`'s deploy on the #3 merge.
+  The CI log named it exactly: a `RenderFlex` overflow in
+  `battlefield_rail.dart`, where a lane cell 95.2 logical pixels wide could not
+  fit a token's name beside its screen pips. It never reproduced locally
+  because the cell width follows the surface size, and the runner's differs.
+  **Fixed:** the name is now `Flexible` with an ellipsis, so the pips always
+  survive and the name is the half that gives way, which is the right priority
+  for a widget whose whole job is showing what is in the way. Five tests in
+  `battlefield_rail_test.dart` pin the rail at 560, 420, 360 and 300 pixels
+  wide; all five fail without the fix.
 - **The design review for #2**, with the eight decisions as options and
   trade-offs rather than just their answers:
   <https://claude.ai/code/artifact/2f6444f8-b695-42bc-a425-506fec978848>
