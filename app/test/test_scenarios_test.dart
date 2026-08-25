@@ -18,8 +18,9 @@ void main() {
       expect(s.name, isNotEmpty);
       expect(s.item, isNotEmpty);
       expect(s.goal, isNotEmpty);
-      expect(s.steps, isNotEmpty, reason: '${s.id} says nothing to do');
-      expect(s.expect, isNotEmpty,
+      expect(s.orderedSteps, isNotEmpty,
+          reason: '${s.id} says nothing to do');
+      expect(s.expectations, isNotEmpty,
           reason: '${s.id} says nothing to look for');
     }
   });
@@ -267,7 +268,159 @@ void main() {
 
       expect(find.text('WHAT TO DO'), findsOneWidget);
       expect(find.text('WHAT SHOULD HAPPEN'), findsOneWidget);
-      expect(find.text(scenario.expect.first), findsOneWidget);
+      expect(find.text(scenario.expectations.first), findsOneWidget);
+    });
+  });
+
+  group('a bailing body on YOUR squad reads as bailing, not defeated', () {
+    // The playtest found this: the opponent's squad panel is TeamPanel /
+    // FighterRow, which had the pill and the no-strike-through rule, but the
+    // player's own rows are a separate widget in play_flow_screen.dart that
+    // read only `alive`. So your own bailing character was painted exactly
+    // like a corpse: faded, struck through, no badge. Every existing test
+    // pumped the opponent's widget, so nothing saw it.
+    //
+    // This scenario exists only for the test. It is not in the picker.
+    final ownBodyScenario = TestScenario(
+      id: 'test_only_own_body',
+      name: 'Own body',
+      item: '#2',
+      goal: 'One of yours is already a body.',
+      steps: (s) => const ['Look at your own squad panel.'],
+      expect: (s) =>
+          const ['Kaito reads as bailing out, not as defeated.'],
+      playerIds: const ['rurik_voss', 'kaito_reyes', 'mireille_song'],
+      enemyIds: const ['vela_ashworth', 'ren_kobayashi', 'nadia_kessler'],
+      kits: {
+        for (final id in const [
+          'rurik_voss',
+          'kaito_reyes',
+          'mireille_song',
+          'vela_ashworth',
+          'ren_kobayashi',
+          'nadia_kessler',
+        ])
+          id: const [
+            'twin_fang_strike',
+            'shatterpoint',
+            'cleave',
+            'guardians_aegis',
+          ],
+      },
+      bailingOut: const {'kaito_reyes'},
+    );
+
+    testWidgets('the badge is on the row, and the name is not struck through',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(home: PlayFlowScreen(scenario: ownBodyScenario)),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      // One in your squad panel, one on nobody else: the opponent has no
+      // body in this scenario.
+      expect(find.text('BAILING OUT'), findsOneWidget);
+
+      final name = tester.widget<Text>(
+        find.text('Kaito Reyes').first,
+      );
+      expect(name.style?.decoration, isNot(TextDecoration.lineThrough),
+          reason: 'a body has not been struck off the board yet');
+      expect(name.style?.color, isNot(Colors.white38),
+          reason: 'a body is dimmed less than a defeated character');
+    });
+
+    testWidgets('a living squad shows no badge at all', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PlayFlowScreen(
+            scenario: testScenarios.firstWhere((s) => s.id == 'screen_holds'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('BAILING OUT'), findsNothing);
+    });
+  });
+
+  group('a brief cannot disagree with the game', () {
+    // The "Read the board" brief shipped claiming one screening pip and
+    // distances of 3 and 5, where the game correctly showed two pips and 4
+    // and 6. Nothing caught it, because the numbers in a brief were prose and
+    // only some scenarios had a matching assertion. They are computed now,
+    // and this is the test that the computation is the engine's own.
+    test('every distance a scenario computes matches the live battle', () {
+      for (final s in testScenarios) {
+        final session = s.start();
+        final everyone = [...s.playerIds, ...s.enemyIds];
+        for (final from in everyone) {
+          for (final to in everyone) {
+            if (from == to) continue;
+            // A destroyed character has no position worth asking about; the
+            // engine leaves them on the board's map but nothing measures to
+            // them.
+            if (s.destroyed.contains(from) || s.destroyed.contains(to)) {
+              continue;
+            }
+            expect(
+              s.distanceBetween(from, to),
+              session.battle.turnEngine.distanceBetween(
+                session.battle.states[from]!,
+                session.battle.states[to]!,
+              ),
+              reason: '${s.id}: $from to $to',
+            );
+          }
+        }
+      }
+    });
+
+    test('every screen count a scenario computes matches the live battle', () {
+      for (final s in testScenarios) {
+        final session = s.start();
+        for (final id in [...s.playerIds, ...s.enemyIds]) {
+          if (s.destroyed.contains(id)) continue;
+          final state = session.battle.states[id]!;
+          final live = BattleDistance.screensFor(
+            state.position,
+            session.battle.turnEngine.screeningLinesFor(state),
+          );
+          expect(s.screensOn(id), live, reason: '${s.id}: screens on $id');
+        }
+      }
+    });
+
+    test('every position a scenario computes matches the live battle', () {
+      for (final s in testScenarios) {
+        final session = s.start();
+        for (final id in [...s.playerIds, ...s.enemyIds]) {
+          expect(s.positionOf(id), session.battle.states[id]!.position,
+              reason: '${s.id}: position of $id');
+        }
+      }
+    });
+
+    test('Read the board says two pips, 4 and 6', () {
+      // The exact numbers the playtest reported, pinned so the brief that
+      // got them wrong can never come back.
+      final s = testScenarios.firstWhere((x) => x.id == 'read_the_board');
+      expect(s.screensOn('nadia_kessler'), 2);
+      expect(s.distanceBetween('rurik_voss', 'nadia_kessler'), 4);
+      expect(s.distanceBetween('mireille_song', 'nadia_kessler'), 6);
+      expect(s.distanceBetween('rurik_voss', 'vela_ashworth'), 0);
+
+      final brief = s.expectations.join(' ');
+      expect(brief, contains('2 screening pips'));
+      expect(brief, contains('4: your step 0, their step 2, plus 2 screens'));
+      expect(brief, contains('6: your step 2, their step 2, plus 2 screens'));
     });
   });
 }

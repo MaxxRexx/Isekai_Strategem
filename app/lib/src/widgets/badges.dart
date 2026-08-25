@@ -81,7 +81,7 @@ class BailingOutBadge extends StatelessWidget {
           borderRadius: BorderRadius.circular(3),
         ),
         child: const Text(
-          'BAILING',
+          'BAILING OUT',
           style: TextStyle(
             color: Colors.white70,
             fontSize: 10,

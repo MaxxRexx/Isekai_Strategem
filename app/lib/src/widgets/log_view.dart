@@ -850,12 +850,25 @@ class RollBreakdownView extends StatelessWidget {
         ),
       ];
     }
+    // The dice and the flat bonus are printed as two separate steps. Run
+    // together as one chain they read as one more die, and a playtester
+    // reading `1+6+2+3+2+6+23` had no way to tell that the 23 was not a roll.
     final spans = <InlineSpan>[
-      const TextSpan(text: 'Damage starts from the ability’s own dice: '),
-      TextSpan(text: d.diceDescribe, style: _die),
+      const TextSpan(text: 'The ability rolls '),
+      TextSpan(text: d.diceNotation, style: _die),
+      const TextSpan(text: ': '),
+      TextSpan(text: d.diceRollsDescribe, style: _die),
       const TextSpan(text: ' = '),
-      TextSpan(text: '${d.diceTotal}', style: _total),
+      TextSpan(text: '${d.diceRollsTotal}', style: _total),
     ];
+    if (d.diceFlatBonus != 0) {
+      spans.addAll([
+        const TextSpan(text: ', plus the ability’s flat '),
+        TextSpan(text: d.flatBonusDescribe, style: _stat),
+        const TextSpan(text: ' → '),
+        TextSpan(text: '${d.diceTotal}', style: _total),
+      ]);
+    }
     if (d.preCritMultiplier != 1.0) {
       final after = (d.diceTotal * d.preCritMultiplier).round();
       spans.addAll([

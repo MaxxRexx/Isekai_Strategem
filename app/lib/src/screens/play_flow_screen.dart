@@ -840,7 +840,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                scenario.steps.first,
+                scenario.orderedSteps.first,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white70, fontSize: 11.5),
@@ -1640,11 +1640,12 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         tutorialStep != null && tutorialStep.characterId != fighter.id;
 
     return Opacity(
-      opacity: !fighter.alive
-          ? 0.4
-          : lockedRow
-          ? 0.4
-          : 1,
+      // A bailing body is not a corpse. It is still standing on its line,
+      // still screening, and still the thing the enemy has to decide about,
+      // so it is dimmed less than a defeated character and never as far.
+      opacity: fighter.alive
+          ? (lockedRow ? 0.4 : 1)
+          : (fighter.bailingOut ? 0.7 : 0.4),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
@@ -1676,10 +1677,18 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                           fighter.name,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
+                            // Same three-way treatment the opponent's row
+                            // already used: white while alive, dimmed but
+                            // unstruck while bailing, struck through only
+                            // once they are actually gone. Striking through
+                            // a bailing body reads as "defeated", which is
+                            // exactly what item #2 is not.
                             color: fighter.alive
                                 ? Colors.white
-                                : Colors.white38,
-                            decoration: fighter.alive
+                                : (fighter.bailingOut
+                                    ? Colors.white70
+                                    : Colors.white38),
+                            decoration: (fighter.alive || fighter.bailingOut)
                                 ? null
                                 : TextDecoration.lineThrough,
                             fontWeight: FontWeight.w600,
@@ -1690,6 +1699,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                       if (fighter.fatTriggered) ...const [
                         SizedBox(width: 6),
                         FatBadge(),
+                      ],
+                      if (fighter.bailingOut) ...const [
+                        SizedBox(width: 6),
+                        BailingOutBadge(isOwnSquad: true),
                       ],
                     ],
                   ),

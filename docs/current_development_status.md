@@ -212,6 +212,53 @@ Waves are worked in order; everything inside a wave is one branch.
 
 Deferred, unchanged: **#9** (story mode) and **#12** (sign-in branding).
 
+### Found in the second #2 playtest, and fixed
+
+The owner ran the Tests tab scenarios. All eight resolved correctly. Three
+things came out of it.
+
+**Your own bailing body was painted as a corpse.** The opponent's squad panel
+is `TeamPanel` / `FighterRow`, which had the pill, the softer dimming and the
+no-strike-through rule. The player's own rows are a separate widget in
+`play_flow_screen.dart` that read only `alive`, so a bailing character of yours
+was faded to 0.4, struck through and given no badge: identical to a defeated
+one, and the exact miscommunication item #2 exists to prevent. Every existing
+test pumped the opponent's widget, which is why nothing saw it. Fixed, with a
+test that pumps the real battle screen with a body on the player's side and
+fails without the fix.
+
+**The badge said BAILING; it now says BAILING OUT**, matching the battle log
+and the design document, which both already used the full phrase.
+
+**The damage line was unreadable.** It printed
+`Damage starts from the ability's own dice: 1+6+2+3+2+6+23 = 43`, running the
+dice and the ability's flat bonus together in one additive chain, so the 23
+read as a seventh die. The owner asked, reasonably, what the line meant.
+`DiceExpressionRollResult` now carries the die size, and the log renders two
+steps instead of one: **"The ability rolls 6d6: 1+6+2+3+2+6 = 20, plus the
+ability's flat +23 -> 43."** Six tests in `damage_workings_test.dart` pin it,
+including one asserting the old chain cannot come back.
+
+### The scenario briefs compute their own numbers
+
+The "Read the board" brief shipped claiming one screening pip and distances of
+3 and 5. The game correctly showed **two pips, 4 and 6**. The scenario was
+right and the prose describing it was wrong, which is the worst way round: a
+tester who trusts the brief reports a bug that is not there, or misses one that
+is.
+
+The cause was that a brief was hand-written prose while only some scenarios had
+a matching assertion, and `read_the_board` had none. Writing the correct
+numbers in would have fixed this instance and left the class of error open.
+
+**A brief's numbers are now computed.** `steps` and `expect` are builders taking
+the scenario itself, so a claim about a distance calls
+`s.reachReading('rurik_voss', 'nadia_kessler')`, which computes it through
+`BattleDistance`, the engine's own rule. Three tests then assert that the
+scenario's arithmetic agrees with a live battle for **every pair of characters,
+every screen count and every position in every scenario**, and a fourth pins
+the specific numbers the playtest reported.
+
 ### The Tests tab: pre-arranged boards for the wave 0 playtests
 
 Built because the two outstanding playtests are for cases an ordinary battle

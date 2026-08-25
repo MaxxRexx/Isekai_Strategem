@@ -179,14 +179,14 @@ class ScenarioBriefBody extends StatelessWidget {
         const SizedBox(height: 14),
         _BriefList(
           label: 'What to do',
-          entries: scenario.steps,
+          entries: scenario.orderedSteps,
           numbered: true,
           color: Palette.accent,
         ),
         const SizedBox(height: 14),
         _BriefList(
           label: 'What should happen',
-          entries: scenario.expect,
+          entries: scenario.expectations,
           numbered: false,
           color: Palette.good,
         ),
