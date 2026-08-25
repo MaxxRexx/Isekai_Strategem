@@ -530,23 +530,26 @@
       <span><b>Branch</b> claude/tasks-3-3b-r8ceab</span>
       <span><b>Stage</b> design, no code written</span>
       <span><b>Measured over</b> 200 AI battles, seed 7</span>
-      <span><b>Decisions needed</b> 7</span>
+      <span><b>Decisions</b> 7, all approved</span>
       <span><b>Revised</b> after the queue was re-sequenced</span>
     </div>
   </header>
 
   <section>
-    <h2>What is being asked</h2>
-    <p class="prose lede">Seven decisions, lettered for reply. Everything after this section is the evidence behind them. If the recommendations all look right, "all as recommended" is a complete answer.</p>
+    <h2>What was decided</h2>
+    <p class="prose lede">All seven were approved as recommended, after this review was re-read against the re-sequenced queue. They are recorded here as the decisions wave 1 builds against; everything after this section is the evidence behind them.</p>
+    <div class="note" style="border-left-color: var(--good); background: var(--good-wash);">
+      <p><strong>Approved.</strong> Six of the seven gate wave 1 and are being built against now. <strong>#C</strong>, the Trigger Value band, is needed at the start of wave 2 rather than wave 4: item #4 sets the Trion cost of every ability and cannot do that without a target to aim at.</p>
+    </div>
     <div class="ask">
       <ol>
-        <li><span class="s">#A</span><span>What one Status Point <em>is</em>. Recommended: SP is measured in damage-equivalent directly, at face value, with no conversion constant, and stored as formulas over a re-measurable baseline rather than as frozen numbers.</span></li>
-        <li><span class="s">#B</span><span>Where a status effect's SP comes from. Recommended: computed from the definition's own fields, having first given the five field-less effects real fields, which 13b needs anyway. A two-entry override covers what is left.</span></li>
-        <li><span class="s">#C</span><span>How tight the Trigger Value band is. Recommended: keep the design director's 2.0 to 3.0. Needed at the start of wave 2, not wave 4, because #4 cannot pick costs without a target.</span></li>
-        <li><span class="s">#D</span><span>The 1-turn debuff that expires before its victim acts. Recommended: move the countdown to the end of the holder's turn.</span></li>
-        <li><span class="s">#E</span><span>The 24 status effects nothing applies. Recommended: price all 62, let 3b's reaction table home four for free, and land a failing-by-design reachability test that names the rest.</span></li>
-        <li><span class="s">#F</span><span>How stacking works. Recommended: one instance carrying a stack count, one shared duration, capped at 3.</span></li>
-        <li><span class="s">#G</span><span>Whether a status reaction has to win an infliction contest. Recommended: no, reactions fire automatically.</span></li>
+        <li><span class="s">#A</span><span>What one Status Point <em>is</em>. Approved: SP is measured in damage-equivalent directly, at face value, with no conversion constant, and stored as formulas over a re-measurable baseline rather than as frozen numbers.</span></li>
+        <li><span class="s">#B</span><span>Where a status effect's SP comes from. Approved: computed from the definition's own fields, having first given the five field-less effects real fields, which 13b needs anyway. A two-entry override covers what is left.</span></li>
+        <li><span class="s">#C</span><span>How tight the Trigger Value band is. Approved: keep the design director's 2.0 to 3.0. Needed at the start of wave 2, not wave 4, because #4 cannot pick costs without a target.</span></li>
+        <li><span class="s">#D</span><span>The 1-turn debuff that expires before its victim acts. Approved: move the countdown to the end of the holder's turn.</span></li>
+        <li><span class="s">#E</span><span>The 24 status effects nothing applies. Approved: price all 62, let 3b's reaction table home four for free, and land a failing-by-design reachability test that names the rest.</span></li>
+        <li><span class="s">#F</span><span>How stacking works. Approved: one instance carrying a stack count, one shared duration, capped at 3.</span></li>
+        <li><span class="s">#G</span><span>Whether a status reaction has to win an infliction contest. Approved: no, reactions fire automatically.</span></li>
       </ol>
     </div>
   </section>
@@ -784,7 +787,7 @@
         </div>
         <div class="options">
           <div class="option pick">
-            <span class="oid">A1<span class="rec">Recommended</span></span>
+            <span class="oid">A1<span class="rec">Approved</span></span>
             <div class="otext">
               <p>SP <em>is</em> damage-equivalent, at face value. One SP is one point of damage. No conversion constant exists, so it cannot be wrong.</p>
               <p>Face value means SP says what the effect does when it lands. Every probability lives in one place, the rider factor in TV, rather than being smeared through the status catalogue. Cost: SP numbers get bigger and less memorable (a one-turn stun is 12.3, not 4), and the design document's sentence has to be rewritten.</p>
@@ -818,7 +821,7 @@
         </div>
         <div class="options">
           <div class="option pick">
-            <span class="oid">B2<span class="rec">Recommended, changed</span></span>
+            <span class="oid">B2<span class="rec">Approved, changed from B1</span></span>
             <div class="otext">
               <p>Give the five field-less statuses real declarative fields, then compute every price from the fields. A two-entry override covers the ones whose value is not mechanical.</p>
               <p><strong>The re-sequencing flipped this.</strong> 13b is now in wave 1, in the same pass, and it has to make those same five describable. The fields it needs are the fields the pricer needs, so 13b pays for most of the work either way. One field each for <code>called_shot_stat_zero</code>, <code>forced_choice</code>, <code>forced_critical_miss</code>, <code>karmic_bind</code> and <code>minds_eye_reveal</code>.</p>
@@ -854,7 +857,7 @@
         </div>
         <div class="options">
           <div class="option pick">
-            <span class="oid">C1<span class="rec">Recommended</span></span>
+            <span class="oid">C1<span class="rec">Approved</span></span>
             <div class="otext">
               <p>Keep 2.0 to 3.0. Add the SP term first, re-measure, and only then move the costs of whatever is still outside.</p>
               <p>The smallest change that could work, and it tests the rule before trusting it. The status-only abilities currently at 0.5 should land in band from the SP term alone, which is a real check on whether the pricing is right.</p>
@@ -888,7 +891,7 @@
         </div>
         <div class="options">
           <div class="option pick">
-            <span class="oid">D1<span class="rec">Recommended</span></span>
+            <span class="oid">D1<span class="rec">Approved</span></span>
             <div class="otext">
               <p>Move the countdown to the end of the holder's turn. Leave the damage and heal ticks at the start where they are.</p>
               <p>Duration then means the same thing for everyone: active during the holder's next N turns. A 1-turn debuff covers exactly the turn it was meant to interrupt. Splitting the countdown from the ticks means damage-over-time is untouched, which the status document's version of this option did not account for: Bleeding still gets its three ticks either way.</p>
@@ -924,7 +927,7 @@
         </div>
         <div class="options">
           <div class="option pick">
-            <span class="oid">E1<span class="rec">Recommended</span></span>
+            <span class="oid">E1<span class="rec">Approved</span></span>
             <div class="otext">
               <p>Price all 62 now. Land 3b's reaction table, which homes four of them for free (Frozen, Electrocuted, Sickened and Acid all become reaction results). Add a reachability test that lists the remaining orphans explicitly, so the list can only ever shrink.</p>
               <p>Keeps this item a pricing pass, honours the standing rule by making every future violation visible, and buys four homes without writing a single new ability. The named list is uncomfortable to look at, which is the point.</p>
@@ -958,7 +961,7 @@
         </div>
         <div class="options">
           <div class="option pick">
-            <span class="oid">F1<span class="rec">Recommended</span></span>
+            <span class="oid">F1<span class="rec">Approved</span></span>
             <div class="otext">
               <p>One instance carrying a stack count, one shared duration, refreshed on re-application, capped at 3. Magnitudes multiply by the count; SP does too.</p>
               <p>Reads cleanly as one badge saying "Bleeding x3" with one countdown, which is what the interface needs. It also matches the existing refresh rule rather than replacing it: re-application still refreshes the duration, and now also adds a stack.</p>
@@ -984,7 +987,7 @@
         </div>
         <div class="options">
           <div class="option pick">
-            <span class="oid">G1<span class="rec">Recommended</span></span>
+            <span class="oid">G1<span class="rec">Approved</span></span>
             <div class="otext">
               <p>Automatic. The setup already paid for a contest when the first status landed, so the payoff is guaranteed.</p>
               <p>The arithmetic decides this one. A hostile rider lands 46% of the time, so a contested two-step play would come off 21% of the time, and nobody builds a squad around a one-in-five. Automatic reactions are also what makes the mechanism feel like a mechanism rather than another dice roll, which is the whole appeal of the shape 3b is borrowing.</p>
