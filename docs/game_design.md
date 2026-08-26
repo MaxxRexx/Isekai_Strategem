@@ -658,30 +658,37 @@ Infliction against the target's Status Effect Resistance.
 fires, read off the trap rather than off whoever laid it, so being Empowered when
 it goes off changes nothing. It is a placed hazard, not an attack you are making.
 
-**When a status effect actually wears off.** A timed effect ticks down at the
-**start of its holder's own turn**, and expires when the count reaches zero. Put
-that together with buffs resolving before attacks, and a status applied on a
-turn is live for the rest of that turn's resolution, stays live through the
-opponent's answer, and is decremented when its holder's next turn begins.
+**When a status effect actually wears off.** A duration counts the **holder's
+own turns**, and it counts them honestly: an effect that says two turns is live
+for the holder's next two turns. It counts down at the **end** of the holder's
+turn, and it never counts the turn it was applied on, because the holder has
+not had that turn to spend.
 
-Two consequences worth stating plainly, because a bare turn count hides both:
+Three consequences, all of them the same rule seen from different sides:
 
-- A buff lasting two turns or more is **still up on your next turn**, so a turn
-  spent buffing sets up the attack you make next. That is the ordinary way a buff
-  pays, and it needs no Full Arms Trigger. (Buffs also resolve before attacks
-  within a turn, so on a FAT turn you can do both at once, but no ability is
-  built to require that: an ability that only worked inside a FAT turn would
-  mostly do nothing.)
-- A **1-turn** effect is gone before its holder acts again. So the game says
-  "active this turn only, it wears off when your next turn begins" rather than
-  printing a 1, and a 2-turn effect says "active this turn and your next turn".
+- A **1-turn** effect on an enemy costs them exactly one action. A 1-turn Stun
+  takes their next turn away; a 2-turn Stun takes two.
+- A buff lasting two turns is **up for two of your own turns**, starting with
+  your next one. It is also live for the rest of the turn you cast it on, which
+  is a free remainder rather than one of the two. So a turn spent buffing sets
+  up the attack you make next, and it needs no Full Arms Trigger. (Buffs also
+  resolve before attacks within a turn, so on a FAT turn you can do both at
+  once, but no ability is built to require that: an ability that only worked
+  inside a FAT turn would mostly do nothing.)
+- A ward you put up covers the opponent's answers, the same as it always did.
+  Damage over time still ticks exactly as many times as its duration says.
 
-*Known issue, awaiting the SPTV pass: because the tick happens at the start of
-the holder's turn, a 1-turn debuff placed on an **enemy** expires before that
-enemy acts, so it never affects the turn it was meant to interrupt. Eleven
-effects carry a 1-turn default, including Stunned and Frozen. The fix is a
-decision about when the tick happens, and it is priced with everything else in
-that pass.*
+Damage and healing ticks stay at the **start** of the holder's turn, which is
+where a player expects to see them. Only the counting moved.
+
+*This was the last thing in the game where one word meant three different
+things. Until item #D the count ran down at the start of the holder's turn, so
+a 1-turn debuff put on an enemy was removed before they acted and did nothing
+whatsoever (eleven effects carried a 1-turn default, Stunned and Frozen among
+them), a debuff of N turns delivered N damage ticks but only N-1 afflicted
+turns, and a buff of N covered N of the opponent's turns but only N-1 of your
+own. It now means one thing, which is what lets a status say how long it lasts
+in a single sentence.*
 
 ---
 

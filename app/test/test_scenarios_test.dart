@@ -197,6 +197,53 @@ void main() {
     List<ActiveTrigger> kitOf(PlaySession session, String characterId) =>
         session.equippedA[CombatantIds.of('player', characterId)]!;
 
+    test('A one-turn lock: the brief step one is actually performable', () {
+      // A brief that tells a tester to queue an ability they cannot reach
+      // with is worse than no brief. Item #D's scenario turns on Mind
+      // Shatter landing on the enemy Front, so that has to be a legal queue
+      // from where the scenario stands Kaito.
+      final s = byId('one_turn_silence');
+      final session = s.start();
+      final kaito = stateOf(s, session, 'kaito_reyes');
+      final vela = stateOf(s, session, 'vela_ashworth');
+
+      expect(kitOf(session, 'kaito_reyes').map((t) => t.id),
+          contains('mind_shatter'));
+
+      final distance =
+          session.battle.turnEngine.distanceBetween(kaito, vela);
+      expect(RangeTag.mid.reaches(distance), isTrue,
+          reason: 'Mid Range has to reach at distance $distance');
+
+      final queued = session.queue(
+        kaito.combatantId,
+        'mind_shatter',
+        [vela.combatantId],
+      );
+      expect(queued.success, isTrue, reason: queued.error ?? '');
+    });
+
+    test('A buff you cast: War Chant is on the caster kit and self-aimed', () {
+      final s = byId('buff_lasts_your_turns');
+      final session = s.start();
+      final kaito = stateOf(s, session, 'kaito_reyes');
+
+      final warChant = kitOf(session, 'kaito_reyes')
+          .firstWhere((t) => t.id == 'war_chant');
+      expect(warChant.targetAffiliation, TargetAffiliation.self);
+      expect(
+        warChant.inflictedStatusEffects.map((a) => a.statusEffectId),
+        contains('empowered'),
+      );
+
+      final queued = session.queue(
+        kaito.combatantId,
+        'war_chant',
+        [kaito.combatantId],
+      );
+      expect(queued.success, isTrue, reason: queued.error ?? '');
+    });
+
     test('The screen holds: the enemy back line is out of Close Range', () {
       final s = byId('screen_holds');
       final session = s.start();

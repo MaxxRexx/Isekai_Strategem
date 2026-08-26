@@ -1,6 +1,7 @@
 import '../models/character.dart';
 import '../models/combatant_id.dart';
 import '../models/passive_counter.dart';
+import '../models/status_effect.dart';
 import '../models/team.dart';
 import '../models/trigger.dart';
 import '../models/trion.dart';
@@ -53,7 +54,15 @@ class BailOutResolution {
 class TeamTurnEndResult {
   final List<BailOutResolution> bailOuts;
 
-  const TeamTurnEndResult({this.bailOuts = const []});
+  /// Status effects that ran out at the end of this turn, by combatant id
+  /// (item #D moved the countdown here). Empty for a turn where nothing
+  /// expired.
+  final Map<String, List<StatusEffectInstance>> statusesExpired;
+
+  const TeamTurnEndResult({
+    this.bailOuts = const [],
+    this.statusesExpired = const {},
+  });
 }
 
 /// A battle's outcome. [ongoing] until one or both teams are fully
@@ -385,6 +394,12 @@ class Battle {
   }) {
     final team = activeTeam;
     activeTeamDealtDamageThisTurn = false;
+    // Item #D: a status landing on someone mid-turn must not spend that
+    // turn. Everything that applies one reads this flag, so it is set
+    // before any of the turn's own effects resolve.
+    for (final state in statesOf(team)) {
+      state.isTakingTurn = true;
+    }
     // Combos never span turns under alternating resolution: start each turn
     // with an empty combo ledger.
     turnEngine.comboLedger.clearTurn();
@@ -477,8 +492,16 @@ class Battle {
       activeTeamDealtDamage: activeTeamDealtDamageThisTurn,
     );
 
+    final statusesExpired = <String, List<StatusEffectInstance>>{};
     for (final state in activeTeamStates) {
-      if (state.isAlive) turnEngine.endCharacterTurn(state);
+      if (!state.isAlive) continue;
+      final expired = turnEngine.endCharacterTurn(state);
+      if (expired.isNotEmpty) statusesExpired[state.combatantId] = expired;
+    }
+    // The turn is over for everyone on this team, including anyone who was
+    // not alive to take it.
+    for (final state in statesOf(activeTeam)) {
+      state.isTakingTurn = false;
     }
 
     final bailOuts = _settleBailOuts();
@@ -489,7 +512,10 @@ class Battle {
 
     if (!isTeamATurn) roundNumber++;
     isTeamATurn = !isTeamATurn;
-    return TeamTurnEndResult(bailOuts: bailOuts);
+    return TeamTurnEndResult(
+      bailOuts: bailOuts,
+      statusesExpired: statusesExpired,
+    );
   }
 
   /// Closes out the turn's Bail Out bookkeeping: a body whose contested

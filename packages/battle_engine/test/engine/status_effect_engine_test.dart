@@ -223,15 +223,31 @@ void main() {
     });
 
     test('effects expire and are removed once remainingTurns reaches 0', () {
+      // Item #D: the countdown lives at the *end* of the holder's turn now,
+      // so it is tickEndOfTurn that expires an effect, not tickStartOfTurn.
       final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
       final state = CharacterBattleState(testCharacter());
       engine.apply(state, 'stunned', durationOverride: 2);
 
       expect(state.statusEffects, hasLength(1));
-      engine.tickStartOfTurn(state); // 2 -> 1
+      expect(engine.tickEndOfTurn(state), isEmpty); // 2 -> 1
       expect(state.statusEffects, hasLength(1));
-      engine.tickStartOfTurn(state); // 1 -> 0, removed
+      final expired = engine.tickEndOfTurn(state); // 1 -> 0, removed
       expect(state.statusEffects, isEmpty);
+      expect(expired.single.definitionId, 'stunned');
+    });
+
+    test('a start-of-turn tick no longer counts anything down', () {
+      final engine = StatusEffectEngine(diceRoller: DiceRoller(Random(1)));
+      final state = CharacterBattleState(testCharacter());
+      engine.apply(state, 'bleeding', durationOverride: 3);
+
+      engine.tickStartOfTurn(state);
+      engine.tickStartOfTurn(state);
+      engine.tickStartOfTurn(state);
+
+      expect(state.statusEffects.single.remainingTurns, 3,
+          reason: 'ticking damage is not the same thing as ageing');
     });
   });
 
@@ -265,7 +281,7 @@ void main() {
       engine.apply(state, 'reeling', durationOverride: 3);
 
       expect(state.effectiveStats().attack, 17); // 20 - 1*3
-      engine.tickStartOfTurn(state); // remaining -> 2
+      engine.tickEndOfTurn(state); // remaining -> 2
       expect(state.effectiveStats().attack, 18); // 20 - 1*2
     });
 

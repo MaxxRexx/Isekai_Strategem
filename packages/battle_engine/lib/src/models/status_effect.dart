@@ -241,10 +241,24 @@ class StatusEffectInstance {
   /// chosen for Sickened, or the currently-locked ability id for Prone.
   final Map<String, Object?> data;
 
+  /// Set when the effect lands on a character who is in the middle of
+  /// their own turn, and cleared by the first countdown that sees it.
+  ///
+  /// The countdown runs at the end of the holder's turn (item #D), so
+  /// without this an effect applied on the holder's own turn would spend
+  /// one of its turns before the holder ever had one: a self-buff cast on
+  /// your turn would burn a turn immediately, and a counter's Stun landing
+  /// on the attacker mid-turn would expire before their next turn began.
+  /// Skipping exactly the turn it was applied on is what makes a duration
+  /// of N mean "the holder's next N turns" for every effect, whoever
+  /// applied it and whenever.
+  bool skipsNextCountdown;
+
   StatusEffectInstance({
     required this.definitionId,
     this.remainingTurns,
     this.sourceCharacterId,
+    this.skipsNextCountdown = false,
     Map<String, Object?>? data,
   }) : data = data ?? {};
 }

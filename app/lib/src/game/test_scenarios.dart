@@ -257,6 +257,15 @@ const _refuser = [
   'shatterpoint',
 ];
 
+/// Carries the two abilities item #D is about: Mind Shatter silences an enemy
+/// for one turn, and War Chant is a two-turn buff on yourself.
+const _silencer = [
+  'mind_shatter',
+  'twin_fang_strike',
+  'war_chant',
+  'shatterpoint',
+];
+
 /// The player squad used by most scenarios: the roster's hardest hitter at
 /// the front, so a kill that a scenario depends on actually lands.
 const _playerSquad = ['rurik_voss', 'kaito_reyes', 'mireille_song'];
@@ -271,6 +280,105 @@ const _back = BattlePosition.back;
 /// Every scenario ever written, retired or not. The tests validate all of
 /// them; the picker shows [testScenarios].
 final List<TestScenario> allScenarios = [
+  TestScenario(
+    id: 'one_turn_silence',
+    name: 'A one-turn lock costs a turn',
+    item: '#D',
+    goal:
+        'A status that says one turn should take one whole turn away. Until '
+        'item #D it took none: the count ran down at the start of its '
+        'holder\'s turn, so a one-turn lock was removed before they acted '
+        'and did nothing at all.',
+    steps: (s) => [
+      'Queue Mind Shatter from Kaito (Middle) at the enemy Front (Vela), '
+          'which is Mid Range at distance '
+          '${s.distanceBetween('kaito_reyes', 'vela_ashworth')}, and resolve '
+          'the turn.',
+      'If it landed, Vela shows a SILENCED badge. Tap it and read what it '
+          'says is left.',
+      'End your turn and watch what the enemy squad does.',
+      'Take your next turn and check the badge is gone.',
+    ],
+    expect: (s) => [
+      'The badge tooltip reads "One turn left: it wears off at the end of '
+          'their next turn." No arithmetic, no warning that it is about to '
+          'vanish unused.',
+      'Vela does not act on the enemy turn. That is the whole point: one '
+          'turn of Silenced costs exactly one action.',
+      'The badge is gone by the time you act again, and it went at the end '
+          'of their turn rather than the start of it.',
+      'Nobody else on their squad is affected, and their turn otherwise '
+          'plays normally.',
+    ],
+    caveat:
+        'Mind Shatter has to hit and then win the infliction contest, so it '
+        'can fail outright. If no SILENCED badge appears, the status never '
+        'landed: re-run the scenario rather than reading it as a duration '
+        'fault.',
+    playerIds: _playerSquad,
+    enemyIds: _enemySquad,
+    kits: {
+      'rurik_voss': _brawler,
+      'kaito_reyes': _silencer,
+      'mireille_song': _sniper,
+      'vela_ashworth': _brawler,
+      'ren_kobayashi': _brawler,
+      'nadia_kessler': _sniper,
+    },
+    positions: {
+      'rurik_voss': _front,
+      'kaito_reyes': _middle,
+      'mireille_song': _back,
+      'vela_ashworth': _front,
+      'ren_kobayashi': _middle,
+      'nadia_kessler': _back,
+    },
+  ),
+
+  TestScenario(
+    id: 'buff_lasts_your_turns',
+    name: 'A buff you cast lasts your turns',
+    item: '#D',
+    goal:
+        'The other half of item #D. A two-turn buff on yourself should cover '
+        'two of your own turns, counting from your next one, and the turn '
+        'you cast it on is a free remainder rather than one of the two.',
+    steps: (s) => [
+      'Queue War Chant from Kaito on himself and resolve the turn.',
+      'Read the EMPOWERED badge on Kaito: it should say two turns left.',
+      'End your turn. On your next turn, check the badge is still there and '
+          'now says one.',
+      'End that turn too. On the turn after, the badge should be gone.',
+    ],
+    expect: (s) => [
+      'Right after casting, the badge says 2 turns left, counting your next '
+          'one. It does not drop to 1 on the turn you cast it.',
+      'It is still on Kaito for two of your own turns, not one.',
+      'It wears off at the end of the second of those, so you never start a '
+          'turn with a buff that is about to be taken away unused.',
+      'The count only moves on your own turns. The enemy taking a turn does '
+          'not spend one of yours.',
+    ],
+    playerIds: _playerSquad,
+    enemyIds: _enemySquad,
+    kits: {
+      'rurik_voss': _brawler,
+      'kaito_reyes': _silencer,
+      'mireille_song': _sniper,
+      'vela_ashworth': _brawler,
+      'ren_kobayashi': _brawler,
+      'nadia_kessler': _sniper,
+    },
+    positions: {
+      'rurik_voss': _front,
+      'kaito_reyes': _middle,
+      'mireille_song': _back,
+      'vela_ashworth': _front,
+      'ren_kobayashi': _middle,
+      'nadia_kessler': _back,
+    },
+  ),
+
   TestScenario(
     id: 'read_the_board',
     retired: true,

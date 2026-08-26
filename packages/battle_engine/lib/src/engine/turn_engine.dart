@@ -1981,11 +1981,18 @@ class TurnEngine {
     });
   }
 
-  /// Finalizes [state] for the turn: applies cooldowns (doubled if FAT
-  /// was used for 2+ abilities), the resulting Trion Affinity halving
-  /// penalty for next turn, and ticks down existing cooldowns/penalties.
-  void endCharacterTurn(CharacterBattleState state) =>
-      state.endTurn(fatConfig: fatConfig);
+  /// Finalizes [state] for the turn: counts down their status effects
+  /// (item #D - see [StatusEffectEngine.tickEndOfTurn]), applies cooldowns
+  /// (doubled if FAT was used for 2+ abilities), the resulting Trion
+  /// Affinity halving penalty for next turn, and ticks down existing
+  /// cooldowns/penalties.
+  ///
+  /// Returns the status effects that expired here, for the battle log.
+  List<StatusEffectInstance> endCharacterTurn(CharacterBattleState state) {
+    final expired = statusEffectEngine.tickEndOfTurn(state);
+    state.endTurn(fatConfig: fatConfig);
+    return expired;
+  }
 
   /// The resonance multiplier applying to [wielder]'s own equipped Black
   /// Trigger, from [wielder]'s [CharacterType] x the Black Trigger's

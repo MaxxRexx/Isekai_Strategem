@@ -44,12 +44,13 @@ String _formatNumber(double v) =>
 /// How long a status effect lasts, in the only terms a player can act on:
 /// their own turns.
 ///
-/// The engine ticks an effect down at the **start of its holder's turn**, and
-/// the queue resolves buffs before attacks, so an effect applied on a turn is
-/// live for the rest of that turn's resolution and through the opponent's
-/// answer, and is then decremented when its holder's next turn begins. A
-/// 1-turn effect is therefore gone before its holder acts again, which is
-/// exactly the thing a bare "1 turn" fails to tell anyone.
+/// Since item #D this is one sentence rather than three. The engine counts an
+/// effect down at the **end of its holder's turn** and never counts the turn
+/// it was applied on, so a duration of N means the holder's next N turns,
+/// whoever applied it and whenever. A 1-turn Stun costs its victim exactly one
+/// action; a 2-turn buff covers two of your own turns. The effect is also live
+/// for the rest of the turn it landed on, which is a free remainder rather
+/// than one of the N.
 ///
 /// [onSelf] switches the possessive, since the turns being counted are the
 /// holder's, and the holder is the target for a debuff.
@@ -57,11 +58,9 @@ String describeStatusDuration(int? turns, {required bool onSelf}) {
   if (turns == null) return 'Lasts until it is removed.';
   final whose = onSelf ? 'your' : 'their';
   if (turns <= 1) {
-    return 'Active this turn only. It wears off when $whose next turn begins.';
+    return 'Lasts through $whose next turn.';
   }
-  final more = turns - 1;
-  return 'Active this turn and $whose next '
-      '${more == 1 ? 'turn' : '$more turns'}.';
+  return 'Lasts through $whose next $turns turns.';
 }
 
 /// What a status effect actually does, in plain terms, followed by how long
@@ -74,6 +73,7 @@ String describeStatusDuration(int? turns, {required bool onSelf}) {
 String describeStatusEffect(
   StatusEffectDefinition def, {
   required bool onSelf,
+  bool includeDuration = true,
 }) {
   // Every clause is written to follow "You" or "They", so it stays a base-form
   // verb ("deal", not "deals") and the two subjects share one phrasing.
@@ -143,6 +143,7 @@ String describeStatusEffect(
   final what = bits.isEmpty
       ? '$subject are affected by ${def.name}'
       : '$subject ${bits.join(', ')}';
+  if (!includeDuration) return '$what.';
   return '$what. '
       '${describeStatusDuration(def.defaultDurationTurns, onSelf: onSelf)}';
 }
@@ -153,6 +154,8 @@ String describeStatusEffect(
 /// [remainingTurns] is the live counter rather than the effect's default, and
 /// it is spelled out in the same "whose turns" terms as everything else,
 /// because a bare number does not say whether it survives to your next action.
+/// Since item #D the counter is honest: it is the number of the holder's turns
+/// still to come, and the last of them is a whole turn rather than a moment.
 String describeStatusBadge({
   required String id,
   required String name,
@@ -164,27 +167,27 @@ String describeStatusBadge({
   final whose = onSelf ? 'your' : 'their';
   final String what;
   if (catalog.contains(id)) {
-    what = describeStatusEffect(catalog[id], onSelf: onSelf)
-        // The definition's own default duration is the wrong number here: the
-        // live counter below is what is actually left.
-        .split('. Active this turn')
-        .first
-        .split('. Lasts until')
-        .first;
+    // The definition's own default duration is the wrong number here: the
+    // live counter below is what is actually left. This used to be done by
+    // splitting the sentence back off the string, which quietly stopped
+    // matching the moment item #D reworded it, printing both numbers.
+    what = describeStatusEffect(
+      catalog[id],
+      onSelf: onSelf,
+      includeDuration: false,
+    );
   } else {
-    what = name;
+    what = '$name.';
   }
   final String left;
   if (remainingTurns == null) {
     left = 'Stays until it is removed.';
   } else if (remainingTurns <= 1) {
-    left = 'Wears off when $whose next turn begins.';
+    left = 'One turn left: it wears off at the end of $whose next turn.';
   } else {
-    left = 'Lasts $whose next ${remainingTurns - 1} '
-        '${remainingTurns - 1 == 1 ? 'turn' : 'turns'}, '
-        'then wears off at the start of the one after.';
+    left = '$remainingTurns turns left, counting $whose next one.';
   }
-  return '$name. $what. $left';
+  return '$name. $what $left';
 }
 
 /// One-paragraph player-facing description of what an active Trigger

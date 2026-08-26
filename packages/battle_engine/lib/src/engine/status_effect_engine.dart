@@ -145,6 +145,9 @@ class StatusEffectEngine {
       // keeps the credit, which is what the "cannot target its source" rules
       // read.
       if (instanceData != null) existing.data.addAll(instanceData);
+      // A refresh on the holder's own turn sits that turn out too, for the
+      // same reason a fresh application does.
+      if (target.isTakingTurn) existing.skipsNextCountdown = true;
       return true;
     }
 
@@ -152,6 +155,7 @@ class StatusEffectEngine {
       definitionId: statusEffectId,
       remainingTurns: durationOverride ?? def.defaultDurationTurns,
       sourceCharacterId: sourceCharacterId,
+      skipsNextCountdown: target.isTakingTurn,
       data: instanceData,
     );
 
@@ -180,10 +184,14 @@ class StatusEffectEngine {
     }
   }
 
-  /// Applies start-of-turn effects (damage ticks, Trion drain) for
-  /// [target] and ticks down/removes expired instances. Health and Trion
-  /// pool mutation is left to the caller via the returned events, keeping
-  /// this engine decoupled from the rest of battle state.
+  /// Applies start-of-turn effects (damage ticks, heals, Trion drain) for
+  /// [target]. Health and Trion pool mutation is left to the caller via
+  /// the returned events, keeping this engine decoupled from the rest of
+  /// battle state.
+  ///
+  /// The duration countdown deliberately does **not** happen here: it runs
+  /// at the end of the holder's turn instead, in [tickEndOfTurn]. See that
+  /// method for why (item #D).
   StatusTickResult tickStartOfTurn(CharacterBattleState target) {
     final damageEvents = <TurnStartDamageEvent>[];
     final drainEvents = <TrionDrainEvent>[];
@@ -210,14 +218,46 @@ class StatusEffectEngine {
         drainEvents.add(TrionDrainEvent(instance.sourceCharacterId!, amount));
       }
 
-      if (instance.remainingTurns != null) {
-        instance.remainingTurns = instance.remainingTurns! - 1;
+    }
+
+    return StatusTickResult(damageEvents, drainEvents, healEvents);
+  }
+
+  /// Counts down [target]'s timed status effects and removes the ones that
+  /// have run out, returning what expired (for the battle log).
+  ///
+  /// **Item #D.** This used to happen at the *start* of the holder's turn,
+  /// alongside the ticks above, and that made one word mean three things.
+  /// A 1-turn Stun put on an enemy was decremented to zero and removed at
+  /// the start of their turn, before they acted, so it did nothing at all;
+  /// a debuff of N turns delivered N damage ticks but only N-1 afflicted
+  /// turns; and a self-buff of N covered N of the opponent's turns.
+  ///
+  /// Counting down at the end of the holder's turn, and skipping the turn
+  /// the effect was applied on (see
+  /// [StatusEffectInstance.skipsNextCountdown]), makes N mean the same
+  /// thing everywhere: **the holder's next N turns**. A 1-turn Stun costs
+  /// exactly one action, a 3-turn Bleeding still ticks three times, and a
+  /// ward still covers the answers it always covered.
+  ///
+  /// Untimed effects (`remainingTurns == null`) are left alone; they end
+  /// only when something removes them.
+  List<StatusEffectInstance> tickEndOfTurn(CharacterBattleState target) {
+    final expired = <StatusEffectInstance>[];
+
+    for (final instance in target.statusEffects) {
+      if (instance.remainingTurns == null) continue;
+      if (instance.skipsNextCountdown) {
+        instance.skipsNextCountdown = false;
+        continue;
       }
+      instance.remainingTurns = instance.remainingTurns! - 1;
+      if (instance.remainingTurns! <= 0) expired.add(instance);
     }
 
     target.statusEffects
         .removeWhere((i) => i.remainingTurns != null && i.remainingTurns! <= 0);
 
-    return StatusTickResult(damageEvents, drainEvents, healEvents);
+    return expired;
   }
 }

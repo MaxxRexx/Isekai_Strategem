@@ -204,7 +204,7 @@ Waves are worked in order; everything inside a wave is one branch.
 | Wave | Items | Why it sits here |
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
-| **1** | ~~#14~~ ~~5c~~ **done** &rarr; the duration fix &rarr; **3b** mechanism &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
+| **1** | ~~#14~~ ~~5c~~ ~~the duration fix~~ **done** &rarr; **3b** mechanism &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
@@ -379,9 +379,10 @@ asked for it to carry only what still needs playing.
 
 `TestScenario` gained a `retired` flag. `allScenarios` is every scenario ever
 written and stays under test; `testScenarios`, which is what the tab lists, is
-the unretired ones. All nine are retired as of now, so the tab currently shows
-an explicit **"Nothing waiting"** panel rather than an empty control, because
-an empty list here is the finished state of a testing round and not a fault.
+the unretired ones. All nine wave 0 scenarios are retired, and the tab has
+carried the **two new #D scenarios** since. When it does empty it shows an
+explicit **"Nothing waiting"** panel rather than an empty control, because an
+empty list here is the finished state of a testing round and not a fault.
 
 A retired scenario is kept rather than deleted for three reasons: it is still
 shipped code that must stay well-formed, it is what a re-check after #4
@@ -390,8 +391,70 @@ document. The tests were repointed at `allScenarios` so retiring one does not
 quietly stop checking it, and two new tests assert that the tab lists exactly
 the unretired set and that the empty state renders.
 
-Wave 1's features add new scenarios here as they land. The duration fix (#D),
+Wave 1's features add new scenarios here as they land, and #D added the first
+two: **A one-turn lock costs a turn** and **A buff you cast lasts your turns**.
+Both are unretired and waiting. The rest of wave 1 (#D is done),
 3b's reactions and 5b's stacking are each worth one.
+
+### #D as built: one word, one meaning
+
+**The bug it kills.** A duration counted down at the *start* of its holder's
+turn, next to the damage ticks. So a 1-turn Stun put on an enemy was
+decremented to zero and removed at the start of their turn, before they acted,
+and did nothing whatsoever. Eleven effects carried a 1-turn default. Worse than
+one broken number: a debuff of N delivered N damage ticks but only N-1
+afflicted turns, while the same duration on yourself covered N of the
+opponent's turns and N-1 of your own. One word meant three things.
+
+**What changed.** The countdown moved to the **end** of the holder's turn, and
+it never counts the turn the effect was applied on. Damage and heal ticks stay
+at the start of the turn, untouched. `StatusEffectInstance` carries a
+`skipsNextCountdown` flag, set by `StatusEffectEngine.apply` when the effect
+lands on a character who is mid-turn; `CharacterBattleState.isTakingTurn` is
+what tells it so, and `Battle` is the only thing that maintains it.
+
+**A duration of N now means the holder's next N turns.** For every effect,
+whoever applied it and whenever.
+
+**The fork this ran into, and the correction.** The approved decision was to
+move the countdown and compensate wards with +1, plus Illusory Double's
+Untargetable 1 to 2. Tracing it against the engine turned up a second question
+the decision had not seen: whether an effect counts the turn it was applied on.
+Both answers fix the hostile bug identically and differ only for your own side.
+Not skipping it costs wards one opponent turn (hence the approved +1) and
+quietly costs self-applied heal-over-time one tick. Skipping it leaves wards
+and heal-over-time exactly as they were, and instead gives self-buffs whose
+value lands on your own turn one extra turn of yours. **The owner chose to
+skip**, after a correction: the first description of that option said nothing
+self-applied would change, which was wrong, and the self-buff gain is real. So
+no ward compensation was needed, Illusory Double keeps its 1, and about ten
+self-buffs (Empowered, Focused, Hastened, Prepared, Overcharged, Adrenaline
+Rush, Battle Trance, Mind's Eye, Called Shot, Inspired's attack half) are one
+of your turns longer than they were. #3's pass prices them under the honest
+meaning rather than the broken one.
+
+**The copy had to move with it.** `describeStatusDuration` used to warn that a
+1-turn effect was gone before its holder acted again, because it was. It now
+says "Lasts through your next N turns" and nothing else. The badge tooltip used
+to strip the default duration back off the description **by splitting the
+string on its own wording**, which stopped matching the moment the wording
+changed and printed both numbers with a doubled full stop. That is a proper
+`includeDuration` flag now, and a test pins that the tooltip never contains
+"..".
+
+**Verified.** 968 engine tests and 370 app tests pass; both analyzers sit at
+their pre-existing 3 and 6 warnings. Eleven new tests in
+`status_duration_test.dart` drive real turns through `Battle` rather than
+calling the status engine directly, because the whole question is about turn
+boundaries. Four of them fail against the old timing, and the other seven are
+the guarantees that must not have moved: damage over time still ticks N times,
+a ward still covers the same two opponent turns, self heal-over-time still
+heals three times, an untimed effect still never expires, and a body on the
+board does not spend turns. Pacing was re-measured after the change and did not
+move: median 14 rounds, 82% of battles in the 8-20 band against 80% before,
+14885 attack rolls at 51% landed. **Not checked by running:** the two new Tests
+tab scenarios have not been played by a person yet, which is what they are
+there for.
 
 ### The seven SPTV decisions, as approved
 
@@ -404,7 +467,7 @@ the options and trade-offs behind each.
 | **#A** | What one Status Point is | SP **is** damage-equivalent, at face value, with no conversion constant. Stored as formulas over a named, re-measurable baseline (an `SptvBaselines` config beside the other `*Config` classes) rather than as frozen numbers, so the rule outlives the economy #4 is about to change |
 | **#B** | Where a status effect's SP comes from | Give the five field-less statuses real declarative fields, then compute every price from the fields. 13b is in the same wave and needs those fields anyway, and it removes five hardcoded-id lookups from the engine. Two written overrides remain, for `minds_eye_reveal` and `called_shot_stat_zero`, whose value is not mechanical |
 | **#C** | The Trigger Value band | Keep the design director's 2.0 to 3.0. **Needed at the start of wave 2**, not wave 4: #4 cannot set costs without a target. Wave 4 verifies rather than chooses |
-| **#D** | The 1-turn debuff timing | Move the countdown to the end of the holder's turn, leaving the damage and heal ticks at the start. Duration then means one thing for everyone. Defensive wards get +1, derived from the conversion table's own answer to whether a field is realised on your turn or theirs; Illusory Double's 1-turn Untargetable becomes 2 |
+| **#D** | The 1-turn debuff timing | Move the countdown to the end of the holder's turn, leaving the damage and heal ticks at the start. Duration then means one thing for everyone. **Built, and the compensation clause fell away**: the build found a second question (whether an effect counts the turn it was applied on), the owner chose to skip that turn, and skipping it leaves wards and heal-over-time untouched, so no ward +1 and no Illusory Double bump were needed. What moved instead is about ten self-buffs, one of your turns longer each. See the section above |
 | **#E** | The 24 unreachable statuses | Price all 62, let the reaction table home four for free, and land a reachability test naming the rest. The list is expected to empty in wave 3 |
 | **#F** | Stacking | One instance carrying a stack count, one shared duration, refreshed on re-application, capped at 3. Magnitudes and SP both multiply by the count |
 | **#G** | Whether a reaction is contested | No. Reactions fire automatically. A contested two-step play would come off 21% of the time, which nobody builds around |
@@ -1040,8 +1103,12 @@ returned, so a rider mostly fails because the attack failed and attacks land
 
 ### Open correctness question: 1-turn effects on an enemy
 
-Found while writing the duration wording during the #1 playtest fixes, and
-**not yet fixed**. It belongs to #3, which owns every status effect's duration.
+**Fixed in wave 1 as item #D.** The section below is the original finding, kept
+because it is the clearest statement of what was wrong; what was built, and the
+decision behind it, is in "#D as built: one word, one meaning" above.
+
+Found while writing the duration wording during the #1 playtest fixes. It
+belonged to #3, which owns every status effect's duration.
 
 Effects tick down at the **start of their holder's turn**, decrementing and then
 expiring at zero. For a self-buff that works: it covers the rest of the turn it

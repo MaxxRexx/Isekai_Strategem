@@ -9,21 +9,27 @@ void main() {
   final catalog = StatusEffectCatalog.defaultCatalog;
 
   group('duration wording', () {
-    test('a 1-turn effect says outright that it is gone before you act again',
-        () {
-      final text = describeStatusDuration(1, onSelf: true);
-      expect(text, contains('this turn only'));
-      expect(text, contains('wears off when your next turn begins'));
+    test('a 1-turn effect covers a whole turn, which is item #D', () {
+      // The old wording had to warn that a 1-turn effect was gone before its
+      // holder acted again, because it was. It is not any more: one turn is
+      // one of the holder's turns.
+      expect(describeStatusDuration(1, onSelf: true),
+          'Lasts through your next turn.');
     });
 
-    test('a 2-turn effect covers this turn and one more of yours', () {
+    test('a 2-turn effect covers two of the holder turns', () {
       expect(describeStatusDuration(2, onSelf: true),
-          'Active this turn and your next turn.');
+          'Lasts through your next 2 turns.');
     });
 
-    test('longer effects count the remaining turns', () {
-      expect(describeStatusDuration(3, onSelf: true),
-          'Active this turn and your next 2 turns.');
+    test('the number in the sentence is the number on the effect', () {
+      // The point of #D: no arithmetic between what an effect says and what
+      // the player is told.
+      for (final turns in [1, 2, 3, 4]) {
+        final text = describeStatusDuration(turns, onSelf: true);
+        expect(text, contains(turns == 1 ? 'next turn' : 'next $turns turns'),
+            reason: 'a duration of $turns must read as $turns');
+      }
     });
 
     test('the turns counted belong to whoever holds the effect', () {
@@ -40,7 +46,7 @@ void main() {
     test('Empowered states the damage bonus rather than just its name', () {
       final text = describeStatusEffect(catalog['empowered'], onSelf: true);
       expect(text, contains('25% more damage'));
-      expect(text, contains('your next turn'));
+      expect(text, contains('your next 2 turns'));
     });
 
     test('Stunned states the lockout and the stat it zeroes', () {
@@ -100,7 +106,7 @@ void main() {
   });
 
   group('the badge tooltip counts what is actually left', () {
-    test('one turn remaining says it wears off before their next turn', () {
+    test('one turn remaining still buys a whole turn', () {
       final text = describeStatusBadge(
         id: 'empowered',
         name: 'Empowered',
@@ -108,7 +114,7 @@ void main() {
         onSelf: false,
       );
       expect(text, contains('25% more damage'));
-      expect(text, contains('Wears off when their next turn begins'));
+      expect(text, contains('wears off at the end of their next turn'));
     });
 
     test('the live counter is used, not the effect default', () {
@@ -118,7 +124,20 @@ void main() {
         remainingTurns: 3,
         onSelf: true,
       );
-      expect(text, contains('your next 2 turns'));
+      expect(text, contains('3 turns left'));
+      expect(text, isNot(contains('Lasts through')),
+          reason: 'the default duration is the wrong number on a live badge, '
+              'and printing both is what the old string-splitting did');
+    });
+
+    test('the tooltip is one clean sentence per part', () {
+      final text = describeStatusBadge(
+        id: 'empowered',
+        name: 'Empowered',
+        remainingTurns: 2,
+        onSelf: true,
+      );
+      expect(text, isNot(contains('..')));
     });
   });
 }

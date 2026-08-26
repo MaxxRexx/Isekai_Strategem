@@ -133,6 +133,16 @@ class CharacterBattleState {
 
   bool fatTriggeredThisTurn = false;
 
+  /// True between the start and the end of this character's own team turn.
+  ///
+  /// Only one question reads it, and it is the one item #D turns on: a
+  /// status effect landing on a character who is mid-turn must not count
+  /// that turn against its own duration, because the holder never gets to
+  /// spend it. `Battle` maintains the flag; a battle driven without
+  /// `Battle` (an engine test wiring states by hand) simply leaves it
+  /// false, which is the honest answer when nobody is taking a turn.
+  bool isTakingTurn = false;
+
   final List<_AbilityUseRecord> _abilitiesUsedThisTurn = [];
 
   final List<TempPercentPenalty> tempPercentPenalties = [];
