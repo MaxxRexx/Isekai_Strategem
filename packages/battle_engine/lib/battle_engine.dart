@@ -30,6 +30,7 @@ export 'src/models/reactive_effect.dart';
 export 'src/models/resonance.dart';
 export 'src/models/stats.dart';
 export 'src/models/status_effect.dart';
+export 'src/models/status_reaction.dart';
 export 'src/models/status_effect_catalog.dart';
 export 'src/models/team.dart';
 export 'src/models/teg_profile.dart';

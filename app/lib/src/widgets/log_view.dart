@@ -203,12 +203,22 @@ class RoundEntry extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 2),
                 child: UntargetedLogLine(action: action, color: actorColor),
               )
-            else
+            else ...[
               for (final t in action.targets)
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: LogLine(action: action, target: t, color: actorColor),
                 ),
+              // Item 3b. Once per action rather than once per target, and
+              // always visible rather than behind the details toggle: a
+              // reaction is a rule firing, and a player who has to open a
+              // breakdown to find out why the ice vanished will not.
+              for (final r in action.reactions)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: ReactionLogLine(reaction: r),
+                ),
+            ],
           // Nobody performed these: they are what the turn ending settled.
           // Coloured by whose body it was rather than by who was acting,
           // because the Salvage went into that squad's pool.
@@ -1248,5 +1258,80 @@ class BendExplanation extends StatelessWidget {
   static String _join(List<String> names) {
     if (names.length == 1) return names.first;
     return '${names.take(names.length - 1).join(', ')} and ${names.last}';
+  }
+}
+
+
+/// One line for a status reaction firing (item 3b): what the target was
+/// carrying, what set it off, and what it turned into.
+///
+/// Reactions are the one part of the catalogue that is not visible on any
+/// badge or number. Everything else in the log explains a number the player
+/// can already see; this explains why a badge they were watching is suddenly
+/// a different badge.
+class ReactionLogLine extends StatelessWidget {
+  final LogReaction reaction;
+
+  const ReactionLogLine({super.key, required this.reaction});
+
+  @override
+  Widget build(BuildContext context) {
+    final bits = <String>[];
+    if (reaction.became != null) {
+      bits.add(reaction.consumed
+          ? '${reaction.reactingName} becomes ${reaction.became}'
+          : '${reaction.reactingName} builds into ${reaction.became}');
+    } else if (reaction.consumed) {
+      bits.add('${reaction.reactingName} is spent');
+    }
+    if (reaction.damageMultiplier > 1) {
+      final times = reaction.damageMultiplier == 2.0
+          ? 'double'
+          : '${reaction.damageMultiplier}x';
+      bits.add('$times damage on the hit');
+    }
+    if (reaction.arcedToName != null) {
+      bits.add('arcs to ${reaction.arcedToName}');
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: Palette.accent.withValues(alpha: 0.10),
+        border: Border(
+          left: BorderSide(color: Palette.accent, width: 3),
+        ),
+      ),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(fontSize: 12, color: Colors.white70),
+          children: [
+            const TextSpan(
+              text: 'REACTION  ',
+              style: TextStyle(
+                color: Palette.accent,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+              ),
+            ),
+            TextSpan(
+              text: reaction.characterName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(text: ' was ${reaction.reactingName} and took '
+                '${reaction.damageTypeLabel} damage: '),
+            TextSpan(
+              text: bits.isEmpty ? 'nothing happens' : bits.join(', '),
+              style: const TextStyle(color: Colors.white),
+            ),
+            const TextSpan(text: '.'),
+          ],
+        ),
+      ),
+    );
   }
 }

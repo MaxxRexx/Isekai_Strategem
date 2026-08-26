@@ -2,6 +2,7 @@ import '../constants.dart';
 import '../util/dice.dart';
 import 'damage_type.dart';
 import 'status_effect.dart';
+import 'status_reaction.dart';
 
 /// The full set of built-in status effect definitions, expressed purely
 /// as data against [StatusEffectDefinition]. The engine never
@@ -39,6 +40,26 @@ class StatusEffectCatalog {
         id: 'wet',
         name: 'Wet',
         defaultDurationTurns: magnitudes.wetDurationTurns,
+        // Item 3b. Water is the setup half of the whole table: it freezes,
+        // it conducts, and it boils off.
+        reactions: const [
+          StatusReaction(
+            onDamageType: DamageType.cold,
+            becomes: 'frozen',
+            consumesTrigger: true,
+          ),
+          StatusReaction(
+            onDamageType: DamageType.lightning,
+            becomes: 'electrocuted',
+            consumesTrigger: true,
+          ),
+          // Wet is already Fire-immune, so the hit deals nothing on its own.
+          // What the reaction adds is that the water is gone afterwards.
+          StatusReaction(
+            onDamageType: DamageType.fire,
+            consumesTrigger: true,
+          ),
+        ],
         damageTypeInteractions: const [
           DamageTypeInteractionRule.immune(DamageType.fire),
           DamageTypeInteractionRule.vulnerable(DamageType.lightning),
@@ -94,12 +115,33 @@ class StatusEffectCatalog {
         id: 'poisoned',
         name: 'Poisoned',
         defaultDurationTurns: magnitudes.poisonedDurationTurns,
+        reactions: const [
+          StatusReaction(
+            onDamageType: DamageType.poison,
+            becomes: 'sickened',
+            consumesTrigger: true,
+          ),
+        ],
         disadvantageRollTags: const {StatusRollTag.attackRoll},
       ),
       StatusEffectDefinition(
         id: 'frozen',
         name: 'Frozen',
         defaultDurationTurns: magnitudes.frozenDurationTurns,
+        // Shatter: a frozen target hit by something heavy takes double, and
+        // the ice is gone.
+        reactions: const [
+          StatusReaction(
+            onDamageType: DamageType.bludgeoning,
+            consumesTrigger: true,
+            damageMultiplier: 2.0,
+          ),
+          StatusReaction(
+            onDamageType: DamageType.thunder,
+            consumesTrigger: true,
+            damageMultiplier: 2.0,
+          ),
+        ],
         preventsActions: true,
         zeroedStats: const {ModifiableStat.trionAffinity},
       ),
@@ -107,6 +149,9 @@ class StatusEffectCatalog {
         id: 'bleeding',
         name: 'Bleeding',
         defaultDurationTurns: magnitudes.bleedingDurationTurns,
+        reactions: const [
+          StatusReaction(onDamageType: DamageType.slashing, becomes: 'bleeding'),
+        ],
         turnStartDamage:
             DiceExpression(0, 1, flatBonus: magnitudes.bleedingDamagePerTurn),
         turnStartDamageType: DamageType.slashing,
@@ -141,6 +186,15 @@ class StatusEffectCatalog {
         id: 'electrocuted',
         name: 'Electrocuted',
         defaultDurationTurns: magnitudes.electrocutedDurationTurns,
+        // Arcs to one other character standing on the same line as the
+        // holder, on the holder's own side.
+        reactions: const [
+          StatusReaction(
+            onDamageType: DamageType.thunder,
+            becomes: 'electrocuted',
+            arcsToSameLine: true,
+          ),
+        ],
         turnStartDamage: const DiceExpression(1, 4),
         turnStartDamageType: DamageType.lightning,
       ),
@@ -210,6 +264,15 @@ class StatusEffectCatalog {
         flatStatModifiers: {
           ModifiableStat.defense: -magnitudes.enragedDefensePenalty.toDouble()
         },
+        // Item 3b's redesign. It was a stat swap that nothing applied. The
+        // two clauses below make it a decision either way round: enraging
+        // your own character buys damage and the game's only answer to a
+        // psychic squad, at the cost of aiming; enraging an enemy blunts
+        // their aim at the cost of making them hit harder.
+        damageTypeInteractions: const [
+          DamageTypeInteractionRule.immune(DamageType.psychic),
+        ],
+        randomizesOwnTargeting: true,
       ),
       StatusEffectDefinition(
         id: 'fatigued',
@@ -289,6 +352,20 @@ class StatusEffectCatalog {
         id: 'scorched',
         name: 'Scorched',
         defaultDurationTurns: magnitudes.scorchedDurationTurns,
+        reactions: const [
+          // Quenched: the burn goes out and leaves the target Chilled.
+          StatusReaction(
+            onDamageType: DamageType.cold,
+            becomes: 'chilled',
+            consumesTrigger: true,
+          ),
+          // A Scorched target is already Fire-vulnerable, so this is the
+          // burn build's payoff rather than a transformation.
+          StatusReaction(
+            onDamageType: DamageType.fire,
+            becomes: 'scorched',
+          ),
+        ],
         damageTypeInteractions: const [
           DamageTypeInteractionRule.vulnerable(DamageType.fire),
         ],
@@ -300,6 +377,21 @@ class StatusEffectCatalog {
         id: 'chilled',
         name: 'Chilled',
         defaultDurationTurns: magnitudes.chilledDurationTurns,
+        reactions: const [
+          StatusReaction(
+            onDamageType: DamageType.cold,
+            becomes: 'frozen',
+            consumesTrigger: true,
+          ),
+          // The ice melts back to water, which sets up the next Cold or
+          // Lightning hit. A Cold squad can cycle a target on its own, but
+          // it costs them a turn each time.
+          StatusReaction(
+            onDamageType: DamageType.fire,
+            becomes: 'wet',
+            consumesTrigger: true,
+          ),
+        ],
         damageTypeInteractions: const [
           DamageTypeInteractionRule.vulnerable(DamageType.cold),
         ],
@@ -312,6 +404,10 @@ class StatusEffectCatalog {
         id: 'corroded',
         name: 'Corroded',
         defaultDurationTurns: magnitudes.corrodedDurationTurns,
+        // Another coat of acid on top, deepening the armour shred.
+        reactions: const [
+          StatusReaction(onDamageType: DamageType.acid, becomes: 'acid'),
+        ],
         flatStatModifiers: {
           ModifiableStat.armor: -magnitudes.corrodedArmorReduction.toDouble()
         },

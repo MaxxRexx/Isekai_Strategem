@@ -10,6 +10,7 @@ import '../models/resonance.dart';
 import '../models/combo.dart';
 import '../models/status_effect.dart';
 import '../models/status_effect_catalog.dart';
+import '../models/status_reaction.dart';
 import '../models/team.dart';
 import '../models/teg_profile.dart';
 import '../models/trigger.dart';
@@ -91,6 +92,11 @@ class AbilityUseResult {
   final String triggerId;
   final List<TargetHitResult> targetResults;
 
+  /// Item 3b's reactions that fired while this ability resolved, in the
+  /// order they fired. Empty for the ordinary case where nothing on the
+  /// target reacted to the damage type.
+  final List<StatusReactionEvent> reactions;
+
   /// TEG Effect 3: Trion refunded to the acting team because this action was
   /// the payoff of a recognized setup->payoff combo. 0 when none applied. The
   /// engine computes it; the app credits the team's Trion pool.
@@ -101,6 +107,47 @@ class AbilityUseResult {
     required this.triggerId,
     required this.targetResults,
     this.trionRefund = 0,
+    this.reactions = const [],
+  });
+}
+
+/// One firing of item 3b's reaction table, for the battle log.
+///
+/// A reaction is invisible unless the log says it happened: the player sees a
+/// Frozen badge disappear and a bigger number, and has no way to connect the
+/// two. This carries what fired, on whom, and what it turned into.
+class StatusReactionEvent {
+  /// Who was carrying the reacting status.
+  final String characterId;
+
+  /// The status that reacted (Wet, Frozen, Scorched...).
+  final String reactingStatusId;
+
+  /// The damage type that set it off, or null for a status-triggered one.
+  final DamageType? damageType;
+
+  /// The status that landed on them because of it, or null for a reaction
+  /// whose whole effect was on the hit.
+  final String? becameStatusId;
+
+  /// Whether the reacting status was spent.
+  final bool consumed;
+
+  /// Damage multiplier the reaction put on the triggering hit. 1.0 for the
+  /// rows that only change statuses.
+  final double damageMultiplier;
+
+  /// Who the reaction arced to, for the one row that arcs.
+  final String? arcedToCharacterId;
+
+  const StatusReactionEvent({
+    required this.characterId,
+    required this.reactingStatusId,
+    this.damageType,
+    this.becameStatusId,
+    this.consumed = false,
+    this.damageMultiplier = 1.0,
+    this.arcedToCharacterId,
   });
 }
 
@@ -411,6 +458,11 @@ class TurnEngine {
         baseDamage: event.amount,
         damageType: event.damageType,
         isCriticalHit: false,
+        // A status ticking its own damage is not somebody hitting you with
+        // that damage type, and item 3b's table is about being hit. Without
+        // this, Bleeding ticks Slashing, Slashing is what Bleeding reacts
+        // to, and the bleed refreshes itself forever.
+        firesReactions: false,
       );
     }
 
@@ -465,6 +517,83 @@ class TurnEngine {
   /// `CombatEngine.resolveDamageBreakdown`). Damage with no dice behind it
   /// - status ticks, flat unique-behavior damage, trap damage - leaves it
   /// null; those sites never crit anyway.
+  /// Item 3b's reactions that have fired since the buffer was last drained.
+  /// [resolveAbilityUse] clears it before it resolves and hands what it
+  /// collected to the caller on [AbilityUseResult.reactions].
+  final List<StatusReactionEvent> _pendingReactions = [];
+
+  /// Every reaction on [target] that [damageType] sets off, paired with the
+  /// live instance carrying it.
+  ///
+  /// Read before the damage is resolved, because a reacting status is often
+  /// what decides the damage: Wet is Fire-immune, Scorched is
+  /// Fire-vulnerable, and both have to still be on the target while the
+  /// breakdown runs. The reactions themselves are settled afterwards.
+  List<(StatusEffectInstance, StatusReaction)> _damageReactionsOn(
+    CharacterBattleState target,
+    DamageType damageType,
+  ) {
+    final found = <(StatusEffectInstance, StatusReaction)>[];
+    for (final instance in List.of(target.statusEffects)) {
+      if (!statusEffectEngine.catalog.contains(instance.definitionId)) continue;
+      final def = statusEffectEngine.catalog[instance.definitionId];
+      final reaction = def.reactionToDamage(damageType);
+      if (reaction != null) found.add((instance, reaction));
+    }
+    return found;
+  }
+
+  /// Settles the reactions [_damageReactionsOn] found, once the hit they fired
+  /// on has landed: spends what they spend, applies what they apply, and
+  /// records each one for the log.
+  ///
+  /// A reaction is never contested (decision #G), so this applies statuses
+  /// directly rather than rolling infliction. A two-step play that had to win
+  /// a roll at each step would come off about a fifth of the time.
+  void _settleDamageReactions(
+    CharacterBattleState target,
+    List<(StatusEffectInstance, StatusReaction)> fired,
+    DamageType damageType,
+  ) {
+    for (final (instance, reaction) in fired) {
+      final reactingId = instance.definitionId;
+      if (reaction.consumesTrigger) {
+        target.statusEffects.removeWhere((i) => identical(i, instance));
+      }
+      if (reaction.alsoRemoves != null) {
+        target.statusEffects
+            .removeWhere((i) => i.definitionId == reaction.alsoRemoves);
+      }
+      if (reaction.becomes != null) {
+        statusEffectEngine.apply(target, reaction.becomes!);
+      }
+
+      String? arcedTo;
+      if (reaction.arcsToSameLine && reaction.becomes != null) {
+        final neighbour = target.teammates
+            .where((t) =>
+                t.isAlive &&
+                !identical(t, target) &&
+                t.position == target.position)
+            .firstOrNull;
+        if (neighbour != null) {
+          statusEffectEngine.apply(neighbour, reaction.becomes!);
+          arcedTo = neighbour.combatantId;
+        }
+      }
+
+      _pendingReactions.add(StatusReactionEvent(
+        characterId: target.combatantId,
+        reactingStatusId: reactingId,
+        damageType: damageType,
+        becameStatusId: reaction.becomes,
+        consumed: reaction.consumesTrigger,
+        damageMultiplier: reaction.damageMultiplier,
+        arcedToCharacterId: arcedTo,
+      ));
+    }
+  }
+
   DamageBreakdown _applyDamage({
     required CharacterBattleState target,
     required int baseDamage,
@@ -472,6 +601,7 @@ class TurnEngine {
     required bool isCriticalHit,
     CharacterBattleState? damageSource,
     int? criticalDiceComponent,
+    bool firesReactions = true,
   }) {
     // A Bailing Out body has no health left to lose, so "destroyed" cannot be
     // defined by damage crossing zero. Any hit that reaches it ends it,
@@ -489,15 +619,31 @@ class TurnEngine {
       );
     }
 
+    // Item 3b: what the target already carries can change this hit (a Frozen
+    // target shatters for double) and is changed by it. Read first, because
+    // the reacting status is often what decides the damage; settled after,
+    // because spending it before the breakdown would throw that away.
+    final fired = firesReactions
+        ? _damageReactionsOn(target, damageType)
+        : const <(StatusEffectInstance, StatusReaction)>[];
+    var reactionMultiplier = 1.0;
+    for (final (_, reaction) in fired) {
+      reactionMultiplier *= reaction.damageMultiplier;
+    }
+
     final healthBeforeDamage = target.currentHealth;
     final breakdown = combatEngine.resolveDamageBreakdown(
-      baseDamage: baseDamage,
+      baseDamage: reactionMultiplier == 1.0
+          ? baseDamage
+          : (baseDamage * reactionMultiplier).round(),
       damageType: damageType,
       isCriticalHit: isCriticalHit,
       target: target,
       criticalDiceComponent: criticalDiceComponent,
     );
     var damage = breakdown.finalDamage;
+
+    _settleDamageReactions(target, fired, damageType);
 
     // Bastian-style "Absorb" Side Effect: the first damage instance of the
     // battle is reduced further, on top of any other mitigation.
@@ -1336,6 +1482,34 @@ class TurnEngine {
     }).toList();
   }
 
+  /// Item 3b's redesigned Enraged: while it is on, the holder does not choose
+  /// who they hit.
+  ///
+  /// [pool] is every character the ability could legally have been aimed at.
+  /// Each chosen target is replaced by a random one from it, so a squad that
+  /// enrages an enemy blunts their aim, and a squad that enrages its own
+  /// front-liner accepts that as the price of the damage and the psychic
+  /// immunity. With no pool supplied there is nothing to choose between and
+  /// the targets are returned unchanged.
+  List<CharacterBattleState> _applyRandomTargeting(
+    CharacterBattleState attacker,
+    List<CharacterBattleState> targets,
+    List<CharacterBattleState> pool,
+  ) {
+    final randomised = attacker.statusEffects.any((i) =>
+        statusEffectEngine.catalog.contains(i.definitionId) &&
+        statusEffectEngine.catalog[i.definitionId].randomizesOwnTargeting);
+    if (!randomised) return targets;
+
+    final candidates = pool.where((c) => c.isOnBoard).toList();
+    if (candidates.length < 2) return targets;
+
+    return [
+      for (var i = 0; i < targets.length; i++)
+        candidates[combatEngine.diceRoller.random.nextInt(candidates.length)],
+    ];
+  }
+
   /// Combined outgoing-damage multiplier from [attacker]'s Side Effect (Rurik's
   /// low-health scaling, Dross's AOE-vs-debuffed bonus, Nadia's
   /// stacking-per-extra-FAT-use bonus). 1.0 if [attacker] has no Side Effect or
@@ -1395,6 +1569,12 @@ class TurnEngine {
   /// `canUseAbility`/`useAbility` first. [targets] is defensively clamped
   /// against `maxRangedTargets`/`canTarget`; callers (AI/UI) are expected
   /// to have already consulted those before choosing targets.
+  ///
+  /// [targetPool] is every character the ability could legally have been
+  /// aimed at. It is only read when the attacker's targeting is out of their
+  /// hands (Enraged, item 3b), and a caller that never inflicts such a status
+  /// may leave it empty: with nothing to choose between, the chosen targets
+  /// stand.
   AbilityUseResult resolveAbilityUse({
     required CharacterBattleState attacker,
     required ActiveTrigger trigger,
@@ -1405,7 +1585,13 @@ class TurnEngine {
     Map<String, Object?>? statusEffectData,
     Map<String, Object?>? uniqueData,
     bool bending = false,
+    List<CharacterBattleState> targetPool = const [],
   }) {
+    // Item 3b: this resolution's reactions are collected as they fire and
+    // handed back on the result, so the log can say why a Frozen badge
+    // vanished and the number doubled.
+    _pendingReactions.clear();
+
     // Nullhymn recency: stamp Black-Trigger-active uses so a later discharge
     // can downgrade the most-recently-active enemy Black Trigger.
     if (attacker.character.blackTrigger?.activeAbilities
@@ -1457,6 +1643,12 @@ class TurnEngine {
     // may be redirected to the attacker's own allies.
     if (trigger.targetAffiliation == TargetAffiliation.opponent) {
       filteredTargets = _applyMisfireRedirect(attacker, filteredTargets);
+      // Enraged (item 3b): the holder is not choosing any more.
+      filteredTargets = _applyRandomTargeting(
+        attacker,
+        filteredTargets,
+        targetPool,
+      );
     }
 
     // Unique subtype uses bespoke resolution and does NOT pass through the
@@ -1910,6 +2102,7 @@ class TurnEngine {
       triggerId: trigger.id,
       targetResults: targetResults,
       trionRefund: trionRefund,
+      reactions: List.of(_pendingReactions),
     );
   }
 

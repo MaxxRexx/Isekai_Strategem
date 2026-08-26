@@ -1,5 +1,6 @@
 import '../util/dice.dart';
 import 'damage_type.dart';
+import 'status_reaction.dart';
 
 /// Roll categories that advantage/disadvantage sources can target. Status
 /// effects grant entries on the relevant [RollContext] (see
@@ -191,6 +192,19 @@ class StatusEffectDefinition {
   /// automatically misses (Echoing Doubt's forced whiff).
   final bool forcesNextAttackMiss;
 
+  /// While active, the affected character's targets are picked at random
+  /// from the legal ones rather than by whoever is playing them (Enraged).
+  ///
+  /// Different from [misfireChance], which sends an attack onto the
+  /// attacker's own side with some probability: this one keeps the attack on
+  /// the enemy and takes away the choice of which enemy.
+  final bool randomizesOwnTargeting;
+
+  /// What this status does when its holder is hit by a damage type, or has
+  /// another status land on them (item 3b). Empty for the 50 effects that do
+  /// not react to anything.
+  final List<StatusReaction> reactions;
+
   const StatusEffectDefinition({
     required this.id,
     required this.name,
@@ -223,7 +237,25 @@ class StatusEffectDefinition {
     this.preventsTargeting = false,
     this.preventsAllyInteraction = false,
     this.forcesNextAttackMiss = false,
+    this.randomizesOwnTargeting = false,
+    this.reactions = const [],
   });
+
+  /// The reaction [damageType] fires on this status, or null.
+  StatusReaction? reactionToDamage(DamageType damageType) {
+    for (final r in reactions) {
+      if (r.firesOnDamage(damageType)) return r;
+    }
+    return null;
+  }
+
+  /// The reaction [statusEffectId] landing fires on this status, or null.
+  StatusReaction? reactionToStatus(String statusEffectId) {
+    for (final r in reactions) {
+      if (r.firesOnStatus(statusEffectId)) return r;
+    }
+    return null;
+  }
 }
 
 /// A live application of a [StatusEffectDefinition] on a character.

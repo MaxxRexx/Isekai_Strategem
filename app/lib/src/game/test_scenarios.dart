@@ -257,6 +257,24 @@ const _refuser = [
   'shatterpoint',
 ];
 
+/// The cold half of item 3b's chain. Frost Lance chills what it hits, and a
+/// second cold hit on a chilled target freezes it.
+const _frostbite = [
+  'frost_lance',
+  'twin_fang_strike',
+  'shatterpoint',
+  'guardians_aegis',
+];
+
+/// The hammer that breaks the ice: Thunderclap Round is the reachable Thunder
+/// attack, and Frozen shatters on Thunder.
+const _thunder = [
+  'thunderclap_round',
+  'venom_needle',
+  'shatterpoint',
+  'guardians_aegis',
+];
+
 /// Carries the two abilities item #D is about: Mind Shatter silences an enemy
 /// for one turn, and War Chant is a two-turn buff on yourself.
 const _silencer = [
@@ -280,6 +298,60 @@ const _back = BattlePosition.back;
 /// Every scenario ever written, retired or not. The tests validate all of
 /// them; the picker shows [testScenarios].
 final List<TestScenario> allScenarios = [
+  TestScenario(
+    id: 'freeze_and_shatter',
+    name: 'Freeze, then shatter',
+    item: '3b',
+    goal:
+        'The whole reaction chain in one turn. Chill a target, freeze the '
+        'chill with a second cold hit, then break the ice with Thunder for '
+        'double damage. Two reactions, neither of them rolled for.',
+    steps: (s) => [
+      'Queue Frost Lance from Rurik (Middle) at Vela on their Front line, '
+          'distance ${s.distanceBetween('rurik_voss', 'vela_ashworth')}.',
+      'Queue Frost Lance from Kaito (Middle) at Vela as well.',
+      'Queue Thunderclap Round from Mireille (Back) at Vela, distance '
+          '${s.distanceBetween('mireille_song', 'vela_ashworth')}.',
+      'Resolve the turn and read the log from the top.',
+    ],
+    expect: (s) => [
+      'The three resolve in the order Rurik, Kaito, Mireille. They are all '
+          'attacks, so the tie is broken by Team Spirit distance from the '
+          'midpoint, and that is the order it gives.',
+      'Rurik lands CHILLED. Nothing reacts yet: there was nothing on her to '
+          'react.',
+      'Kaito hits a chilled target with Cold, and a REACTION line says '
+          'Chilled becomes Frozen. It is not rolled for and it cannot be '
+          'resisted.',
+      'Mireille hits a frozen target with Thunder, and a second REACTION '
+          'line says the ice shatters for double damage on that hit.',
+      'Vela ends the turn without the Frozen badge. It was spent breaking.',
+    ],
+    caveat:
+        'Frost Lance still has to hit and win the infliction contest to apply '
+        'Chilled in the first place, which is the one rolled step in the '
+        'chain. If no CHILLED badge appears after Rurik, nothing later can '
+        'react: re-run rather than reading it as a reaction fault.',
+    playerIds: _playerSquad,
+    enemyIds: _enemySquad,
+    kits: {
+      'rurik_voss': _frostbite,
+      'kaito_reyes': _frostbite,
+      'mireille_song': _thunder,
+      'vela_ashworth': _brawler,
+      'ren_kobayashi': _brawler,
+      'nadia_kessler': _sniper,
+    },
+    positions: {
+      'rurik_voss': _middle,
+      'kaito_reyes': _middle,
+      'mireille_song': _back,
+      'vela_ashworth': _front,
+      'ren_kobayashi': _middle,
+      'nadia_kessler': _back,
+    },
+  ),
+
   TestScenario(
     id: 'one_turn_silence',
     name: 'A one-turn lock costs a turn',

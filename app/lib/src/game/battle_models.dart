@@ -253,6 +253,44 @@ class LogBend {
   });
 }
 
+/// A status reaction (item 3b) firing during an action.
+///
+/// Without a line in the log a reaction is invisible: the player sees a badge
+/// disappear and a bigger number and has no way to connect the two. This is
+/// what the log needs to say "the Frozen shattered".
+class LogReaction {
+  /// Who was carrying the reacting status.
+  final String characterName;
+
+  /// The reacting status and what it turned into, by display name. [became]
+  /// is null for a reaction whose whole effect was on the hit.
+  final String reactingName;
+  final String? became;
+
+  /// The damage type that set it off, already in player-facing words.
+  final String damageTypeLabel;
+
+  /// Whether the reacting status was spent doing it.
+  final bool consumed;
+
+  /// The multiplier the reaction put on the triggering hit. 1.0 for the rows
+  /// that only change statuses.
+  final double damageMultiplier;
+
+  /// Who it arced to, for the one row that arcs.
+  final String? arcedToName;
+
+  const LogReaction({
+    required this.characterName,
+    required this.reactingName,
+    required this.damageTypeLabel,
+    this.became,
+    this.consumed = false,
+    this.damageMultiplier = 1.0,
+    this.arcedToName,
+  });
+}
+
 class LogAction {
   final String characterId;
   final String characterName;
@@ -264,6 +302,9 @@ class LogAction {
   /// Set when this shot bent to reach a target that had come too close.
   final LogBend? bend;
 
+  /// Item 3b's reactions this action set off, in the order they fired.
+  final List<LogReaction> reactions;
+
   const LogAction({
     required this.characterId,
     required this.characterName,
@@ -272,6 +313,7 @@ class LogAction {
     required this.fatTriggered,
     required this.targets,
     this.bend,
+    this.reactions = const [],
   });
 }
 

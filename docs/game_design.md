@@ -636,13 +636,16 @@ you queued them. For example, a buff you queued second still resolves before an
 attack you queued first, because buffs are an earlier phase. And between two
 attacks, the character whose Team Spirit is furthest from 50 strikes first.
 
-*Approved and specced, not yet built: **status reactions**. Statuses will react
-to damage types and to each other, so applying one sets up the next. Wet plus a
-Cold hit becomes Frozen; Frozen plus a Bludgeoning hit shatters for double
-damage; Chilled plus Fire melts back to Wet; Scorched plus Cold is quenched to
-Chilled. Enraged is redesigned to grant immunity to Psychic damage at the cost
-of targeting at random, which makes it both a gamble on yourself and a control
-tool against someone else. The full table is in the status document.*
+**Statuses react to damage types.** Applying one sets up the next: Wet plus a
+Cold hit becomes Frozen, Frozen plus a Bludgeoning or Thunder hit shatters for
+double damage, Chilled plus Fire melts back to Wet, Scorched plus Cold is
+quenched to Chilled. A reaction is never rolled for. The full table is in
+section 12.
+
+*Not all of it is reachable yet: Wet, Frozen and Electrocuted have no ability
+that applies them until the content pass, so the rows that start from those
+three cannot be set up from a Loadout you can build today. Everything from
+Chilled, Scorched, Corroded, Bleeding and Poisoned can.*
 
 **A status effect is refreshed, not stacked.** Applying an effect that is
 already on a character resets its timer rather than adding a second copy, and
@@ -810,6 +813,35 @@ and the target's **Status Resistance** (some characters are simply immune to
 certain ones). Here is every status and exactly what it does. Durations are in
 turns.
 
+### Reactions: statuses that answer damage types
+
+Twelve of the statuses do something when the character carrying them is hit by
+a particular damage type. A reaction is **never rolled for**: if the status is
+on them and the hit lands, it happens. That is what makes a two-step play worth
+building around, and it is why setting a target up is worth an action.
+
+| The target is | and is hit by | Result |
+|---|---|---|
+| **Wet** | Cold | Becomes **Frozen**. The water is spent. |
+| **Wet** | Lightning | Becomes **Electrocuted**. The water is spent. |
+| **Wet** | Fire | The water boils off. Wet is already Fire-immune, so the hit does nothing else. |
+| **Scorched** | Cold | Quenched, leaving **Chilled**. |
+| **Scorched** | Fire | **Scorched** builds. A Scorched target is already Fire-vulnerable, so this is the burn build's payoff. |
+| **Chilled** | Cold | Becomes **Frozen**. |
+| **Chilled** | Fire | The ice melts to **Wet**, which sets up the next Cold or Lightning hit. |
+| **Frozen** | Bludgeoning or Thunder | **Shatter**: double damage on that hit, and the ice is gone. |
+| **Corroded** | Acid | Another coat of **Acid** on top. |
+| **Electrocuted** | Thunder | Arcs, putting **Electrocuted** on one more character standing on the same line. |
+| **Bleeding** | Slashing | **Bleeding** builds. |
+| **Poisoned** | Poison | Becomes **Sickened**. |
+
+The Chilled to Wet to Frozen loop is deliberate: a Cold squad can cycle a
+target on its own without a second element, but it costs them a turn each time,
+so a two-element squad is still faster.
+
+A status ticking its own damage each turn does not set off its own reaction: a
+bleed is not somebody hitting you with a blade.
+
 ### Damage over time (they chip Health each turn)
 
 - **Bleeding:** loses 8 Health each turn for 3 turns.
@@ -845,7 +877,11 @@ turns.
 ### Damage dealt up or down
 
 - **Empowered:** deals +25% damage for 2 turns.
-- **Enraged:** deals +50% damage but loses 3 Defense for 2 turns (reckless).
+- **Enraged:** deals +50% damage but loses 3 Defense for 2 turns, is **immune
+  to Psychic damage** while it lasts, and **picks its targets at random**.
+  Enraging your own character is a gamble you take for the damage and the
+  psychic immunity; enraging an enemy blunts their aim at the cost of making
+  them hit harder. It is also the game's only answer to a psychic-heavy squad.
 - **Weakened:** deals 25% less damage for 3 turns.
 
 ### Stat changes

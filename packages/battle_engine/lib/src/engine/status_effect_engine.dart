@@ -124,6 +124,12 @@ class StatusEffectEngine {
     if (target.isInvulnerableTo(statusEffectId)) return false;
     final def = catalog[statusEffectId];
 
+    // Item 3b's second axis: something the target already carries may react
+    // to this status landing. No shipped row uses it yet (all twelve fire on
+    // a damage type), and it is here because the table grows in wave 3 and
+    // because it is the same two lines either way.
+    _fireStatusReactions(target, statusEffectId);
+
     // Re-applying an effect refreshes it rather than adding a second copy.
     // Stacking produced two Bleedings ticking separately and two Braced
     // badges counting down out of step, which is unreadable on a character
@@ -168,6 +174,58 @@ class StatusEffectEngine {
     target.statusEffects.add(instance);
     return true;
   }
+
+  /// Resolves any reaction that [incomingStatusId] landing sets off on a
+  /// status [target] already carries (item 3b).
+  ///
+  /// Runs before the incoming status is applied, so a reaction that clears
+  /// what is there leaves the new one to land on a clean slate. A reaction is
+  /// never contested (decision #G), so the results are applied directly.
+  void _fireStatusReactions(
+    CharacterBattleState target,
+    String incomingStatusId,
+  ) {
+    // A reaction applies a status, which can fire another reaction. No
+    // shipped row can loop (all twelve fire on damage types), but the table
+    // grows in wave 3 and a pair of statuses that each react to the other
+    // would hang the battle rather than misbehave visibly. One level deep is
+    // all any of the designed rows need.
+    if (_firingStatusReactions) return;
+    _firingStatusReactions = true;
+    try {
+      _fireStatusReactionsOnce(target, incomingStatusId);
+    } finally {
+      _firingStatusReactions = false;
+    }
+  }
+
+  bool _firingStatusReactions = false;
+
+  void _fireStatusReactionsOnce(
+    CharacterBattleState target,
+    String incomingStatusId,
+  ) {
+    for (final instance in List.of(target.statusEffects)) {
+      if (!contains(instance.definitionId)) continue;
+      final reaction =
+          catalog[instance.definitionId].reactionToStatus(incomingStatusId);
+      if (reaction == null) continue;
+
+      if (reaction.consumesTrigger) {
+        target.statusEffects.removeWhere((i) => identical(i, instance));
+      }
+      if (reaction.alsoRemoves != null) {
+        target.statusEffects
+            .removeWhere((i) => i.definitionId == reaction.alsoRemoves);
+      }
+      if (reaction.becomes != null && reaction.becomes != incomingStatusId) {
+        apply(target, reaction.becomes!);
+      }
+    }
+  }
+
+  /// Whether [id] names a catalogued status.
+  bool contains(String id) => catalog.contains(id);
 
   /// Re-picks the locked ability for any active Prone-like effect on
   /// [target] (locksRandomAbilityEachTurn), given their currently

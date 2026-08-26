@@ -1367,7 +1367,34 @@ class PlaySession {
       targets: logTargets(battle, useResult,
           before: bailBefore, displayNames: _displayNames),
       bend: bend,
+      reactions: _logReactions(useResult),
     );
+  }
+
+  /// Turns item 3b's reaction events into log lines, naming everything the
+  /// way the player sees it rather than by id.
+  List<LogReaction> _logReactions(AbilityUseResult useResult) {
+    if (useResult.reactions.isEmpty) return const [];
+    final catalog = StatusEffectCatalog.defaultCatalog;
+    String nameOfStatus(String id) =>
+        catalog.contains(id) ? catalog[id].name : id;
+
+    return [
+      for (final r in useResult.reactions)
+        LogReaction(
+          characterName: displayNameOf(r.characterId),
+          reactingName: nameOfStatus(r.reactingStatusId),
+          became: r.becameStatusId == null
+              ? null
+              : nameOfStatus(r.becameStatusId!),
+          damageTypeLabel: r.damageType?.name ?? 'a status',
+          consumed: r.consumed,
+          damageMultiplier: r.damageMultiplier,
+          arcedToName: r.arcedToCharacterId == null
+              ? null
+              : displayNameOf(r.arcedToCharacterId!),
+        ),
+    ];
   }
 
   /// Where each of an action's targets stood, and who was screening them,

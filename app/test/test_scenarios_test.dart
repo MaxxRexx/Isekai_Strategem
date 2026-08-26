@@ -197,6 +197,73 @@ void main() {
     List<ActiveTrigger> kitOf(PlaySession session, String characterId) =>
         session.equippedA[CombatantIds.of('player', characterId)]!;
 
+    test('Freeze then shatter: the chain the brief promises actually runs',
+        () {
+      // Three dice gates stand in front of this chain: each of the three
+      // attacks has to land, and the first Frost Lance has to win the
+      // infliction contest for Chilled. None of them is what is under test,
+      // so this runs turns until one comes up clean and then holds the chain
+      // to the letter. What is under test is that the two reactions are not
+      // rolled for at all.
+      final s = byId('freeze_and_shatter');
+      var ranClean = false;
+
+      for (var attempt = 0; attempt < 60 && !ranClean; attempt++) {
+        final session = s.start();
+        final vela = stateOf(s, session, 'vela_ashworth');
+
+        for (final actor in ['rurik_voss', 'kaito_reyes', 'mireille_song']) {
+          final state = stateOf(s, session, actor);
+          final ability =
+              actor == 'mireille_song' ? 'thunderclap_round' : 'frost_lance';
+          final queued = session.queue(
+            state.combatantId,
+            ability,
+            [vela.combatantId],
+          );
+          expect(queued.success, isTrue, reason: queued.error ?? '');
+        }
+
+        final actions = session.resolveQueue().actions;
+        expect(actions.map((a) => a.characterName.split(' ').first).toList(),
+            ['Rurik', 'Kaito', 'Mireille'],
+            reason: 'the brief tells the tester to read the log in this '
+                'order, so the resolver has to produce it');
+
+        bool landed(int i) =>
+            actions[i].targets.isNotEmpty &&
+            actions[i].targets.first.rolls.any((r) => r.isHit);
+
+        final chilled = landed(0) &&
+            actions[0]
+                .targets
+                .first
+                .statusEffectsApplied
+                .contains('Chilled');
+        if (!chilled || !landed(1) || !landed(2)) continue;
+        ranClean = true;
+
+        final froze = actions[1].reactions.where((r) => r.became == 'Frozen');
+        expect(froze, hasLength(1),
+            reason: 'a cold hit on a chilled target freezes it, and the '
+                'freezing is not rolled for');
+        expect(froze.single.consumed, isTrue, reason: 'the chill is spent');
+
+        final shatter =
+            actions[2].reactions.where((r) => r.reactingName == 'Frozen');
+        expect(shatter, hasLength(1), reason: 'Thunder shatters ice');
+        expect(shatter.single.damageMultiplier, 2.0);
+        expect(shatter.single.consumed, isTrue);
+        expect(vela.statusEffects.map((i) => i.definitionId),
+            isNot(contains('frozen')),
+            reason: 'the ice was spent breaking');
+      }
+
+      expect(ranClean, isTrue,
+          reason: 'sixty turns without all three attacks landing would make '
+              'this scenario unplayable');
+    });
+
     test('A one-turn lock: the brief step one is actually performable', () {
       // A brief that tells a tester to queue an ability they cannot reach
       // with is worse than no brief. Item #D's scenario turns on Mind

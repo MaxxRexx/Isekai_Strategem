@@ -177,7 +177,7 @@ document.
 | **1b** | **Screening (RPP).** Effective distance to an enemy = my line's step + their line's step + the number of enemies standing on a line strictly in front of the target. (Written as "living enemies" when 1b shipped; item #2 made a dropped character's body screen too, until it is cleared or recalled.) No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule, and goes with 5c's rename rather than here. Being built now as its own item rather than waiting for #4, since the battlefield it changes is already live. Built: the distance rule and the widening (enemy-facing only, so a Close Range ward still reaches just the next line), screening threaded through every reach question, traps deliberately exempt with both of them now checking their reach, the ruler printing the screened number with a pip per screening body, a dash on empty lines, out-of-range copy that names screening and the fix, and the **bending shot** with Trion Backlash and its self-explaining log entry. The design review's decisions are recorded below. **Playtested** through the Tests tab's four screening scenarios: reading the ruler, a screen holding at distance 4, a body going on screening after its owner falls, and the bending shot with its Trion Backlash. All four resolved correctly. | Merged and playtested | 0 |
 | 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued | 3 |
 | **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. **Merged. Playtested by the owner once and revised** (the same character on both squads, a body reading as defeated in the text report, and the recall's grammar; all three below). Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. **Re-tested** through the Tests tab's four Bail Out scenarios: the contested window with both endings, what may be aimed at a body, Refuse to Bail (equipped and fired in the real app for the first time), and a squad's last member falling with no window. All four resolved correctly. | Merged and re-tested | 0 |
-| 3b | **Status reactions.** A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. **Split across two waves.** The mechanism, the table and Enraged land in wave 1, because #4's trap pass already includes a reaction-armed trap and the primitive has to exist first, and because none of it depends on the economy. The new abilities and Side Effects land in wave 3 with 1c, and wave 4 prices the lot. **In design: the review asks whether a reaction has to win an infliction contest.** | In design | 1 and 3 |
+| 3b | **Status reactions.** **Mechanism, table and Enraged built in wave 1.** `StatusReaction` is a data field on `StatusEffectDefinition`, read in exactly the two places the spec named (the damage path and `StatusEffectEngine.apply`), with no switch statement naming a status anywhere. All twelve rows are on the definitions. Enraged gained Psychic immunity and random targeting. Reactions fire automatically, per decision #G. Found while building: a status ticking its own damage type fired its own reaction, so Bleeding refreshed itself forever; a tick is not a hit, and no longer counts as one. **The other half is still wave 3**, which is the abilities that apply Wet, Frozen and Electrocuted: until then the rows starting from those three cannot be reached from a Loadout. Original spec: A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. **Split across two waves.** The mechanism, the table and Enraged land in wave 1, because #4's trap pass already includes a reaction-armed trap and the primitive has to exist first, and because none of it depends on the economy. The new abilities and Side Effects land in wave 3 with 1c, and wave 4 prices the lot. **In design: the review asks whether a reaction has to win an infliction contest.** | In design | 1 and 3 |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. **Split across two waves (#Q1).** Wave 1 builds the rule only: the SP conversion table, the measured baselines it reads, the tool that prices the catalogue from them, and the SP term in Trigger Value. Wave 4 runs the pass over the finished catalogue. The tooltip setting moves to #6, being interface work with no pricing in it. **Audited; the review is waiting on seven decisions.** | In design | 1 and 4 |
 | 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued | 2 |
 | 4b | **The long tail of battle length.** The distribution is healthy in the middle and ragged at the end: 200 simulated battles run a median of 14 rounds with 83% inside the 8-20 band, but p90 is 23 and the worst single battle took **118 rounds**. Everything concludes, so it is not a stall, and the 30-round limit in #4 would cut it off rather than explain it. Worth understanding before that limit lands, because a match that would have taken 40 rounds now ends on the health tiebreak instead, and whoever was ahead at round 30 wins a fight they might not have won. Likely suspects: two sustain-heavy squads out-healing each other's damage, or a Trion-starved pair trading single cheap abilities. Diagnose from `tool/balance_report.dart`, which already records the distribution. Sits with #4 because the fix, if there is one, is an economy number. | Queued | 2 |
@@ -204,7 +204,7 @@ Waves are worked in order; everything inside a wave is one branch.
 | Wave | Items | Why it sits here |
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
-| **1** | ~~#14~~ ~~5c~~ ~~the duration fix~~ **done** &rarr; **3b** mechanism &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
+| **1** | ~~#14~~ ~~5c~~ ~~the duration fix~~ ~~**3b** mechanism~~ **done** &rarr; &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
@@ -391,9 +391,9 @@ document. The tests were repointed at `allScenarios` so retiring one does not
 quietly stop checking it, and two new tests assert that the tab lists exactly
 the unretired set and that the empty state renders.
 
-Wave 1's features add new scenarios here as they land, and #D added the first
-two: **A one-turn lock costs a turn** and **A buff you cast lasts your turns**.
-Both are unretired and waiting. The rest of wave 1 (#D is done),
+Wave 1's features add new scenarios here as they land, and there are three
+waiting now: **A one-turn lock costs a turn** and **A buff you cast lasts your
+turns** from #D, and **Freeze, then shatter** from 3b. The rest of wave 1,
 3b's reactions and 5b's stacking are each worth one.
 
 ### #D as built: one word, one meaning
@@ -455,6 +455,70 @@ move: median 14 rounds, 82% of battles in the 8-20 band against 80% before,
 14885 attack rolls at 51% landed. **Not checked by running:** the two new Tests
 tab scenarios have not been played by a person yet, which is what they are
 there for.
+
+### 3b as built: twelve rows, no switch statement
+
+**What it is.** `StatusReaction` is a field on `StatusEffectDefinition`, and
+the whole table lives on the definitions themselves. Two places in the engine
+read it: the damage path, and `StatusEffectEngine.apply`. Nothing anywhere
+names a status by id in a conditional, which is the shape the rest of the
+engine already uses and the reason twelve rows cost twelve entries rather than
+twelve branches.
+
+**Read before the damage, settled after.** The reacting status is usually what
+decides the damage (Wet is Fire-immune, Scorched is Fire-vulnerable, Frozen
+doubles the hit that breaks it), so the reactions are looked up before the
+breakdown runs and applied after it. Spending the trigger first would throw
+away the interaction that made the row worth writing.
+
+**Never contested**, per decision #G. Once the status is on and the hit lands,
+the reaction happens.
+
+**Found while building, and fixed.** Bleeding ticks Slashing damage each turn,
+and Slashing is what Bleeding reacts to, so the bleed set off its own reaction
+and refreshed itself every turn: a bleed that never ended. A status ticking its
+own damage is not somebody hitting you with that damage type, and the tick path
+no longer fires reactions. A test pins it by playing turns until the bleed runs
+out. There is also a re-entrancy guard on the status-triggered axis: no shipped
+row can loop, but the table grows in wave 3 and a pair of statuses that each
+reacted to the other would hang a battle rather than misbehave visibly.
+
+**Enraged, redesigned.** Psychic immunity and random targeting on top of the
+damage and Defense it already had. The targeting rule reads a `targetPool` the
+caller passes: with nothing to choose between, the aim stands. Nothing applies
+Enraged until wave 3's content pass, so no ability can inflict it yet, and
+wiring the pool through the player and AI target pickers lands with the
+abilities that need it.
+
+**How much of the table is reachable today.** Five of the eight reacting
+statuses can be applied by a Trigger that exists: Chilled (Frost Lance, Cryo
+Burst), Scorched (Cinderburst), Corroded (Shatterpoint, Acid Spray), Bleeding
+(Whirlwind Slash, Rapid Fire) and Poisoned (Venom Needle, Caustic Cloud, Venom
+Spray). **Wet, Frozen and Electrocuted have no applier**, so the rows starting
+from them are unreachable in play until wave 3. Frozen is reachable
+*indirectly*, which is the whole point of the table: chill a target, hit them
+with Cold again, and the reaction freezes them.
+
+**The log says it.** A reaction that fires appears as its own REACTION line
+under the action, always visible rather than behind the details toggle. A
+player who watches a badge vanish and a number double has no other way to
+connect the two.
+
+**A reading taken, and flagged.** The table says Electrocuted hit by Thunder
+"arcs to one other enemy standing on the same line". Arcs *what* was not
+specified. It is built as the status spreading (one more character on the
+holder's line becomes Electrocuted) rather than the damage splashing, because
+the table is written in status terms throughout. Say the word if it should be
+damage instead.
+
+**Verified.** 993 engine tests and 373 app tests pass; both analyzers at their
+pre-existing 3 and 6. Twenty-five new engine tests in
+`status_reaction_test.dart` check every row of the table against the catalogue
+rather than against a copy of it, plus the bleed that used to feed itself and
+Enraged's three clauses. A new Tests tab scenario, **Freeze, then shatter**,
+runs the whole chain in one turn with three characters, and an app test plays
+that scenario until the dice cooperate and then holds the two reactions to the
+letter. **Not checked by running:** nobody has played the scenario yet.
 
 ### The seven SPTV decisions, as approved
 
