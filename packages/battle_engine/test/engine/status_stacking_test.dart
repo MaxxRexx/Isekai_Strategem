@@ -193,6 +193,90 @@ void main() {
     });
   });
 
+  group('a drain moves Trion rather than making it', () {
+    Battle drainBattle() {
+      final roster = CharacterRoster.defaultRoster;
+      return Battle(
+        turnEngine: TurnEngine(
+          combatEngine:
+              CombatEngine(diceRoller: DiceRoller(const FixedRandom(19))),
+          statusEffectEngine:
+              StatusEffectEngine(diceRoller: DiceRoller(const FixedRandom(19))),
+        ),
+        teamA: Team(
+          id: 'a',
+          characters: [
+            roster['kaito_reyes'],
+            roster['vela_ashworth'],
+            roster['dross'],
+          ],
+          trionPool: TrionPool(current: 40, cap: 500),
+        ),
+        teamB: Team(
+          id: 'b',
+          characters: [
+            roster['marren_osei'],
+            roster['ilona_vance'],
+            roster['bastian_cole'],
+          ],
+          trionPool: TrionPool(current: 100, cap: 500),
+        ),
+      );
+    }
+
+    test('an empty pool pays nothing, and the causer gains nothing', () {
+      final battle = drainBattle();
+      final victim = battle.states['marren_osei']!;
+      final causer = battle.states['kaito_reyes']!;
+      battle.teamB.trionPool.current = 0;
+      battle.turnEngine.statusEffectEngine
+          .apply(victim, 'sapped', sourceCharacterId: causer.combatantId);
+
+      final oursBefore = battle.teamA.trionPool.current;
+      final drained = battle.turnEngine.tickStatusEffects(
+        victim,
+        causerTrionPools: {
+          for (final s in battle.statesOf(battle.teamA))
+            s.combatantId: battle.teamA.trionPool,
+          for (final s in battle.statesOf(battle.teamB))
+            s.combatantId: battle.teamB.trionPool,
+        },
+      );
+
+      expect(drained.trionDrainEvents, hasLength(1),
+          reason: 'the effect still ticks');
+      expect(battle.teamA.trionPool.current, oursBefore,
+          reason: 'there was nothing there to take');
+      expect(battle.teamB.trionPool.current, 0);
+    });
+
+    test('a drain is a transfer, measured on its own', () {
+      final battle = drainBattle();
+      final victim = battle.states['marren_osei']!;
+      final causer = battle.states['kaito_reyes']!;
+      battle.turnEngine.statusEffectEngine
+          .apply(victim, 'sapped', sourceCharacterId: causer.combatantId);
+
+      final pools = {
+        for (final s in battle.statesOf(battle.teamA))
+          s.combatantId: battle.teamA.trionPool,
+        for (final s in battle.statesOf(battle.teamB))
+          s.combatantId: battle.teamB.trionPool,
+      };
+      final oursBefore = battle.teamA.trionPool.current;
+      final theirsBefore = battle.teamB.trionPool.current;
+
+      battle.turnEngine.tickStatusEffects(victim, causerTrionPools: pools);
+
+      final gained = battle.teamA.trionPool.current - oursBefore;
+      final lost = theirsBefore - battle.teamB.trionPool.current;
+      expect(gained, lost,
+          reason: 'crediting one pool without debiting the other is how '
+              'Sapped used to make 26 Trion a turn out of nothing');
+      expect(gained, greaterThan(0));
+    });
+  });
+
   group('stacks and the reaction table meet', () {
     test('a reaction that names its own status stacks it', () {
       // Item 3b's "builds rather than transforms" rows (Bleeding hit by

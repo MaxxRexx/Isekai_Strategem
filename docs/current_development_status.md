@@ -204,7 +204,7 @@ Waves are worked in order; everything inside a wave is one branch.
 | Wave | Items | Why it sits here |
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
-| **1** | ~~#14~~ ~~5c~~ ~~the duration fix~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ **done** &rarr; &rarr; **5b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
+| **1** | ~~#14~~ ~~5c~~ ~~the duration fix (#D)~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ ~~the Trion drain fix~~ **all done** &rarr; **#3's rule only** &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
@@ -1291,14 +1291,21 @@ section it contradicts, above.
 - **The support-ability table prices stat buffs wrongly**, because Attack is a
   to-hit modifier and never reaches the damage pipeline.
 
-**One latent bug, found by pricing it.** Sapped drains 25% of the target's
-Trion Capacity per turn "to the causer", and Genjutsu Trapped 15%.
-`TurnEngine.tickStatusEffects` credits the causer's pool and **never debits the
-victim's**, so on a typical Capacity of 105 it conjures 26 Trion a turn out of
-nothing against a team income of about 15. It has never fired in a played
-battle only because both statuses are among the 24 nothing applies. Whether
-"drain" means transfer or generation is now a question #3 has to answer before
-it gives either of them a home.
+**One latent bug, found by pricing it. Fixed in wave 1.** Sapped drains 25% of
+the target's Trion Capacity per turn "to the causer", and Genjutsu Trapped 15%.
+`TurnEngine.tickStatusEffects` credited the causer's pool and **never debited
+the victim's**, so on a typical Capacity of 105 it conjured 26 Trion a turn out
+of nothing against a team income of about 15. It had never fired in a played
+battle only because both statuses are among the 24 nothing applies.
+
+**A drain is a transfer**, which is the reading both the design document ("Sapped
+drains a quarter of the target's Trion Capacity", under "attacking the enemy's
+Trion is a real strategy") and the field's own name
+(`trionCapacityDrainPercentToCauser`) already carried. The victim's squad is
+debited what the causer gains, and what is actually taken is what they have: an
+empty pool pays nothing and the causer gains nothing. Three tests pin it,
+including one asserting the two numbers are equal, which is the thing that was
+wrong. **How much** a drain should move is still #3's to price.
 
 **Two structural notes for the pricing itself.**
 

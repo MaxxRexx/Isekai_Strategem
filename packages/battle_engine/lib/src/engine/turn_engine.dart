@@ -478,8 +478,21 @@ class TurnEngine {
       }
     }
 
+    // A drain is a transfer, not a printing press. The causer's pool used to
+    // be credited without the victim's ever being debited, so Sapped conjured
+    // about 26 Trion a turn out of nothing against a team income of roughly
+    // 15. It has never been felt in a played battle only because nothing
+    // applies Sapped or Genjutsu Trapped yet. What is actually taken is what
+    // the victim's squad has, so an empty pool pays nothing and the causer
+    // gains nothing.
     for (final drain in result.trionDrainEvents) {
-      causerTrionPools?[drain.causerCharacterId]?.gain(drain.amount);
+      final victimPool = causerTrionPools?[state.combatantId];
+      final taken = victimPool == null
+          ? drain.amount
+          : drain.amount.clamp(0, victimPool.current);
+      if (taken <= 0) continue;
+      victimPool?.trySpend(taken);
+      causerTrionPools?[drain.causerCharacterId]?.gain(taken);
     }
 
     return result;
