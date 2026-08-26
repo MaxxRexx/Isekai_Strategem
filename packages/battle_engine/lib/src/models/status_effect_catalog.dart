@@ -562,6 +562,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'forced_critical_miss',
         name: 'Forced Critical Miss',
+        forcesNextAttackCriticalMiss: true,
         defaultDurationTurns: 1,
       ),
 
@@ -594,11 +595,13 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'forced_choice',
         name: 'Forced Choice',
+        locksToSingleChosenAbility: true,
         defaultDurationTurns: magnitudes.forcedChoiceDurationTurns,
       ),
       StatusEffectDefinition(
         id: 'karmic_bind',
         name: 'Karmic Bind',
+        sharesMagnitudeWithBoundEnemy: true,
         defaultDurationTurns: magnitudes.karmicBindDurationTurns,
       ),
       StatusEffectDefinition(

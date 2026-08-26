@@ -105,6 +105,75 @@ void main() {
     });
   });
 
+  group('every status says what it does (item 13b)', () {
+    // Sixteen of the 62 used to introduce themselves by name and say nothing
+    // else, because the engine read a field the description did not. The
+    // standing rule is that a status says what it does and how long it lasts
+    // in the player's own turns, never just its name.
+    test('not one of the 62 falls back to its own name', () {
+      final unexplained = [
+        for (final def in catalog.all)
+          if (describeStatusEffect(def, onSelf: true)
+              .contains('are affected by'))
+            def.id
+      ];
+
+      expect(unexplained, isEmpty,
+          reason: 'these say nothing a player can act on: $unexplained');
+    });
+
+    test('a description is computed from the definition, not written down',
+        () {
+      // Two exceptions are allowed and named: what they are worth is
+      // information rather than a magnitude. Everything else has to come off
+      // a field, so a re-priced magnitude updates its own text.
+      var written = 0;
+      for (final def in catalog.all) {
+        final text = describeStatusEffect(def, onSelf: true);
+        if (def.id == 'minds_eye_reveal' ||
+            def.id == 'called_shot_stat_zero') {
+          written++;
+          continue;
+        }
+        expect(text, isNotEmpty);
+      }
+      expect(written, 2);
+    });
+
+    test('a per-remaining-turn effect says that it fades', () {
+      final text = describeStatusEffect(catalog['braced'], onSelf: true);
+      expect(text, contains('Defense +1'));
+      expect(text, contains('every turn still left'));
+    });
+
+    test('a damage-type interaction names the type and the multiplier', () {
+      final text = describeStatusEffect(catalog['wet'], onSelf: false);
+      expect(text, contains('no Fire damage'));
+      expect(text, contains('2x damage from Lightning'));
+    });
+
+    test('a Trion drain says who gets it and when', () {
+      final text = describeStatusEffect(catalog['sapped'], onSelf: false);
+      expect(text, contains('25%'));
+      expect(text, contains('whoever applied this'));
+    });
+
+    test('Enraged states all three of its clauses', () {
+      final text = describeStatusEffect(catalog['enraged'], onSelf: true);
+      expect(text, contains('50% more damage'));
+      expect(text, contains('no Psychic damage'));
+      expect(text, contains('targets at random'));
+    });
+
+    test('the two written ones read as sentences, not as fields', () {
+      for (final id in ['minds_eye_reveal', 'called_shot_stat_zero']) {
+        final text = describeStatusEffect(catalog[id], onSelf: false);
+        expect(text, isNot(contains('are affected by')));
+        expect(text.split(' ').length, greaterThan(8), reason: id);
+      }
+    });
+  });
+
   group('the badge tooltip counts what is actually left', () {
     test('one turn remaining still buys a whole turn', () {
       final text = describeStatusBadge(

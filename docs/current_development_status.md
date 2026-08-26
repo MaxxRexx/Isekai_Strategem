@@ -193,7 +193,7 @@ document.
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred | - |
 | 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued | 7 |
 | 14 | **Mirror matches: both squads free to pick any character.** Decided by the owner after the #2 playtest, which found that drafting the same character onto both squads silently corrupted the battle (see the section below). The stopgap forbids it; this item is the real support, so each side can field whoever they want and two Ilona Vances can fight each other. **What it takes:** a battle-scoped combatant id (`A:ilona_vance`, so the character id is still recoverable by stripping the side) replacing the character's own id as the key to everything in a battle. Audited off the live code: **33 maps and sets keyed by a character id** (`Battle.states`, `characterRegistry`, `teamTrionPools`, the TEG profile maps, both `equipped*` maps, the Loadout maps, the Death Ledger swaps, and the per-character id sets on `CharacterBattleState`), **123 reads of `.character.id`**, and 196 mentions of `characterId` across the engine and the app. Three that are not mechanical: **`_teamKeyFor` derives a team's identity by joining its sorted character ids**, so a true mirror (the same three characters both sides) hands both teams the same key and breaks the combo ledger's same-team filter, which means `Team` has to carry its own id; the **interface has to tell two identical characters apart** in the squad panels, the battle log, the target picker and the battlefield strip, which is a copy decision, not a rename; and the **draft screens then drop the cross-squad exclusion** while the engine's duplicate guard stays, re-keyed, since it still catches a genuine repeat within one squad. **Built, wave 1.** A combatant id is the squad's id and the character's joined (`player:ilona_vance`), held on `CharacterBattleState.combatantId` and defaulting to the character's own id so a battle that never needed the distinction is unchanged. The 123 reads of `.character.id` were a mechanical rename; the 42 `states[c.id]` lookups collapsed into one `Battle.statesOf(team)`, which is the thing every one of them actually wanted. `_teamKeyFor` needed nothing: scoped ids distinguish the two squads on their own. The draft screens no longer exclude the other squad, the interface names the squad only where a character is mirrored, and a ninth Tests tab scenario plays one. | Done | 1 |
-| 13b | **Every ability and status explains itself.** Raised by the owner in the #2 playtest, against Guardian's Aegis: it explains Guarded ("You take 25% less damage") and then says of Braced only "You are affected by Braced", which tells the player nothing. The cause is that `describeStatusEffect` renders some of `StatusEffectDefinition`'s fields and falls back to a placeholder for the rest, and Braced's whole effect lives in an unrendered one (`perRemainingTurnStatModifiers`, +1 Defense per remaining turn). Measured off the live catalogue: **16 of the 62 status effects hit that placeholder** (Wet, Sickened, Sapped, Reeling, Prepared, Braced, Focused, Hastened, Chilled, Origin Lockout, Interdict, Forced Critical Miss, Forced Choice, Karmic Bind, Called Shot, Mind's Eye). The standing rule is already written down in the working agreement: a status effect's description says what it does and how long it lasts in the player's own turns, never just its name. **Moved to wave 1 (#Q3).** It sat after #3 on the grounds that #3 was about to change those magnitudes, but `describeStatusEffect` renders from the definition at runtime, so a re-priced magnitude updates its own description for nothing. It is also the same audit as #3's rule: five of the sixteen set no declarative field at all, which is exactly what a field-derived price values at zero. Doing it in wave 1 makes every playtest from there on readable. | Queued | 1 |
+| 13b | **Every ability and status explains itself.** **Built, wave 1.** All 62 statuses now describe themselves; the placeholder count went 16 to 0, checked by a test rather than by eye. Three of the five field-less ones got real declarative fields (`forcesNextAttackCriticalMiss`, `locksToSingleChosenAbility`, `sharesMagnitudeWithBoundEnemy`), which also removed the last three hardcoded status ids from the engine's own logic. The other two keep written sentences, exactly as decision #B allowed. Original spec: Raised by the owner in the #2 playtest, against Guardian's Aegis: it explains Guarded ("You take 25% less damage") and then says of Braced only "You are affected by Braced", which tells the player nothing. The cause is that `describeStatusEffect` renders some of `StatusEffectDefinition`'s fields and falls back to a placeholder for the rest, and Braced's whole effect lives in an unrendered one (`perRemainingTurnStatModifiers`, +1 Defense per remaining turn). Measured off the live catalogue: **16 of the 62 status effects hit that placeholder** (Wet, Sickened, Sapped, Reeling, Prepared, Braced, Focused, Hastened, Chilled, Origin Lockout, Interdict, Forced Critical Miss, Forced Choice, Karmic Bind, Called Shot, Mind's Eye). The standing rule is already written down in the working agreement: a status effect's description says what it does and how long it lasts in the player's own turns, never just its name. **Moved to wave 1 (#Q3).** It sat after #3 on the grounds that #3 was about to change those magnitudes, but `describeStatusEffect` renders from the definition at runtime, so a re-priced magnitude updates its own description for nothing. It is also the same audit as #3's rule: five of the sixteen set no declarative field at all, which is exactly what a field-derived price values at zero. Doing it in wave 1 makes every playtest from there on readable. | Queued | 1 |
 
 ### The running order
 
@@ -204,7 +204,7 @@ Waves are worked in order; everything inside a wave is one branch.
 | Wave | Items | Why it sits here |
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
-| **1** | ~~#14~~ ~~5c~~ ~~the duration fix~~ ~~**3b** mechanism~~ ~~**5b**~~ **done** &rarr; &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
+| **1** | ~~#14~~ ~~5c~~ ~~the duration fix~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ **done** &rarr; &rarr; **5b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
@@ -553,6 +553,39 @@ than two, that the cap holds, that every magnitude family multiplies, and that
 a single stack leaves the old numbers exactly where they were. Five app tests
 cover the badge and its tooltip. A new Tests tab scenario, **A bleed that
 piles up**, is waiting to be played.
+
+### 13b as built: sixteen effects that said nothing now say what they do
+
+**The count.** Sixteen of the 62 fell back to "You are affected by X", which
+tells a player nothing they can act on. It is zero now, and a test asserts it
+stays zero rather than leaving it to be spotted again in a playtest.
+
+**Why they were mute.** Every one of them carried its whole effect in a field
+`describeStatusEffect` did not read: `perRemainingTurnStatModifiers` (Braced,
+Prepared, Reeling, Chilled), `damageTypeInteractions` (Wet), 
+`vulnerableToRandomDamageTypesCount` (Sickened), 
+`trionCapacityDrainPercentToCauser` (Sapped), `advantageRollTags` (Focused,
+Hastened), `locksOriginFromData` (Origin Lockout) and
+`repeatAbilityDamageMultiplier` (Interdict). All of them render now, and so do
+3b's and #D's additions, so Enraged states all three of its clauses in one
+sentence.
+
+**The five with no field at all.** Decision #B said to give them real ones,
+and three could have them: Forced Critical Miss became
+`forcesNextAttackCriticalMiss`, Forced Choice became
+`locksToSingleChosenAbility`, and Karmic Bind became
+`sharesMagnitudeWithBoundEnemy`. That was worth more than the descriptions:
+those three were the **last hardcoded status ids in the engine's own logic**,
+and the engine now reads the fields instead of matching `'karmic_bind'` and
+`'forced_critical_miss'` by name. Mind's Eye and Called Shot keep written
+sentences, which is the exception #B named: what they are worth is
+information, and a field saying "reveals something" would be a placeholder in
+a field's clothing.
+
+**Verified.** 1007 engine tests and 386 app tests pass; analyzers unchanged.
+Seven new tests in `describe_status_test.dart`, one of which is the guard that
+no effect falls back to its own name and another that only the two named
+exceptions are written by hand.
 
 ### The seven SPTV decisions, as approved
 

@@ -767,7 +767,9 @@ class TurnEngine {
     if (targetId == null) return;
     StatusEffectInstance? bind;
     for (final instance in caster.statusEffects) {
-      if (instance.definitionId == 'karmic_bind') {
+      if (!statusEffectEngine.catalog.contains(instance.definitionId)) continue;
+      if (statusEffectEngine
+          .catalog[instance.definitionId].sharesMagnitudeWithBoundEnemy) {
         bind = instance;
         break;
       }
@@ -803,11 +805,14 @@ class TurnEngine {
     final cat = StatusEffectCatalog.defaultCatalog;
     for (final instance in state.statusEffects) {
       if (instance.data['lockedAbilityId'] == trigger.id) return false;
+      final def = cat[instance.definitionId];
       // Forced Choice: a status may whitelist exactly one usable ability
       // (the caller-declared cheapest/priciest); everything else is locked.
-      final onlyAllowed = instance.data['onlyAllowedTriggerId'];
-      if (onlyAllowed is String && trigger.id != onlyAllowed) return false;
-      final def = cat[instance.definitionId];
+      // The definition declares the rule, the instance carries the choice.
+      if (def.locksToSingleChosenAbility) {
+        final onlyAllowed = instance.data['onlyAllowedTriggerId'];
+        if (onlyAllowed is String && trigger.id != onlyAllowed) return false;
+      }
       if (def.locksOriginFromData &&
           instance.data['lockedOrigin'] == trigger.originTag.name) {
         return false;
@@ -1763,9 +1768,12 @@ class TurnEngine {
         maxCritThreshold: tegMaxCrit,
       );
 
-      // Reckoning: forced critical miss overrides the roll.
-      final forcedCritMissIdx = attacker.statusEffects
-          .indexWhere((i) => i.definitionId == 'forced_critical_miss');
+      // Reckoning: forced critical miss overrides the roll. Read off the
+      // definition's own field (item 13b) rather than by naming the status.
+      final forcedCritMissIdx = attacker.statusEffects.indexWhere((i) =>
+          statusEffectEngine.catalog.contains(i.definitionId) &&
+          statusEffectEngine.catalog[i.definitionId]
+              .forcesNextAttackCriticalMiss);
       if (forcedCritMissIdx >= 0) {
         attacker.statusEffects.removeAt(forcedCritMissIdx);
         outcome = AttackRollOutcome(

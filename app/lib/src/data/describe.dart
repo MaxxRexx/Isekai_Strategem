@@ -63,6 +63,27 @@ String describeStatusDuration(int? turns, {required bool onSelf}) {
   return 'Lasts through $whose next $turns turns.';
 }
 
+/// The two effects whose value is not mechanical, so no field could carry it.
+///
+/// Item 13b's rule is that a description is computed from the definition, so a
+/// re-priced magnitude updates its own text. These two are the exception the
+/// SPTV review named (decision #B): what they are worth is information, and a
+/// field that said "reveals something" would be a placeholder wearing a
+/// field's clothes.
+/// A damage type in the words a player reads: the enum's own name, capital
+/// first, because those names are already the words.
+String _damageTypeLabel(DamageType type) =>
+    type.name[0].toUpperCase() + type.name.substring(1);
+
+const Map<String, String> _writtenStatusDescriptions = {
+  'minds_eye_reveal':
+      'have every ability, cooldown and Trion reserve laid bare to whoever '
+      'applied this, who can then plan around what they see',
+  'called_shot_stat_zero':
+      'have one named stat reduced to zero, chosen by whoever fired the shot '
+      'when it landed',
+};
+
 /// What a status effect actually does, in plain terms, followed by how long
 /// it lasts. This is the line the battle interface shows for a status badge,
 /// and the line an ability's description borrows when it inflicts one.
@@ -138,11 +159,66 @@ String describeStatusEffect(
     );
   }
   if (def.disadvantageRollTags.isNotEmpty) bits.add('roll at a disadvantage');
+  if (def.advantageRollTags.isNotEmpty) bits.add('roll at an advantage');
+
+  // Item 13b. Everything below this line was a field the engine read and the
+  // description did not, which is how sixteen effects came to introduce
+  // themselves by name and say nothing else.
+  for (final entry in def.perRemainingTurnStatModifiers.entries) {
+    final v = entry.value;
+    bits.add(
+      'have ${statLabel[entry.key] ?? entry.key.name} '
+      '${v >= 0 ? '+' : '-'}${_formatNumber(v.abs())} for every turn still '
+      'left on this, so it fades as it runs out',
+    );
+  }
+  for (final rule in def.damageTypeInteractions) {
+    final type = _damageTypeLabel(rule.damageType);
+    if (rule.kind == DamageInteractionKind.immune) {
+      bits.add('take no $type damage at all');
+    } else {
+      final times = _formatNumber(rule.vulnerableMultiplier);
+      bits.add('take ${times}x damage from $type');
+    }
+  }
+  if (def.vulnerableToRandomDamageTypesCount != null) {
+    final n = def.vulnerableToRandomDamageTypesCount!;
+    bits.add('take double damage from $n damage '
+        '${n == 1 ? 'type' : 'types'} picked at random when this lands');
+  }
+  if (def.trionCapacityDrainPercentToCauser != null) {
+    final pct = (def.trionCapacityDrainPercentToCauser! * 100).round();
+    bits.add('lose $pct% of $whose Trion Capacity to whoever applied this at '
+        'the start of each of $whose turns');
+  }
+  if (def.locksOriginFromData) {
+    bits.add('cannot use abilities of one named origin');
+  }
+  if (def.locksToSingleChosenAbility) {
+    bits.add('may use only one named ability and nothing else');
+  }
+  if (def.repeatAbilityDamageMultiplier != null) {
+    final pct =
+        ((1 - def.repeatAbilityDamageMultiplier!) * 100).round();
+    bits.add('deal $pct% less damage when repeating the ability used last '
+        'turn');
+  }
+  if (def.forcesNextAttackCriticalMiss) {
+    bits.add('miss the next attack critically');
+  }
+  if (def.sharesMagnitudeWithBoundEnemy) {
+    bits.add('pass part of every wound and every heal on to the enemy bound '
+        'to $whose fate');
+  }
+  if (def.randomizesOwnTargeting) bits.add('pick $whose targets at random');
 
   final subject = onSelf ? 'You' : 'They';
-  final what = bits.isEmpty
-      ? '$subject are affected by ${def.name}'
-      : '$subject ${bits.join(', ')}';
+  final written = _writtenStatusDescriptions[def.id];
+  final what = written != null
+      ? '$subject $written'
+      : bits.isEmpty
+          ? '$subject are affected by ${def.name}'
+          : '$subject ${bits.join(', ')}';
   if (!includeDuration) return '$what.';
   return '$what. '
       '${describeStatusDuration(def.defaultDurationTurns, onSelf: onSelf)}';

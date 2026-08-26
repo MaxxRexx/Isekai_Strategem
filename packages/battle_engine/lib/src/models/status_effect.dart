@@ -192,6 +192,25 @@ class StatusEffectDefinition {
   /// automatically misses (Echoing Doubt's forced whiff).
   final bool forcesNextAttackMiss;
 
+  /// While active, the affected character's next attack roll is forced to a
+  /// **critical** miss and the effect is spent (Reckoning).
+  ///
+  /// Different from [forcesNextAttackMiss] in what the roll reads as, which
+  /// matters to anything that keys off a critical miss.
+  final bool forcesNextAttackCriticalMiss;
+
+  /// While active, the affected character may use only the one ability named
+  /// in the instance's `data['onlyAllowedTriggerId']`, and nothing else
+  /// (Forced Choice). The ability is chosen when the effect lands, so the
+  /// definition declares the rule and the instance carries the choice.
+  final bool locksToSingleChosenAbility;
+
+  /// While active, damage the holder takes and healing they receive is
+  /// partly dealt to the enemy they are bound to, as unavoidable damage
+  /// (Karmic Bind). The fraction is Team-Spirit-scaled at apply time and
+  /// lives on the instance, so the definition declares only that it happens.
+  final bool sharesMagnitudeWithBoundEnemy;
+
   /// While active, the affected character's targets are picked at random
   /// from the legal ones rather than by whoever is playing them (Enraged).
   ///
@@ -253,6 +272,9 @@ class StatusEffectDefinition {
     this.preventsTargeting = false,
     this.preventsAllyInteraction = false,
     this.forcesNextAttackMiss = false,
+    this.forcesNextAttackCriticalMiss = false,
+    this.locksToSingleChosenAbility = false,
+    this.sharesMagnitudeWithBoundEnemy = false,
     this.randomizesOwnTargeting = false,
     this.reactions = const [],
     this.maxStacks = 1,
