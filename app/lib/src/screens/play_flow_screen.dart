@@ -1718,6 +1718,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                             StatusBadge(
                               name: s.name,
                               remainingTurns: s.remainingTurns,
+                              stacks: s.stacks,
                               id: s.id,
                             ),
                         ],
@@ -2461,6 +2462,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                   StatusBadge(
                     name: s.name,
                     remainingTurns: s.remainingTurns,
+                    stacks: s.stacks,
                     id: s.id,
                     onSelf: isOwn,
                   ),

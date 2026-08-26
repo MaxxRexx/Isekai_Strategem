@@ -456,13 +456,16 @@ class CharacterBattleState {
 
     for (final instance in statusEffects) {
       final def = cat[instance.definitionId];
+      // Item 5b: a stat step is multiplied by how many times the effect has
+      // stacked. One instance, one badge, three times the step.
+      final stacks = instance.stacks;
       def.flatStatModifiers.forEach((stat, delta) {
-        deltas[stat] = (deltas[stat] ?? 0) + delta;
+        deltas[stat] = (deltas[stat] ?? 0) + delta * stacks;
       });
       if (def.perRemainingTurnStatModifiers.isNotEmpty) {
         final remaining = instance.remainingTurns ?? 0;
         def.perRemainingTurnStatModifiers.forEach((stat, delta) {
-          deltas[stat] = (deltas[stat] ?? 0) + delta * remaining;
+          deltas[stat] = (deltas[stat] ?? 0) + delta * remaining * stacks;
         });
       }
       zeroed.addAll(def.zeroedStats);

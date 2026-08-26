@@ -101,6 +101,7 @@ class FighterRow extends StatelessWidget {
                 StatusBadge(
                   name: s.name,
                   remainingTurns: s.remainingTurns,
+                  stacks: s.stacks,
                   id: s.id,
                 ),
             ],

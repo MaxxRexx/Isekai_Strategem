@@ -197,6 +197,44 @@ void main() {
     List<ActiveTrigger> kitOf(PlaySession session, String characterId) =>
         session.equippedA[CombatantIds.of('player', characterId)]!;
 
+    test('A bleed that piles up: the brief step one is performable and it '
+        'really stacks', () {
+      final s = byId('stacking_bleed');
+      var stacked = false;
+
+      for (var attempt = 0; attempt < 40 && !stacked; attempt++) {
+        final session = s.start();
+        final rurik = stateOf(s, session, 'rurik_voss');
+        final kaito = stateOf(s, session, 'kaito_reyes');
+        final vela = stateOf(s, session, 'vela_ashworth');
+
+        for (final actor in [rurik, kaito]) {
+          final queued = session.queue(
+            actor.combatantId,
+            actor == rurik ? 'whirlwind_slash' : 'rapid_fire',
+            [vela.combatantId],
+          );
+          expect(queued.success, isTrue, reason: queued.error ?? '');
+        }
+        session.resolveQueue();
+
+        final bleeds =
+            vela.statusEffects.where((i) => i.definitionId == 'bleeding');
+        if (bleeds.isEmpty) continue;
+
+        expect(bleeds, hasLength(1),
+            reason: 'however many land, there is one badge and one timer');
+        expect(bleeds.single.stacks, lessThanOrEqualTo(3),
+            reason: 'three is the cap, and Rapid Fire strikes three times');
+        if (bleeds.single.stacks < 2) continue;
+        stacked = true;
+      }
+
+      expect(stacked, isTrue,
+          reason: 'forty turns without two bleeds landing would make this '
+              'scenario unplayable');
+    });
+
     test('Freeze then shatter: the chain the brief promises actually runs',
         () {
       // Three dice gates stand in front of this chain: each of the three
@@ -241,18 +279,21 @@ void main() {
                 .statusEffectsApplied
                 .contains('Chilled');
         if (!chilled || !landed(1) || !landed(2)) continue;
-        ranClean = true;
 
+        // A hit can still be turned aside by a ward or a counter after the
+        // roll lands, so the freeze is the signal that this attempt got all
+        // the way through. Anything short of it is another attempt, not a
+        // failure; sixty attempts without one is the failure.
         final froze = actions[1].reactions.where((r) => r.became == 'Frozen');
-        expect(froze, hasLength(1),
-            reason: 'a cold hit on a chilled target freezes it, and the '
-                'freezing is not rolled for');
-        expect(froze.single.consumed, isTrue, reason: 'the chill is spent');
-
+        if (froze.isEmpty) continue;
         final shatter =
             actions[2].reactions.where((r) => r.reactingName == 'Frozen');
-        expect(shatter, hasLength(1), reason: 'Thunder shatters ice');
-        expect(shatter.single.damageMultiplier, 2.0);
+        if (shatter.isEmpty) continue;
+        ranClean = true;
+
+        expect(froze.single.consumed, isTrue, reason: 'the chill is spent');
+        expect(shatter.single.damageMultiplier, 2.0,
+            reason: 'Thunder shatters ice for double');
         expect(shatter.single.consumed, isTrue);
         expect(vela.statusEffects.map((i) => i.definitionId),
             isNot(contains('frozen')),
@@ -260,8 +301,8 @@ void main() {
       }
 
       expect(ranClean, isTrue,
-          reason: 'sixty turns without all three attacks landing would make '
-              'this scenario unplayable');
+          reason: 'sixty turns without the chain running once would make this '
+              'scenario unplayable');
     });
 
     test('A one-turn lock: the brief step one is actually performable', () {

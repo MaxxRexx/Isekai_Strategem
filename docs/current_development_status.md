@@ -182,7 +182,7 @@ document.
 | 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued | 2 |
 | 4b | **The long tail of battle length.** The distribution is healthy in the middle and ragged at the end: 200 simulated battles run a median of 14 rounds with 83% inside the 8-20 band, but p90 is 23 and the worst single battle took **118 rounds**. Everything concludes, so it is not a stall, and the 30-round limit in #4 would cut it off rather than explain it. Worth understanding before that limit lands, because a match that would have taken 40 rounds now ends on the health tiebreak instead, and whoever was ahead at round 30 wins a fight they might not have won. Likely suspects: two sustain-heavy squads out-healing each other's damage, or a Trion-starved pair trading single cheap abilities. Diagnose from `tool/balance_report.dart`, which already records the distribution. Sits with #4 because the fix, if there is one, is an economy number. | Queued | 2 |
 | 5 | **Support abilities do not pay for their action.** Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced in #3's wave 4 pass, which owns every magnitude and duration. The #3 audit re-derived this table and found the four are not uniformly bad: Rally Cry buys 1.05 actions, Cleansing Ward 0.80, Guardian's Aegis 0.51 and War Chant 0.25, so the work is to lift the bottom two. The bottom two get an interim spot-fix in wave 1 so the wave 2 playtests are not played with support that does nothing. | Queued | 4 |
-| 5b | **Stackable statuses.** 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be. A stackable effect is worth more Status Points, so the flags land in wave 1 ahead of the rule that reads them, and wave 4 prices them. | Approved, queued | 1 |
+| 5b | **Stackable statuses.** **Built, wave 1.** `maxStacks` on the definition (1 for fifty of them, 3 for the twelve), `stacks` on the instance, counted in `StatusEffectEngine.apply`. Still one instance with one duration: the stat folding and all three tick kinds multiply by the count, and the badge carries an `x2`/`x3` with the count in its tooltip. Original spec: 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be. A stackable effect is worth more Status Points, so the flags land in wave 1 ahead of the rule that reads them, and wave 4 prices them. | Approved, queued | 1 |
 | 5c | **Rename perks to Side Effects (SEs).** `CharacterPerk` to `SideEffect`, the `perk` field, the charge-tracking flags, the Loadout panel copy and the abbreviation list. Mechanical and wide, so it goes in one commit of its own where it cannot hide a behaviour change. **Built, wave 1.** One commit, 34 files, no behaviour change: the class, its file, the `sideEffect` field, `sideEffectChargeUsed` and `consumeSideEffectChargeIfAvailable`, the TEG sub-score, the guide tab, the picker and log copy, the simulator's JSON keys and page, and the design document. `'perk:feint'`, the one id in a string, became `'side_effect:feint'`. | Done | 1 |
 | 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. Also carries the deferred battlefield layout: **lay the squads out on the board itself**, so each character's portrait sits in the lane column their position puts them in and moving one visibly moves them, replacing the separate diagram. Deferred out of #1 deliberately: it rewrites the squad panels, portrait selection, target picking and the tutorial's step targeting, which is the machinery every other feature sits on. | Queued | 5 |
 | 7 | **AI tuning (Phase G).** Teach the AI to value counters, uniques and statuses, and to play positions once #1 lands. | Queued | 6 |
@@ -204,7 +204,7 @@ Waves are worked in order; everything inside a wave is one branch.
 | Wave | Items | Why it sits here |
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
-| **1** | ~~#14~~ ~~5c~~ ~~the duration fix~~ ~~**3b** mechanism~~ **done** &rarr; &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
+| **1** | ~~#14~~ ~~5c~~ ~~the duration fix~~ ~~**3b** mechanism~~ ~~**5b**~~ **done** &rarr; &rarr; **5b** &rarr; **13b** &rarr; **#3's rule only** &rarr; the Trion drain fix &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
@@ -391,9 +391,10 @@ document. The tests were repointed at `allScenarios` so retiring one does not
 quietly stop checking it, and two new tests assert that the tab lists exactly
 the unretired set and that the empty state renders.
 
-Wave 1's features add new scenarios here as they land, and there are three
+Wave 1's features add new scenarios here as they land, and there are four
 waiting now: **A one-turn lock costs a turn** and **A buff you cast lasts your
-turns** from #D, and **Freeze, then shatter** from 3b. The rest of wave 1,
+turns** from #D, **Freeze, then shatter** from 3b, and **A bleed that piles
+up** from 5b. The rest of wave 1,
 3b's reactions and 5b's stacking are each worth one.
 
 ### #D as built: one word, one meaning
@@ -519,6 +520,39 @@ Enraged's three clauses. A new Tests tab scenario, **Freeze, then shatter**,
 runs the whole chain in one turn with three characters, and an app test plays
 that scenario until the dice cooperate and then holds the two reactions to the
 letter. **Not checked by running:** nobody has played the scenario yet.
+
+### 5b as built: one badge, one timer, a bigger effect
+
+Twelve effects stack, capped at three, exactly as decision #F approved.
+`StatusEffectDefinition.maxStacks` declares it (1 for the other fifty) and
+`StatusEffectInstance.stacks` counts it. Re-applying still refreshes the one
+instance rather than adding a second, so a character never carries two badges
+for one effect or two timers running out of step. What changes is the
+magnitude: the stat folding multiplies each step by the count, and all three
+tick kinds (damage, heal, Trion drain) multiply too. Every one of the twelve
+turned out to use only those field families, so nothing needed a special case
+for a multiplier that cannot simply be multiplied.
+
+**The badge says it.** An `x2` or `x3` in the corner opposite the duration, and
+the tooltip spells out that everything the status does is multiplied by the
+count. A single stack shows nothing at all, because an `x1` on every badge in
+the game would mean nothing.
+
+**Worth knowing before #3 prices this:** a burst applies a stack per strike.
+Rapid Fire strikes three times, so one use can take a bleed from nothing to
+the cap. That is not a bug (each strike is an application that had to win its
+own infliction contest) but it does mean the cap is reachable in one action
+for a burst and takes three for anything else, which is a real difference in
+what a stack is worth by ability. #3's pass should price a stacking rider on a
+burst differently from one on a single strike.
+
+**Verified.** 1007 engine tests and 379 app tests pass; analyzers unchanged.
+Fourteen new engine tests in `status_stacking_test.dart` pin which twelve
+stack and that the other fifty do not, that a stack is one instance rather
+than two, that the cap holds, that every magnitude family multiplies, and that
+a single stack leaves the old numbers exactly where they were. Five app tests
+cover the badge and its tooltip. A new Tests tab scenario, **A bleed that
+piles up**, is waiting to be played.
 
 ### The seven SPTV decisions, as approved
 

@@ -405,10 +405,15 @@ class StatusBadgeInfo {
   final String name;
   final int? remainingTurns;
 
+  /// How many times the effect has stacked (item 5b). 1 for the fifty that
+  /// do not stack, and for a stacking one that has only landed once.
+  final int stacks;
+
   const StatusBadgeInfo({
     required this.id,
     required this.name,
     required this.remainingTurns,
+    this.stacks = 1,
   });
 }
 

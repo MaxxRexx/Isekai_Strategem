@@ -130,11 +130,11 @@ class StatusEffectEngine {
     // because it is the same two lines either way.
     _fireStatusReactions(target, statusEffectId);
 
-    // Re-applying an effect refreshes it rather than adding a second copy.
-    // Stacking produced two Bleedings ticking separately and two Braced
-    // badges counting down out of step, which is unreadable on a character
-    // strip and doubles a magnitude nobody priced for. A genuinely stacking
-    // effect would need to say so on its definition; none currently does.
+    // Re-applying an effect never adds a second copy. It refreshes the one
+    // that is there, and for the twelve that stack (item 5b) it also counts
+    // another stack, up to the definition's maximum. Two instances ticking
+    // separately and counting down out of step is unreadable on a character
+    // strip and doubles a magnitude nobody priced.
     final existingIndex =
         target.statusEffects.indexWhere((i) => i.definitionId == statusEffectId);
     if (existingIndex >= 0) {
@@ -146,6 +146,9 @@ class StatusEffectEngine {
         existing.remainingTurns = null;
       } else if (refreshed > existing.remainingTurns!) {
         existing.remainingTurns = refreshed;
+      }
+      if (def.stacks && existing.stacks < def.maxStacks) {
+        existing.stacks++;
       }
       // sourceCharacterId is final on the instance and the first applier
       // keeps the credit, which is what the "cannot target its source" rules
@@ -258,20 +261,27 @@ class StatusEffectEngine {
     for (final instance in List.of(target.statusEffects)) {
       final def = catalog[instance.definitionId];
 
+      // Item 5b: every magnitude an effect carries is multiplied by how many
+      // times it has stacked. One instance, one duration, three times the
+      // bleed.
+      final stacks = instance.stacks;
+
       if (def.turnStartDamage != null && def.turnStartDamageType != null) {
-        final amount = def.turnStartDamage!.roll(diceRoller);
+        final amount = def.turnStartDamage!.roll(diceRoller) * stacks;
         damageEvents
             .add(TurnStartDamageEvent(def.turnStartDamageType!, amount));
       }
 
       if (def.turnStartHeal != null) {
-        healEvents.add(TurnStartHealEvent(def.turnStartHeal!.roll(diceRoller)));
+        healEvents.add(
+            TurnStartHealEvent(def.turnStartHeal!.roll(diceRoller) * stacks));
       }
 
       if (def.trionCapacityDrainPercentToCauser != null &&
           instance.sourceCharacterId != null) {
         final amount = (target.character.baseStats.trionCapacity *
-                def.trionCapacityDrainPercentToCauser!)
+                def.trionCapacityDrainPercentToCauser! *
+                stacks)
             .round();
         drainEvents.add(TrionDrainEvent(instance.sourceCharacterId!, amount));
       }

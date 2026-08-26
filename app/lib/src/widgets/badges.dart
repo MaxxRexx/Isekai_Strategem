@@ -100,6 +100,11 @@ class StatusBadge extends StatelessWidget {
   final String name;
   final int? remainingTurns;
 
+  /// How many times this effect has stacked (item 5b). Anything above 1 is
+  /// drawn on the badge, because three stacks of Bleeding is three times the
+  /// damage and a player who cannot see the count cannot judge the threat.
+  final int stacks;
+
   /// The catalog id, so the tooltip can read what the effect actually does
   /// rather than repeating its display name. Optional only because a few
   /// callers still have nothing but a name to hand.
@@ -115,6 +120,7 @@ class StatusBadge extends StatelessWidget {
     this.remainingTurns,
     this.id,
     this.onSelf = true,
+    this.stacks = 1,
   });
 
   @override
@@ -126,6 +132,7 @@ class StatusBadge extends StatelessWidget {
             name: name,
             remainingTurns: remainingTurns,
             onSelf: onSelf,
+            stacks: stacks,
           );
     return Tooltip(
       message: message,
@@ -146,6 +153,19 @@ class StatusBadge extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             const Icon(GameIcons.status, size: 11, color: Palette.accent),
+            if (stacks > 1)
+              Positioned(
+                top: -4,
+                left: -4,
+                child: Text(
+                  'x$stacks',
+                  style: const TextStyle(
+                    color: Palette.warn,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             if (remainingTurns != null)
               Positioned(
                 bottom: -4,

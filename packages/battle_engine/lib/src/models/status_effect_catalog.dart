@@ -9,6 +9,11 @@ import 'status_reaction.dart';
 /// switches on effect id/name; it only reads these generic fields, so
 /// adding a new status effect means adding an entry here, not touching
 /// engine code.
+/// Item 5b's stack ceiling. Twelve effects pile up, and none of them past
+/// three: a fourth stack of anything is a magnitude nobody designed for, and
+/// three is where the badge still reads at a glance.
+const int _stackCap = 3;
+
 class StatusEffectCatalog {
   final Map<String, StatusEffectDefinition> _byId;
 
@@ -31,6 +36,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'acid',
         name: 'Acid',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.acidDurationTurns,
         flatStatModifiers: {
           ModifiableStat.armor: -magnitudes.acidArmorReduction.toDouble()
@@ -89,6 +95,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'sapped',
         name: 'Sapped',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.sappedDurationTurns,
         trionCapacityDrainPercentToCauser:
             magnitudes.sappedDrainPercentOfTrionCapacity,
@@ -148,6 +155,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'bleeding',
         name: 'Bleeding',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.bleedingDurationTurns,
         reactions: const [
           StatusReaction(onDamageType: DamageType.slashing, becomes: 'bleeding'),
@@ -185,6 +193,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'electrocuted',
         name: 'Electrocuted',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.electrocutedDurationTurns,
         // Arcs to one other character standing on the same line as the
         // holder, on the holder's own side.
@@ -201,6 +210,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'regenerating',
         name: 'Regenerating',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.regeneratingDurationTurns,
         turnStartHeal:
             DiceExpression(0, 1, flatBonus: magnitudes.regeneratingHealPerTurn),
@@ -277,6 +287,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'fatigued',
         name: 'Fatigued',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.fatiguedDurationTurns,
         flatStatModifiers: {
           ModifiableStat.attack: -magnitudes.fatiguedAttackPenalty.toDouble(),
@@ -286,6 +297,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'inspired',
         name: 'Inspired',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.inspiredDurationTurns,
         flatStatModifiers: {
           ModifiableStat.attack: magnitudes.inspiredAttackBonus.toDouble(),
@@ -449,6 +461,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'adrenaline_rush',
         name: 'Adrenaline Rush',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.adrenalineRushDurationTurns,
         flatStatModifiers: {
           ModifiableStat.criticalChance:
@@ -458,6 +471,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'battle_trance',
         name: 'Battle Trance',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.battleTranceDurationTurns,
         flatStatModifiers: {
           ModifiableStat.fatChance:
@@ -467,6 +481,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'suppressed',
         name: 'Suppressed',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.suppressedDurationTurns,
         flatStatModifiers: {
           ModifiableStat.statusEffectInfliction:
@@ -476,6 +491,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'warded',
         name: 'Warded',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.wardedDurationTurns,
         flatStatModifiers: {
           ModifiableStat.statusEffectResistance:
@@ -485,6 +501,7 @@ class StatusEffectCatalog {
       StatusEffectDefinition(
         id: 'hexed',
         name: 'Hexed',
+        maxStacks: _stackCap,
         defaultDurationTurns: magnitudes.hexedDurationTurns,
         flatStatModifiers: {
           ModifiableStat.statusEffectResistance:

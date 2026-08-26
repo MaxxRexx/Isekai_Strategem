@@ -257,6 +257,16 @@ const _refuser = [
   'shatterpoint',
 ];
 
+/// Two ways to bleed a target, which is the stacking status a Loadout can
+/// reach today: Whirlwind Slash lands one stack, Rapid Fire strikes three
+/// times and can land three.
+const _stacker = [
+  'whirlwind_slash',
+  'rapid_fire',
+  'twin_fang_strike',
+  'guardians_aegis',
+];
+
 /// The cold half of item 3b's chain. Frost Lance chills what it hits, and a
 /// second cold hit on a chilled target freezes it.
 const _frostbite = [
@@ -298,6 +308,59 @@ const _back = BattlePosition.back;
 /// Every scenario ever written, retired or not. The tests validate all of
 /// them; the picker shows [testScenarios].
 final List<TestScenario> allScenarios = [
+  TestScenario(
+    id: 'stacking_bleed',
+    name: 'A bleed that piles up',
+    item: '5b',
+    goal:
+        'Twelve statuses stack, capped at three, and a stack multiplies '
+        'everything the status does. One badge, one timer, three times the '
+        'damage. Check that the badge says how many are on there and that '
+        'the fourth application does nothing.',
+    steps: (s) => [
+      'Queue Whirlwind Slash from Rurik at the enemy Front (Vela) and '
+          'resolve. It strikes once, so it lands at most one stack.',
+      'Tap the BLEEDING badge on Vela and read the tooltip.',
+      'Next turn, queue Rapid Fire from Kaito at Vela. It strikes three '
+          'times, and each strike that wins the contest adds a stack.',
+      'Keep attacking her and watch the badge stop moving.',
+    ],
+    expect: (s) => [
+      'The first application shows a plain badge with the turns left on it '
+          'and no multiplier at all.',
+      'Once a second stack lands the badge shows x2, then x3. There is only '
+          'ever one badge and one timer, never two of either.',
+      'It never shows x4. Three is the cap, and the timer still refreshes '
+          'on every application after that.',
+      'The tooltip on a stacked badge says everything the status does is '
+          'multiplied by the count.',
+      'The bleed damage at the start of her turn goes up with the count: '
+          'three stacks tick three times what one does.',
+    ],
+    caveat:
+        'Every strike has to hit and then win the infliction contest to add '
+        'a stack, so a turn can pass without the count moving. That is the '
+        'contest, not the stacking.',
+    playerIds: _playerSquad,
+    enemyIds: _enemySquad,
+    kits: {
+      'rurik_voss': _stacker,
+      'kaito_reyes': _stacker,
+      'mireille_song': _sniper,
+      'vela_ashworth': _brawler,
+      'ren_kobayashi': _brawler,
+      'nadia_kessler': _sniper,
+    },
+    positions: {
+      'rurik_voss': _middle,
+      'kaito_reyes': _middle,
+      'mireille_song': _back,
+      'vela_ashworth': _front,
+      'ren_kobayashi': _middle,
+      'nadia_kessler': _back,
+    },
+  ),
+
   TestScenario(
     id: 'freeze_and_shatter',
     name: 'Freeze, then shatter',

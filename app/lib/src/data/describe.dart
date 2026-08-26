@@ -161,6 +161,7 @@ String describeStatusBadge({
   required String name,
   int? remainingTurns,
   required bool onSelf,
+  int stacks = 1,
   StatusEffectCatalog? statusCatalog,
 }) {
   final catalog = statusCatalog ?? StatusEffectCatalog.defaultCatalog;
@@ -186,6 +187,12 @@ String describeStatusBadge({
     left = 'One turn left: it wears off at the end of $whose next turn.';
   } else {
     left = '$remainingTurns turns left, counting $whose next one.';
+  }
+  if (stacks > 1) {
+    // Item 5b: a stack multiplies every magnitude the effect carries, so the
+    // count is the difference between a scratch and a problem.
+    return '$name x$stacks. $what Everything it does is multiplied by '
+        '$stacks. $left';
   }
   return '$name. $what $left';
 }

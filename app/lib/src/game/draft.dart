@@ -198,6 +198,7 @@ FighterSnapshot fighterSnapshot(
         id: i.definitionId,
         name: statusCatalog[i.definitionId].name,
         remainingTurns: i.remainingTurns,
+        stacks: i.stacks,
       ),
   ],
 );

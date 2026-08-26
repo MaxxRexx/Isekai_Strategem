@@ -205,6 +205,22 @@ class StatusEffectDefinition {
   /// not react to anything.
   final List<StatusReaction> reactions;
 
+  /// How many times this effect can pile up on one character (item 5b).
+  ///
+  /// 1, the default, means re-applying it refreshes the timer and nothing
+  /// else, which is what 50 of the 62 do. The twelve that stack carry 3 here,
+  /// and a stack multiplies the effect's magnitude: three stacks of Bleeding
+  /// tick three times the damage, three of Inspired give three times the
+  /// stat step. There is still only ever **one instance** with one duration,
+  /// so a character never shows the same badge twice and never has two
+  /// timers running out of step.
+  ///
+  /// Stacking has to be declared. It used to be the accidental default: two
+  /// applications made two instances, ticking separately and counting down
+  /// separately, which is unreadable on a character strip and doubles a
+  /// magnitude nobody priced.
+  final int maxStacks;
+
   const StatusEffectDefinition({
     required this.id,
     required this.name,
@@ -239,7 +255,11 @@ class StatusEffectDefinition {
     this.forcesNextAttackMiss = false,
     this.randomizesOwnTargeting = false,
     this.reactions = const [],
-  });
+    this.maxStacks = 1,
+  }) : assert(maxStacks >= 1, 'an effect applies at least once');
+
+  /// Whether this effect piles up rather than merely refreshing.
+  bool get stacks => maxStacks > 1;
 
   /// The reaction [damageType] fires on this status, or null.
   StatusReaction? reactionToDamage(DamageType damageType) {
@@ -273,6 +293,13 @@ class StatusEffectInstance {
   /// chosen for Sickened, or the currently-locked ability id for Prone.
   final Map<String, Object?> data;
 
+  /// How many times this effect has piled up, 1 or more (item 5b). Always 1
+  /// for an effect whose definition does not stack.
+  ///
+  /// Every magnitude the effect carries is multiplied by this: the damage or
+  /// heal it ticks, the Trion it drains, and each of its stat steps.
+  int stacks;
+
   /// Set when the effect lands on a character who is in the middle of
   /// their own turn, and cleared by the first countdown that sees it.
   ///
@@ -291,6 +318,7 @@ class StatusEffectInstance {
     this.remainingTurns,
     this.sourceCharacterId,
     this.skipsNextCountdown = false,
+    this.stacks = 1,
     Map<String, Object?>? data,
   }) : data = data ?? {};
 }

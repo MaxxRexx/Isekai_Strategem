@@ -647,10 +647,22 @@ that applies them until the content pass, so the rows that start from those
 three cannot be set up from a Loadout you can build today. Everything from
 Chilled, Scorched, Corroded, Bleeding and Poisoned can.*
 
-**A status effect is refreshed, not stacked.** Applying an effect that is
-already on a character resets its timer rather than adding a second copy, and
-the longer of the two durations wins. So a character never carries the same
-effect twice, and never shows the same badge twice.
+**A status effect is refreshed, and twelve of them also stack.** Applying an
+effect that is already on a character resets its timer rather than adding a
+second copy, and the longer of the two durations wins. So a character never
+carries the same effect twice, and never shows the same badge twice.
+
+Twelve effects also **stack, up to three**: Bleeding, Electrocuted,
+Regenerating and Sapped, whose ticks add up, and Acid, Adrenaline Rush, Battle
+Trance, Fatigued, Hexed, Inspired, Suppressed and Warded, whose stat steps do.
+A stack multiplies everything the effect does, so three stacks of Bleeding tick
+three times the damage and three of Inspired give three times the step. It is
+still one badge with one timer; the badge carries an **x2** or **x3** to say
+how deep it is. The other fifty refresh and nothing more.
+
+A burst applies a stack per strike, so an ability that strikes three times can
+take a stacking effect from nothing to the cap in one action, provided each
+strike wins its own infliction contest.
 
 **A friendly ability is granted, not inflicted.** A heal, a ward or a buff aimed
 at yourself or an ally never rolls to hit and is never contested: it simply
