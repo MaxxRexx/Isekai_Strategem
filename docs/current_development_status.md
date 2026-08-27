@@ -746,7 +746,7 @@ dropdown, read what it is for, and start it: the battle runs in the ordinary
 battle screen, because what is being tested is whether the real interface
 explains the rules, and a bespoke harness would only prove the harness works.
 
-**The eight scenarios**, in `app/lib/src/game/test_scenarios.dart`:
+**Wave 0's eight**, all played, all correct, all retired now:
 
 | Scenario | Item | What it puts in front of you |
 |---|---|---|
@@ -758,6 +758,17 @@ explains the rules, and a bespoke harness would only prove the harness works.
 | Only damage may be aimed at a body | #2 | The target picker offers a body to a damaging ability and refuses it to Charm Whisper |
 | Refuse to Bail | #2 | The one thing that has never been equipped and fired outside a test |
 | The last one does not bail | #2 | A squad's final member falls with no window and no Salvage |
+
+**Wave 1's five**, which is what the tab offers today. **None has been played
+by a person:**
+
+| Scenario | Item | What it puts in front of you |
+|---|---|---|
+| A one-turn lock costs a turn | #D | Silence an enemy for one turn and watch them lose the turn. Before #D a 1-turn lock expired before its victim acted and did nothing whatsoever |
+| A buff you cast lasts your turns | #D | A buff reading 3 covers three of your own turns, counting from your next one, and never spends the turn you cast it on |
+| Freeze, then shatter | 3b | The whole reaction chain in one turn: chill a target, freeze the chill with a second cold hit, break the ice with Thunder for double damage. Two reactions, neither of them rolled for |
+| A bleed that piles up | 5b | One badge and one timer showing x2 then x3, a fourth application changing nothing, and the tick going up with the count |
+| A buff worth the action | #5 | Whether a squad buff feels like it bought something, and what an area buff reaches: the line it was aimed at, not the squad |
 
 **How they are set up.** `PlaySession.start` gained two optional parameters,
 both null in ordinary play: `opponentLoadouts` pins the enemy kit instead of

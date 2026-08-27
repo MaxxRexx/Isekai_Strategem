@@ -528,7 +528,7 @@
     <p class="standfirst">SPTV is the rule that decides what every status effect, Trion cost, cooldown and duration in the game is worth. Before proposing it, the code was audited against the documents. Seven things came back different, and three of them change what this item has to do.</p>
     <div class="provenance">
       <span><b>Branch</b> claude/tasks-3-3b-r8ceab</span>
-      <span><b>Stage</b> design, no code written</span>
+      <span><b>Stage</b> built in wave 1, two figures superseded</span>
       <span><b>Measured over</b> 200 AI battles, seed 7</span>
       <span><b>Decisions</b> 7, all approved</span>
       <span><b>Revised</b> after the queue was re-sequenced</span>
@@ -536,6 +536,30 @@
   </header>
 
   <section>
+    <div class="note">
+      <p><b>Built, and where the build disagreed with this page.</b> Wave 1 has
+      since built the rule this review proposes: the conversion table lives in
+      <code>Sptv</code>, the baselines in <code>SptvBaselines</code>, and
+      <code>tool/sptv_price.dart</code> prices the whole catalogue with them.
+      Three things below did not survive contact with the code, and the
+      corrections are recorded in <code>current_development_status.md</code>
+      rather than edited into this page, because a review is a record of what
+      was decided and when.</p>
+      <p><b>Damage per Trion is 0.64, not 1.28.</b> That figure was derived
+      from team income rather than measured against Trion actually spent. The
+      same 200 battles give 0.64 when damage landed is divided by the Trion
+      spent landing it, and the tool measures it now.</p>
+      <p><b>Healing per character-turn is 0.02.</b> It was listed here as
+      unmeasured. It is measured now, and the number is close to zero because
+      the AI almost never spends an action healing, which is item #5 showing
+      up in the data rather than a rounding error.</p>
+      <p><b>Decision #D gained a second question.</b> Moving the countdown to
+      the end of the holder's turn left open whether an effect counts the turn
+      it was applied on. The owner chose to skip that turn, which made the ward
+      compensation and the Illusory Double bump proposed here unnecessary, and
+      instead lengthened about ten self-buffs by one of your turns.</p>
+    </div>
+
     <h2>What was decided</h2>
     <p class="prose lede">All seven were approved as recommended, after this review was re-read against the re-sequenced queue. They are recorded here as the decisions wave 1 builds against; everything after this section is the evidence behind them.</p>
     <div class="note" style="border-left-color: var(--good); background: var(--good-wash);">

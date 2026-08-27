@@ -92,7 +92,10 @@ on:
   exist so nobody guesses at a number: `stall_finder` for unreachable board
   states, `balance_report` for pacing, `reach_check` and `formation_matrix`
   for reach, `screening_model` and `trap_screening_sim` for the screening
-  rules, `stackable_statuses` and `doc_facts` for catalogue questions. Check
+  rules, `stackable_statuses` and `doc_facts` for catalogue questions,
+  `sptv_baseline` for what an action, a stat point and a Trion are actually
+  worth in a played battle, and `sptv_price` for what every status and every
+  ability is worth under item #3's rule. Check
   the directory rather than trusting this list: a previous handoff cited a
   `position_matrix` tool that is not in the repo, which is this section in
   miniature.

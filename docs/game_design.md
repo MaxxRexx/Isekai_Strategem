@@ -888,7 +888,7 @@ bleed is not somebody hitting you with a blade.
 
 ### Damage dealt up or down
 
-- **Empowered:** deals +25% damage for 2 turns.
+- **Empowered:** deals +25% damage for 3 turns.
 - **Enraged:** deals +50% damage but loses 3 Defense for 2 turns, is **immune
   to Psychic damage** while it lasts, and **picks its targets at random**.
   Enraging your own character is a gamble you take for the damage and the
@@ -917,7 +917,7 @@ bleed is not somebody hitting you with a blade.
 
 ### Trion and status economy
 
-- **Sapped:** loses 25% of Trion Capacity for 3 turns.
+- **Sapped:** loses 25% of Trion Capacity each turn for 3 turns, and the squad that applied it gains exactly what is taken. A drain moves Trion rather than making it, so an empty pool pays nothing.
 - **Overcharged:** your abilities cost half Trion for 2 turns.
 - **Choked:** abilities cost double Trion for 2 turns.
 - **Suppressed:** 5 less Status Infliction for 2 turns (worse at applying
