@@ -11,7 +11,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1 is complete and unplayed.** All nine items are built, tested and pushed: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's rule (not its pass), the Trion drain fix and the two support spot-fixes. **Five scenarios are waiting in the Tests tab** and none has been played by a person: a one-turn lock costing a turn and a buff lasting your turns (#D), Freeze then shatter (3b), a bleed that piles up (5b), and a buff worth the action (#5). **That playtest is what comes before wave 2.** Then wave 2 is **#4**, the Trion economy, which is what every deferred pricing decision is waiting on: #3's pass, the support re-pricing, and the abilities the rule cannot see yet. The queue was re-sequenced after the #3 audit, so the numbers are names and the running order is its own table below. All seven of the design review's decisions are **approved as recommended**, and #D's was corrected mid-build (see its section). Wave 0 is **done**: 1b and #2 were playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1 is built and played, and its playtest batch is built.** All nine items shipped: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's rule (not its pass), the Trion drain fix and the two support spot-fixes. The owner then played all five Tests tab scenarios and filed a batch of ten interface findings; **eight are fixed, one is a design decision now taken, and one is a proposal waiting on the owner** (see "Wave 1 playtest" below). **Lock is retired**; Buff, Bleed, Freeze and Duration are waiting on a re-play against the fixes. That re-play is what comes before wave 2. Then wave 2 is **#4**, the Trion economy, which is what every deferred pricing decision is waiting on: #3's pass, the support re-pricing, and the abilities the rule cannot see yet. The queue was re-sequenced after the #3 audit, so the numbers are names and the running order is its own table below. All seven of the design review's decisions are **approved as recommended**, and #D's was corrected mid-build (see its section). Wave 0 is **done**: 1b and #2 were playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -26,8 +26,7 @@ older note is gone.
 |---|---|
 | `main` | The trunk. Everything below the "in progress" line has been merged here, item #2 included. |
 | `gh-pages` | The published web build. Deploy target only; never develop on it. |
-| `claude/tasks-3-3b-r8ceab` | **The #3 audit and design branch.** Carries the two audit tools, the design review and the re-sequenced queue. Merged to `main`; no engine or content change in it. The wave 1 build gets a branch of its own. |
-| `claude/task-2-9fj8pc` | **Merged into main and finished with.** It survives only because this environment's git proxy refuses to delete a remote branch (`send-pack: unexpected disconnect`, on every attempt). Deleted locally; the remote one is one click in GitHub and is the owner's to remove. |
+| `claude/tasks-3-3b-r8ceab` | **The live branch.** Started as the #3 audit and design work, then carried the whole wave 1 build and the playtest batch that followed it. Ahead of `main`. |
 
 Every other work branch was deleted once merged.
 
@@ -161,6 +160,80 @@ one that does not, and a stacking status is worth more again. The new abilities
 and Side Effects are a content pass and should land after **#4**, alongside 1c
 (pull and push), so the whole catalogue is priced once rather than twice.
 
+
+## Wave 1 playtest: the interface batch
+
+The owner played all five Tests tab scenarios on 2026-08-27 and filed ten
+findings. Wave 1's mechanisms came through: buffs feel worth their action, the
+bleed stacked and applied correctly, the freeze chain ran, and the one-turn
+lock cost a turn. Everything below is interface, with two exceptions that
+turned out to be real engine bugs hiding behind interface complaints.
+
+**Verdicts.** Lock: "works correctly", retired. Bleed: "passed in terms of
+stacking and application". Freeze: "did work correctly (I think)". Buff: the
+buffs are worth their cost, but the targeting was wrong. Duration: blocked,
+could not be cast on the intended target. Buff, Bleed, Freeze and Duration all
+stay in the tab, because each has something new to look at since it was played.
+
+### Fixed
+
+| # | What was reported | What it was, and what was done |
+|---|---|---|
+| P1 | "Aegis's description is completely wrong. It's not an attack. It doesn't hit all 3 at once, it applies to allies in the same position." | The opening clause was written off the attack subtype alone, so every area ability called itself an attack that hits "all 3 targets at once" whoever it was aimed at. It is built from three facts now (aimed at yourself, an ally or an enemy; attack or ability; single, line or burst), and a status rider is attributed to whoever actually receives it. `describe_trigger_test` walks the whole catalogue, Black Triggers included. `game_design.md`'s AOE bullet carried the same wrong claim and was corrected. |
+| P2 | "An ability should only ever show possible targets for target selection. War Chant should not highlight Mireille, and the queue should not show her either." | The root cause of three separate reports. An area ability auto-selected every target it could reach across every line, while the engine has always narrowed it to whichever line the first target stood on. The picker aims at a **line** now: tap anyone on it and everyone legal there lights up together, capped at what the ability holds. Highlight, queue and resolution read the same rule. |
+| P3 | "Sometimes the golden pulse does not show. From Middle with Mireille, Longshot did not highlight Nadia but Frag Grenade did." | Both are Long Range and reach identically; reach was never the difference. The pulse marked **selected** targets only, and the area ability auto-selected while the single-target one waited for a tap. Reachability has its own mark now: a steady gold ring means the ability can be aimed here, the pulse means it has been. Static for what is on offer, motion for what is chosen. |
+| P4 | "Buffs used on self/allies should auto apply, not roll die. 'Rurik Voss (1 hit) [Guarded, Braced] -> HP 100' should not read as a hit." | Half interface, half a real bug. The roll was made against the recipient's own Defense and then overridden to a hit, which fixed the answer and left everything the pipeline does on the way there still done: casting a buff burned the ally's once-per-battle Decoy charge, spent First Blood on a full-health teammate, and consumed a Reckoning that should have wrecked the caster's next real attack. A friendly ability skips the attack pipeline entirely now. It rolls nothing, so `attackRolls` is empty, the log counts no hits, and the line reads "Kaito Reyes uses War Chant on Rurik Voss [Empowered x1] -> HP 100". |
+| P5 | "'Bleeding builds into Bleeding.' What is Bleeding into Bleeding? How is that a reaction?" | Three of 3b's rows feed a status into itself, and naming both ends says nothing. It reads "the Bleeding builds by one (now Bleeding x2)". |
+| P6 | "Mention the number of stacks: [Chilled] should be [Chilled x1]." | Every applied effect in the log and the report carries the stacks the target ended up with, reported by the engine (`TargetHitResult.statusEffectStacks`) rather than guessed at. An ability applying the same effect on several strikes is named once with the pile it ended with, instead of once per strike. |
+| P7 | "Some elements do not make it into the report, like the reactions." | They did not: nothing in `report.dart` wrote them, so a chain that visibly fired on screen read in the report as damage from nowhere. Reactions are in, and the sentence has one home (`LogReaction.sentence`) that the log widget and the report both read. Two more found while there: a recall was reprinted once per action in the turn, and a turn whose only event was a Bail Out window closing printed nothing at all. A bent shot is marked. |
+| P8 | "Why is there still one stack of Chilled after the log said Chilled turned to Frozen? The whole thing is unclear." | Both were true and nothing said they were about different chills. A reaction fires on what the target walked in carrying; the ability's own rider lands afterwards, so Frost Lance (Cold, applies Chilled) spends the old chill on a Frozen and lays a fresh one on top. The line says "was **already** Chilled", and adds ", and the same attack applies Chilled again (Chilled x1)". |
+| P9 | "When a battle is complete, clicking portraits or abilities does not display the description panel." | The panel lived in the else-branch of `if (session.isOver)` alongside End Turn and the queued strip, so the outcome banner swapped all three out while the portraits and slots stayed tappable and went on setting a selection nothing was left to draw. The panel outlives the battle now, under the banner, without the live-turn controls. |
+| P10 | The `#TWC` / `#TF` shorthand, and one-word test names. | Written into `working_agreement.md` on `main` (commit `4fd7d7e`). All fourteen scenarios renamed: Buff, Bleed, Freeze, Lock, Duration, Board, Screen, Body, Bend, Window, Targeting, Refuse, Mirror, Last. Ids untouched, so nothing that keys off a scenario moved; what each is for still reads in full in its `goal`. |
+
+### Decided
+
+**#G, statuses on a Bailing Out body.** Asked: can a Bleeding destroy a Trion
+body, should it, or should statuses be removed on bail out? It could not, and
+nothing said so: a body sits at 0 health and `Battle.startTurn` only ticks the
+living, so a Bleeding on a bailing body was a badge that could never fire.
+**The owner chose to remove them.** The window already cleared armed reactive
+effects because a wreck does not parry; a wreck does not bleed either. What is
+left on the board is a screening obstacle with a Trion value, not a fighter. A
+damage-over-time landed before the drop cannot deny the Salvage; only somebody
+spending an action on the body can. A character who **refuses to bail** keeps
+everything, because they are standing and still fighting. `game_design.md`
+section 21 records the rule.
+
+### Waiting on the owner
+
+**#F, status badge legibility.** Asked for research and ideas rather than a
+build, and not built. Findings, all measured rather than estimated:
+
+- **There is no crowding problem.** Across 300 AI-vs-AI battles (42,614
+  per-character samples), 99% of living characters carry three status effects
+  or fewer and the most ever seen is six, in 3 samples. The 19x19 badge is
+  small to solve a constraint the game does not have.
+- **The badge carries no information.** All 62 statuses draw the same
+  `Icons.blur_on` in the same `Palette.accent`, so a bleed killing a character
+  and a ward protecting them are the same picture. That is why the two 8px
+  numbers feel so important: they are the only differentiated pixels.
+- **The catalogue is narrower than it looks.** The 62 effects do about
+  **fourteen different things** (4 tick damage, 2 tick healing, 5 deny the
+  turn, 8 step a stat down, 7 step one up, and so on, with 15 genuinely
+  special), all derivable from fields the definitions already declare. So an
+  icon set needs roughly fourteen glyphs, not sixty-two. By the same
+  derivation, 13 effects are helpful, 39 harmful and 10 neither.
+
+Five approaches were put to the owner, rendered at true size:
+**#A** role glyph plus valence colour (same footprint, badge stops being a
+placeholder); **#B** stacks as three pips rather than a digit (the cap is 3 and
+the deepest pile measured is 3); **#C** duration as a depleting rule along the
+bottom edge rather than a corner digit; **#D** a 64x20 named pill, "make it
+bigger" done honestly now that the space is known to be there; **#E** a status
+rail under the health bar with helping on one side and hurting on the other.
+Recommended: **A, B and C compose into one badge the same size as today's that
+carries four facts and contains no text at all**, with D and E as escalations
+if a playtest of that still finds the glyphs ambiguous. Nothing is built.
 
 ## The work queue
 
