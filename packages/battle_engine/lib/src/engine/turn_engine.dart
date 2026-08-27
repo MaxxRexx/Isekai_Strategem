@@ -794,6 +794,14 @@ class TurnEngine {
     // own ward, or an enemy trap that was waiting for them to act - goes with
     // them, so a corpse cannot reflect the hit that clears it.
     state.reactiveEffects.clear();
+    // And a wreck does not bleed. Every status goes with the operator for the
+    // same reason: what is left on the board is a screening obstacle with a
+    // Trion value, not a fighter. They were being kept anyway, since a body
+    // has no health left to lose and `Battle.startTurn` only ticks the
+    // living, so a Bleeding on a bailing body was a badge that could never
+    // fire. Clearing them says that outright rather than leaving the player
+    // to work out which of the badges in front of them still mean anything.
+    state.statusEffects.clear();
   }
 
   /// Ends a Bailing Out body: the Salvage is denied, and [destroyer]'s squad

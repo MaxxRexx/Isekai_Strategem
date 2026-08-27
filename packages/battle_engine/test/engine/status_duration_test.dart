@@ -289,7 +289,12 @@ void main() {
           'empowered');
     });
 
-    test('a body on the board is not counted down', () {
+    test('a body on the board carries nothing left to count down', () {
+      // This used to assert the duration was frozen at 2 while the body sat
+      // there. It was, but it was also unreachable: a body has no health left
+      // to lose and never ticks, so the effect was a badge that could not
+      // fire. Entering the window clears statuses outright now, which is the
+      // same answer said where the player can see it.
       final battle = twoSquads();
       final self = battle.states['kaito_reyes']!;
 
@@ -300,6 +305,26 @@ void main() {
 
       self.currentHealth = 0;
       battle.turnEngine.noteHealthChanged(self);
+      expect(self.bailOutState, BailOutState.bailingOut);
+
+      expect(instanceOn(self, 'empowered'), isNull,
+          reason: 'a wreck does not carry a buff');
+    });
+
+    test('a holder who is not alive does not spend a turn of a duration', () {
+      // The rule the case above used to cover, isolated from Bail Out: the
+      // start-of-turn tick walks the living, and nobody else's clock moves.
+      final battle = twoSquads();
+      final self = battle.states['kaito_reyes']!;
+
+      battle.startTurn();
+      battle.turnEngine.statusEffectEngine
+          .apply(self, 'empowered', durationOverride: 2);
+      battle.endTurn();
+
+      // Straight to zero without opening a window, so the effect is still on
+      // them and the only question left is whether the tick counts it.
+      self.currentHealth = 0;
 
       playTurn(battle); // theirs
       playTurn(battle); // ours, but they are not alive to spend it

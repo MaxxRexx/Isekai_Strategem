@@ -86,6 +86,39 @@ void main() {
       drop(battle, 'marren_osei');
       expect(target.reactiveEffects, isEmpty);
     });
+
+    test('a wreck does not bleed: the body loses its statuses too', () {
+      // A playtest asked whether a Bleeding could destroy a body. It could
+      // not: `Battle.startTurn` only ticks the living, so the effects sat on
+      // the badge strip doing nothing, and the player had no way to know
+      // which of the badges in front of them still meant anything. What is
+      // left on the board is a screening obstacle with a Trion value.
+      final battle = twoSquads();
+      final target = battle.states['marren_osei']!;
+      battle.turnEngine.statusEffectEngine.apply(target, 'bleeding');
+      battle.turnEngine.statusEffectEngine.apply(target, 'stunned');
+      expect(target.statusEffects, hasLength(2));
+
+      drop(battle, 'marren_osei');
+      expect(target.statusEffects, isEmpty);
+    });
+
+    test('a character who refuses to bail keeps everything', () {
+      // The refusal is the case where they are still fighting, so nothing
+      // about them is a wreck.
+      final battle = twoSquads();
+      final target = battle.states['marren_osei']!;
+      target.reactiveEffects
+          .add(ReactiveEffect(kind: ReactiveKind.refuseToBail));
+      battle.turnEngine.statusEffectEngine.apply(target, 'bleeding');
+
+      drop(battle, 'marren_osei');
+
+      expect(target.hasRefusedToBail, isTrue);
+      expect(target.currentHealth, 1);
+      expect(target.statusEffects, hasLength(1),
+          reason: 'they are standing, so the bleed is still theirs to carry');
+    });
   });
 
   group('the body is still in the way', () {

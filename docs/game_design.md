@@ -1345,6 +1345,13 @@ is *not* settled is what happens to the body they leave behind.
 - It is a legal target for **an attack, and nothing else**. No heal, no ward, no
   stun and no debuff will be offered against it, because there is nothing left
   for any of them to do.
+- **Everything on it goes with the operator.** Status effects and armed
+  reactive effects alike are cleared the moment the window opens. A wreck does
+  not parry the hit that clears it, and it does not bleed: what is left is a
+  screening obstacle with a Trion value, not a fighter. So a damage-over-time
+  landed before the drop cannot destroy the body and cannot deny the Salvage;
+  only somebody spending an action on it can. A character who **refuses to
+  bail** keeps everything, because they are still standing and still fighting.
 
 Then one of two things happens:
 
