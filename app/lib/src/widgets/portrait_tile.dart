@@ -127,9 +127,27 @@ class PortraitHealthBar extends StatelessWidget {
   final CharacterRank? rank;
   final bool mirrorRank;
 
+  /// Widget keys for the two target-picker overlays, so a test can tell
+  /// "this ability can reach them" from "this ability is aimed at them"
+  /// without reading colours off a border.
+  static const selectedMarkKey = 'portrait-target-selected';
+  static const eligibleMarkKey = 'portrait-target-eligible';
+
   /// When true, an animated color overlay pulses over the portrait to mark
   /// it as a currently selected ability target.
   final bool selected;
+
+  /// When true, a steady gold ring marks this portrait as somebody the
+  /// selected ability could be aimed at but has not been.
+  ///
+  /// A playtest asked why Longshot lit nobody up while Frag Grenade lit up
+  /// the enemy squad, from the same character on the same line. Both reach
+  /// exactly the same people: the difference was that the area ability
+  /// auto-selected its targets and the single-target one waited for a tap,
+  /// and only a *selected* portrait had any marking at all. Reachability is
+  /// its own fact and now has its own mark: steady means "you can pick
+  /// this", pulsing means "you have".
+  final bool eligible;
 
   /// Makes the portrait tappable (target selection / info preview in the
   /// battle screen). Null leaves it non-interactive (Simulate results, etc.).
@@ -147,6 +165,7 @@ class PortraitHealthBar extends StatelessWidget {
     this.rank,
     this.mirrorRank = false,
     this.selected = false,
+    this.eligible = false,
     this.onTap,
   });
 
@@ -173,13 +192,19 @@ class PortraitHealthBar extends StatelessWidget {
         mirrorRank: mirrorRank,
       ),
     );
-    if (selected || onTap != null) {
+    if (selected || eligible || onTap != null) {
       portrait = Stack(
         children: [
           portrait,
           if (selected)
             const Positioned.fill(
+              key: Key(PortraitHealthBar.selectedMarkKey),
               child: IgnorePointer(child: _SelectionPulse()),
+            )
+          else if (eligible)
+            const Positioned.fill(
+              key: Key(PortraitHealthBar.eligibleMarkKey),
+              child: IgnorePointer(child: _EligibleRing()),
             ),
           if (onTap != null)
             Positioned.fill(
@@ -246,6 +271,27 @@ class PortraitHealthBar extends StatelessWidget {
 /// A pulsing gold overlay laid over a selected portrait, so a chosen
 /// ability target reads as an "animated color overlay" rather than a
 /// static tint.
+/// The steady counterpart to [_SelectionPulse]: a gold ring over a portrait
+/// the selected ability can reach. Deliberately still, so a board full of
+/// reachable enemies does not flicker, and so the one thing that does move
+/// is the choice the player has actually made.
+class _EligibleRing extends StatelessWidget {
+  const _EligibleRing();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Palette.gold.withValues(alpha: 0.8),
+          width: 2,
+        ),
+        color: Palette.gold.withValues(alpha: 0.12),
+      ),
+    );
+  }
+}
+
 class _SelectionPulse extends StatefulWidget {
   const _SelectionPulse();
 

@@ -592,9 +592,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       _inspectedAbility = null;
       _selectedCharacterId = characterId;
       _selectedAction = action;
-      // Self-cast highlights the caster; AoE highlights every target it can
-      // hit; everything else starts empty for the player to pick. (See
-      // autoSelectedTargets - shared so it can be catalog-tested.)
+      // A self-cast highlights the caster, because there is nothing to
+      // choose. Everything else starts empty and marks what it can reach,
+      // for the player to pick from. (See autoSelectedTargets - shared so
+      // it can be catalog-tested.)
       _selectedTargets
         ..clear()
         ..addAll(
@@ -606,6 +607,17 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           ),
         );
     });
+  }
+
+  /// Everyone the pending ability could be aimed at right now: empty when no
+  /// ability is selected, so the board is unmarked until there is a choice
+  /// to make. Ids carry their team (`player:` / `opponent:`), so handing the
+  /// same set to both squad panels lights up only the side the ability is
+  /// actually aimed at.
+  Set<String> get _eligibleTargets {
+    final action = _selectedAction;
+    if (action == null || _resolving) return const {};
+    return action.legalTargetIds.toSet();
   }
 
   /// The line a target is standing on, in the words the battlefield strip
@@ -621,9 +633,9 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     return theirs ? 'their $line line' : 'your $line line';
   }
 
-  /// True when [action] leaves target choice up to the player (i.e. it is
-  /// neither self-cast nor an auto-selecting AoE). While this holds, tapping
-  /// a portrait toggles it as a target instead of previewing its info.
+  /// True when [action] leaves target choice up to the player, i.e. anything
+  /// but a self-cast. While this holds, tapping a portrait toggles it as a
+  /// target instead of previewing its info.
   bool _awaitingTargets(LegalAction action) =>
       awaitingManualTargets(action.trigger);
 
@@ -1510,6 +1522,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
                 selectedIds: _selectedAction != null
                     ? _selectedTargets
                     : const {},
+                eligibleIds: _eligibleTargets,
                 onFighterTap: _resolving ? null : _onPortraitTap,
               ),
             ),
@@ -1561,6 +1574,15 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          // The description panel outlives the battle. It used to be inside
+          // the else-branch along with End Turn and the queue, so a finished
+          // battle swapped the whole bar out for the banner: portraits and
+          // ability slots stayed tappable, set the selection, and had nowhere
+          // to draw it. A finished battle is exactly when a player wants to
+          // look back over who was carrying what, so the panel stays, minus
+          // the controls that only mean something on a live turn.
+          _bottomActionBar(names),
         ] else ...[
           if (!_tutorialActive && _session!.queuedActions.isNotEmpty)
             // Inset to line up with the (now narrower) description box: the
@@ -1697,6 +1719,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               selected:
                   _selectedAction != null &&
                   _selectedTargets.contains(fighter.id),
+              eligible: _eligibleTargets.contains(fighter.id),
               onTap: _resolving ? null : () => _onPortraitTap(fighter.id),
             ),
             const SizedBox(width: 10),

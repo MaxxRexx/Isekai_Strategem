@@ -29,9 +29,11 @@ class FighterRow extends StatelessWidget {
   final CharacterRank? rank;
 
   /// Marks this fighter's portrait as a selected ability target (pulsing
-  /// overlay) and makes it tappable, respectively - used by the battle
-  /// screen's portrait-based target picker.
+  /// overlay), as a reachable one that has not been picked (steady ring),
+  /// and makes it tappable, respectively - used by the battle screen's
+  /// portrait-based target picker.
   final bool selected;
+  final bool eligible;
   final VoidCallback? onTap;
 
   const FighterRow({
@@ -42,6 +44,7 @@ class FighterRow extends StatelessWidget {
     this.isOpponent = false,
     this.rank,
     this.selected = false,
+    this.eligible = false,
     this.onTap,
   });
 
@@ -58,6 +61,7 @@ class FighterRow extends StatelessWidget {
       rank: rank,
       mirrorRank: compact,
       selected: selected,
+      eligible: eligible,
       onTap: onTap,
     );
     final nameLine = Row(
@@ -168,9 +172,12 @@ class TeamPanel extends StatelessWidget {
   final CharacterRank? rank;
 
   /// Ids of fighters whose portraits are currently selected as ability
-  /// targets (pulsing overlay), and a tap handler for portrait-based
-  /// target selection. Empty/null leaves the panel non-interactive.
+  /// targets (pulsing overlay), ids the selected ability could reach but
+  /// which have not been picked (steady ring), and a tap handler for
+  /// portrait-based target selection. Empty/null leaves the panel
+  /// non-interactive.
   final Set<String> selectedIds;
+  final Set<String> eligibleIds;
   final void Function(String characterId)? onFighterTap;
 
   const TeamPanel({
@@ -183,6 +190,7 @@ class TeamPanel extends StatelessWidget {
     this.isOpponent = false,
     this.rank,
     this.selectedIds = const {},
+    this.eligibleIds = const {},
     this.onFighterTap,
   });
 
@@ -217,6 +225,7 @@ class TeamPanel extends StatelessWidget {
               isOpponent: isOpponent,
               rank: rank,
               selected: selectedIds.contains(f.id),
+              eligible: eligibleIds.contains(f.id),
               onTap: onFighterTap == null ? null : () => onFighterTap!(f.id),
             ),
         ],
