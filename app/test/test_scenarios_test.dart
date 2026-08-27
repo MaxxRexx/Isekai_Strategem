@@ -197,7 +197,7 @@ void main() {
     List<ActiveTrigger> kitOf(PlaySession session, String characterId) =>
         session.equippedA[CombatantIds.of('player', characterId)]!;
 
-    test('A buff worth the action: the buff catches the line, and says so',
+    test('Buff: the buff catches the line, and says so',
         () {
       // The brief says Rurik and Kaito get it and Mireille does not, because
       // an area ability catches a line. If that stops being true the brief
@@ -231,7 +231,7 @@ void main() {
           reason: 'an area ability catches a line, not a squad');
     });
 
-    test('A bleed that piles up: the brief step one is performable and it '
+    test('Bleed: the brief step one is performable and it '
         'really stacks', () {
       final s = byId('stacking_bleed');
       var stacked = false;
@@ -269,7 +269,7 @@ void main() {
               'scenario unplayable');
     });
 
-    test('Freeze then shatter: the chain the brief promises actually runs',
+    test('Freeze: the chain the brief promises actually runs',
         () {
       // Three dice gates stand in front of this chain: each of the three
       // attacks has to land, and the first Frost Lance has to win the
@@ -350,7 +350,7 @@ void main() {
               'scenario unplayable');
     });
 
-    test('A one-turn lock: the brief step one is actually performable', () {
+    test('Lock: the brief step one is actually performable', () {
       // A brief that tells a tester to queue an ability they cannot reach
       // with is worse than no brief. Item #D's scenario turns on Mind
       // Shatter landing on the enemy Front, so that has to be a legal queue
@@ -401,7 +401,7 @@ void main() {
       expect(queued.success, isTrue, reason: queued.error ?? '');
     });
 
-    test('The screen holds: the enemy back line is out of Close Range', () {
+    test('Screen: the enemy back line is out of Close Range', () {
       final s = byId('screen_holds');
       final session = s.start();
       final engine = session.battle.turnEngine;
@@ -414,7 +414,7 @@ void main() {
       expect(RangeTag.close.reaches(distance), isFalse);
     });
 
-    test('A body still screens: the distance holds until the body goes', () {
+    test('Body: the distance holds until the body goes', () {
       final s = byId('body_screens');
       final session = s.start();
       final engine = session.battle.turnEngine;
@@ -439,7 +439,7 @@ void main() {
       expect(RangeTag.close.reaches(2), isTrue);
     });
 
-    test('The bending shot: the target sits exactly on Long Range minimum',
+    test('Bend: the target sits exactly on Long Range minimum',
         () {
       final s = byId('bending_shot');
       final session = s.start();
@@ -462,7 +462,7 @@ void main() {
       expect(RangeTag.long.reaches(after), isFalse);
     });
 
-    test('The last one does not bail: two are already gone', () {
+    test('Last: two are already gone', () {
       final s = byId('last_one_standing');
       final session = s.start();
       final living = session.battle.teamB.characters
@@ -483,7 +483,7 @@ void main() {
       );
     });
 
-    test('Only damage may be aimed at a body: the kit carries both halves',
+    test('Targeting: the kit carries both halves',
         () {
       final s = byId('body_targeting');
       final session = s.start();
@@ -626,7 +626,7 @@ void main() {
   });
 
   group('a brief cannot disagree with the game', () {
-    // The "Read the board" brief shipped claiming one screening pip and
+    // The "Board" brief shipped claiming one screening pip and
     // distances of 3 and 5, where the game correctly showed two pips and 4
     // and 6. Nothing caught it, because the numbers in a brief were prose and
     // only some scenarios had a matching assertion. They are computed now,
@@ -682,7 +682,7 @@ void main() {
       }
     });
 
-    test('Read the board says two pips, 4 and 6', () {
+    test('Board says two pips, 4 and 6', () {
       // The exact numbers the playtest reported, pinned so the brief that
       // got them wrong can never come back.
       final s = allScenarios.firstWhere((x) => x.id == 'read_the_board');

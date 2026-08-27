@@ -19,6 +19,12 @@ import 'play_session.dart';
 /// is whether the *interface* tells the player any of it.
 class TestScenario {
   final String id;
+
+  /// One word, or as near to one as the case allows.
+  ///
+  /// The working agreement's playtest shorthand addresses a scenario by name
+  /// ("#TF - Bleed"), which only works if the name is short enough to type.
+  /// What the scenario is *for* belongs in [goal], which has room for it.
   final String name;
 
   /// The work item this exercises, shown as a chip on the picker.
@@ -319,7 +325,7 @@ const _back = BattlePosition.back;
 final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'support_pays_its_way',
-    name: 'A buff worth the action',
+    name: 'Buff',
     item: '#5',
     goal:
         'War Chant and Guardian\'s Aegis were self-buffs worth a quarter of '
@@ -382,7 +388,7 @@ final List<TestScenario> allScenarios = [
 
   TestScenario(
     id: 'stacking_bleed',
-    name: 'A bleed that piles up',
+    name: 'Bleed',
     item: '5b',
     goal:
         'Twelve statuses stack, capped at three, and a stack multiplies '
@@ -435,7 +441,7 @@ final List<TestScenario> allScenarios = [
 
   TestScenario(
     id: 'freeze_and_shatter',
-    name: 'Freeze, then shatter',
+    name: 'Freeze',
     item: '3b',
     goal:
         'The whole reaction chain in one turn. Chill a target, freeze the '
@@ -489,7 +495,7 @@ final List<TestScenario> allScenarios = [
 
   TestScenario(
     id: 'one_turn_silence',
-    name: 'A one-turn lock costs a turn',
+    name: 'Lock',
     item: '#D',
     goal:
         'A status that says one turn should take one whole turn away. Until '
@@ -540,11 +546,13 @@ final List<TestScenario> allScenarios = [
       'ren_kobayashi': _middle,
       'nadia_kessler': _back,
     },
+    // Played, and the verdict was "works correctly".
+    retired: true,
   ),
 
   TestScenario(
     id: 'buff_lasts_your_turns',
-    name: 'A buff you cast lasts your turns',
+    name: 'Duration',
     item: '#D',
     goal:
         'The other half of item #D. A two-turn buff on yourself should cover '
@@ -590,7 +598,7 @@ final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'read_the_board',
     retired: true,
-    name: 'Read the board',
+    name: 'Board',
     item: '1b',
     goal:
         'Nothing to kill. Just check that the battlefield strip says what the '
@@ -636,7 +644,7 @@ final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'screen_holds',
     retired: true,
-    name: 'The screen holds',
+    name: 'Screen',
     item: '1b',
     goal:
         'Two enemies standing in front of a third should put that third out '
@@ -682,7 +690,7 @@ final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'body_screens',
     retired: true,
-    name: 'A body still screens',
+    name: 'Body',
     item: '1b and #2',
     goal:
         'Killing a screen does not open the lane. The body left behind goes '
@@ -737,7 +745,7 @@ final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'bending_shot',
     retired: true,
-    name: 'The bending shot',
+    name: 'Bend',
     item: '1b',
     goal:
         'Breaking a screen in the same turn you shoot past it should never '
@@ -792,7 +800,7 @@ final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'window',
     retired: true,
-    name: 'The window: recall or destroy',
+    name: 'Window',
     item: '#2',
     goal:
         'The contested window itself. One setup, two endings, and the fork is '
@@ -843,7 +851,7 @@ final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'body_targeting',
     retired: true,
-    name: 'Only damage may be aimed at a body',
+    name: 'Targeting',
     item: '#2',
     goal:
         'A body can be destroyed but not debuffed, healed or charmed. Check '
@@ -885,7 +893,7 @@ final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'refuse_to_bail',
     retired: true,
-    name: 'Refuse to Bail',
+    name: 'Refuse',
     item: '#2',
     goal:
         'The counter-play, which has never been equipped and fired outside a '
@@ -935,7 +943,7 @@ final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'mirror_match',
     retired: true,
-    name: 'Mirror match',
+    name: 'Mirror',
     item: '#14',
     goal:
         'Both squads field the same three characters. Until item #14 the draft '
@@ -974,7 +982,7 @@ final List<TestScenario> allScenarios = [
   TestScenario(
     id: 'last_one_standing',
     retired: true,
-    name: 'The last one does not bail',
+    name: 'Last',
     item: '#2',
     goal:
         'A squad\'s final member has no window. The battle should end on '

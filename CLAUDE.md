@@ -8,15 +8,19 @@ the single source of truth for its rules and content; re-render the PDF beside
 it whenever it changes.
 
 Items #1 (range bands as a real battlefield), 1b (screening, also called RPP)
-and #2 (Bail Out) are built, merged and **playtested**. **Wave 1 is built but
-unplayed**: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's rule,
-the Trion drain fix and the two support spot-fixes.
+and #2 (Bail Out) are built, merged and **playtested**. **Wave 1 is built and
+partly played**: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's
+rule, the Trion drain fix and the two support spot-fixes. The playtest of it
+produced a batch of interface fixes, listed in
+`current_development_status.md`.
 
 The app's **Tests tab** (a fourth mode beside Play, Simulate and Guided
 Tutorial) holds pre-arranged boards for cases that are hard to reach in an
 ordinary battle. A scenario is **retired** once its case has been played and
-confirmed, so the tab only ever offers what still needs a look: wave 0's eight
-are retired, and five from wave 1 are waiting. The next item is whatever
+confirmed, so the tab only ever offers what still needs a look. Ten are
+retired (wave 0's eight, #14's Mirror, and wave 1's Lock); four are waiting:
+Buff, Bleed, Freeze and Duration. Each scenario has a one-word name, because
+the playtest shorthand in the working agreement addresses them by it. The next item is whatever
 `current_development_status.md` names as the current priority.
 
 # Session setup and handoffs
