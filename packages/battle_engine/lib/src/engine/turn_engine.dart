@@ -152,7 +152,10 @@ class StatusReactionEvent {
 }
 
 class _SingleHitResult {
-  final AttackRollOutcome outcome;
+  /// Null when nothing was rolled: an ability aimed at your own side is not
+  /// an attack, so it has no attack roll to report and the log has no "hit"
+  /// to count.
+  final AttackRollOutcome? outcome;
   final int damage;
   final HitDamageDetail? damageDetail;
   final List<String> appliedStatusEffectIds;
@@ -1716,6 +1719,35 @@ class TurnEngine {
       final advantageContext = _advantageContextAgainst(attacker, target);
       var attackerContext = _mergedContext(baseContext, advantageContext);
 
+      AttackRollOutcome? outcome;
+      var forcedMiss = false;
+
+      void record(
+        int damage,
+        HitDamageDetail? damageDetail,
+        List<String> appliedIds,
+      ) {
+        hitsByTargetId
+            .putIfAbsent(target.combatantId, () => [])
+            .add(_SingleHitResult(outcome, damage, damageDetail, appliedIds));
+      }
+
+      // A heal, a ward or a buff aimed at your own side is not an attack, and
+      // it does not go through the attack pipeline at all.
+      //
+      // It used to. The roll was made against the recipient's own Defense and
+      // then overridden to a hit, which fixed the answer and left everything
+      // the pipeline does on the way to it still done: War Chant burned the
+      // ally's once-per-battle Decoy charge, spent First Blood on a
+      // full-health teammate, and consumed a Reckoning that should have
+      // wrecked the caster's next real attack. It also read "Rurik Voss
+      // (1 hit)" in the battle log, which is the part a playtest saw. A roll
+      // that cannot fail and cannot be read is not a roll.
+      //
+      // Nothing on this path is contested: the status infliction below is
+      // likewise uncontested on your own side. So there is nothing to roll,
+      // and `outcome` stays null all the way into the log.
+      if (trigger.targetAffiliation == TargetAffiliation.opponent) {
       // Airi-style "Feint" Side Effect: the first attack roll made against her
       // each battle is rolled with disadvantage.
       if (target.character.sideEffect?.firstIncomingAttackHasDisadvantage ==
@@ -1753,7 +1785,6 @@ class TurnEngine {
       // has a flat chance to miss entirely, independent of the to-hit
       // roll. The roll is still made (for realistic telemetry); a
       // successful dodge just overrides the outcome.
-      var forcedMiss = false;
       final dodgeChance = target.character.sideEffect?.dodgeChanceOncePerBattle;
       if (dodgeChance != null && !target.sideEffectChargeUsed) {
         if (combatEngine.diceRoller.rollPercent() <=
@@ -1772,7 +1803,7 @@ class TurnEngine {
       _applyTegDefenseAdvantage(tegDefenderContext, target);
       final tegMaxCrit = _tegFor(attacker).maxCritThreshold;
 
-      var outcome = combatEngine.resolveAttackRoll(
+      outcome = combatEngine.resolveAttackRoll(
         attackerAttack: effectiveAttack,
         defenderDefense: target.effectiveStats(fatConfig: fatConfig).defense,
         attackerCriticalChancePercent: attackerCriticalChancePercent,
@@ -1816,33 +1847,6 @@ class TurnEngine {
         attacker.consumeSideEffectChargeIfAvailable();
       }
 
-      void record(
-        int damage,
-        HitDamageDetail? damageDetail,
-        List<String> appliedIds,
-      ) {
-        hitsByTargetId
-            .putIfAbsent(target.combatantId, () => [])
-            .add(_SingleHitResult(outcome, damage, damageDetail, appliedIds));
-      }
-
-      // A heal, a ward or a buff aimed at your own side is not an attack. It
-      // was being run through the whole hostile pipeline: rolled to hit against
-      // the recipient's own Defense, and subject to the dodge Side Effect. The
-      // roll is still made above so telemetry and Side Effect charges behave
-      // the same, but it cannot make the ability fizzle on a teammate.
-      if (trigger.targetAffiliation != TargetAffiliation.opponent) {
-        outcome = AttackRollOutcome(
-          attackerRoll: outcome.attackerRoll,
-          defenderRoll: outcome.defenderRoll,
-          isHit: true,
-          isCriticalHit: false,
-          isCriticalMiss: false,
-          criticalHitThreshold: outcome.criticalHitThreshold,
-        );
-        forcedMiss = false;
-      }
-
       if (outcome.isCriticalMiss) {
         combatEngine.applyCriticalMissPenalty(attacker);
         record(0, null, const []);
@@ -1860,6 +1864,7 @@ class TurnEngine {
         record(0, null, const []);
         return;
       }
+      } // end of the hostile-only attack pipeline
 
       var damageDealt = 0;
       HitDamageDetail? damageDetail;
@@ -1889,7 +1894,10 @@ class TurnEngine {
           target: target,
           baseDamage: adjustedBaseDamage,
           damageType: trigger.damageType!,
-          isCriticalHit: outcome.isCriticalHit,
+          // Null on a friendly ability, which never rolled and so can never
+          // have crit. No such ability deals damage today; this keeps the
+          // answer right if one ever does.
+          isCriticalHit: outcome?.isCriticalHit ?? false,
           damageSource: attacker,
           criticalDiceComponent: adjustedDiceDamage,
         );
@@ -2047,7 +2055,10 @@ class TurnEngine {
       if (hits == null || hits.isEmpty) continue;
       targetResults.add(TargetHitResult(
         targetCharacterId: target.combatantId,
-        attackRolls: hits.map((h) => h.outcome).toList(),
+        // Empty for an ability aimed at your own side: nothing was rolled,
+        // so the log counts no hits and shows no roll breakdown.
+        attackRolls:
+            hits.map((h) => h.outcome).whereType<AttackRollOutcome>().toList(),
         damagePerHit: hits.map((h) => h.damage).toList(),
         damageDetails: hits.map((h) => h.damageDetail).toList(),
         totalDamageDealt: hits.fold(0, (sum, h) => sum + h.damage),
@@ -2063,7 +2074,8 @@ class TurnEngine {
           .indexWhere((r) => r.kind == ReactiveKind.cooldownSabotage);
       if (saboIdx >= 0 && trigger.rangeTag.isAtRange) {
         final hits = hitsByTargetId[target.combatantId];
-        final anyHit = hits != null && hits.any((h) => h.outcome.isHit);
+        final anyHit =
+            hits != null && hits.any((h) => h.outcome?.isHit ?? false);
         if (anyHit) {
           target.reactiveEffects.removeAt(saboIdx);
           attacker.sabotageAbilityCooldown(trigger.id);

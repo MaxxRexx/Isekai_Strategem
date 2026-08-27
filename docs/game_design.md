@@ -672,7 +672,11 @@ strike wins its own infliction contest.
 **A friendly ability is granted, not inflicted.** A heal, a ward or a buff aimed
 at yourself or an ally never rolls to hit and is never contested: it simply
 lands. Only an ability aimed at an enemy is contested, attacker's Status Effect
-Infliction against the target's Status Effect Resistance.
+Infliction against the target's Status Effect Resistance. Because it is not an
+attack, it does not touch anything an attack would: it cannot be dodged, it
+cannot crit, and it spends none of the once-per-battle Side Effects that trigger
+on attacking or on being attacked. Casting it on a teammate leaves their Decoy
+unused and your own Reckoning still waiting for a real attack.
 
 **Traps do not inherit your buffs.** A trap deals its own fixed damage when it
 fires, read off the trap rather than off whoever laid it, so being Empowered when
