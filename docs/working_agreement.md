@@ -101,3 +101,20 @@ Rules, not preferences. They apply to every future item without being restated.
   approved mockup and build it in the real app under `app/`, matching existing
   conventions, verified with `dart analyze` and `flutter test`, then committed
   and pushed.
+
+### Playtest verdicts
+
+The owner plays the scenarios in the app's Tests tab and reports back with
+these. They are verdicts on what is currently in the tab, so they always mean
+"the tests as they stand right now".
+
+- **#TWC** ("Tests Work Correctly"): every scenario currently in the tab has
+  been played and behaved. Retire all of them, so the tab holds only what
+  still needs a look.
+- **#TF** ("Test Failed"): a test failed. On its own it means the current test
+  failed; with a name it names which one, as **#TF - Buff**.
+- **#TFAll**: every scenario currently in the tab failed.
+
+**A scenario has one short name**, one word wherever it can be: Buff, Bleed,
+Freeze, Lock. The name is how the owner refers to it in a verdict, so a
+sentence-long title makes the shorthand unusable.
