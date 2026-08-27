@@ -1423,7 +1423,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 ### Attacker Triggers (melee bruisers) (16)
 
 - **"Martyr's End"** (costs 10 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: detonates for 50 damage when you are below 25% Health.
-- **Cinderburst** (costs 18 Trion, 2-turn cooldown). A close-range area fire attack dealing about 15 damage to each of up to 3 enemies. Applies Scorched (12 burn damage per turn).
+- **Cinderburst** (costs 18 Trion, 2-turn cooldown). A close-range single-target fire attack dealing about 15 damage. Applies Scorched (12 burn damage per turn).
 - **Cleave** (costs 15 Trion, 2-turn cooldown). A close-range area slashing attack dealing about 22 damage to each of up to 2 enemies. Applies Shattered Guard (guard broken, weaker defense).
 - **Cryo Burst** (costs 18 Trion, 2-turn cooldown). A long-range area cold attack dealing about 18 damage to each of up to 3 enemies. Applies Chilled (attack sinks each turn).
 - **Dread Resonance** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: hits harder the more damage the target has taken.
@@ -1437,7 +1437,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 - **Sunder Arms** (costs 16 Trion, 3-turn cooldown). A close-range unique slashing attack dealing about 37 damage. Signature effect: shreds the target armor.
 - **Twin Fang Strike** (costs 15 Trion, 2-turn cooldown). A close-range single-target slashing attack dealing about 44 damage.
 - **Vow of the Duel** (costs 15 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: binds a duel: double damage between you plus a 2-turn stun.
-- **Whirlwind Slash** (costs 16 Trion, 2-turn cooldown). A close-range area slashing attack dealing about 17 damage to each of up to 3 enemies. Applies Bleeding (8 damage per turn).
+- **Whirlwind Slash** (costs 16 Trion, 2-turn cooldown). A close-range single-target slashing attack dealing about 17 damage. Applies Bleeding (8 damage per turn).
 
 ### Shooter Triggers (ranged volume) (9)
 
@@ -1486,7 +1486,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 
 ### Optional Triggers (buffs, wards, counters) (9)
 
-- **"Guardian's Aegis"** (costs 14 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Applies Guarded (takes 25% less damage). Applies Braced (reduced incoming damage).
+- **"Guardian's Aegis"** (costs 14 Trion, 2-turn cooldown). A close-range area ward covering one of your lines, up to 3 allies (no direct damage). Applies Guarded (takes 25% less damage). Applies Braced (reduced incoming damage). Like every area ability it catches a line rather than a squad, so it is worth most to allies standing together.
 - **"Mind's Eye"** (costs 10 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: reveals the enemy Loadout for 3 turns.
 - **Cleansing Ward** (costs 16 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Regenerating (heals each turn). Applies Warded (+resistance).
 - **Frozen Tempo** (costs 18 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: extends the attacker cooldowns when they hit it.
@@ -1494,7 +1494,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 - **Rally Cry** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Inspired (+2 attack and defense).
 - **Refuse to Bail** (costs 20 Trion, 3-turn cooldown). A self-targeted counter (no direct damage). Counter: the next drop to 0 Health does not happen. You stay on 1 Health, act one more time, and are then gone for good with no Trion Salvage. Stays armed until it fires. First-pass costs, awaiting the SPTV pass.
 - **Stored Retribution** (costs 16 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: banks damage taken to release later.
-- **War Chant** (costs 10 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Applies Empowered (deals +25% damage).
+- **War Chant** (costs 10 Trion, 1-turn cooldown). A close-range area buff covering one of your lines, up to 3 allies (no direct damage). Applies Empowered (deals +25% damage for 3 turns). Same reach rule as Guardian's Aegis: it catches a line, so a squad that stands together gets more out of it.
 
 
 ## Appendix B: The full character roster (20)

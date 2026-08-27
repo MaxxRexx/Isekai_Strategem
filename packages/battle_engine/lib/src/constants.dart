@@ -253,7 +253,10 @@ class StatusEffectMagnitudes {
     this.electrocutedDurationTurns = 2,
     this.regeneratingDurationTurns = 3,
     this.regeneratingHealPerTurn = 3,
-    this.empoweredDurationTurns = 2,
+    // Item #5's spot-fix: War Chant is the only thing that applies Empowered,
+    // and squad-wide at two turns it still priced under band. Three turns
+    // lands it at 2.05. Wave 4 owns the real number.
+    this.empoweredDurationTurns = 3,
     this.empoweredOutgoingDamageMultiplier = 1.25,
     this.weakenedDurationTurns = 3,
     this.weakenedOutgoingDamageMultiplier = 0.75,

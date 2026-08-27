@@ -197,6 +197,40 @@ void main() {
     List<ActiveTrigger> kitOf(PlaySession session, String characterId) =>
         session.equippedA[CombatantIds.of('player', characterId)]!;
 
+    test('A buff worth the action: the buff catches the line, and says so',
+        () {
+      // The brief says Rurik and Kaito get it and Mireille does not, because
+      // an area ability catches a line. If that stops being true the brief
+      // is lying to the tester.
+      final s = byId('support_pays_its_way');
+      final session = s.start();
+      final kaito = stateOf(s, session, 'kaito_reyes');
+      final rurik = stateOf(s, session, 'rurik_voss');
+      final mireille = stateOf(s, session, 'mireille_song');
+
+      expect(kaito.position, BattlePosition.middle);
+      expect(rurik.position, kaito.position,
+          reason: 'the brief turns on these two sharing a line');
+      expect(mireille.position, isNot(kaito.position));
+
+      final queued = session.queue(
+        kaito.combatantId,
+        'war_chant',
+        [kaito.combatantId, rurik.combatantId],
+      );
+      expect(queued.success, isTrue, reason: queued.error ?? '');
+      session.resolveQueue();
+
+      List<String> statusesOn(CharacterBattleState st) =>
+          st.statusEffects.map((i) => i.definitionId).toList();
+
+      expect(statusesOn(kaito), contains('empowered'));
+      expect(statusesOn(rurik), contains('empowered'),
+          reason: 'he shares the line it was aimed at');
+      expect(statusesOn(mireille), isNot(contains('empowered')),
+          reason: 'an area ability catches a line, not a squad');
+    });
+
     test('A bleed that piles up: the brief step one is performable and it '
         'really stacks', () {
       final s = byId('stacking_bleed');
@@ -331,14 +365,18 @@ void main() {
       expect(queued.success, isTrue, reason: queued.error ?? '');
     });
 
-    test('A buff you cast: War Chant is on the caster kit and self-aimed', () {
+    test('A buff you cast: War Chant reaches the caster and their line', () {
+      // Item #5's spot-fix made this a squad buff rather than a self-buff.
+      // The scenario still turns on the duration, so what it needs is that
+      // the caster can put it on themselves.
       final s = byId('buff_lasts_your_turns');
       final session = s.start();
       final kaito = stateOf(s, session, 'kaito_reyes');
 
       final warChant = kitOf(session, 'kaito_reyes')
           .firstWhere((t) => t.id == 'war_chant');
-      expect(warChant.targetAffiliation, TargetAffiliation.self);
+      expect(warChant.targetAffiliation, TargetAffiliation.ally);
+      expect(warChant.targetCount, 3);
       expect(
         warChant.inflictedStatusEffects.map((a) => a.statusEffectId),
         contains('empowered'),

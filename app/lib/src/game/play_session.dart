@@ -809,8 +809,13 @@ class PlaySession {
   QueueOutcome queue(
     String characterId,
     String triggerId,
-    List<String> targetIds,
+    List<String> rawTargetIds,
   ) {
+    // Targets are normalised here rather than at the bottom, because the
+    // reachability check below compares them against combatant ids. A caller
+    // naming a character (a test, a script) used to fail that comparison and
+    // be told the target was out of range, which it was not.
+    final targetIds = [for (final id in rawTargetIds) _scoped(id)];
     if (!battle.isTeamATurn) {
       return const QueueOutcome.failure('It is not your turn.');
     }
@@ -873,7 +878,7 @@ class PlaySession {
         // moved" stops matching "this state moved".
         characterId: _scoped(characterId),
         triggerId: triggerId,
-        targetIds: [for (final id in targetIds) _scoped(id)],
+        targetIds: targetIds,
         trionSpent: cost,
       ),
     );

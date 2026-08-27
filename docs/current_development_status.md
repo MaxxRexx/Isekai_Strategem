@@ -11,7 +11,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1**, which is #14, 5c, the duration fix, 3b's mechanism, 5b, 13b and #3's rule (not its pass). The queue was re-sequenced after the #3 audit: the numbers are names, and the running order is now its own table below. #3 is split, its pass moving behind #4, because #4 rewrites the Trion cost and cooldown of all 75 abilities and pricing them first prices them twice. All seven of the design review's decisions are **approved as recommended**. Wave 0 is **done**: 1b and #2 were both playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. **#2 is merged**, after one playtest whose three findings were fixed on the branch; **it has not been re-tested since those fixes**, and **1b has never been played at all**. Both are on main, so both can be played from the deployed build. #3 also carries 3b's reaction table and 5b's stacking flags. #14 (mirror matches) is newly queued and is cheaper before #3 than after. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1 is complete**: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's rule (not its pass), the Trion drain fix and the two support spot-fixes are all built, with five scenarios waiting in the Tests tab for a playtest. The queue was re-sequenced after the #3 audit: the numbers are names, and the running order is now its own table below. #3 is split, its pass moving behind #4, because #4 rewrites the Trion cost and cooldown of all 75 abilities and pricing them first prices them twice. All seven of the design review's decisions are **approved as recommended**. Wave 0 is **done**: 1b and #2 were both playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. **#2 is merged**, after one playtest whose three findings were fixed on the branch; **it has not been re-tested since those fixes**, and **1b has never been played at all**. Both are on main, so both can be played from the deployed build. #3 also carries 3b's reaction table and 5b's stacking flags. #14 (mirror matches) is newly queued and is cheaper before #3 than after. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -181,7 +181,7 @@ document.
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** **The rule is built, wave 1** (see the section below); the pass over the catalogue is wave 4's. Original spec: SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. **Split across two waves (#Q1).** Wave 1 builds the rule only: the SP conversion table, the measured baselines it reads, the tool that prices the catalogue from them, and the SP term in Trigger Value. Wave 4 runs the pass over the finished catalogue. The tooltip setting moves to #6, being interface work with no pricing in it. **Audited; the review is waiting on seven decisions.** | In design | 1 and 4 |
 | 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued | 2 |
 | 4b | **The long tail of battle length.** The distribution is healthy in the middle and ragged at the end: 200 simulated battles run a median of 14 rounds with 83% inside the 8-20 band, but p90 is 23 and the worst single battle took **118 rounds**. Everything concludes, so it is not a stall, and the 30-round limit in #4 would cut it off rather than explain it. Worth understanding before that limit lands, because a match that would have taken 40 rounds now ends on the health tiebreak instead, and whoever was ahead at round 30 wins a fight they might not have won. Likely suspects: two sustain-heavy squads out-healing each other's damage, or a Trion-starved pair trading single cheap abilities. Diagnose from `tool/balance_report.dart`, which already records the distribution. Sits with #4 because the fix, if there is one, is an economy number. | Queued | 2 |
-| 5 | **Support abilities do not pay for their action.** Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced in #3's wave 4 pass, which owns every magnitude and duration. The #3 audit re-derived this table and found the four are not uniformly bad: Rally Cry buys 1.05 actions, Cleansing Ward 0.80, Guardian's Aegis 0.51 and War Chant 0.25, so the work is to lift the bottom two. The bottom two get an interim spot-fix in wave 1 so the wave 2 playtests are not played with support that does nothing. | Queued | 4 |
+| 5 | **Support abilities do not pay for their action.** **The two interim spot-fixes are built (wave 1)**: War Chant and Guardian's Aegis are squad buffs now, priced with #3's rule, at TV 2.06 and 1.38 against 0.30 and 0.46 before. The full re-pricing is still wave 4's. See the section below. Original spec: Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced in #3's wave 4 pass, which owns every magnitude and duration. The #3 audit re-derived this table and found the four are not uniformly bad: Rally Cry buys 1.05 actions, Cleansing Ward 0.80, Guardian's Aegis 0.51 and War Chant 0.25, so the work is to lift the bottom two. The bottom two get an interim spot-fix in wave 1 so the wave 2 playtests are not played with support that does nothing. | Queued | 4 |
 | 5b | **Stackable statuses.** **Built, wave 1.** `maxStacks` on the definition (1 for fifty of them, 3 for the twelve), `stacks` on the instance, counted in `StatusEffectEngine.apply`. Still one instance with one duration: the stat folding and all three tick kinds multiply by the count, and the badge carries an `x2`/`x3` with the count in its tooltip. Original spec: 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be. A stackable effect is worth more Status Points, so the flags land in wave 1 ahead of the rule that reads them, and wave 4 prices them. | Approved, queued | 1 |
 | 5c | **Rename perks to Side Effects (SEs).** `CharacterPerk` to `SideEffect`, the `perk` field, the charge-tracking flags, the Loadout panel copy and the abbreviation list. Mechanical and wide, so it goes in one commit of its own where it cannot hide a behaviour change. **Built, wave 1.** One commit, 34 files, no behaviour change: the class, its file, the `sideEffect` field, `sideEffectChargeUsed` and `consumeSideEffectChargeIfAvailable`, the TEG sub-score, the guide tab, the picker and log copy, the simulator's JSON keys and page, and the design document. `'perk:feint'`, the one id in a string, became `'side_effect:feint'`. | Done | 1 |
 | 6 | **Last Phase F interface bits.** Show the pending queue during a turn with un-queue, and polish the resolve pause. Also carries the deferred battlefield layout: **lay the squads out on the board itself**, so each character's portrait sits in the lane column their position puts them in and moving one visibly moves them, replacing the separate diagram. Deferred out of #1 deliberately: it rewrites the squad panels, portrait selection, target picking and the tutorial's step targeting, which is the machinery every other feature sits on. | Queued | 5 |
@@ -204,7 +204,7 @@ Waves are worked in order; everything inside a wave is one branch.
 | Wave | Items | Why it sits here |
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
-| **1** | ~~#14~~ ~~5c~~ ~~the duration fix (#D)~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ ~~the Trion drain fix~~ ~~**#3's rule only**~~ **all done** &rarr; two support spot-fixes | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
+| **1** | ~~#14~~ ~~5c~~ ~~the duration fix (#D)~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ ~~the Trion drain fix~~ ~~**#3's rule only**~~ ~~two support spot-fixes~~ **wave 1 complete** | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
 | **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
@@ -644,6 +644,69 @@ that list and is priced now, since the measurement it needed has been taken.
 target count and a stack each multiply, that an unpriced field is always
 flagged rather than silently zero, that a price re-derives itself when a
 baseline moves, and the reachability guard decision #E asked for.
+
+### The two support spot-fixes, priced rather than guessed
+
+**The interim fix item #5 asked for**, so wave 2's playtests are not played
+with support that does nothing. The real pass is wave 4's; what makes this
+different from guessing is that #3's rule now prices both, so every number
+below was computed before it was typed.
+
+**What they were worth.** War Chant **0.30** and Guardian's Aegis **0.46**
+against the approved 2.0 to 3.0 band. The reason is measurable: +25% of the
+6.1 damage a character deals in a turn is 1.5 a turn, and an action is worth
+12.0. A self-buff at those magnitudes cannot pay for the action that casts it,
+whatever its cooldown.
+
+**The shape the owner chose (#A): make them area buffs.** Both go from self to
+ally with three targets, which triples their Status Points without touching a
+single magnitude. War Chant also gets Empowered 2 turns to 3, since the wider
+reach alone still left it under band. Final prices: **War Chant 2.06**, in
+band. **Guardian's Aegis 1.38**, still under, and deliberately.
+
+**What "area" means here, and it is not "the squad".** An area ability catches
+one line, the same for a buff as for an attack. So a chant sung over a line
+with two characters on it buffs two, and a squad spread one-per-line gets one.
+That is the decision the ability now asks for, and it is the same decision
+Cleave and Whirlwind Slash ask of an attacker. It also means both prices
+assume the full three targets, exactly as every area attack's price does: on a
+spread squad both are worth less than the number says. The Tests tab scenario
+puts two characters on a line and one apart, so the tester sees precisely
+this.
+
+**Why Aegis stops short, and this is the interesting part.** Dropping its
+cooldown to 1 priced it at 2.07, squarely in band. It also made the round-robin
+integration test's **Wall-against-Wall mirror run past 150 rounds**: a
+squad-wide 25% ward every single turn out-sustains what two defensive squads
+can deal, and the battle never ends. Under band and concluding beats in band
+and endless, so the cooldown stays at 2. The pricing rule and the pacing target
+disagreed, and the pacing target won.
+
+**Both stay Close Range**, which was a decision rather than an oversight. For
+an ally, Close reaches one line either side, so a caster on the middle line can
+aim at any of the three. Moving them to Mid would have broken the catalogue's
+20/20/20 split across the three bands, which a test enforces.
+
+**The second invariant, and what it cost.** An area buff needs the area
+subtype: a single-target ability resolves against one target however high its
+target count reads, which is what the tests caught after the first attempt
+promised three and delivered one. That took melee to 8 single and 7 area
+against an authored 10 and 5. **The owner chose to rebalance rather than move
+the invariant**, and the two abilities converted to single-target were picked
+by the pricing rule: Whirlwind Slash at **8.17** and Cinderburst at **6.03**
+were the catalogue's two worst over-band outliers, and as single-target they
+price at **2.72** and **2.01**, both in band. The invariant holds and two
+outliers came home in the same move. Catalogue-wide the maximum TV fell from
+8.17 to **4.25** and the in-band count went from 13 to **16 of 42**.
+
+**Found while doing it.** `PlaySession.queue` normalised the acting
+character's id but not the target ids, so a caller naming a character rather
+than a combatant (a test, a script) was told the target was out of range when
+it was not. It only surfaced because these two stopped being self-targeted,
+which is the one path that skipped the check. Fixed, and pinned.
+
+**Pacing re-measured** after the whole change: median 15 rounds, 78% inside
+the 8-20 band. Median TV across what the rule can see is 2.81.
 
 ### The seven SPTV decisions, as approved
 

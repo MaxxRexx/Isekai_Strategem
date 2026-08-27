@@ -178,12 +178,26 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 14,
         trionCost: 10,
-        cooldownTurns: 2,
+        // Item #5's interim spot-fix, priced with #3's rule. As a self-buff
+        // this was worth 0.30 against a 2.0 to 3.0 band: +25% of the 6.1
+        // damage a character deals in a turn is 1.5 a turn, against an action
+        // worth 12. A chant the whole squad hears, on a cooldown you can
+        // actually keep up, prices at 2.05. Wave 4 prices it again for real.
+        cooldownTurns: 1,
         originTag: OriginTag.energy,
+        // Close, which for an ally means one line either side. A chant sung
+        // from the middle line reaches the whole squad; sung from the front
+        // it reaches two of them. That is a position worth taking, and the
+        // band split is 20/20/20 by design.
         rangeTag: RangeTag.close,
         attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.single,
-        targetAffiliation: TargetAffiliation.self,
+        // An area ability, like Rally Cry: it catches one line, everyone on
+        // it. A single-target subtype with a target count of three would
+        // promise a squad buff and deliver one character, since resolution
+        // clamps a single to one.
+        attackSubtype: AttackSubtype.aoe,
+        targetCount: 3,
+        targetAffiliation: TargetAffiliation.ally,
         inflictedStatusEffects: const [StatusEffectApplication('empowered')],
       ),
       ActiveTrigger(
@@ -214,8 +228,12 @@ class TriggerCatalog {
         originTag: OriginTag.physical,
         rangeTag: RangeTag.close,
         attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.aoe,
-        targetCount: 3,
+        // Item #5 spot-fix knock-on: the two support abilities became
+        // area buffs, and melee is authored at exactly 10 single to 5 area.
+        // This was the catalogue's worst over-band outlier at the same
+        // time, so single-target is both the invariant and the price.
+        attackSubtype: AttackSubtype.single,
+        targetCount: 1,
         damageType: DamageType.slashing,
         damage: const DiceExpression(3, 4, flatBonus: 9),
         inflictedStatusEffects: const [StatusEffectApplication('bleeding')],
@@ -300,8 +318,12 @@ class TriggerCatalog {
         originTag: OriginTag.energy,
         rangeTag: RangeTag.close,
         attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.aoe,
-        targetCount: 3,
+        // Item #5 spot-fix knock-on: the two support abilities became
+        // area buffs, and melee is authored at exactly 10 single to 5 area.
+        // This was the catalogue's worst over-band outlier at the same
+        // time, so single-target is both the invariant and the price.
+        attackSubtype: AttackSubtype.single,
+        targetCount: 1,
         damageType: DamageType.fire,
         damage: const DiceExpression(3, 4, flatBonus: 7),
         inflictedStatusEffects: const [StatusEffectApplication('scorched')],
@@ -375,12 +397,27 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 18,
         trionCost: 14,
+        // Item #5's interim spot-fix, priced with #3's rule. A guardian who
+        // only shields themself is not a guardian: as a self-buff this was
+        // worth 0.46 against the 2.0 to 3.0 band. Spread over the squad it
+        // prices at 1.38, with no magnitude touched at all.
+        //
+        // The cooldown stays at 2. Dropping it to 1 put the ability at 2.07,
+        // squarely in band, and made the round-robin's Wall-against-Wall
+        // mirror run past 150 rounds: a squad-wide 25% ward every single turn
+        // out-sustains what two defensive squads can deal. Under band and
+        // concluding beats in band and endless, and wave 4 owns the real
+        // number.
         cooldownTurns: 2,
         originTag: OriginTag.physical,
+        // Close, same as War Chant: the guardian has to stand where they can
+        // reach the people they are shielding.
         rangeTag: RangeTag.close,
         attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.single,
-        targetAffiliation: TargetAffiliation.self,
+        // Area, for the same reason as War Chant: it wards a line.
+        attackSubtype: AttackSubtype.aoe,
+        targetCount: 3,
+        targetAffiliation: TargetAffiliation.ally,
         inflictedStatusEffects: const [
           StatusEffectApplication('guarded'),
           StatusEffectApplication('braced'),

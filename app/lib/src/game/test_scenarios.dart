@@ -257,6 +257,15 @@ const _refuser = [
   'shatterpoint',
 ];
 
+/// The two support abilities item #5 spot-fixed, so a tester can see whether
+/// a squad buff is worth an action.
+const _supporter = [
+  'war_chant',
+  'guardians_aegis',
+  'twin_fang_strike',
+  'shatterpoint',
+];
+
 /// Two ways to bleed a target, which is the stacking status a Loadout can
 /// reach today: Whirlwind Slash lands one stack, Rapid Fire strikes three
 /// times and can land three.
@@ -308,6 +317,69 @@ const _back = BattlePosition.back;
 /// Every scenario ever written, retired or not. The tests validate all of
 /// them; the picker shows [testScenarios].
 final List<TestScenario> allScenarios = [
+  TestScenario(
+    id: 'support_pays_its_way',
+    name: 'A buff worth the action',
+    item: '#5',
+    goal:
+        'War Chant and Guardian\'s Aegis were self-buffs worth a quarter of '
+        'the action they cost. They are area buffs now, and an area ability '
+        'catches one line. The question for you is the one the pricing '
+        'cannot answer: does spending a turn on either of them feel like it '
+        'bought something?',
+    steps: (s) => [
+      'Rurik and Kaito both stand on your Middle line; Mireille is at the '
+          'Back. Queue War Chant from Kaito and aim it at his own line.',
+      'Resolve, and check who is carrying an EMPOWERED badge.',
+      'Next turn, queue Guardian\'s Aegis the same way, end the turn, and '
+          'let them attack into it.',
+      'Play three or four turns and judge whether the turns you spent '
+          'buffing paid for themselves.',
+    ],
+    expect: (s) => [
+      'Rurik and Kaito both get EMPOWERED, because they share the line it '
+          'was aimed at. Mireille does not: an area ability catches a line, '
+          'not a squad, exactly as it does when the enemy uses one on you.',
+      'That is the decision the ability asks for. Two characters standing '
+          'together are worth buffing; a squad spread across three lines is '
+          'not, and the same is true of every area attack in the game.',
+      'EMPOWERED reads three turns, and the damage on your next attacks is '
+          'visibly higher in the log.',
+      'GUARDED and BRACED land on the same line, and the enemy turn after '
+          'takes visibly less off those two.',
+      'War Chant is on a one-turn cooldown now, so you can keep it up. '
+          'Guardian\'s Aegis is still on two, deliberately: at one turn two '
+          'defensive squads never finish each other off.',
+    ],
+    caveat:
+        'This one is a judgement, not a pass or fail. The rule prices War '
+        'Chant at 2.06 and the Aegis at 1.38 against a 2.0 to 3.0 band, and '
+        'both prices assume the ability reaches all three targets it can '
+        'hold, which is the same assumption every area attack in the '
+        'catalogue is priced under. On a spread squad both are worth less '
+        'than that. Wave 4 prices the lot again properly.',
+    playerIds: _playerSquad,
+    enemyIds: _enemySquad,
+    kits: {
+      'rurik_voss': _brawler,
+      'kaito_reyes': _supporter,
+      'mireille_song': _sniper,
+      'vela_ashworth': _brawler,
+      'ren_kobayashi': _brawler,
+      'nadia_kessler': _sniper,
+    },
+    positions: {
+      // Two on one line, one apart, so the brief can show what an area buff
+      // reaches and what it does not.
+      'rurik_voss': _middle,
+      'kaito_reyes': _middle,
+      'mireille_song': _back,
+      'vela_ashworth': _front,
+      'ren_kobayashi': _front,
+      'nadia_kessler': _middle,
+    },
+  ),
+
   TestScenario(
     id: 'stacking_bleed',
     name: 'A bleed that piles up',
@@ -479,17 +551,18 @@ final List<TestScenario> allScenarios = [
         'two of your own turns, counting from your next one, and the turn '
         'you cast it on is a free remainder rather than one of the two.',
     steps: (s) => [
-      'Queue War Chant from Kaito on himself and resolve the turn.',
-      'Read the EMPOWERED badge on Kaito: it should say two turns left.',
+      'Queue War Chant from Kaito on himself and resolve the turn. It is a '
+          'squad buff now, so aim it at Kaito alone to keep this simple.',
+      'Read the EMPOWERED badge on Kaito: it should say three turns left.',
       'End your turn. On your next turn, check the badge is still there and '
           'now says one.',
       'End that turn too. On the turn after, the badge should be gone.',
     ],
     expect: (s) => [
-      'Right after casting, the badge says 2 turns left, counting your next '
-          'one. It does not drop to 1 on the turn you cast it.',
-      'It is still on Kaito for two of your own turns, not one.',
-      'It wears off at the end of the second of those, so you never start a '
+      'Right after casting, the badge says 3 turns left, counting your next '
+          'one. It does not drop to 2 on the turn you cast it.',
+      'It is still on Kaito for three of your own turns, not two.',
+      'It wears off at the end of the third of those, so you never start a '
           'turn with a buff that is about to be taken away unused.',
       'The count only moves on your own turns. The enemy taking a turn does '
           'not spend one of yours.',

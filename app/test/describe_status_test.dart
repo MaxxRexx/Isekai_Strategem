@@ -46,7 +46,7 @@ void main() {
     test('Empowered states the damage bonus rather than just its name', () {
       final text = describeStatusEffect(catalog['empowered'], onSelf: true);
       expect(text, contains('25% more damage'));
-      expect(text, contains('your next 2 turns'));
+      expect(text, contains('your next 3 turns'));
     });
 
     test('Stunned states the lockout and the stat it zeroes', () {

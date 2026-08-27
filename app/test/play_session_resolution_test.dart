@@ -53,7 +53,12 @@ void main() {
     s.queue(id, 'twin_fang_strike', [
       opponentTargetFor(s, id, 'twin_fang_strike'),
     ]);
-    s.queue(id, 'war_chant', [id]); // self target
+    // War Chant is a squad buff since item #5's spot-fix, so this aims it at
+    // the caster alone: what the test is about is the phase order, not who it
+    // reaches. Naming a character rather than a combatant is also deliberate,
+    // since the queue has to accept both.
+    final buff = s.queue(id, 'war_chant', [id]);
+    expect(buff.success, isTrue, reason: buff.error ?? '');
 
     final round = s.resolveQueue();
     expect(round.actions.map((a) => a.triggerId).toList(), [
