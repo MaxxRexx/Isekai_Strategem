@@ -570,3 +570,95 @@ class BailOutConfig {
   int attackerGainFor(int baseTrionCapacity) =>
       (baseTrionCapacity * attackerGainPercentOfCapacity).round();
 }
+
+/// What a point of damage-equivalent actually buys in a battle somebody
+/// played (item #3, decision #A).
+///
+/// SP prices a status effect in damage-equivalent **at face value**: one
+/// Status Point is one point of damage, and no conversion constant sits
+/// between them. That only works if the rule knows what an action, a stat
+/// point and a Trion are worth in a real battle, and every one of those is
+/// far below the catalogue's face value. The catalogue says an attack deals
+/// 37.3; a played battle says 12.0, because attacks miss, characters die and
+/// four character-turns in ten spend nothing at all.
+///
+/// So the prices are **formulas over these numbers**, never frozen results.
+/// Item #4 is about to rewrite the whole Trion economy, which moves every
+/// figure here; wave 4 re-measures this config with the same tool and re-runs
+/// the same rule. The rule survives #4, only its inputs move.
+///
+/// **Measured** by `tool/sptv_baseline.dart`, 200 AI-vs-AI battles, seed 7,
+/// after wave 1 landed. Re-run it to refresh them; the tool prints them in
+/// this order.
+class SptvBaselines {
+  /// Damage one damaging ability use actually lands, all-in. This is what an
+  /// action is worth, and what denying an action is worth.
+  final double damagePerDamagingUse;
+
+  /// Damage a living character deals, and by symmetry takes, per turn. What
+  /// a point of damage reduction or amplification is worth per turn.
+  final double damagePerCharacterTurn;
+
+  /// Abilities used per living character-turn. Below 1 because cooldowns,
+  /// Trion and range leave four turns in ten with nothing spent.
+  final double abilityUsesPerCharacterTurn;
+
+  /// Attack rolls a character makes per turn, and by symmetry faces.
+  final double attackRollsPerCharacterTurn;
+
+  /// Share of attack rolls that land.
+  final double attackLandRate;
+
+  /// Damage one landed roll deals. What a point of an opposed stat is
+  /// leveraging when it moves a roll from a miss to a hit.
+  final double damagePerLandedRoll;
+
+  /// Damage bought per Trion spent buying it, measured against the Trion
+  /// spent on damaging abilities rather than on everything.
+  final double damagePerTrion;
+
+  /// Roster average base Trion Capacity, which is what a percentage drain
+  /// is a percentage of.
+  final double averageTrionCapacity;
+
+  /// Health restored per living character-turn. What preventing healing
+  /// denies.
+  ///
+  /// This one is near zero today, and that is a measurement rather than a
+  /// mistake: the AI almost never spends an action healing, because item #5
+  /// found every support ability is a net loss against simply attacking. When
+  /// #5 and #4 fix that, this figure moves and everything priced off it
+  /// re-prices itself, which is the whole reason the prices are formulas.
+  final double healingPerCharacterTurn;
+
+  /// Share of status riders that land **given the attack hit**: the
+  /// infliction contest on its own. This is the rider factor in Trigger
+  /// Value, and it is why a status aimed at an opponent is worth less than
+  /// the same status granted to yourself.
+  final double riderLandsGivenHit;
+
+  const SptvBaselines({
+    this.damagePerDamagingUse = 12.0,
+    this.damagePerCharacterTurn = 6.1,
+    this.abilityUsesPerCharacterTurn = 0.60,
+    this.attackRollsPerCharacterTurn = 1.11,
+    this.attackLandRate = 0.507,
+    this.damagePerLandedRoll = 10.7,
+    this.damagePerTrion = 0.64,
+    this.averageTrionCapacity = 108.3,
+    this.healingPerCharacterTurn = 0.02,
+    this.riderLandsGivenHit = 0.89,
+  });
+
+  static const SptvBaselines defaults = SptvBaselines();
+
+  /// Landed rolls a character faces per turn. Armor subtracts once per
+  /// landed hit, so this is what a point of Armor is worth per turn.
+  double get landedRollsPerCharacterTurn =>
+      attackRollsPerCharacterTurn * attackLandRate;
+
+  /// What one attack roll is worth before it is rolled: its chance to land
+  /// times what it deals when it does. Denying a single attack is worth this,
+  /// where denying a whole action is worth [damagePerDamagingUse].
+  double get damagePerAttackRoll => attackLandRate * damagePerLandedRoll;
+}

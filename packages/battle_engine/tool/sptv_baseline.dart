@@ -66,6 +66,11 @@ void main(List<String> args) {
   var attackHits = 0;
   var riderAttempts = 0;
   var riderLanded = 0;
+  var trionSpent = 0;
+  var trionSpentOnDamage = 0;
+  var healingLanded = 0;
+  var landedRolls = 0;
+  var damageOnLandedRolls = 0;
 
 
   final catalog = TriggerCatalog.defaultCatalog;
@@ -115,11 +120,36 @@ void main(List<String> args) {
             active0.targetAffiliation == TargetAffiliation.opponent) {
           damagingUses++;
         }
+        if (active0 != null) {
+          trionSpent += active0.trionCost;
+          // Healing received per character-turn is what preventing healing is
+          // worth. Measured off the health that actually went back on rather
+          // than the ability's face value, since a heal clamps at full.
+          if (active0.healAmount != null) {
+            for (final target in result.useResult.targetResults) {
+              if (target.totalDamageDealt < 0) {
+                healingLanded += -target.totalDamageDealt;
+              }
+            }
+            healingLanded += active0.healAmount!.average.round() *
+                result.useResult.targetResults.length;
+          }
+          if (active0.damage != null &&
+              active0.targetAffiliation == TargetAffiliation.opponent) {
+            trionSpentOnDamage += active0.trionCost;
+          }
+        }
         for (final target in result.useResult.targetResults) {
           damageLanded += target.totalDamageDealt;
-          for (final roll in target.attackRolls) {
+          for (var r = 0; r < target.attackRolls.length; r++) {
             attackRolls++;
-            if (roll.isHit) attackHits++;
+            if (target.attackRolls[r].isHit) {
+              attackHits++;
+              landedRolls++;
+              if (r < target.damagePerHit.length) {
+                damageOnLandedRolls += target.damagePerHit[r];
+              }
+            }
           }
           if (active0 != null &&
               active0.targetAffiliation == TargetAffiliation.opponent &&
@@ -162,6 +192,22 @@ void main(List<String> args) {
   print('  attack rolls per char-turn   ${f(attackRolls / charTurns)}');
   print('  damage taken per char-turn   ${f(damageLanded / charTurns, 1)}'
       '   <-- what a point of damage reduction is worth per turn');
+  print('');
+  print('-- what a point of Trion buys --');
+  print('  Trion spent on abilities     $trionSpent '
+      '(${f(trionSpent / abilityUses, 1)} per use)');
+  print('  of that, on damaging ones    $trionSpentOnDamage');
+  print('  damage per Trion spent       '
+      '${f(damageLanded / trionSpentOnDamage)}'
+      '   <-- damage bought, against the Trion spent buying it');
+  print('  damage per landed roll       '
+      '${f(damageOnLandedRolls / landedRolls, 1)}'
+      '   <-- what one point of an opposed stat is leveraging');
+  print('');
+  print('-- what healing is worth --');
+  print('  healing landed               $healingLanded');
+  print('  per living character-turn    ${f(healingLanded / charTurns, 2)}'
+      '   <-- what preventing healing denies per turn');
   print('');
   print('-- hostile status riders --');
   print('  attempted                    $riderAttempts');

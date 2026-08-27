@@ -25,12 +25,10 @@ import 'package:battle_engine/battle_engine.dart';
 /// Cooldown factor from the design-director synthesis: a short cooldown is
 /// worth more than the same damage on a long one, because you get it more
 /// often.
-double cooldownFactor(int cooldownTurns) => switch (cooldownTurns) {
-      <= 1 => 1.5,
-      2 => 1.0,
-      3 => 0.8,
-      _ => 0.7,
-    };
+///
+/// Item #3 moved the rule into the engine (`Sptv`), so there is one formula
+/// rather than a copy in every tool. This forwards to it.
+double cooldownFactor(int cooldownTurns) => Sptv.cooldownFactor(cooldownTurns);
 
 /// Probability that an attacker with modifier advantage [gap] beats a
 /// defender in the opposed d20 contest (ties go to the attacker).
@@ -92,9 +90,10 @@ void reportTrigger(ActiveTrigger t, {String prefix = ''}) {
   final average = damage.average;
   final share = diceAverage(damage) / average;
   final payload = average * t.targetCount * t.hitsPerUse;
-  final value = t.trionCost == 0
-      ? double.infinity
-      : payload / t.trionCost * cooldownFactor(t.cooldownTurns);
+  // Item #3: Trigger Value counts the status riders an ability carries, not
+  // just the damage. An ability whose real payload is a status used to price
+  // at half of what it is worth.
+  final value = Sptv.triggerValue(t);
   final spread = '${damage.count * damage.sides + damage.flatBonus}';
   print('  ${pad('$prefix${t.id}', 24)} '
       '${pad(damage.toString(), 10)} '
@@ -133,12 +132,7 @@ void reportDamageCatalog() {
     ..sort();
   final values = damaging
       .where((t) => t.trionCost > 0)
-      .map((t) =>
-          t.damage!.average *
-          t.targetCount *
-          t.hitsPerUse /
-          t.trionCost *
-          cooldownFactor(t.cooldownTurns))
+      .map(Sptv.triggerValue)
       .toList()
     ..sort();
   print('Dice share: min ${pct(shares.first)}, '
