@@ -289,10 +289,15 @@ that carries the mind-affecting statuses and the bulk of the unique abilities.
 The **subtype** is what actually decides how an attack resolves:
 
 - **Single (20 Triggers):** one target, one to-hit roll, one damage roll.
-- **Area, or AOE (15):** hits several targets at once (usually up to 3). Each
-  target gets its own to-hit roll and its own damage roll, so an area attack can
-  land on one enemy and miss another. Area attacks also **bypass** the counters
-  that only catch single-target attacks, like Mirror Ward.
+- **Area, or AOE (15):** covers **one line**, catching up to 3 of the
+  characters standing on it and nobody on any other line. It is aimed by
+  picking a line, not by picking a squad: two enemies bunched on the front are
+  both caught, a squad spread one-per-line gives you one. Each target caught
+  gets its own to-hit roll and its own damage roll, so an area attack can land
+  on one enemy and miss another. Area attacks also **bypass** the counters
+  that only catch single-target attacks, like Mirror Ward. The same rule
+  governs an area ability aimed at your own side: an area buff covers one of
+  your lines.
 - **Burst (8):** several separate hits, each rolled independently. Careful here:
   the hit count is **per target**, not shared out among them. Suppressing Fire
   hits 3 times against *each* of up to 2 targets, so it makes 6 rolls in total.

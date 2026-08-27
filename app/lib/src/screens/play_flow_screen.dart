@@ -608,6 +608,19 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     });
   }
 
+  /// The line a target is standing on, in the words the battlefield strip
+  /// uses, so the aim reads the same in both places.
+  String _lineLabelOf(String targetId) {
+    final theirs =
+        !_session!.teamA.any((f) => f.id == targetId);
+    final line = switch (_session!.projectedPositionOf(targetId)) {
+      BattlePosition.front => 'Front',
+      BattlePosition.middle => 'Middle',
+      BattlePosition.back => 'Back',
+    };
+    return theirs ? 'their $line line' : 'your $line line';
+  }
+
   /// True when [action] leaves target choice up to the player (i.e. it is
   /// neither self-cast nor an auto-selecting AoE). While this holds, tapping
   /// a portrait toggles it as a target instead of previewing its info.
@@ -629,6 +642,26 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
   void _toggleTarget(LegalAction action, String id) {
     if (!action.legalTargetIds.contains(id)) return;
     setState(() {
+      // An area ability is aimed at a line, not at a person: tapping anyone
+      // on it selects everyone legal standing there, and tapping again
+      // clears. Anything else toggles the one portrait.
+      if (action.trigger.attackSubtype == AttackSubtype.aoe) {
+        final line = lineTargets(
+          tappedId: id,
+          legalTargetIds: action.legalTargetIds,
+          positionOf: (t) => _session!.projectedPositionOf(t),
+          maxTargets: action.maxTargets,
+        );
+        if (_selectedTargets.containsAll(line) &&
+            _selectedTargets.length == line.length) {
+          _selectedTargets.clear();
+        } else {
+          _selectedTargets
+            ..clear()
+            ..addAll(line);
+        }
+        return;
+      }
       if (_selectedTargets.contains(id)) {
         _selectedTargets.remove(id);
       } else if (action.maxTargets == 1) {
@@ -2176,8 +2209,12 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       targetLine = _targetHint('Self-cast: ${names[charId]} highlighted.');
     } else if (t.attackSubtype == AttackSubtype.aoe) {
       targetLine = _targetHint(
-        'Area of effect: all ${action.legalTargetIds.length} target(s) '
-        'highlighted.',
+        _selectedTargets.isEmpty
+            ? 'Area of effect: tap anyone to aim at their whole line. It '
+                'catches up to ${action.maxTargets} standing there, and '
+                'nobody on any other line.'
+            : 'Aimed at ${_lineLabelOf(_selectedTargets.first)}: '
+                '${_selectedTargets.length} caught.',
       );
     } else if (action.maxTargets > 1) {
       targetLine = Row(

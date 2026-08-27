@@ -5,8 +5,15 @@ import 'package:isekai_strategem/src/game/target_selection.dart';
 
 /// Verifies the battle screen's portrait-based target picker behaves
 /// correctly for every Active Trigger in the catalog, so no ability type
-/// slips through the self / AoE / manual branching (see [autoSelectedTargets]
-/// and [awaitingManualTargets]).
+/// slips through the self / area / manual branching (see
+/// [autoSelectedTargets], [awaitingManualTargets] and [lineTargets]).
+///
+/// **Found in a playtest.** An area ability used to auto-highlight every
+/// target it could reach, across every line. The rules do not work that way:
+/// an area ability catches one line, and the engine quietly narrowed the
+/// list to whichever line the first target stood on. War Chant lit up three
+/// characters on three lines, the queue listed all three, and it landed on
+/// one of them. The picker aims at a line now.
 void main() {
   const caster = 'caster';
   // Stand-in legal-target pools, mirroring how PlaySession.legalActionsFor
@@ -55,10 +62,10 @@ void main() {
       });
 
       test('awaiting-manual flag matches the ability shape', () {
-        final expected =
-            t.targetAffiliation != TargetAffiliation.self &&
-            t.attackSubtype != AttackSubtype.aoe;
-        expect(awaitingManualTargets(t), expected);
+        // Everything except a self-cast is a choice, area abilities
+        // included: the choice there is which line.
+        expect(awaitingManualTargets(t),
+            t.targetAffiliation != TargetAffiliation.self);
       });
 
       test('auto-selection is a valid subset within budget', () {
@@ -66,28 +73,67 @@ void main() {
         expect(auto.length, lessThanOrEqualTo(maxTargets));
         if (t.targetAffiliation == TargetAffiliation.self) {
           expect(auto, [caster]);
-        } else if (t.attackSubtype == AttackSubtype.aoe) {
-          // AoE pre-highlights everyone it can hit.
-          expect(auto, everyElement(isIn(legal)));
-          expect(auto.length, legal.length.clamp(0, maxTargets));
         } else {
-          // Single / unique / burst: the player picks, nothing pre-selected.
+          // Nothing is pre-selected, so the highlight can never promise a
+          // target the resolution will drop.
           expect(auto, isEmpty);
         }
       });
     });
   }
 
-  test('blinded ranged AoE never highlights more than it can hit', () {
-    // Regression: a blinded ranged AoE has its target budget cut below the
-    // enemy count, so the pre-highlight must clamp to the budget rather than
-    // lighting up all three enemies.
-    final rangedAoe = actives.firstWhere(
-      (t) =>
-          t.attackSubtype == AttackSubtype.aoe && t.rangeTag == RangeTag.long,
-    );
-    final auto = autoSelectedTargets(rangedAoe, caster, opponents, 2);
-    expect(auto.length, 2);
-    expect(auto, everyElement(isIn(opponents)));
+  group('an area ability aims at a line', () {
+    // Two on the front line, one at the back: the shape that exposed this.
+    const lines = {
+      'opp_a': BattlePosition.front,
+      'opp_b': BattlePosition.front,
+      'opp_c': BattlePosition.back,
+    };
+    BattlePosition positionOf(String id) => lines[id]!;
+
+    test('tapping one catches everyone on their line', () {
+      final caught = lineTargets(
+        tappedId: 'opp_a',
+        legalTargetIds: opponents,
+        positionOf: positionOf,
+        maxTargets: 3,
+      );
+      expect(caught, ['opp_a', 'opp_b']);
+    });
+
+    test('and nobody on any other line', () {
+      final caught = lineTargets(
+        tappedId: 'opp_c',
+        legalTargetIds: opponents,
+        positionOf: positionOf,
+        maxTargets: 3,
+      );
+      expect(caught, ['opp_c'],
+          reason: 'the back line is one character, so that is what it hits');
+    });
+
+    test('it never promises more than the ability can affect', () {
+      // A blinded ranged area attack has its budget cut below the number
+      // standing there, and the highlight has to respect that.
+      final caught = lineTargets(
+        tappedId: 'opp_a',
+        legalTargetIds: opponents,
+        positionOf: positionOf,
+        maxTargets: 1,
+      );
+      expect(caught, hasLength(1));
+    });
+
+    test('an unreachable character on the line is not caught', () {
+      // legalTargetIds is already filtered for range and screening, so
+      // anyone missing from it stays missing.
+      final caught = lineTargets(
+        tappedId: 'opp_a',
+        legalTargetIds: const ['opp_a'],
+        positionOf: positionOf,
+        maxTargets: 3,
+      );
+      expect(caught, ['opp_a']);
+    });
   });
 }

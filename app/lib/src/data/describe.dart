@@ -282,16 +282,30 @@ String describeActiveTrigger(
   final catalog = statusCatalog ?? StatusEffectCatalog.defaultCatalog;
   final parts = <String>[];
   final rangeWord = t.rangeTag.label;
-  if (t.attackSubtype == AttackSubtype.aoe) {
-    parts.add('$rangeWord attack, hits all ${t.targetCount} targets at once.');
+  // Found in a playtest: every area ability described itself as an "attack
+  // that hits all 3 targets at once", whoever it was aimed at and whether or
+  // not it dealt damage. Guardian's Aegis is not an attack, and no area
+  // ability hits three characters spread across three lines: it catches one
+  // line. The opening clause says what the ability actually is, on three
+  // axes: who it is aimed at, whether it is an attack, and what it reaches.
+  final isAttack = t.targetAffiliation == TargetAffiliation.opponent;
+  final noun = isAttack ? 'attack' : 'ability';
+  final whichLine = isAttack ? 'one enemy line' : 'one of your own lines';
+
+  if (t.targetAffiliation == TargetAffiliation.self) {
+    parts.add('Used on yourself. Nobody else is affected.');
+  } else if (t.attackSubtype == AttackSubtype.aoe) {
+    parts.add(
+      '$rangeWord $noun. Covers $whichLine, catching up to '
+      '${t.targetCount} standing on it and nobody on any other line.',
+    );
   } else if (t.attackSubtype == AttackSubtype.burst) {
     parts.add(
-      '$rangeWord attack: ${t.hitsPerUse} hits split across up to ${t.targetCount} target(s).',
+      '$rangeWord $noun: ${t.hitsPerUse} hits split across up to '
+      '${t.targetCount} target(s).',
     );
-  } else if (t.targetAffiliation == TargetAffiliation.self) {
-    parts.add('Affects the user only.');
   } else if (t.targetAffiliation == TargetAffiliation.ally) {
-    parts.add('$rangeWord, targets one ally.');
+    parts.add('$rangeWord. Aimed at one ally.');
   } else {
     parts.add('$rangeWord attack on a single target.');
   }
@@ -310,11 +324,21 @@ String describeActiveTrigger(
   // the player nothing to plan with, so each one is spelled out. Whose turns
   // the duration counts depends on who ends up holding it.
   final onSelf = t.targetAffiliation != TargetAffiliation.opponent;
+  // Who the status lands on, in words that survive an ability covering a
+  // whole line: "makes you" is wrong when it is your front line rather than
+  // you, and "leaves the target" is wrong when there are three of them.
+  final recipient = switch (t.targetAffiliation) {
+    TargetAffiliation.self => 'Makes you',
+    TargetAffiliation.ally =>
+      t.attackSubtype == AttackSubtype.aoe ? 'Everyone it covers becomes' : 'Makes the ally',
+    TargetAffiliation.opponent =>
+      t.attackSubtype == AttackSubtype.aoe ? 'Leaves everyone it catches' : 'Leaves the target',
+  };
   for (final application in t.inflictedStatusEffects) {
     final def = catalog[application.statusEffectId];
     parts.add(
-      '${onSelf ? 'Makes you' : 'Leaves the target'} '
-      '${def.name}: ${describeStatusEffect(def, onSelf: onSelf)}',
+      '$recipient ${def.name}: '
+      '${describeStatusEffect(def, onSelf: onSelf)}',
     );
   }
   if (t.armsReactive != null) {
