@@ -306,12 +306,14 @@ void main() {
             actions[i].targets.isNotEmpty &&
             actions[i].targets.first.rolls.any((r) => r.isHit);
 
+        // Names in the log carry their stack count now ("Chilled x1"), so
+        // the check is on the effect, not on the whole label.
         final chilled = landed(0) &&
             actions[0]
                 .targets
                 .first
                 .statusEffectsApplied
-                .contains('Chilled');
+                .any((n) => n.startsWith('Chilled '));
         if (!chilled || !landed(1) || !landed(2)) continue;
 
         // A hit can still be turned aside by a ward or a counter after the
@@ -326,6 +328,15 @@ void main() {
         ranClean = true;
 
         expect(froze.single.consumed, isTrue, reason: 'the chill is spent');
+        // The exact confusion a playtest reported: the log said Chilled had
+        // become Frozen, and Chilled was on the target again next turn. Frost
+        // Lance is Cold *and* applies Chilled, so it spends the chill the
+        // target walked in with and lays a fresh one on top. The line has to
+        // say both halves or it reads as a contradiction.
+        expect(froze.single.reappliedName, 'Chilled',
+            reason: 'Frost Lance re-chills what its own reaction froze');
+        expect(froze.single.effectDescription,
+            contains('the same attack applies Chilled again'));
         expect(shatter.single.damageMultiplier, 2.0,
             reason: 'Thunder shatters ice for double');
         expect(shatter.single.consumed, isTrue);

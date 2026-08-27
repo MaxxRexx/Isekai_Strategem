@@ -1384,21 +1384,39 @@ class PlaySession {
     String nameOfStatus(String id) =>
         catalog.contains(id) ? catalog[id].name : id;
 
+    // A reaction fires on what the target was already carrying; the ability's
+    // own rider lands afterwards. So a Cold attack on a Chilled target spends
+    // that chill on a Frozen and then chills them again, and the log used to
+    // report only the first half. Look up whether this ability put the spent
+    // status straight back on, and how deep the pile ended up.
+    TargetHitResult? resultFor(String characterId) => useResult.targetResults
+        .where((t) => t.targetCharacterId == characterId)
+        .firstOrNull;
+
     return [
       for (final r in useResult.reactions)
-        LogReaction(
-          characterName: displayNameOf(r.characterId),
-          reactingName: nameOfStatus(r.reactingStatusId),
-          became: r.becameStatusId == null
-              ? null
-              : nameOfStatus(r.becameStatusId!),
-          damageTypeLabel: r.damageType?.name ?? 'a status',
-          consumed: r.consumed,
-          damageMultiplier: r.damageMultiplier,
-          arcedToName: r.arcedToCharacterId == null
-              ? null
-              : displayNameOf(r.arcedToCharacterId!),
-        ),
+        () {
+          final hit = r.consumed ? resultFor(r.characterId) : null;
+          final reapplied =
+              hit != null && hit.statusEffectsApplied.contains(r.reactingStatusId);
+          return LogReaction(
+            characterName: displayNameOf(r.characterId),
+            reactingName: nameOfStatus(r.reactingStatusId),
+            became: r.becameStatusId == null
+                ? null
+                : nameOfStatus(r.becameStatusId!),
+            damageTypeLabel: r.damageType?.name ?? 'a status',
+            consumed: r.consumed,
+            damageMultiplier: r.damageMultiplier,
+            arcedToName: r.arcedToCharacterId == null
+                ? null
+                : displayNameOf(r.arcedToCharacterId!),
+            becameStacks: r.becameStacks,
+            reappliedName: reapplied ? nameOfStatus(r.reactingStatusId) : null,
+            reappliedStacks:
+                reapplied ? hit.statusEffectStacks[r.reactingStatusId] : null,
+          );
+        }(),
     ];
   }
 

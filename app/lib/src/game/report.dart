@@ -32,8 +32,11 @@ String _logLines(List<LogRound> rounds, String Function(String team) teamName) {
         final entry = StringBuffer(
           '  ${action.characterName}'
           '${action.fatTriggered ? ' [FAT]' : ''}'
+          '${action.bend != null ? ' [BENT]' : ''}'
           ' uses ${action.triggerName} on ${t.targetName}'
-          ' (${bits.join(', ')})',
+          // Empty for an ability aimed at your own side, which rolls nothing
+          // and so has no hits to count.
+          '${bits.isEmpty ? '' : ' (${bits.join(', ')})'}',
         );
         if (t.damage > 0) entry.write(' ${t.damage} dmg');
         if (t.statusEffectsApplied.isNotEmpty) {
@@ -58,15 +61,25 @@ String _logLines(List<LogRound> rounds, String Function(String team) teamName) {
         }
         buf.writeln(entry);
       }
-      for (final b in round.bailOuts) {
-        buf.writeln(
-          b.refused
-              ? '  ${b.characterName} refused to bail: gone for good, no '
-                  'Trion Salvage'
-              : '  ${b.characterName} is recalled '
-                  '(Trion Salvage +${b.trionSalvaged})',
-        );
+      // Item 3b's reactions, once per action, in the order the battle log
+      // shows them. A playtest pasted a report back and asked where they had
+      // gone: nothing here wrote them, so a chain that had visibly fired on
+      // screen read in the report as damage arriving out of nowhere.
+      for (final r in action.reactions) {
+        buf.writeln('    REACTION ${r.sentence}');
       }
+    }
+    // Once per round, and outside the actions loop. Nested inside it, a
+    // recall was reprinted for every action in the turn, and a turn whose
+    // only event was a Bail Out window closing printed nothing at all.
+    for (final b in round.bailOuts) {
+      buf.writeln(
+        b.refused
+            ? '  ${b.characterName} refused to bail: gone for good, no '
+                'Trion Salvage'
+            : '  ${b.characterName} is recalled '
+                '(Trion Salvage +${b.trionSalvaged})',
+      );
     }
   }
   return buf.toString();

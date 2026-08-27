@@ -12,9 +12,26 @@ const loadoutBuilder = LoadoutBuilder();
 
 AiProfile profileById(String id) => AiProfile.all.firstWhere((p) => p.id == id);
 
-List<String> statusEffectNames(List<String> ids) => [
-  for (final id in ids) statusCatalog[id].name,
-];
+/// The display names for a set of applied status ids, each carrying the
+/// number of stacks the target ended up with.
+///
+/// Two things a playtest asked for at once. "[Chilled]" gave no way to tell a
+/// first application from a third, so every name carries its count, from x1
+/// up. And an ability that applied the same effect on each of several strikes
+/// used to print the name once per strike ("[Bleeding, Bleeding, Bleeding]"),
+/// which is the same information said worse than "[Bleeding x3]"; ids are
+/// deduplicated, in the order they first landed.
+List<String> statusEffectNames(
+  List<String> ids, {
+  Map<String, int> stacks = const {},
+}) {
+  final seen = <String>{};
+  return [
+    for (final id in ids)
+      if (seen.add(id))
+        '${statusCatalog[id].name} x${stacks[id] ?? 1}',
+  ];
+}
 
 /// Folds a drafted [Loadout]'s equipped Passive Triggers/Black Trigger
 /// passives into [CharacterBattleState.equippedPassiveEffects], its World
@@ -270,7 +287,10 @@ List<LogTargetResult> logTargets(
         crits: t.attackRolls.where((r) => r.isCriticalHit).length,
         misses: t.attackRolls.where((r) => !r.isHit && !r.isCriticalMiss).length,
         damage: t.totalDamageDealt,
-        statusEffectsApplied: statusEffectNames(t.statusEffectsApplied),
+        statusEffectsApplied: statusEffectNames(
+          t.statusEffectsApplied,
+          stacks: t.statusEffectStacks,
+        ),
         healthAfter: state.currentHealth,
         // Still in the window is not defeated. Without this clause a later
         // action aimed at a body - even one that missed it - would print

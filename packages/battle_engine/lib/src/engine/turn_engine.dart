@@ -75,6 +75,16 @@ class TargetHitResult {
   final int totalDamageDealt;
   final List<String> statusEffectsApplied;
 
+  /// How many stacks of each id in [statusEffectsApplied] the target is
+  /// carrying once this ability has finished resolving against them.
+  ///
+  /// A playtest could not tell how many stacks of Chilled had gone on and
+  /// when: "[Chilled]" in the log is the same line whether it is the first
+  /// or the third. It says "[Chilled x2]" now, and this is where the 2 comes
+  /// from. A burst that applies the same effect on every strike reports the
+  /// pile it ended with, not one entry per strike.
+  final Map<String, int> statusEffectStacks;
+
   const TargetHitResult({
     required this.targetCharacterId,
     required this.attackRolls,
@@ -82,6 +92,7 @@ class TargetHitResult {
     required this.damageDetails,
     required this.totalDamageDealt,
     required this.statusEffectsApplied,
+    this.statusEffectStacks = const {},
   });
 }
 
@@ -140,6 +151,19 @@ class StatusReactionEvent {
   /// Who the reaction arced to, for the one row that arcs.
   final String? arcedToCharacterId;
 
+  /// How many stacks of [becameStatusId] the target is carrying once the
+  /// reaction has settled, or null when the reaction applied no status.
+  ///
+  /// The rows where a status builds into itself (Bleeding hit by Slashing,
+  /// Scorched by Fire, Corroded by Acid) are only legible as a number: "it
+  /// becomes Bleeding" says nothing when it was already Bleeding, and a
+  /// playtest asked exactly that. The count is what happened.
+  final int? becameStacks;
+
+  /// True when the reaction fed the status it fired from, rather than
+  /// turning it into a different one.
+  bool get buildsOnItself => becameStatusId == reactingStatusId;
+
   const StatusReactionEvent({
     required this.characterId,
     required this.reactingStatusId,
@@ -148,6 +172,7 @@ class StatusReactionEvent {
     this.consumed = false,
     this.damageMultiplier = 1.0,
     this.arcedToCharacterId,
+    this.becameStacks,
   });
 }
 
@@ -159,12 +184,17 @@ class _SingleHitResult {
   final int damage;
   final HitDamageDetail? damageDetail;
   final List<String> appliedStatusEffectIds;
+
+  /// Stacks carried per applied id at the moment this hit finished, so a
+  /// later hit's bigger pile overwrites an earlier one's.
+  final Map<String, int> appliedStacks;
   _SingleHitResult(
     this.outcome,
     this.damage,
     this.damageDetail,
-    this.appliedStatusEffectIds,
-  );
+    this.appliedStatusEffectIds, {
+    this.appliedStacks = const {},
+  });
 }
 
 /// Orchestrates a single turn: team Trion gain, per-character status
@@ -606,6 +636,14 @@ class TurnEngine {
         consumed: reaction.consumesTrigger,
         damageMultiplier: reaction.damageMultiplier,
         arcedToCharacterId: arcedTo,
+        // Read after the reaction has settled, so a row that builds reports
+        // the pile it just added to rather than the one it started from.
+        becameStacks: reaction.becomes == null
+            ? null
+            : target.statusEffects
+                .where((i) => i.definitionId == reaction.becomes)
+                .map((i) => i.stacks)
+                .firstOrNull,
       ));
     }
   }
@@ -1725,11 +1763,18 @@ class TurnEngine {
       void record(
         int damage,
         HitDamageDetail? damageDetail,
-        List<String> appliedIds,
-      ) {
-        hitsByTargetId
-            .putIfAbsent(target.combatantId, () => [])
-            .add(_SingleHitResult(outcome, damage, damageDetail, appliedIds));
+        List<String> appliedIds, [
+        Map<String, int> appliedStacks = const {},
+      ]) {
+        hitsByTargetId.putIfAbsent(target.combatantId, () => []).add(
+              _SingleHitResult(
+                outcome,
+                damage,
+                damageDetail,
+                appliedIds,
+                appliedStacks: appliedStacks,
+              ),
+            );
       }
 
       // A heal, a ward or a buff aimed at your own side is not an attack, and
@@ -1952,6 +1997,7 @@ class TurnEngine {
       }
 
       final appliedIds = <String>[];
+      final appliedStacks = <String, int>{};
       // TEG Effect 1 (offense) on the causer's infliction rolls this use.
       _applyTegOffenseAdvantage(advantageContext, attacker);
       // A hit that destroyed a Bailing Out body leaves nothing to afflict.
@@ -2007,6 +2053,15 @@ class TurnEngine {
           );
           if (applied) {
             appliedIds.add(application.statusEffectId);
+            // Read off the live instance rather than counted here: the
+            // definition's own cap decides whether a re-application actually
+            // added anything.
+            final live = target.statusEffects
+                .where((i) => i.definitionId == application.statusEffectId)
+                .firstOrNull;
+            if (live != null) {
+              appliedStacks[application.statusEffectId] = live.stacks;
+            }
             // Celestine-style "Warding Presence" Side Effect: an ally-targeted
             // buff also grants a Status Effect Resistance bonus.
             final wardBonus = attacker
@@ -2020,7 +2075,7 @@ class TurnEngine {
         }
       }
 
-      record(damageDealt, damageDetail, appliedIds);
+      record(damageDealt, damageDetail, appliedIds, appliedStacks);
     }
 
     switch (trigger.attackSubtype) {
@@ -2064,6 +2119,11 @@ class TurnEngine {
         totalDamageDealt: hits.fold(0, (sum, h) => sum + h.damage),
         statusEffectsApplied:
             hits.expand((h) => h.appliedStatusEffectIds).toList(),
+        // Later hits win: a burst that stacked an effect three times reports
+        // three, not the one the first strike saw.
+        statusEffectStacks: {
+          for (final h in hits) ...h.appliedStacks,
+        },
       ));
     }
 

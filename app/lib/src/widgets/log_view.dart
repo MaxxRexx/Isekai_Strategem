@@ -1276,24 +1276,8 @@ class ReactionLogLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bits = <String>[];
-    if (reaction.became != null) {
-      bits.add(reaction.consumed
-          ? '${reaction.reactingName} becomes ${reaction.became}'
-          : '${reaction.reactingName} builds into ${reaction.became}');
-    } else if (reaction.consumed) {
-      bits.add('${reaction.reactingName} is spent');
-    }
-    if (reaction.damageMultiplier > 1) {
-      final times = reaction.damageMultiplier == 2.0
-          ? 'double'
-          : '${reaction.damageMultiplier}x';
-      bits.add('$times damage on the hit');
-    }
-    if (reaction.arcedToName != null) {
-      bits.add('arcs to ${reaction.arcedToName}');
-    }
-
+    // The wording lives on LogReaction, because the copied report says the
+    // same sentence and a playtest found the report saying nothing at all.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
@@ -1322,10 +1306,10 @@ class ReactionLogLine extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            TextSpan(text: ' was ${reaction.reactingName} and took '
-                '${reaction.damageTypeLabel} damage: '),
+            TextSpan(text: ' was already ${reaction.reactingName} and '
+                '${reaction.causeDescription}: '),
             TextSpan(
-              text: bits.isEmpty ? 'nothing happens' : bits.join(', '),
+              text: reaction.effectDescription,
               style: const TextStyle(color: Colors.white),
             ),
             const TextSpan(text: '.'),

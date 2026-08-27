@@ -12,9 +12,18 @@ final _triggers = TriggerCatalog.defaultCatalog;
 final _blackTriggers = BlackTriggerCatalog.defaultCatalog;
 final _statusCatalog = StatusEffectCatalog.defaultCatalog;
 
-List<String> _statusEffectNames(List<String> ids) => [
-  for (final id in ids) _statusCatalog[id].name,
-];
+/// Quick Battle's own copy of [statusEffectNames]: each applied effect named
+/// once, carrying the stack count the target ended up with.
+List<String> _statusEffectNames(
+  List<String> ids, {
+  Map<String, int> stacks = const {},
+}) {
+  final seen = <String>{};
+  return [
+    for (final id in ids)
+      if (seen.add(id)) '${_statusCatalog[id].name} x${stacks[id] ?? 1}',
+  ];
+}
 
 /// Mirrors the web demo's `_buildBattleState`: folds a drafted [Loadout]'s
 /// equipped Passive Triggers/Black Trigger passives into
@@ -232,6 +241,7 @@ QuickBattleResult runQuickBattle({int maxRounds = 60}) {
                 damage: t.totalDamageDealt,
                 statusEffectsApplied: _statusEffectNames(
                   t.statusEffectsApplied,
+                  stacks: t.statusEffectStacks,
                 ),
                 healthAfter: battle.states[t.targetCharacterId]!.currentHealth,
                 maxHealth: battle.states[t.targetCharacterId]!

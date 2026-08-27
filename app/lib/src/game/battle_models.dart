@@ -280,6 +280,80 @@ class LogReaction {
   /// Who it arced to, for the one row that arcs.
   final String? arcedToName;
 
+  /// How many stacks of [became] the character carries now, or null when the
+  /// reaction applied no status. The only readable form of a row that builds
+  /// a status into itself.
+  final int? becameStacks;
+
+  /// Set when the same ability put the status this reaction spent straight
+  /// back on the same character, with the stacks they ended up carrying.
+  ///
+  /// This is the one a playtest could not resolve: the log said Chilled had
+  /// become Frozen, and Chilled was still on the target next turn. Both are
+  /// true. A reaction fires on what the target was already carrying, and the
+  /// ability's own rider lands afterwards, so a Cold attack on a Chilled
+  /// target freezes the old chill and applies a new one. Neither line was
+  /// wrong; nothing said they were about different chills.
+  final String? reappliedName;
+  final int? reappliedStacks;
+
+  /// True when the reaction fed the status it fired from rather than turning
+  /// it into a different one. "Bleeding builds into Bleeding" was the log
+  /// line a playtest could make no sense of.
+  bool get buildsOnItself => became == reactingName;
+
+  /// What the reaction did, in words: the half of the line that changes.
+  ///
+  /// Lives here rather than in the log widget because the copied report says
+  /// the same thing, and a playtest found the report saying nothing at all.
+  /// One sentence, one place.
+  String get effectDescription {
+    final bits = <String>[];
+    if (became != null) {
+      // Three of item 3b's rows feed a status into itself. Naming both ends
+      // of that ("Bleeding builds into Bleeding") says nothing: what happened
+      // is a stack, and a stack is only legible as a count.
+      final count = becameStacks == null ? '' : ' (now $became x$becameStacks)';
+      bits.add(buildsOnItself
+          ? 'the $reactingName builds by one$count'
+          : consumed
+              ? '$reactingName becomes $became$count'
+              : '$reactingName adds $became$count');
+    } else if (consumed) {
+      bits.add('$reactingName is spent');
+    }
+    if (damageMultiplier > 1) {
+      final times = damageMultiplier == 2.0 ? 'double' : '${damageMultiplier}x';
+      bits.add('$times damage on the hit');
+    }
+    if (arcedToName != null) {
+      bits.add('arcs to $arcedToName');
+    }
+    final sentence = bits.isEmpty ? 'nothing happens' : bits.join(', ');
+    if (reappliedName == null) return sentence;
+    // The clause that answers "why is it still there".
+    return '$sentence, and the same attack applies $reappliedName again '
+        '($reappliedName x${reappliedStacks ?? 1})';
+  }
+
+  /// What set the reaction off. "took a status damage" is what the
+  /// status-triggered rows used to read as.
+  String get causeDescription => damageTypeLabel == 'a status'
+      ? 'another status landed on them'
+      : 'took $damageTypeLabel damage';
+
+  /// The half of the line naming who reacted and why.
+  ///
+  /// "Already" is doing real work: it says the status that reacted is the one
+  /// the target walked in carrying, not the one this ability applied on the
+  /// way out. Without it, an attack that spends a chill and then re-chills
+  /// reads as a contradiction.
+  String get causeSentence =>
+      '$characterName was already $reactingName and $causeDescription';
+
+  /// The whole reaction as one plain sentence, for the copied report.
+  String get sentence => '$causeSentence: $effectDescription.';
+
   const LogReaction({
     required this.characterName,
     required this.reactingName,
@@ -288,6 +362,9 @@ class LogReaction {
     this.consumed = false,
     this.damageMultiplier = 1.0,
     this.arcedToName,
+    this.becameStacks,
+    this.reappliedName,
+    this.reappliedStacks,
   });
 }
 
