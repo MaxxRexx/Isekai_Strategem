@@ -194,7 +194,10 @@ class TestScenario {
   /// Builds the session this scenario describes. The player always moves
   /// first: a scenario the tester cannot act on immediately is a scenario
   /// they have to sit through.
-  PlaySession start() => PlaySession.start(
+  /// [turnEngine] is the same seam `PlaySession.start` and `Battle` already
+  /// offer, forwarded so a test can hand the scenario predictable dice.
+  /// The Tests tab always leaves it null and gets the ordinary random engine.
+  PlaySession start({TurnEngine? turnEngine}) => PlaySession.start(
         playerCharacterIds: playerIds,
         playerLoadouts: playerLoadouts,
         opponentCharacterIds: enemyIds,
@@ -202,6 +205,7 @@ class TestScenario {
         opponentLoadouts: enemyLoadouts,
         firstTurn: 'teamA',
         arrange: arrange,
+        turnEngine: turnEngine,
       );
 
   /// Sets the board up on the built battle, immediately before the opening

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/draft.dart';
@@ -231,13 +233,34 @@ void main() {
           reason: 'an area ability catches a line, not a squad');
     });
 
+    // Two of these scenarios have dice gates in front of the thing under
+    // test: attacks that have to land, and infliction contests that have to
+    // be won. Neither gate is what is being checked, so both tests run
+    // attempts until one comes up clean.
+    //
+    // They used to run those attempts on real dice, which made them fail
+    // about one run in five: forty or sixty unlucky streams in a row is
+    // uncommon but not rare, and a test that fails that often is worse than
+    // no test. Each attempt now gets its own seeded engine, so the search is
+    // over the same fixed streams every time. A failure means the chain
+    // genuinely stopped working, not that the dice went cold.
+    TurnEngine seeded(int attempt) => TurnEngine(
+          combatEngine:
+              CombatEngine(diceRoller: DiceRoller(Random(9000 + attempt))),
+          statusEffectEngine: StatusEffectEngine(
+              diceRoller: DiceRoller(Random(4000 + attempt))),
+          trionGainEngine:
+              TrionGainEngine(diceRoller: DiceRoller(Random(2000 + attempt))),
+          fatEngine: FatEngine(diceRoller: DiceRoller(Random(600 + attempt))),
+        );
+
     test('Bleed: the brief step one is performable and it '
         'really stacks', () {
       final s = byId('stacking_bleed');
       var stacked = false;
 
       for (var attempt = 0; attempt < 40 && !stacked; attempt++) {
-        final session = s.start();
+        final session = s.start(turnEngine: seeded(attempt));
         final rurik = stateOf(s, session, 'rurik_voss');
         final kaito = stateOf(s, session, 'kaito_reyes');
         final vela = stateOf(s, session, 'vela_ashworth');
@@ -281,7 +304,7 @@ void main() {
       var ranClean = false;
 
       for (var attempt = 0; attempt < 60 && !ranClean; attempt++) {
-        final session = s.start();
+        final session = s.start(turnEngine: seeded(attempt));
         final vela = stateOf(s, session, 'vela_ashworth');
 
         for (final actor in ['rurik_voss', 'kaito_reyes', 'mireille_song']) {
