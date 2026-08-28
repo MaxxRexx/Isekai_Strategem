@@ -227,13 +227,39 @@ Vow of the Duel buys damage at the cost of being unhealable. 14 helpful, 42
 harmful, 6 neutral. `status_role_test` pins the whole classification so a wave 4
 re-tune that moves an effect between roles shows up in the diff.
 
-**Found while there, not fixed:** the guide's Status Effects tab is driven by a
+**Found while there, and then fixed.** The guide's Status Effects tab ran on a
 hand-written map of 49 entries (`flavor_text.dart`) with its own durations and
-effect text, and the catalogue has 62. So twelve wave-1 effects are missing from
-the guide and the copy still says "50 status effects". The right fix is to drive
-that tab off `describeStatusEffect`, which 13b already built and tested, which
-would close the gap and remove a duplicate source of truth in one go. It
-rewrites player-facing copy for 50 entries, so it wants to be its own item.
+effect text, beside a catalogue of 62. Deferred at first on the grounds that it
+rewrote player-facing copy for 50 entries; that turned out to be a reason to
+check the rewrite rather than to put it off, and checking it found the gap was
+worse than a count. Thirteen effects were missing outright, and four of the
+forty-nine that were there said something untrue:
+
+| The guide said | The game does |
+|---|---|
+| Empowered lasts 2 turns | 3 |
+| Electrocuted deals a flat 3 | rolls 1d4 |
+| Enraged: "+50% outgoing damage, -3 Defense" | that, plus the Psychic immunity and the random targeting item 3b gave it |
+| Radiant Blessing grants +10 maximum health | it does not, and deliberately: raising the ceiling let healing carry a character past it |
+
+The tab is generated now, by the same `describeStatusEffect` the badges and
+tooltips use, sorted alphabetically, with durations off the definitions. One
+source of truth, so a wave 4 re-tune updates the guide for free.
+
+Comparing all 49 generated strings against the hand-written ones first found
+three places the generated text was the weaker of the two, all now fixed and
+all of which improve the badge tooltips as well: it said "You roll at a
+disadvantage" without naming *which* rolls (so Poisoned and Threatened read
+identically), it dropped the damage type from a tick, and it rounded a dice
+expression to its average (`1d4` to "3", a number the dice do not promise).
+`DiceExpression.label` renders `1d4`, `3d6+9` or a bare `8` for the flat case.
+`guide_status_tab_test` holds the tab to the catalogue so a second copy of this
+data cannot creep back in.
+
+**Left alone:** Overcharged and Choked draw the "something else" glyph, because
+a Trion-cost multiplier is not one of the fourteen roles. They are the only two
+effects whose badge says "unusual, tap it" where it could say something
+specific. A fifteenth role would fix it and is not obviously worth the churn.
 
 The proposal, kept for the two approaches not taken:
 

@@ -179,6 +179,20 @@ class DiceExpression {
   /// number rather than an actual roll.
   double get average => count * (sides + 1) / 2 + flatBonus;
 
+  /// The expression as a player would read it: `1d4`, `3d6+9`, or just `8`
+  /// for a flat amount.
+  ///
+  /// A flat amount is stored as `0d1+8`, which [toString] prints literally
+  /// and which is fine in a stack trace and wrong in a rules reference. A
+  /// description that rounds `1d4` to its average of 3 is wrong the other
+  /// way: it says a number the dice can produce but do not promise.
+  String get label {
+    if (count == 0) return '$flatBonus';
+    final dice = '${count}d$sides';
+    if (flatBonus == 0) return dice;
+    return '$dice${flatBonus > 0 ? '+' : '-'}${flatBonus.abs()}';
+  }
+
   @override
   String toString() =>
       '${count}d$sides${flatBonus == 0 ? '' : (flatBonus > 0 ? '+$flatBonus' : '$flatBonus')}';

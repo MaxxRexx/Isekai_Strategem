@@ -2,7 +2,6 @@ import 'package:battle_engine/battle_engine.dart';
 import 'package:flutter/material.dart';
 
 import '../data/describe.dart';
-import '../data/flavor_text.dart';
 import '../game/draft.dart';
 import '../ui/palette.dart';
 import '../widgets/black_trigger_ability_list.dart';
@@ -310,29 +309,51 @@ class _GuideScreenState extends State<GuideScreen>
     );
   }
 
+  /// Every status effect, read straight off the catalogue.
+  ///
+  /// This tab used to run on a hand-written map of 49 names with its own
+  /// durations and effect text, beside a catalogue of 62. The gap was the
+  /// predictable one: thirteen effects were missing outright, Empowered's
+  /// duration was a turn short, Electrocuted still claimed a flat 3 where it
+  /// rolls 1d4, Enraged never mentioned the Psychic immunity or the random
+  /// targeting item 3b gave it, and Radiant Blessing still promised +10
+  /// maximum health that had been deliberately taken out. Every one of those
+  /// is a rules reference telling a player something untrue.
+  ///
+  /// It is generated now, by the same `describeStatusEffect` the battle
+  /// screen's badges and tooltips use, so there is one source of truth and a
+  /// re-tuned magnitude updates the guide for free.
   Widget _statusEffectsTab() {
+    final effects = StatusEffectCatalog.defaultCatalog.all.toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        const Padding(
-          padding: EdgeInsets.only(bottom: 8),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
           child: Text(
-            '50 status effects, all expressed as data against the same '
-            'generic definition. Duration is in turns, ticked down at the '
-            'start of the affected character\'s team\'s turn, unless noted '
-            'otherwise.',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
+            '${effects.length} status effects, all expressed as data against '
+            'the same generic definition. Duration is in turns, ticked down '
+            'at the end of the holder\'s own turn, so an effect that says two '
+            'turns covers their next two. The icon and its colour are the '
+            'same ones the badges use in battle: what kind of thing the '
+            'effect is, and whether it helps you, hurts you, or does both.',
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ),
-        // The same fourteen glyphs and three colours the battle screen's
-        // badges use, so the guide is where a player learns to read them.
-        for (final entry in statusInfo.entries)
+        for (final def in effects)
           _GuideEntry(
-            icon: _statusRoleIcon(entry.key),
-            title: entry.key,
-            meta:
-                '${entry.value.duration} turn${entry.value.duration == 1 ? '' : 's'}',
-            body: entry.value.effect,
+            icon: _statusRoleIcon(def.name),
+            title: def.name,
+            meta: def.defaultDurationTurns == null
+                ? 'until removed'
+                : '${def.defaultDurationTurns} turn'
+                    '${def.defaultDurationTurns == 1 ? '' : 's'}',
+            body: describeStatusEffect(
+              def,
+              onSelf: true,
+              includeDuration: false,
+            ),
           ),
       ],
     );
@@ -340,7 +361,7 @@ class _GuideScreenState extends State<GuideScreen>
 
   /// The badge glyph for a status named in the guide, matched to the
   /// catalogue by display name. Falls back to the generic status icon for
-  /// anything the guide lists that the catalogue does not carry.
+  /// anything named here that the catalogue does not carry.
   Widget _statusRoleIcon(String name) {
     final def = StatusEffectCatalog.defaultCatalog.all
         .where((d) => d.name == name)

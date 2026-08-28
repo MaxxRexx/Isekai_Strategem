@@ -91,6 +91,30 @@ const Map<String, String> _writtenStatusDescriptions = {
 /// Deliberately short: the full prose pass over all 62 effects is its own
 /// item. This states the mechanical effect and the duration, which are the two
 /// things a player cannot work out by looking.
+/// The rolls a status effect touches, in the words a player uses for them.
+///
+/// Ordered by the enum rather than by the set's iteration order, so an effect
+/// that names two of them always reads the same way round.
+String _rollTagList(Set<StatusRollTag> tags) {
+  const label = {
+    StatusRollTag.attackRoll: 'attack rolls',
+    StatusRollTag.rangedAttackRoll: 'ranged attack rolls',
+    StatusRollTag.statusResistanceRoll: 'status-resistance rolls',
+  };
+  // An effect touching both attack rolls and ranged ones touches every attack
+  // roll there is, and saying both is worse than saying that.
+  final named = {...tags};
+  if (named.contains(StatusRollTag.attackRoll)) {
+    named.remove(StatusRollTag.rangedAttackRoll);
+  }
+  final parts = [
+    for (final tag in StatusRollTag.values)
+      if (named.contains(tag)) label[tag]!,
+  ];
+  if (parts.length == 1) return parts.single;
+  return '${parts.take(parts.length - 1).join(', ')} and ${parts.last}';
+}
+
 String describeStatusEffect(
   StatusEffectDefinition def, {
   required bool onSelf,
@@ -147,19 +171,32 @@ String describeStatusEffect(
     bits.add('have ${statLabel[stat] ?? stat.name} reduced to zero');
   }
   if (def.turnStartDamage != null) {
+    // Exactly what it rolls, and of what type. "3 damage" for Electrocuted's
+    // 1d4 says a number the dice do not promise, and the type is what decides
+    // whether a resistance or a vulnerability changes it.
+    final type = def.turnStartDamageType;
     bits.add(
-      'take ${def.turnStartDamage!.average.round()} damage at the start of '
-      'each of $whose turns',
+      'take ${def.turnStartDamage!.label}'
+      '${type == null ? '' : ' ${_damageTypeLabel(type)}'} damage at the '
+      'start of each of $whose turns',
     );
   }
   if (def.turnStartHeal != null) {
     bits.add(
-      'heal ${def.turnStartHeal!.average.round()} at the start of each of '
-      '$whose turns',
+      'heal ${def.turnStartHeal!.label} at the start of each of $whose turns',
     );
   }
-  if (def.disadvantageRollTags.isNotEmpty) bits.add('roll at a disadvantage');
-  if (def.advantageRollTags.isNotEmpty) bits.add('roll at an advantage');
+  // Which rolls, not just "rolls". Poisoned and Threatened both used to read
+  // "You roll at a disadvantage", which is the same sentence for two effects
+  // that hurt in completely different ways: one blunts every attack you make,
+  // the other only the ones you make at range.
+  if (def.disadvantageRollTags.isNotEmpty) {
+    bits.add('roll ${_rollTagList(def.disadvantageRollTags)} at a '
+        'disadvantage');
+  }
+  if (def.advantageRollTags.isNotEmpty) {
+    bits.add('roll ${_rollTagList(def.advantageRollTags)} at an advantage');
+  }
 
   // Item 13b. Everything below this line was a field the engine read and the
   // description did not, which is how sixteen effects came to introduce
