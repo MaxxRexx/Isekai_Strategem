@@ -662,8 +662,23 @@ Regenerating and Sapped, whose ticks add up, and Acid, Adrenaline Rush, Battle
 Trance, Fatigued, Hexed, Inspired, Suppressed and Warded, whose stat steps do.
 A stack multiplies everything the effect does, so three stacks of Bleeding tick
 three times the damage and three of Inspired give three times the step. It is
-still one badge with one timer; the badge carries an **x2** or **x3** to say
-how deep it is. The other fifty refresh and nothing more.
+still one badge with one timer, carrying up to three pips to say how deep it
+is. The other fifty refresh and nothing more.
+
+**Reading a status badge.** Every effect on a character shows as one small
+notched square that answers four questions without a word on it. The **glyph**
+says what kind of thing the effect is, out of fourteen: the turn taken away, an
+option closed off, damage or healing every turn, Trion drained, damage taken or
+dealt going up or down, a stat stepped up, stepped down or taken to zero, your
+own aim spoiled, and one for the handful that are none of those. The **colour**
+says whose side it is on: red for harm, green for help, and violet for the
+handful that are genuinely a trade, like Enraged, which buys damage and takes
+away the choice of who to hit. The **pips** along the top say how many stacks.
+The **rule** along the bottom shortens as the turns run out and turns amber on
+the last one. Tapping a badge names the effect, spells the numbers out, and
+gives the full description. None of this is a hand-kept list: the glyph and the
+colour are worked out from the effect's own declared properties, so a new
+effect reads correctly the day it is written.
 
 A burst applies a stack per strike, so an ability that strikes three times can
 take a stacking effect from nothing to the cap in one action, provided each

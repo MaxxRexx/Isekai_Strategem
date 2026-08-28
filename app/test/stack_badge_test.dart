@@ -9,26 +9,37 @@ import 'package:isekai_strategem/src/widgets/badges.dart';
 /// That makes the count the difference between a scratch and a problem, so it
 /// has to be on the badge. A player who can only see "Bleeding" cannot judge
 /// what is about to happen to them.
+///
+/// It was an "x2" in 8-pixel type in the badge's top-left corner until a
+/// playtest called it unreadable. The cap is three and the deepest pile ever
+/// measured is three, so the count is shown rather than spelled: three pips
+/// along the top edge, filled to the count.
 void main() {
   Widget wrap(Widget child) => MaterialApp(
         home: Scaffold(body: Center(child: child)),
       );
 
-  group('the badge shows what it is carrying', () {
-    testWidgets('a single stack shows no multiplier at all', (tester) async {
+  Finder litPips() => find.byWidgetPredicate((w) {
+        final key = w.key;
+        return key is ValueKey<String> &&
+            key.value.startsWith('status-badge-pip-on');
+      });
+
+  group('a stack is a count you can see, not a digit you must read', () {
+    testWidgets('one stack shows no pips at all', (tester) async {
+      // Every badge would carry a single lit pip and none of them would mean
+      // anything, which was the same objection the old "x1" answered.
       await tester.pumpWidget(wrap(const StatusBadge(
         name: 'Bleeding',
         id: 'bleeding',
         remainingTurns: 3,
       )));
 
-      expect(find.text('x1'), findsNothing,
-          reason: 'every badge would carry an x1 and none of them would mean '
-              'anything');
-      expect(find.text('3'), findsOneWidget, reason: 'the duration still');
+      expect(litPips(), findsNothing);
+      expect(find.text('x1'), findsNothing);
     });
 
-    testWidgets('two stacks say so', (tester) async {
+    testWidgets('two stacks light two pips', (tester) async {
       await tester.pumpWidget(wrap(const StatusBadge(
         name: 'Bleeding',
         id: 'bleeding',
@@ -36,11 +47,12 @@ void main() {
         stacks: 2,
       )));
 
-      expect(find.text('x2'), findsOneWidget);
+      expect(litPips(), findsNWidgets(2));
+      expect(find.text('x2'), findsNothing,
+          reason: 'the digit is what this replaced');
     });
 
-    testWidgets('the count and the duration are different numbers',
-        (tester) async {
+    testWidgets('three stacks fill the row', (tester) async {
       await tester.pumpWidget(wrap(const StatusBadge(
         name: 'Inspired',
         id: 'inspired',
@@ -48,8 +60,24 @@ void main() {
         stacks: 3,
       )));
 
-      expect(find.text('x3'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
+      expect(litPips(), findsNWidgets(3));
+    });
+
+    testWidgets('the count and the duration are different marks',
+        (tester) async {
+      // They used to be two 8-pixel digits in opposite corners of a 19-pixel
+      // square, in two colours, with nothing saying which was which.
+      await tester.pumpWidget(wrap(const StatusBadge(
+        name: 'Inspired',
+        id: 'inspired',
+        remainingTurns: 2,
+        stacks: 3,
+      )));
+
+      expect(litPips(), findsNWidgets(3));
+      expect(find.byKey(const Key(StatusBadge.durationKey)), findsOneWidget);
+      expect(find.byType(Text), findsNothing,
+          reason: 'the resting badge carries no text at all');
     });
   });
 

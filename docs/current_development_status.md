@@ -11,7 +11,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1 is built and played, and its playtest batch is built.** All nine items shipped: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's rule (not its pass), the Trion drain fix and the two support spot-fixes. The owner then played all five Tests tab scenarios and filed a batch of ten interface findings; **eight are fixed, one is a design decision now taken, and one is a proposal waiting on the owner** (see "Wave 1 playtest" below). **Lock is retired**; Buff, Bleed, Freeze and Duration are waiting on a re-play against the fixes. That re-play is what comes before wave 2. Then wave 2 is **#4**, the Trion economy, which is what every deferred pricing decision is waiting on: #3's pass, the support re-pricing, and the abilities the rule cannot see yet. The queue was re-sequenced after the #3 audit, so the numbers are names and the running order is its own table below. All seven of the design review's decisions are **approved as recommended**, and #D's was corrected mid-build (see its section). Wave 0 is **done**: 1b and #2 were playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1 is built and played, and its playtest batch is built.** All nine items shipped: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's rule (not its pass), the Trion drain fix and the two support spot-fixes. The owner then played all five Tests tab scenarios and filed a batch of ten interface findings; **all ten are resolved** (eight interface fixes, one design decision taken, and the badge legibility work built as A+B+C with D on tap) (see "Wave 1 playtest" below). **Lock is retired**; Buff, Bleed, Freeze and Duration are waiting on a re-play against the fixes. That re-play is what comes before wave 2. Then wave 2 is **#4**, the Trion economy, which is what every deferred pricing decision is waiting on: #3's pass, the support re-pricing, and the abilities the rule cannot see yet. The queue was re-sequenced after the #3 audit, so the numbers are names and the running order is its own table below. All seven of the design review's decisions are **approved as recommended**, and #D's was corrected mid-build (see its section). Wave 0 is **done**: 1b and #2 were playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -204,7 +204,38 @@ spending an action on the body can. A character who **refuses to bail** keeps
 everything, because they are standing and still fighting. `game_design.md`
 section 21 records the rule.
 
-### Waiting on the owner
+### Built after the proposal
+
+**#F, status badge legibility. Built.** The owner picked **A + B + C** off the
+proposal below and asked for **D on tap**, so a badge opens into its named pill
+rather than being one permanently. The 19x19 square is unchanged in size and now
+carries four facts and **no text at all**: a role glyph, a valence colour, up to
+three stack pips over a dim track, and a duration rule that shortens over a
+track and turns amber on the last turn. Tapping it opens the pill (glyph, name,
+count, turns) *and* still shows the full description, so the tap costs the
+player nothing it used to give them; tapping again closes it. The guide's Status
+Effects tab draws the same glyphs and colours, which is where the vocabulary is
+learned.
+
+The classification lives in the engine (`StatusRole`, `StatusValence`, derived
+on `StatusEffectDefinition`) and is read off declared fields, never a list:
+fourteen roles, all of them populated, and a valence that is **counted** rather
+than looked up. An effect whose signals all help is helpful, all hurt is
+harmful, and one carrying both is neutral, which is the answer rather than a
+shrug: Enraged buys damage and Psychic immunity at the cost of aiming, and the
+Vow of the Duel buys damage at the cost of being unhealable. 14 helpful, 42
+harmful, 6 neutral. `status_role_test` pins the whole classification so a wave 4
+re-tune that moves an effect between roles shows up in the diff.
+
+**Found while there, not fixed:** the guide's Status Effects tab is driven by a
+hand-written map of 49 entries (`flavor_text.dart`) with its own durations and
+effect text, and the catalogue has 62. So twelve wave-1 effects are missing from
+the guide and the copy still says "50 status effects". The right fix is to drive
+that tab off `describeStatusEffect`, which 13b already built and tested, which
+would close the gap and remove a duplicate source of truth in one go. It
+rewrites player-facing copy for 50 entries, so it wants to be its own item.
+
+The proposal, kept for the two approaches not taken:
 
 **#F, status badge legibility.** Asked for research and ideas rather than a
 build, and not built. Findings, all measured rather than estimated:
@@ -233,7 +264,10 @@ bigger" done honestly now that the space is known to be there; **#E** a status
 rail under the health bar with helping on one side and hurting on the other.
 Recommended: **A, B and C compose into one badge the same size as today's that
 carries four facts and contains no text at all**, with D and E as escalations
-if a playtest of that still finds the glyphs ambiguous. Nothing is built.
+if a playtest of that still finds the glyphs ambiguous. The owner took A, B and
+C, and folded D in as the tapped-open state rather than the resting one. **E is
+not built** and is still the escalation if "who is winning the status war" turns
+out to be a question players ask.
 
 ## The work queue
 

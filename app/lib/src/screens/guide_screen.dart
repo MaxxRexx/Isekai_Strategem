@@ -7,6 +7,7 @@ import '../game/draft.dart';
 import '../ui/palette.dart';
 import '../widgets/black_trigger_ability_list.dart';
 import '../widgets/game_icons.dart';
+import '../widgets/status_role_icons.dart';
 import '../widgets/trigger_icons.dart';
 
 /// A condensed reference for the rules: Loadout drafting, Resonance, turn
@@ -323,15 +324,38 @@ class _GuideScreenState extends State<GuideScreen>
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ),
+        // The same fourteen glyphs and three colours the battle screen's
+        // badges use, so the guide is where a player learns to read them.
         for (final entry in statusInfo.entries)
           _GuideEntry(
-            icon: const Icon(GameIcons.status, size: 14, color: Palette.accent),
+            icon: _statusRoleIcon(entry.key),
             title: entry.key,
             meta:
                 '${entry.value.duration} turn${entry.value.duration == 1 ? '' : 's'}',
             body: entry.value.effect,
           ),
       ],
+    );
+  }
+
+  /// The badge glyph for a status named in the guide, matched to the
+  /// catalogue by display name. Falls back to the generic status icon for
+  /// anything the guide lists that the catalogue does not carry.
+  Widget _statusRoleIcon(String name) {
+    final def = StatusEffectCatalog.defaultCatalog.all
+        .where((d) => d.name == name)
+        .firstOrNull;
+    if (def == null) {
+      return const Icon(GameIcons.status, size: 14, color: Palette.accent);
+    }
+    return StatusRoleIcon(
+      role: def.role,
+      size: 14,
+      color: switch (def.valence) {
+        StatusValence.harmful => Palette.danger,
+        StatusValence.helpful => Palette.good,
+        StatusValence.neutral => Palette.bend,
+      },
     );
   }
 
