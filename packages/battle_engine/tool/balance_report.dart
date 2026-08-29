@@ -175,14 +175,33 @@ CharacterBattleState buildBattleState(Character character, Loadout loadout) {
   );
 }
 
-class _Draft {
+class Draft {
   final Team team;
   final Map<String, CharacterBattleState> states;
   final Map<String, List<ActiveTrigger>> equipped;
-  const _Draft(this.team, this.states, this.equipped);
+  const Draft(this.team, this.states, this.equipped);
 }
 
-_Draft draft(String teamId, List<String> ids, AiProfile profile) {
+/// Drafts a squad the way `app/lib/src/game/draft.dart` drafts one.
+///
+/// [includeBlackTriggerActives] hands a character its Black Trigger's own
+/// active abilities as well. It defaults to true because that is what the app
+/// does, and for the reason the app's own comment gives: a Loadout may
+/// satisfy the required active-ability count through its Black Trigger, so
+/// dropping those leaves the character with fewer usable abilities than the
+/// Loadout rule requires.
+///
+/// It was false until item 4b measured what that cost. Every pacing number
+/// this tool printed before then was measured on under-armed squads, which
+/// stretched the tail: p90 went 26 to 23 and the worst battle 73 rounds to 54
+/// when the drop was fixed. Pass false to reproduce those older numbers;
+/// `tool/long_battle_diagnosis.dart --drop-black-trigger-actives` does.
+Draft draft(
+  String teamId,
+  List<String> ids,
+  AiProfile profile, {
+  bool includeBlackTriggerActives = true,
+}) {
   const builder = LoadoutBuilder();
   final characters = ids.map((id) => CharacterRoster.defaultRoster[id]).toList();
   final states = <String, CharacterBattleState>{};
@@ -196,9 +215,12 @@ _Draft draft(String teamId, List<String> ids, AiProfile profile) {
       profile: profile,
     );
     states[character.id] = buildBattleState(character, loadout);
-    equipped[character.id] = loadout.triggers.whereType<ActiveTrigger>().toList();
+    equipped[character.id] = [
+      ...loadout.triggers.whereType<ActiveTrigger>(),
+      if (includeBlackTriggerActives) ...?loadout.blackTrigger?.activeAbilities,
+    ];
   }
-  return _Draft(Team(id: teamId, characters: characters), states, equipped);
+  return Draft(Team(id: teamId, characters: characters), states, equipped);
 }
 
 void reportSimulation({int battles = 200, int seed = 20260814}) {

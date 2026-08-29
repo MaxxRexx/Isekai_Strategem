@@ -71,8 +71,14 @@ class DraftedTeam {
         profile: profile,
       );
       states[character.id] = buildBattleState(character, loadout);
-      equipped[character.id] =
-          loadout.triggers.whereType<ActiveTrigger>().toList();
+      // The Black Trigger's own actives count too, exactly as the app's
+      // draft hands them over (app/lib/src/game/draft.dart). Dropping them
+      // under-arms every squad, which is what item 4b found stretching the
+      // pacing tail this file asserts on.
+      equipped[character.id] = [
+        ...loadout.triggers.whereType<ActiveTrigger>(),
+        ...?loadout.blackTrigger?.activeAbilities,
+      ];
     }
 
     return DraftedTeam(team, states, equipped);

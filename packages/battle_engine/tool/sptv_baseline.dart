@@ -23,7 +23,21 @@ class _Squad {
   const _Squad(this.team, this.states, this.equipped);
 }
 
-_Squad drafted(String teamId, List<String> ids, AiProfile profile) {
+/// [includeBlackTriggerActives] hands each character its Black Trigger's own
+/// actives as well, which is what the app does and what item 4b corrected in
+/// the other tools.
+///
+/// It defaults to **false** here, alone among the tools, because the numbers
+/// this one prints are the calibration input to item #3's Status Point scale:
+/// moving them re-prices the catalogue, which is #3's wave 4 pass to run and
+/// the owner's to approve, not a side effect of a tooling fix. Pass
+/// `--black-trigger-actives` to see what the corrected measurement says.
+_Squad drafted(
+  String teamId,
+  List<String> ids,
+  AiProfile profile, {
+  bool includeBlackTriggerActives = false,
+}) {
   const builder = LoadoutBuilder();
   final characters = ids.map((id) => CharacterRoster.defaultRoster[id]).toList();
   final states = <String, CharacterBattleState>{};
@@ -37,8 +51,10 @@ _Squad drafted(String teamId, List<String> ids, AiProfile profile) {
       profile: profile,
     );
     states[character.id] = buildBattleState(character, loadout);
-    equipped[character.id] =
-        loadout.triggers.whereType<ActiveTrigger>().toList();
+    equipped[character.id] = [
+      ...loadout.triggers.whereType<ActiveTrigger>(),
+      if (includeBlackTriggerActives) ...?loadout.blackTrigger?.activeAbilities,
+    ];
   }
   return _Squad(Team(id: teamId, characters: characters), states, equipped);
 }
@@ -52,10 +68,18 @@ void main(List<String> args) {
     if (args[i] == '--seed') seed = int.parse(args[i + 1]);
     if (args[i] == '--battles') battles = int.parse(args[i + 1]);
   }
+  final blackTriggerActives = args.contains('--black-trigger-actives');
 
   final roster = CharacterRoster.defaultRoster.all.map((c) => c.id).toList();
   final profiles = AiProfile.all;
   final random = Random(seed);
+  if (blackTriggerActives) {
+    print('(Black Trigger actives included: the corrected measurement item 4b '
+        'describes,');
+    print(' which #3\'s wave 4 pass owns. The recorded baseline is the run '
+        'without this flag.)');
+    print('');
+  }
 
   var teamTurns = 0;
   var livingAtTurnStart = 0;
@@ -79,8 +103,10 @@ void main(List<String> args) {
     final pool = [...roster]..shuffle(random);
     final aProfile = profiles[random.nextInt(profiles.length)];
     final bProfile = profiles[random.nextInt(profiles.length)];
-    final a = drafted('team-a', pool.take(3).toList(), aProfile);
-    final b = drafted('team-b', pool.skip(3).take(3).toList(), bProfile);
+    final a = drafted('team-a', pool.take(3).toList(), aProfile,
+        includeBlackTriggerActives: blackTriggerActives);
+    final b = drafted('team-b', pool.skip(3).take(3).toList(), bProfile,
+        includeBlackTriggerActives: blackTriggerActives);
     final dice = Random(seed * 1000003 + i);
     final battle = Battle(
       teamA: a.team,

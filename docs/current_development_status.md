@@ -13,8 +13,10 @@ explanation of the whole game itself, see
   battlefield, screening, Bail Out), then wave 1's #14, 5c, #D, 3b's mechanism,
   5b, 13b, #3's rule and the two support spot-fixes. All merged to `main`, all
   playtested, #TWC on 2026-08-29.
-- **Now: wave 2, #4 (the Trion economy).** Nothing built in it yet. Next is
-  **4b** (diagnose the long tail of battle length), then **#4** itself.
+- **Now: wave 2, #4 (the Trion economy). 4b is diagnosed**, on branch
+  `claude/wave-2-run-4b-diagnosis-mrlfs0`: the tail is an accuracy problem, not
+  an economy one, and a third of it was a measurement defect that is now fixed.
+  See "What 4b found" below. **#4 itself is not started.**
 - **After it, in order:** wave 3 (1c, 3b's content, #4's traps), wave 4 (#3's
   pass, #5), wave 5 (#6), wave 6 (#7), wave 7 (#13, #8).
 
@@ -44,13 +46,14 @@ older note is gone.
 |---|---|
 | `main` | The trunk, and up to date. Wave 1, the playtest batch that followed it and the wave 1 close-out are merged here. |
 | `gh-pages` | The published web build. Deploy target only; never develop on it. |
+| `claude/wave-2-run-4b-diagnosis-mrlfs0` | Wave 2's branch. Carries item 4b's diagnosis and the tool and code fixes that came out of it. Not merged. |
 
 `claude/tasks-3-3b-r8ceab` carried the #3 audit, the whole wave 1 build and the
-wave 1 playtest batch. Every commit on it is on `main`, and the **local branch
-was deleted** on 2026-08-29. The **remote one is still there**: deleting it
-from a session is refused with an HTTP 403, so it is the owner's to delete, on
-GitHub or from a local checkout. Nothing depends on it. Wave 2 gets a branch of
-its own. Every other work branch was deleted once merged.
+wave 1 playtest batch. Every commit on it is on `main`, the local branch was
+deleted on 2026-08-29, and **the remote one is now gone too**: this document
+said it was still there and the owner's to delete, and `git ls-remote --heads
+origin` on 2026-08-29 lists only `main` and `gh-pages`. Every other work branch
+was deleted once merged.
 
 Branch names are deliberately absent from the phase table further down: every
 phase listed there is merged, so the branch it arrived on no longer exists and
@@ -444,6 +447,167 @@ the catalogue, like the screening briefs already do. And the first script for
 it was itself off by one, which is exactly what item #D is about: the turn you
 cast on is a free remainder and spends none of the duration.
 
+## What 4b found: the long tail is accuracy, not economy
+
+Run with `dart run tool/long_battle_diagnosis.dart` in `packages/battle_engine`,
+over 800 battles (200 on each of the four seeds the other pacing claims use).
+It plays the same drafts against the same dice as `balance_report.dart` and
+records what each battle spent its rounds doing, so the long ones can be
+compared against the ordinary ones rather than guessed at. `--seeds` and
+`--battles` take the same arguments; `--drop-black-trigger-actives` reproduces
+the pre-4b measurement described below.
+
+**Both of the item's named suspects are wrong, and the third possibility the
+range bands introduced is wrong too.**
+
+| Suspect | What the 800 battles say |
+|---|---|
+| Two sustain-heavy squads out-healing each other | **No.** Healing runs **0.02 health per round** against 34.6 damage per round, in every length bucket. Across six drafted characters a battle carries **0.2 healing abilities**. There is no healing in this game to out-heal with |
+| A Trion-starved pair trading single cheap abilities | **No, and backwards.** Long battles hold **more** Trion, not less (mean pool at decision 42.1 over 20 rounds against 38.5 inside the band), take the same **1.42 abilities per turn**, and idle *less* often (4% of turns against 5%). Income per turn is flat at 24 to 25 |
+| Nobody can reach anybody (screening, after 1b) | **No.** **0%** of turns, in every bucket, had nobody on the acting side able to reach any enemy with anything equipped. `stall_finder`'s finding holds up in play |
+
+### What it actually is
+
+Long battles are battles where the attacks miss. Everything else follows from
+that.
+
+| | 8-20 rounds | over 20 | ratio |
+|---|---|---|---|
+| Damage per round | 34.6 | 19.8 | **0.57x** |
+| Hit rate | 52% | 40% | 0.77x |
+| Turns dealing no damage at all | 44% | 57% | 1.29x |
+| Longest run of no-damage turns | 3.9 | 7.8 | 2.01x |
+| Matchup Attack-versus-Defense gap | +1.70 | +0.21 | 0.12x |
+| Abilities used per turn | 1.42 | 1.42 | 1.00x |
+| Mean Trion pool at decision | 38.5 | 42.1 | 1.09x |
+
+Sorted by the matchup's mean accuracy gap (each squad's mean Attack against the
+other's mean Defense, averaged), battle length is almost monotonic:
+
+| Gap | Battles | Mean rounds | Over 20 rounds | Hit rate | Damage per round |
+|---|---|---|---|---|---|
+| -3 | 12 | 19.0 | 50% | 38% | 23.7 |
+| -2 | 33 | 19.5 | 39% | 39% | 24.0 |
+| -1 | 82 | 19.3 | 39% | 42% | 26.4 |
+| 0 | 103 | 17.7 | 25% | 46% | 27.2 |
+| +1 | 143 | 15.8 | 15% | 49% | 30.6 |
+| +2 | 160 | 14.9 | 13% | 52% | 33.5 |
+| +3 | 119 | 12.5 | 7% | 56% | 38.3 |
+| +4 | 97 | 11.7 | 5% | 60% | 41.0 |
+| +5 | 30 | 10.2 | 0% | 61% | 48.8 |
+| +6 | 18 | 8.5 | 0% | 70% | 51.4 |
+
+And it is the roster's own spread doing it, not a hidden interaction. Attack
+runs 4-14 and Defense 2-12 (the P0 bounded-accuracy re-tune), and the five
+Defense-type characters carry Attack 5-8 with Defense 10-12. Ranked by how much
+more often a battle containing them runs past 20 rounds:
+
+| Character | Attack | Defense | Battles | Past 20 rounds |
+|---|---|---|---|---|
+| Marren Osei | 5 | 12 | 241 | **1.74x** |
+| Sable Whitlock | 6 | 11 | 261 | 1.42x |
+| Bastian Cole | 6 | 10 | 229 | 1.35x |
+| Dorian Voss | 7 | 10 | 262 | 1.34x |
+| Yuki Amaral | 4 | 7 | 214 | 1.30x |
+| ... | | | | |
+| Kaito Reyes | 13 | 4 | 234 | 0.67x |
+| Nadia Kessler | 10 | 5 | 255 | 0.62x |
+| Ren Kobayashi | 12 | 4 | 227 | 0.59x |
+| Dross | 11 | 5 | 238 | **0.56x** |
+
+Two Defense-heavy squads drawn against each other sit at a gap of about -4 and
+grind; two attackers sit at +6 and are over in eight rounds. That is a
+**matchup**, and the tail is the far end of a distribution the roster spread
+makes inevitable. **No Trion number will shorten it**, which is what item 4b
+was sitting with #4 to find out.
+
+### The defect that was a third of the tail
+
+Found while instrumenting: **the simulator was under-arming every squad.** A
+Loadout may satisfy the required active-ability count through its Black
+Trigger, so a character's usable abilities are the Loadout's actives *plus* the
+Black Trigger's own. `app/lib/src/game/draft.dart` does exactly that, and
+carries a comment saying why. Four other places dropped them, and every pacing
+number the project has quoted was measured with them dropped.
+
+| | Actives only (as measured before) | With the Black Trigger's actives (as the app plays) |
+|---|---|---|
+| Median rounds | 15 | **14** |
+| p75 | 20 | **18** |
+| p90 | 26 | **23** |
+| p99 | 42 | **37** |
+| Worst single battle | 73 | **54** |
+| Inside the 8-20 band | 73% | **77%** |
+| Battles over 20 rounds | 184 of 800 | **132** |
+| Battles over 30 rounds | 43 of 800 | **21** |
+| Unresolved after 400 turns | 1 | **0** |
+
+Fixed in four places, all of them now drafting the way the app's Play flow
+does:
+
+- `app/lib/src/quick_battle/quick_battle_controller.dart`. **Player-facing.**
+  Quick Battle was handing its squads fewer abilities than the Loadout rule
+  requires.
+- `packages/battle_engine/tool/balance_report.dart`, which is where every
+  pacing number in this document comes from.
+- `packages/battle_engine/test/integration/full_battle_simulation_test.dart`,
+  the round-robin test that asserts the 8-20 band.
+- `tool/bail_out_sim.dart` and `tool/web_demo/battle_demo.dart`.
+
+**`tool/sptv_baseline.dart` is deliberately left alone**, and gained a
+`--black-trigger-actives` flag instead. Its output is the calibration input to
+item #3's Status Point scale, and correcting it moves the numbers a long way:
+damage per damaging use 11.8 to **17.4**, damage per Trion spent 0.63 to
+**0.98**, damage taken per character-turn 5.9 to **7.4**. Re-pricing on those
+is #3's wave 4 pass and the owner's approval, not a side effect of a tooling
+fix. **The recorded baseline is still the run without the flag.**
+
+### The second defect: squads that cannot deal damage
+
+The single unresolved battle in the old measurement (400 turns, **zero attack
+rolls**, both Trion pools climbing past 1,300) turned out to be six characters
+each drafted with exactly one active: `refuse_to_bail`, which deals no damage.
+Neither squad could ever end the fight.
+
+The cause is `LoadoutBuilder._score`, which adds a flat 200 per matched
+preferred tag against a raw damage figure of 20 to 60. `refuse_to_bail` is
+self-targeted with no damage type, so it carries the `defense` tag, and a
+profile that prefers that tag takes it over anything that hits. Measured over
+the same 1,600 squads: **24 of them (1.5%) had no damaging active at all**, and
+every one belonged to **The Turtle** (19.3% of its squads) or **The Wall**
+(11.4%). Since the app drafts AI opponents with the same builder, a player
+could meet an opponent that can never kill them.
+
+The equipped-list fix removes it in practice: a Black Trigger's abilities
+always include something that hits, so **0 of 800 battles** now field such a
+squad. The scoring flaw underneath it is untouched, and is **AI tuning (#7)**
+rather than an economy question: a profile should not be able to prefer its way
+into a Loadout with no offence in it.
+
+### What this means for #4's 30-round limit
+
+The item's worry was that the limit would decide fights that had not been won.
+Measured, it is cheap:
+
+- **21 of 800 battles (3%)** are still running at round 30.
+- Of those, the health leader at round 30 went on to win **17 (81%)**, so the
+  limit would have **reversed 4** results.
+- That is **0.5% of all battles** decided differently, and none of them level
+  on health.
+
+**The limit can land as specified.** What it should not be asked to do is fix
+the tail: it cuts off 3% of battles while the accuracy spread stretches the
+whole upper half of the distribution.
+
+### One thing left open
+
+The measured hit rate sits **below** the opposed-d20 expectation at every gap,
+by a consistent 7 to 10 points: 46% against an expected 53% at gap 0, 60%
+against 70% at +4. Whatever accounts for it (status penalties, the screening
+band, or the model in `balance_report.hitChance` being too simple) is not
+answered here. It matters to #3's pricing, which values an infliction against
+the chance the attack lands first, so it is recorded rather than fixed.
+
 ## The work queue
 
 Every item, with what it is and where it stands. **The numbers are names, not
@@ -454,15 +618,15 @@ document.
 
 | # | Item | State | Wave |
 |---|---|---|---|
-| 0 | **Pacing target: 8 to 20 rounds.** Agreed band, replacing the old 15-20 (design section 11). `tool/balance_report.dart` now checks it: 200 simulated battles run a median of 14 with 83% of them inside the band. The engine's round-robin integration test asserts the same band. | Set | - |
+| 0 | **Pacing target: 8 to 20 rounds.** Agreed band, replacing the old 15-20 (design section 11). `tool/balance_report.dart` checks it. **Re-measured by 4b**, which found the simulator was under-arming every squad: over four seeds of 200 battles it now runs a median of 13 to 15 with 74 to 83% inside the band, p90 22 to 25 and a worst case of 35 to 54 rounds. The numbers this row carried before (median 14, 83%, p90 23) were measured on squads missing their Black Trigger's abilities. The engine's round-robin integration test asserts the same band, and drafts the same way now. | Set | - |
 | 1 | **Range bands as a real battlefield.** Front/Middle/Back positions; distance to an enemy is the two positions added, to an ally subtracted; Close reaches 0-1, Mid 1-3, Long 2-4, and against an ally only the maximum applies. Reposition costs the character's action. Built: the position model and distance rules, range gating inside resolution and at queue time, Reposition with zone lock, starting positions derived from each Loadout's bands, projected position (range judged from where a queued move will put you, with un-queue taking the dependent strikes back out), area attacks catching one position, traps remembering the band and place they were laid, guard redirects needing proximity, the full-width horizontal battlefield strip (your back line on the left through to theirs on the right, with a distance ruler and the move controls in its own cells), an explicit reason on every ability that cannot be used, a distinct pulsing state for one the queued move has brought into band, plain-English status descriptions with the duration in the player's own turns, and AI positional judgement on both AI paths. Playtested by the owner and revised. | Done | - |
 | **1b** | **Screening (RPP).** Effective distance to an enemy = my line's step + their line's step + the number of enemies standing on a line strictly in front of the target. (Written as "living enemies" when 1b shipped; item #2 made a dropped character's body screen too, until it is cleared or recalled.) No subtraction. Close Range widens to **0-2**, which is what makes the back line reachable once a screen is broken and, per the 4900-state survey, is what removes every unbreakable board state. Redirect-a-hit becomes a Side Effect rather than a global rule, and goes with 5c's rename rather than here. Being built now as its own item rather than waiting for #4, since the battlefield it changes is already live. Built: the distance rule and the widening (enemy-facing only, so a Close Range ward still reaches just the next line), screening threaded through every reach question, traps deliberately exempt with both of them now checking their reach, the ruler printing the screened number with a pip per screening body, a dash on empty lines, out-of-range copy that names screening and the fix, and the **bending shot** with Trion Backlash and its self-explaining log entry. The design review's decisions are recorded below. **Playtested** through the Tests tab's four screening scenarios: reading the ruler, a screen holding at distance 4, a body going on screening after its owner falls, and the bending shot with its Trion Backlash. All four resolved correctly. | Merged and playtested | 0 |
 | 1c | **Pull and push.** Pull drags a target one line towards their own front (removing their screens); push shoves one line back (adding a screen in front of them). Spread across subcategories, with an **Anchored** status as the counter. Forced movement needs its own SPTV term, since moving one character changes every distance on the board. Its own item after #4. | Approved, queued | 3 |
 | **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. **Merged. Playtested by the owner once and revised** (the same character on both squads, a body reading as defeated in the text report, and the recall's grammar; all three below). Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. **Re-tested** through the Tests tab's four Bail Out scenarios: the contested window with both endings, what may be aimed at a body, Refuse to Bail (equipped and fired in the real app for the first time), and a squad's last member falling with no window. All four resolved correctly. | Merged and re-tested | 0 |
 | 3b | **Status reactions.** **Mechanism, table and Enraged built in wave 1.** `StatusReaction` is a data field on `StatusEffectDefinition`, read in exactly the two places the spec named (the damage path and `StatusEffectEngine.apply`), with no switch statement naming a status anywhere. All twelve rows are on the definitions. Enraged gained Psychic immunity and random targeting. Reactions fire automatically, per decision #G. Found while building: a status ticking its own damage type fired its own reaction, so Bleeding refreshed itself forever; a tick is not a hit, and no longer counts as one. **The other half is still wave 3**, which is the abilities that apply Wet, Frozen and Electrocuted: until then the rows starting from those three cannot be reached from a Loadout. Original spec: A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. **Split across two waves.** The mechanism, the table and Enraged land in wave 1, because #4's trap pass already includes a reaction-armed trap and the primitive has to exist first, and because none of it depends on the economy. The new abilities and Side Effects land in wave 3 with 1c, and wave 4 prices the lot. **In design: the review asks whether a reaction has to win an infliction contest.** | In design | 1 and 3 |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** **The rule is built, wave 1** (see the section below); the pass over the catalogue is wave 4's. Original spec: SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. **Split across two waves (#Q1).** Wave 1 builds the rule only: the SP conversion table, the measured baselines it reads, the tool that prices the catalogue from them, and the SP term in Trigger Value. Wave 4 runs the pass over the finished catalogue. The tooltip setting moves to #6, being interface work with no pricing in it. **Audited; the review is waiting on seven decisions.** | In design | 1 and 4 |
-| 4 | **Trion economy.** **Read "Found closing out wave 1: the Levy stole a flat 20" before setting any number here**: the Levy is fixed but two questions about it are this item's (whose costliest action, and whether it caps). Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued | 2 |
-| 4b | **The long tail of battle length.** The distribution is healthy in the middle and ragged at the end: 200 simulated battles run a median of 14 rounds with 83% inside the 8-20 band, but p90 is 23 and the worst single battle took **118 rounds**. Everything concludes, so it is not a stall, and the 30-round limit in #4 would cut it off rather than explain it. Worth understanding before that limit lands, because a match that would have taken 40 rounds now ends on the health tiebreak instead, and whoever was ahead at round 30 wins a fight they might not have won. Likely suspects: two sustain-heavy squads out-healing each other's damage, or a Trion-starved pair trading single cheap abilities. Diagnose from `tool/balance_report.dart`, which already records the distribution. Sits with #4 because the fix, if there is one, is an economy number. | Queued | 2 |
+| 4 | **Trion economy.** **Read "What 4b found" first: the round limit is cheap, and battle length is not this item's to fix.** 4b measured the 30-round limit at 3% of battles touched and 4 of 21 results reversed, so it can land as specified; it also showed the long tail is an accuracy problem, so no income number here will shorten it. **Read "Found closing out wave 1: the Levy stole a flat 20" before setting any number here**: the Levy is fixed but two questions about it are this item's (whose costliest action, and whether it caps). Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued | 2 |
+| 4b | **The long tail of battle length.** **Diagnosed. Both suspects were wrong, and the fix is not an economy number.** Neither squads out-healing each other (healing runs 0.02 health per round against 34.6 damage) nor Trion starvation (long battles hold *more* Trion and use the same 1.42 abilities per turn) explains anything. The tail is **accuracy**: a battle's length tracks the matchup's Attack-versus-Defense gap almost monotonically, from 19 rounds at gap -3 to 8.5 at +6. A third of the tail was also a **measurement defect**, now fixed: four tools and one player-facing mode dropped each character's Black Trigger abilities from the list handed to the AI. Full findings, numbers and the two defects are in "What 4b found" below. New tool: `tool/long_battle_diagnosis.dart`. | Diagnosed | 2 |
 | 5 | **Support abilities do not pay for their action.** **The two interim spot-fixes are built (wave 1)**: War Chant and Guardian's Aegis are squad buffs now, priced with #3's rule, at TV 2.06 and 1.38 against 0.30 and 0.46 before. The full re-pricing is still wave 4's. See the section below. Original spec: Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced in #3's wave 4 pass, which owns every magnitude and duration. The #3 audit re-derived this table and found the four are not uniformly bad: Rally Cry buys 1.05 actions, Cleansing Ward 0.80, Guardian's Aegis 0.51 and War Chant 0.25, so the work is to lift the bottom two. The bottom two get an interim spot-fix in wave 1 so the wave 2 playtests are not played with support that does nothing. | Queued | 4 |
 | 5b | **Stackable statuses.** **Built, wave 1.** `maxStacks` on the definition (1 for fifty of them, 3 for the twelve), `stacks` on the instance, counted in `StatusEffectEngine.apply`. Still one instance with one duration: the stat folding and all three tick kinds multiply by the count, and the badge carries an `x2`/`x3` with the count in its tooltip. Original spec: 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be. A stackable effect is worth more Status Points, so the flags land in wave 1 ahead of the rule that reads them, and wave 4 prices them. | Approved, queued | 1 |
 | 5c | **Rename perks to Side Effects (SEs).** `CharacterPerk` to `SideEffect`, the `perk` field, the charge-tracking flags, the Loadout panel copy and the abbreviation list. Mechanical and wide, so it goes in one commit of its own where it cannot hide a behaviour change. **Built, wave 1.** One commit, 34 files, no behaviour change: the class, its file, the `sideEffect` field, `sideEffectChargeUsed` and `consumeSideEffectChargeIfAvailable`, the TEG sub-score, the guide tab, the picker and log copy, the simulator's JSON keys and page, and the design document. `'perk:feint'`, the one id in a string, became `'side_effect:feint'`. | Done | 1 |
@@ -487,7 +651,7 @@ Waves are worked in order; everything inside a wave is one branch.
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
 | **1** | ~~#14~~ ~~5c~~ ~~the duration fix (#D)~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ ~~the Trion drain fix~~ ~~**#3's rule only**~~ ~~two support spot-fixes~~ **wave 1 complete, merged, playtested and closed out (#TWC, 2026-08-29)** | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
-| **2** | **#4** and **4b**. **This is the current priority** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
+| **2** | ~~**4b**~~ **diagnosed**, then **#4**. **This is the current priority** | 4b went first, because the 30-round limit would otherwise have cut off the long tail rather than explained it. It found the tail is accuracy, not economy, and cleared the limit to land as specified. Left: income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
 | **5** | **#6**, carrying #3's tooltip setting | Pending queue with un-queue, the resolve pause, and the squads laid out on the board itself. The tooltip duration setting moves here because it is interface work with no pricing in it |
@@ -1812,7 +1976,9 @@ playtested that way, and it will exercise both of these in passing.
   Read the directory rather than trusting any list, including this one:
   `stall_finder` for unreachable board states, `balance_report` for pacing
   (now `--seed N --battles N --sim-only`, and **every source of chance is
-  seeded**, so a run reproduces; it did not before #2), `bail_out_sim` for what
+  seeded**, so a run reproduces; it did not before #2),
+  `long_battle_diagnosis` for why a given battle ran as long as it did,
+  `bail_out_sim` for what
   happens to Bail Out windows, `reach_check` and `formation_matrix` for reach,
   `screening_model` and `trap_screening_sim` for the screening rules,
   `stackable_statuses` and `doc_facts` for catalogue questions.

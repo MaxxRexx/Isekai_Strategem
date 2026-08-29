@@ -825,9 +825,17 @@ point. Eight rounds is a decisive engagement where one squad reads the matchup
 and closes it out; twenty is a grind between two well-assembled squads trading
 positions and status effects. A fight that ends much under eight means somebody
 was deleted before they got to play, and one that runs much over twenty means
-nobody's damage is keeping up with the healing and the Trion. Both ends are
-balance bugs, and `tool/balance_report.dart` reports the distribution over 200
-simulated battles so the band can be checked rather than assumed.
+nobody's damage is keeping up. Both ends are balance bugs, and
+`tool/balance_report.dart` reports the distribution over 200 simulated battles
+so the band can be checked rather than assumed.
+
+*Measured, the long end is an accuracy problem rather than a resource one. Over
+800 simulated battles, the ones running past twenty rounds land 40% of their
+attacks against 52% inside the band, and how long a fight runs tracks the two
+squads' Attack-versus-Defense gap almost exactly: about 19 rounds where the
+defenders are three points ahead, about 8 where the attackers are six points
+ahead. Healing accounts for none of it (0.02 health per round against 34.6
+damage), and neither does Trion, which the long fights hold more of.*
 
 *Design note: this is where the balance pass did most of its work. Attack and
 Defense used to run 10-29 and 6-16, which put a 15-point gap on a typical attack

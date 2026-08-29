@@ -76,8 +76,12 @@ class _DraftedTeam {
         profile: profile,
       );
       states[character.id] = _buildBattleState(character, loadout);
-      equipped[character.id] =
-          loadout.triggers.whereType<ActiveTrigger>().toList();
+      // Item 4b: a Black Trigger's own actives are usable in battle and count
+      // toward the Loadout rule, so the AI is handed them too.
+      equipped[character.id] = [
+        ...loadout.triggers.whereType<ActiveTrigger>(),
+        ...?loadout.blackTrigger?.activeAbilities,
+      ];
       loadouts[character.id] = loadout;
     }
 
@@ -492,8 +496,10 @@ String _startSessionJson(String configJsonString) {
   for (final character in teamACharacters) {
     final loadout = teamALoadouts[character.id]!;
     teamAStates[character.id] = _buildBattleState(character, loadout);
-    equippedA[character.id] =
-        loadout.triggers.whereType<ActiveTrigger>().toList();
+    equippedA[character.id] = [
+      ...loadout.triggers.whereType<ActiveTrigger>(),
+      ...?loadout.blackTrigger?.activeAbilities,
+    ];
   }
   final teamATeam = Team(id: 'player', characters: teamACharacters);
 

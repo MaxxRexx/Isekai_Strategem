@@ -103,6 +103,7 @@ with `dart run tool/<name>.dart`:
 | Tool | Answers |
 |---|---|
 | `balance_report.dart` | Accuracy, dice share, Trigger value, and 200 simulated battles against the 8-20 round pacing target. |
+| `long_battle_diagnosis.dart` | What a battle spent its rounds doing, so the ones that run past the pacing band can be compared against the ordinary ones. |
 | `formation_matrix.dart` | Formation versus formation, and archetype viability with `--kits`. |
 | `screening_model.dart` | The proposed screening rule per formation, against the current one. |
 | `trap_screening_sim.dart` | Whether a screen blocks a trap, run on real battles with deterministic dice. |

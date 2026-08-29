@@ -103,9 +103,17 @@ class _DraftedTeam {
       final combatantId = CombatantIds.of(teamId, character.id);
       states[combatantId] =
           _buildBattleState(character, loadout, combatantId: combatantId);
-      equipped[combatantId] = loadout.triggers
-          .whereType<ActiveTrigger>()
-          .toList();
+      // Same rule as the Play draft (app/lib/src/game/draft.dart): a Black
+      // Trigger's own active abilities count toward the Loadout rule's
+      // required active-ability total and are just as usable in battle, so
+      // dropping them leaves a character whose Loadout satisfies the rule
+      // only through its Black Trigger with fewer abilities than the rule
+      // requires. Quick Battle dropped them until item 4b found squads
+      // drafted with nothing that deals damage at all.
+      equipped[combatantId] = [
+        ...loadout.triggers.whereType<ActiveTrigger>(),
+        ...?loadout.blackTrigger?.activeAbilities,
+      ];
       loadouts[combatantId] = loadout;
       loadoutsByCharacterId[character.id] = loadout;
     }

@@ -36,7 +36,14 @@ _Draft draft(String teamId, List<String> ids, AiProfile profile) {
       blackTriggerPool: BlackTriggerCatalog.defaultCatalog.all,
       profile: profile,
     );
-    final actives = loadout.triggers.whereType<ActiveTrigger>().toList();
+    // The Black Trigger's own actives count toward the Loadout rule and are
+    // usable in battle, so they belong in the equipped list (the app's draft
+    // says the same). Item 4b found four tools dropping them, which under-arms
+    // every squad they simulate.
+    final actives = [
+      ...loadout.triggers.whereType<ActiveTrigger>(),
+      ...?loadout.blackTrigger?.activeAbilities,
+    ];
     states[character.id] = CharacterBattleState(
       character,
       equippedPassiveEffects: loadout.triggers

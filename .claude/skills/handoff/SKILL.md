@@ -90,7 +90,8 @@ on:
   design PDF is re-rendered with `python3 docs/render_pdf.py`.
 - Which tool answers which question, in `packages/battle_engine/tool/`. These
   exist so nobody guesses at a number: `stall_finder` for unreachable board
-  states, `balance_report` for pacing, `reach_check` and `formation_matrix`
+  states, `balance_report` for pacing, `long_battle_diagnosis` for why a
+  battle ran as long as it did, `reach_check` and `formation_matrix`
   for reach, `screening_model` and `trap_screening_sim` for the screening
   rules, `stackable_statuses` and `doc_facts` for catalogue questions,
   `sptv_baseline` for what an action, a stat point and a Trion are actually
