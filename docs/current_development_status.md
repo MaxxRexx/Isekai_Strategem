@@ -28,8 +28,11 @@ older note is gone.
 | `gh-pages` | The published web build. Deploy target only; never develop on it. |
 
 `claude/tasks-3-3b-r8ceab` carried the #3 audit, the whole wave 1 build and the
-wave 1 playtest batch. It was merged and then **deleted, local and remote**, on
-2026-08-29. Wave 2 gets a branch of its own.
+wave 1 playtest batch. Every commit on it is on `main`, and the **local branch
+was deleted** on 2026-08-29. The **remote one is still there**: deleting it
+from a session is refused with an HTTP 403, so it is the owner's to delete, on
+GitHub or from a local checkout. Nothing depends on it. Wave 2 gets a branch of
+its own.
 
 Every other work branch was deleted once merged. The next item gets a branch
 of its own.
