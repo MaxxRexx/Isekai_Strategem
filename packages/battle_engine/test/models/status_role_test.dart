@@ -52,8 +52,8 @@ void main() {
       ]);
       expect(roles[StatusRole.healOverTime], ['regenerating', 'radiant_blessing']);
       expect(roles[StatusRole.trionDrain], ['sapped']);
-      expect(roles[StatusRole.trionCheaper], ['overcharged']);
-      expect(roles[StatusRole.trionDearer], ['choked']);
+      expect(roles[StatusRole.paysLess], ['overcharged']);
+      expect(roles[StatusRole.paysMore], ['choked']);
       expect(roles[StatusRole.takesLess], ['guarded', 'untargetable']);
       expect(roles[StatusRole.takesMore], ['exposed', 'marked']);
       expect(roles[StatusRole.dealsMore], ['empowered', 'vow_of_the_duel']);
@@ -108,13 +108,15 @@ void main() {
     test('what an ability costs is its own thing, split by direction', () {
       // Added after the first pass, where both fell through to `special` and
       // drew the "unusual, tap it" glyph on an effect the rule can read
-      // perfectly well. Split rather than one shared Trion-cost glyph, for
-      // the same reason takesLess and takesMore are split: the colour already
-      // says which way, and the glyph saying it too is the point of encoding
-      // it twice.
-      expect(catalog['overcharged'].role, StatusRole.trionCheaper);
+      // perfectly well. Split rather than one shared Trion-cost glyph, for the
+      // same reason takesLess and takesMore are split: the colour already says
+      // which way, and the glyph saying it too is the point of encoding it
+      // twice. Named for what the holder does about it, like the rest of the
+      // enum, and in the same words the description uses ("You pay 50% less
+      // Trion").
+      expect(catalog['overcharged'].role, StatusRole.paysLess);
       expect(catalog['overcharged'].valence, StatusValence.helpful);
-      expect(catalog['choked'].role, StatusRole.trionDearer);
+      expect(catalog['choked'].role, StatusRole.paysMore);
       expect(catalog['choked'].valence, StatusValence.harmful);
       expect(catalog['sapped'].role, StatusRole.trionDrain,
           reason: 'losing Trion outright is not the same as paying more');

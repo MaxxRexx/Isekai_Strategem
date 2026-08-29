@@ -88,10 +88,10 @@ class _RoleGlyphPainter extends CustomPainter {
       // The same diamond, hollow, over a chevron: about Trion, but about what
       // it costs you rather than about losing it. Hollow because nothing is
       // being taken away.
-      case StatusRole.trionCheaper:
+      case StatusRole.paysLess:
         _trionCost(canvas, stroke, c, r, cheaper: true);
 
-      case StatusRole.trionDearer:
+      case StatusRole.paysMore:
         _trionCost(canvas, stroke, c, r, cheaper: false);
 
       case StatusRole.takesLess:

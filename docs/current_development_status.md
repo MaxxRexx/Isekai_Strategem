@@ -260,7 +260,7 @@ data cannot creep back in.
 "something else" glyph, because a Trion-cost multiplier was not one of the
 roles. They were the only two effects whose badge said "unusual, tap it" where
 it could say something specific, which is the exact failure the glyph set exists
-to remove. There are **sixteen** roles now: `trionCheaper` and `trionDearer`,
+to remove. There are **sixteen** roles now: `paysLess` and `paysMore`,
 split by direction for the same reason `takesLess` and `takesMore` are, since
 the colour already says which way and the glyph saying it too is the point of
 encoding it twice. Both draw a hollow Trion diamond with a chevron leading away

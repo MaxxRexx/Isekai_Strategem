@@ -44,11 +44,11 @@ enum StatusRole {
   /// Trion is moved out of the holder's squad and into the causer's (Sapped).
   trionDrain,
 
-  /// The holder's abilities cost less Trion (Overcharged).
-  trionCheaper,
+  /// The holder's abilities cost less Trion to use (Overcharged).
+  paysLess,
 
-  /// The holder's abilities cost more Trion (Choked).
-  trionDearer,
+  /// The holder's abilities cost more Trion to use (Choked).
+  paysMore,
 
   /// Incoming damage is reduced, or cannot be aimed at them at all
   /// (Guarded, Untargetable).
@@ -103,14 +103,15 @@ extension StatusRoleX on StatusEffectDefinition {
     if (turnStartDamage != null) return StatusRole.damageOverTime;
     if (turnStartHeal != null) return StatusRole.healOverTime;
     if (trionCapacityDrainPercentToCauser != null) return StatusRole.trionDrain;
-    // Kept beside the drain so everything about Trion shares a family mark.
-    // Split into cheaper and dearer for the same reason takesLess and
-    // takesMore are split: the colour already says which way, and the glyph
-    // saying it too is the whole point of encoding it twice.
+    // Kept beside the drain so everything about Trion shares a family mark,
+    // and split by direction for the same reason takesLess and takesMore are:
+    // the colour already says which way, and the glyph saying it too is the
+    // whole point of encoding it twice.
     final trion = trionCostMultiplier;
     if (trion != null) {
-      return trion < 1 ? StatusRole.trionCheaper : StatusRole.trionDearer;
+      return trion < 1 ? StatusRole.paysLess : StatusRole.paysMore;
     }
+
 
     // Not being targetable at all is the strongest form of taking less.
     if (preventsTargeting) return StatusRole.takesLess;
