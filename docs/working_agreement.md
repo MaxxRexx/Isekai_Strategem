@@ -71,6 +71,27 @@ it actually ships at. Every one of those passed its tests.
 - **Report what was actually verified.** By running it, by tests only, or not
   at all: three different claims, never blurred into "done".
 
+### Fix it, do not hand it back
+
+Added after a run of reports that each ended with a new thing the owner had to
+approve. Approve one, and the next report ends with another. That loop is the
+assistant offloading calls it is equipped to make, and it costs the owner a
+round trip every time.
+
+- **A fix that is clearly right gets made, not offered.** The assistant has the
+  whole context of the game. If a defect is found and the correct fix follows
+  from what is already built, it goes in the same pass. "I found X, shall I fix
+  it" is not a question when the answer can only be yes.
+- **Escalate a decision, never a chore.** Something is the owner's call when
+  two directions are both defensible, when a balance number or a mechanic is at
+  stake, or when the fix rewrites something they own. Everything else is work.
+- **A question is a Signature, never a hint.** "Say the word", "let me know",
+  "if you want" are not answerable. Ask as #A / #B / #C, with what each one
+  means, so the reply can be a single token.
+- **One report, one state of the world.** Say what changed, what it cost, and
+  what is genuinely still open. A finding with no decision in it belongs in the
+  work in progress, not in a queue of things for the owner to bless.
+
 ## What the assistant should not do
 
 - **Use em dashes.** Anywhere: chat, commit messages, code comments, documents,
