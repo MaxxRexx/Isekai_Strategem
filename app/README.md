@@ -1,6 +1,10 @@
 # isekai_strategem
 
-Isekai Strategem: a turn-based 3v3 tactical combat game with a visual novel story mode.
+The Flutter app. See the [repository README](../README.md) for what the game
+is and how it is built, and [`docs/game_design.md`](../docs/game_design.md)
+for its rules and content.
+
+What follows is Flutter's generated boilerplate.
 
 ## Getting Started
 
