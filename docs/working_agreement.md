@@ -47,6 +47,30 @@ the owner asks for one.
   different risk and different urgency.
 - **Use Signatures when giving options or asking questions** Examples: #A choose A; #B choose B; #C design C?; etc
 
+### Check the work before calling it done
+
+Added after a run of fixes where each one introduced the next problem: an area
+ability that stopped auto-selecting left the Details button opening an empty
+panel, a friendly ability that stopped rolling left the battle log counting a
+buff as a hit, and a new glyph pair merged into an illegible blob at the size
+it actually ships at. Every one of those passed its tests.
+
+- **Look at the thing you changed, in the state a player sees it.** Render it,
+  screenshot it, drive it. A passing test says the code does what the test
+  says; it does not say the screen is right. This is not optional for
+  interface work.
+- **Ask what else read the thing you just changed.** A field that used to be
+  always present and is now sometimes empty has callers, and those callers had
+  no reason to guard against it. Grep for them.
+- **Fix what you find on the way.** A defect noticed while working on
+  something else gets fixed in the same pass, or reported in the same breath
+  with what it would take. It does not get left silently for the owner to
+  find in a playtest.
+- **Ask rather than guess.** A question costs one message. A wrong assumption
+  shipped costs a playtest, a report, and a second round of fixes.
+- **Report what was actually verified.** By running it, by tests only, or not
+  at all: three different claims, never blurred into "done".
+
 ## What the assistant should not do
 
 - **Use em dashes.** Anywhere: chat, commit messages, code comments, documents,
