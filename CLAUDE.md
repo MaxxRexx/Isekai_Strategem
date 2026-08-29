@@ -8,25 +8,28 @@ the single source of truth for its rules and content; re-render the PDF beside
 it whenever it changes.
 
 Items #1 (range bands as a real battlefield), 1b (screening, also called RPP)
-and #2 (Bail Out) are built, merged and **playtested**. **Wave 1 is built and
-partly played**: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's
-rule, the Trion drain fix and the two support spot-fixes. The playtest of it
-produced a batch of interface fixes, listed in
-`current_development_status.md`.
+and #2 (Bail Out) are built, merged and **playtested**. **Wave 1 is built,
+merged, playtested and closed**: #14, 5c, the duration fix (#D), 3b's
+mechanism, 5b, 13b, #3's rule, the Trion drain fix and the two support
+spot-fixes, plus the batch of interface fixes its playtest produced. **Wave 2
+is next: #4 (the Trion economy), with 4b diagnosed first.**
 
 The app's **Tests tab** (a fourth mode beside Play, Simulate and Guided
 Tutorial) holds pre-arranged boards for cases that are hard to reach in an
 ordinary battle. A scenario is **retired** once its case has been played and
-confirmed, so the tab only ever offers what still needs a look. Ten are
-retired (wave 0's eight, #14's Mirror, and wave 1's Lock); four are waiting:
-Buff, Bleed, Freeze and Duration. Each scenario has a one-word name, because
-the playtest shorthand in the working agreement addresses them by it.
+confirmed, so the tab only ever offers what still needs a look. **All fourteen
+are retired, so the tab is currently empty** and shows its "Nothing waiting"
+panel, which is the finished state of a testing round rather than a fault.
+Wave 2 writes the next ones as its rules land. Each scenario has a one-word
+name, because the playtest shorthand in the working agreement addresses them
+by it.
 
-Every live scenario also carries a **script**: the same run written so a
-machine can play it. `flutter test test/scenario_script_test.dart --reporter
-expanded` plays all four fifty times over fixed dice and prints what held, so
-the mechanical half of a playtest costs a command rather than an evening. The
-judgement half ("did that buff feel worth the turn") still needs a person. The next item is whatever
+A scenario also carries a **script**: the same run written so a machine can
+play it. `flutter test test/scenario_script_test.dart --reporter expanded`
+plays every scripted scenario (retired or not) fifty times over fixed dice and
+prints what held, so the mechanical half of a playtest costs a command rather
+than an evening. The judgement half ("did that buff feel worth the turn")
+still needs a person. The next item is whatever
 `current_development_status.md` names as the current priority.
 
 # Session setup and handoffs

@@ -11,7 +11,7 @@ explanation of the whole game itself, see
 
 | Done | Current priority | To do |
 |---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1 and its playtest batch are merged to `main`.** All nine items shipped: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's rule (not its pass), the Trion drain fix and the two support spot-fixes. The owner then played all five Tests tab scenarios and filed a batch of ten interface findings; **all ten are resolved** (eight interface fixes, one design decision taken, and the badge legibility work built as A+B+C with D on tap) (see "Wave 1 playtest" below). **Lock is retired**; Buff, Bleed, Freeze and Duration are waiting on a re-play against the fixes. That re-play is what comes before wave 2. Then wave 2 is **#4**, the Trion economy, which is what every deferred pricing decision is waiting on: #3's pass, the support re-pricing, and the abilities the rule cannot see yet. The queue was re-sequenced after the #3 audit, so the numbers are names and the running order is its own table below. All seven of the design review's decisions are **approved as recommended**, and #D's was corrected mid-build (see its section). Wave 0 is **done**: 1b and #2 were playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
+| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1 and its playtest batch are merged to `main`.** All nine items shipped: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's rule (not its pass), the Trion drain fix and the two support spot-fixes. The owner then played all five Tests tab scenarios and filed a batch of ten interface findings; **all ten are resolved** (eight interface fixes, one design decision taken, and the badge legibility work built as A+B+C with D on tap) (see "Wave 1 playtest" below). The owner then re-played the four scenarios that stayed in the tab and returned **#TWC** on 2026-08-29, with the judgement half no runner can answer ("feel good") alongside it, so **all fourteen scenarios are now retired and the Tests tab is empty**. That closes wave 1. **Wave 2 is the current priority: #4, the Trion economy, and 4b before it**, since 4b is what every deferred pricing decision is waiting on alongside #3's pass, the support re-pricing, and the abilities the rule cannot see yet. The queue was re-sequenced after the #3 audit, so the numbers are names and the running order is its own table below. All seven of the design review's decisions are **approved as recommended**, and #D's was corrected mid-build (see its section). Wave 0 is **done**: 1b and #2 were playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
 | Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
 | Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
 | Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
@@ -24,9 +24,12 @@ older note is gone.
 
 | Branch | What it is |
 |---|---|
-| `main` | The trunk, and up to date. Wave 1 and the playtest batch that followed it are merged here. |
+| `main` | The trunk, and up to date. Wave 1, the playtest batch that followed it and the wave 1 close-out are merged here. |
 | `gh-pages` | The published web build. Deploy target only; never develop on it. |
-| `claude/tasks-3-3b-r8ceab` | **Merged and finished with.** It carried the #3 audit, the whole wave 1 build and the wave 1 playtest batch. Nothing on it that is not on `main`; the remote one is the owner's to delete. |
+
+`claude/tasks-3-3b-r8ceab` carried the #3 audit, the whole wave 1 build and the
+wave 1 playtest batch. It was merged and then **deleted, local and remote**, on
+2026-08-29. Wave 2 gets a branch of its own.
 
 Every other work branch was deleted once merged. The next item gets a branch
 of its own.
@@ -174,7 +177,26 @@ turned out to be real engine bugs hiding behind interface complaints.
 stacking and application". Freeze: "did work correctly (I think)". Buff: the
 buffs are worth their cost, but the targeting was wrong. Duration: blocked,
 could not be cast on the intended target. Buff, Bleed, Freeze and Duration all
-stay in the tab, because each has something new to look at since it was played.
+stayed in the tab, because each had something new to look at since it was
+played.
+
+### The re-play, and the end of wave 1
+
+The owner re-played those four on **2026-08-29** and returned **#TWC**: every
+scenario in the tab was played and behaved. The judgement half came with it,
+which is the half the script runner cannot answer and the reason Buff was
+written in the first place: "feel good".
+
+All four are retired, so **the Tests tab is empty** and shows its "Nothing
+waiting" panel. That is the finished state of a testing round, not a gap:
+wave 2 writes the next scenarios as its rules land.
+
+**The scripts keep running.** Retiring takes a case out of the tab because a
+person has confirmed it; it does not take the board out of the regression net.
+`scenario_script_test.dart` plays every scenario that carries a script, retired
+or not, which matters most from here: wave 2 re-prices the economy underneath
+all four of these boards, and a runner that went quiet the day a case was
+confirmed would go quiet exactly when it starts earning its keep.
 
 ### Fixed
 
@@ -329,10 +351,59 @@ being answered by one flag. Whose side the target is on still decides which
 line an area covers; whether the trigger carries a damage type now decides
 whether the word "attack" is honest.
 
+## Found closing out wave 1: the Levy stole a flat 20
+
+Not from a playtest. `dart analyze` on the engine carried an unused-variable
+warning in `turn_engine.dart`, and the variable turned out to be the whole
+mechanic:
+
+```dart
+for (final triggerId in state.triggersUsedThisTurn) {
+  // Look up trigger cost via cooldown records as a proxy - we don't
+  // have direct trigger references here, so use a reasonable default.
+  maxCost = max(maxCost, 20);
+}
+```
+
+`game_design.md` has always said the Levy steals "the Trion from their
+costliest action", and `passive_counter.dart` repeats it. The engine charged
+**a flat 20 for any ability at all, and 0 if the enemy had used none**,
+whatever those abilities cost. So this is a bug rather than an unpriced
+first-pass value: the correct number was never a judgement call, it is the
+ability's own Trion cost.
+
+It hit both Levy callers: **Coldread**'s correct read, and **Reckoning**'s
+discharge at 6 Debt.
+
+**Fixed.** The cause was real: by the time a Levy resolves, the only thing
+kept about an ability use is its id, and nothing in scope can resolve an id
+back to a Trigger. So the cost is recorded as the ability is used, in
+`recordAbilityUse`, which already receives the whole `ActiveTrigger`.
+`CharacterBattleState.costliestTrionCostThisTurn` is reset beside
+`triggersUsedThisTurn`, and the ordering that already exists in
+`Battle.endTurn` (passive counters fire before character bookkeeping) keeps it
+populated when the Levy reads it.
+
+Three tests pin it: the Levy takes the dearer of two abilities rather than a
+flat rate, an enemy who used nothing is levied nothing, and the cost does not
+carry into the next turn. Two existing Coldread tests were setting
+`triggersUsedThisTurn` by hand, which is how the flat 20 stayed invisible;
+they go through `recordAbilityUse` now.
+
+**Not playtested.** It is verified by tests only, and it changes a live
+mechanic's magnitude. Wave 2 owns the Trion economy and should look at it in
+play. Two things it deliberately did **not** change, both #4's to decide:
+Coldread's Levy takes the costliest action across the marked enemy's whole
+squad rather than the marked enemy alone, and the Levy has no cap beyond the
+victim pool's contents.
+
 ## Playing the Tests tab without playing it
 
-Every live scenario carries a `script` beside its prose: the same run written
-as instructions a machine can execute (`scenario_script.dart`). Run it with
+Every scripted scenario carries a `script` beside its prose: the same run
+written as instructions a machine can execute (`scenario_script.dart`). The
+runner plays **every scenario that has one, retired or not**, so confirming a
+case takes it out of the tab without taking it out of the regression net. Run
+it with
 
 ```
 cd app && flutter test test/scenario_script_test.dart --reporter expanded
@@ -382,7 +453,7 @@ document.
 | **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. **Merged. Playtested by the owner once and revised** (the same character on both squads, a body reading as defeated in the text report, and the recall's grammar; all three below). Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. **Re-tested** through the Tests tab's four Bail Out scenarios: the contested window with both endings, what may be aimed at a body, Refuse to Bail (equipped and fired in the real app for the first time), and a squad's last member falling with no window. All four resolved correctly. | Merged and re-tested | 0 |
 | 3b | **Status reactions.** **Mechanism, table and Enraged built in wave 1.** `StatusReaction` is a data field on `StatusEffectDefinition`, read in exactly the two places the spec named (the damage path and `StatusEffectEngine.apply`), with no switch statement naming a status anywhere. All twelve rows are on the definitions. Enraged gained Psychic immunity and random targeting. Reactions fire automatically, per decision #G. Found while building: a status ticking its own damage type fired its own reaction, so Bleeding refreshed itself forever; a tick is not a hit, and no longer counts as one. **The other half is still wave 3**, which is the abilities that apply Wet, Frozen and Electrocuted: until then the rows starting from those three cannot be reached from a Loadout. Original spec: A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. **Split across two waves.** The mechanism, the table and Enraged land in wave 1, because #4's trap pass already includes a reaction-armed trap and the primitive has to exist first, and because none of it depends on the economy. The new abilities and Side Effects land in wave 3 with 1c, and wave 4 prices the lot. **In design: the review asks whether a reaction has to win an infliction contest.** | In design | 1 and 3 |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** **The rule is built, wave 1** (see the section below); the pass over the catalogue is wave 4's. Original spec: SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. **Split across two waves (#Q1).** Wave 1 builds the rule only: the SP conversion table, the measured baselines it reads, the tool that prices the catalogue from them, and the SP term in Trigger Value. Wave 4 runs the pass over the finished catalogue. The tooltip setting moves to #6, being interface work with no pricing in it. **Audited; the review is waiting on seven decisions.** | In design | 1 and 4 |
-| 4 | **Trion economy.** Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued | 2 |
+| 4 | **Trion economy.** **Read "Found closing out wave 1: the Levy stole a flat 20" before setting any number here**: the Levy is fixed but two questions about it are this item's (whose costliest action, and whether it caps). Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued | 2 |
 | 4b | **The long tail of battle length.** The distribution is healthy in the middle and ragged at the end: 200 simulated battles run a median of 14 rounds with 83% inside the 8-20 band, but p90 is 23 and the worst single battle took **118 rounds**. Everything concludes, so it is not a stall, and the 30-round limit in #4 would cut it off rather than explain it. Worth understanding before that limit lands, because a match that would have taken 40 rounds now ends on the health tiebreak instead, and whoever was ahead at round 30 wins a fight they might not have won. Likely suspects: two sustain-heavy squads out-healing each other's damage, or a Trion-starved pair trading single cheap abilities. Diagnose from `tool/balance_report.dart`, which already records the distribution. Sits with #4 because the fix, if there is one, is an economy number. | Queued | 2 |
 | 5 | **Support abilities do not pay for their action.** **The two interim spot-fixes are built (wave 1)**: War Chant and Guardian's Aegis are squad buffs now, priced with #3's rule, at TV 2.06 and 1.38 against 0.30 and 0.46 before. The full re-pricing is still wave 4's. See the section below. Original spec: Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced in #3's wave 4 pass, which owns every magnitude and duration. The #3 audit re-derived this table and found the four are not uniformly bad: Rally Cry buys 1.05 actions, Cleansing Ward 0.80, Guardian's Aegis 0.51 and War Chant 0.25, so the work is to lift the bottom two. The bottom two get an interim spot-fix in wave 1 so the wave 2 playtests are not played with support that does nothing. | Queued | 4 |
 | 5b | **Stackable statuses.** **Built, wave 1.** `maxStacks` on the definition (1 for fifty of them, 3 for the twelve), `stacks` on the instance, counted in `StatusEffectEngine.apply`. Still one instance with one duration: the stat folding and all three tick kinds multiply by the count, and the badge carries an `x2`/`x3` with the count in its tooltip. Original spec: 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be. A stackable effect is worth more Status Points, so the flags land in wave 1 ahead of the rule that reads them, and wave 4 prices them. | Approved, queued | 1 |
@@ -407,8 +478,8 @@ Waves are worked in order; everything inside a wave is one branch.
 | Wave | Items | Why it sits here |
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
-| **1** | ~~#14~~ ~~5c~~ ~~the duration fix (#D)~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ ~~the Trion drain fix~~ ~~**#3's rule only**~~ ~~two support spot-fixes~~ **wave 1 complete** | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
-| **2** | **#4** and **4b** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
+| **1** | ~~#14~~ ~~5c~~ ~~the duration fix (#D)~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ ~~the Trion drain fix~~ ~~**#3's rule only**~~ ~~two support spot-fixes~~ **wave 1 complete, merged, playtested and closed out (#TWC, 2026-08-29)** | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
+| **2** | **#4** and **4b**. **This is the current priority** | 4b is diagnosed first, because the 30-round limit would otherwise cut off the long tail rather than explain it. Then income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
 | **5** | **#6**, carrying #3's tooltip setting | Pending queue with un-queue, the resolve pause, and the squads laid out on the board itself. The tooltip duration setting moves here because it is interface work with no pricing in it |
@@ -594,11 +665,11 @@ document. The tests were repointed at `allScenarios` so retiring one does not
 quietly stop checking it, and two new tests assert that the tab lists exactly
 the unretired set and that the empty state renders.
 
-Wave 1's features add new scenarios here as they land, and there are four
-waiting now: **A one-turn lock costs a turn** and **A buff you cast lasts your
-turns** from #D, **Freeze, then shatter** from 3b, and **A bleed that piles
-up** from 5b. The rest of wave 1,
-3b's reactions and 5b's stacking are each worth one.
+**All fourteen are retired as of 2026-08-29**, so the tab shows its "Nothing
+waiting" panel. The script runner was repointed the same way the assertions
+were, at every scenario carrying a script rather than at the live ones, for
+the same reason: retiring says a person has confirmed the case, not that the
+board stopped mattering. Wave 2 writes the next scenarios as its rules land.
 
 ### #D as built: one word, one meaning
 

@@ -429,6 +429,10 @@ final List<TestScenario> allScenarios = [
       'ren_kobayashi': _front,
       'nadia_kessler': _middle,
     },
+    // Re-played after the area-targeting fix that this scenario's first
+    // run exposed. #TWC, and the judgement half no runner can answer came
+    // back with it: the buff is worth the turn it costs.
+    retired: true,
   ),
 
   TestScenario(
@@ -495,6 +499,9 @@ final List<TestScenario> allScenarios = [
       'ren_kobayashi': _middle,
       'nadia_kessler': _back,
     },
+    // Re-played with the stack counts now printed in the log, which is
+    // what the first run could not see. #TWC.
+    retired: true,
   ),
 
   TestScenario(
@@ -563,6 +570,10 @@ final List<TestScenario> allScenarios = [
       'ren_kobayashi': _middle,
       'nadia_kessler': _back,
     },
+    // Re-played with Chilled and Frozen told apart in the log, which is
+    // what put the "(I think)" on the first verdict. #TWC, so it is
+    // settled.
+    retired: true,
   ),
 
   TestScenario(
@@ -687,6 +698,9 @@ final List<TestScenario> allScenarios = [
       'ren_kobayashi': _middle,
       'nadia_kessler': _back,
     },
+    // Blocked on the first run: the buff could not be cast on the
+    // intended target at all. Re-played after the targeting fix. #TWC.
+    retired: true,
   ),
 
   TestScenario(

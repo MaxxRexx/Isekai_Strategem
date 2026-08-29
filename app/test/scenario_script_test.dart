@@ -11,8 +11,11 @@ import 'package:isekai_strategem/src/game/test_scenarios.dart';
 /// have an evening.
 ///
 /// A scenario now carries a `script` beside its prose: the same run, written
-/// so it can be executed. This plays every live one fifty times over fixed
-/// dice and prints what held. Run it with:
+/// so it can be executed. This plays **every scripted scenario** fifty times
+/// over fixed dice and prints what held. Retired ones keep running: retiring
+/// takes a case out of the Tests tab because a person has confirmed it, not
+/// out of the regression net, and wave 2 re-prices the economy underneath
+/// every one of these boards. Run it with:
 ///
 ///     flutter test test/scenario_script_test.dart --reporter expanded
 ///
@@ -26,6 +29,10 @@ import 'package:isekai_strategem/src/game/test_scenarios.dart';
 /// buff feel like it bought something" is not a question a runner can answer,
 /// and those stay in the prose for a person to read and decide.
 void main() {
+  // Every scenario that can be played by machine, live or retired.
+  final scriptedScenarios =
+      allScenarios.where((s) => s.script != null).toList();
+
   group('every live scenario is playable by machine', () {
     test('a scenario still in the tab carries a script', () {
       final unscripted = [
@@ -37,16 +44,21 @@ void main() {
               'an evening of the owner\'s time will ever check');
     });
 
-    test('a retired scenario needs no script', () {
-      // Retired cases have been confirmed by a person already. Writing
-      // scripts for them would be work with nothing waiting on it.
-      final retired = allScenarios.where((s) => s.retired);
-      expect(retired, isNotEmpty);
+    test('retiring a scenario does not stop it being played', () {
+      // Retiring says a person has confirmed the case, so the tab need not
+      // offer it any more. It does not say the board stopped mattering:
+      // wave 2 re-prices the economy underneath every one of these, and a
+      // script that stops running the day its case is confirmed would go
+      // quiet exactly when it starts earning its keep.
+      final retiredWithScripts =
+          allScenarios.where((s) => s.retired && s.script != null);
+      expect(retiredWithScripts, isNotEmpty);
+      expect(scriptedScenarios, containsAll(retiredWithScripts));
     });
   });
 
   group('the scripts run', () {
-    for (final scenario in testScenarios) {
+    for (final scenario in scriptedScenarios) {
       test('${scenario.name}: every check holds at least once in fifty runs',
           () {
         final run = runScenarioScript(scenario);
@@ -72,7 +84,7 @@ void main() {
       // Bleed's second and third stacks need strikes to land and then win an
       // infliction contest. A runner that called that PASSED would be lying
       // by rounding, and one that called it FAILED would cry wolf every run.
-      final bleed = testScenarios.firstWhere((s) => s.name == 'Bleed');
+      final bleed = allScenarios.firstWhere((s) => s.name == 'Bleed');
       final run = runScenarioScript(bleed);
       final stacked = run.checks.where((c) => c.check.describe.contains('3 stacks'));
 
@@ -83,8 +95,10 @@ void main() {
     });
 
     test('a scenario with no script reports that rather than passing', () {
-      final retired = allScenarios.firstWhere((s) => s.retired);
-      final run = runScenarioScript(retired);
+      // Wave 0's boards predate the runner and were confirmed by hand.
+      final unscripted =
+          allScenarios.firstWhere((s) => s.retired && s.script == null);
+      final run = runScenarioScript(unscripted);
 
       expect(run.passed, isFalse);
       expect(run.blockedBy, 'no script');
