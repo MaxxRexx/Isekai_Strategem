@@ -2881,16 +2881,22 @@ class TurnEngine {
     toPool.gain(actual);
   }
 
-  /// Finds the costliest Trion cost among abilities used this turn by any
-  /// living member of [teamStates] (for Levy calculation).
+  /// The costliest Trion cost among the abilities [teamStates] used this
+  /// turn, which is what a Levy steals.
+  ///
+  /// Whether the user survived the turn is not asked: the Levy takes what was
+  /// spent, and it was spent either way.
+  ///
+  /// This used to return a flat 20 for any ability at all, and 0 for none,
+  /// because the id was the only thing kept about a use and nothing here
+  /// could resolve it back to a Trigger. The design document has always said
+  /// "steal the Trion from their costliest action", so that was a bug rather
+  /// than a first-pass value: `CharacterBattleState` now records the cost as
+  /// the ability is used.
   int _findCostliestTrionCost(List<CharacterBattleState> teamStates) {
     var maxCost = 0;
     for (final state in teamStates) {
-      for (final triggerId in state.triggersUsedThisTurn) {
-        // Look up trigger cost via cooldown records as a proxy - we don't
-        // have direct trigger references here, so use a reasonable default.
-        maxCost = max(maxCost, 20);
-      }
+      maxCost = max(maxCost, state.costliestTrionCostThisTurn);
     }
     return maxCost;
   }

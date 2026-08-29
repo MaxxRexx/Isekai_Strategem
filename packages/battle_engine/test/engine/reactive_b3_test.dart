@@ -408,8 +408,8 @@ void main() {
 
       expect(holder.bankedDamage, 0,
           reason: 'bank emptied after discharge');
-      expect(target.currentHealth, lessThan(200 - 5),
-          reason: 'target took base damage + banked bonus');
+      expect(target.currentHealth, 200 - 5 - banked,
+          reason: 'target took base damage plus the whole bank');
       expect(holder.reactiveEffects, isEmpty,
           reason: 'bankDamage reactive consumed');
     });
@@ -446,7 +446,6 @@ void main() {
   group('One More Breath (enrichSurviveLethal)', () {
     test('doubles status durations and stuns damage source on survive-lethal',
         () {
-      final holder = makeChar(id: 'holder', maxHealth: 50);
       final attacker = makeChar(id: 'attacker', maxHealth: 200);
 
       final state = CharacterBattleState(

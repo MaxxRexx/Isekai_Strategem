@@ -217,6 +217,16 @@ class CharacterBattleState {
   /// Trigger ids used this turn, for Ironvow's Interdict repeat detection.
   final Set<String> triggersUsedThisTurn = {};
 
+  /// The highest Trion cost among the abilities used this turn, which is what
+  /// a Levy steals (Coldread's correct read, and Reckoning's discharge).
+  ///
+  /// Recorded here rather than looked up later because the id on its own
+  /// cannot answer it: by the time the Levy resolves, the only thing kept
+  /// about a use is its id, and there is no id-to-Trigger lookup in scope. It
+  /// used to charge a flat 20 for that reason, which is not the rule the
+  /// design document states.
+  int costliestTrionCostThisTurn = 0;
+
   /// Trigger ids used last turn, for Interdict repeat-ability check.
   final Set<String> triggersUsedLastTurn = {};
 
@@ -363,6 +373,9 @@ class CharacterBattleState {
     lastActiveTriggerCategory = trigger.category;
     lastUsedTriggerId = trigger.id;
     triggersUsedThisTurn.add(trigger.id);
+    if (trigger.trionCost > costliestTrionCostThisTurn) {
+      costliestTrionCostThisTurn = trigger.trionCost;
+    }
     hasActedThisBattle = true;
   }
 
@@ -428,6 +441,7 @@ class CharacterBattleState {
       ..clear()
       ..addAll(triggersUsedThisTurn);
     triggersUsedThisTurn.clear();
+    costliestTrionCostThisTurn = 0;
 
     if (fatCooldownRemaining > 0) fatCooldownRemaining--;
 

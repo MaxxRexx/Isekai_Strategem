@@ -514,7 +514,9 @@ void main() {
       wireTeam([holder]);
 
       final enemy = makeChar(id: 'enemy');
-      enemy.triggersUsedThisTurn.add('some-attack');
+      // Through the real path, so the use records its Trion cost. Setting
+      // `triggersUsedThisTurn` by hand leaves the Levy nothing to steal.
+      enemy.recordAbilityUse(testTrigger(id: 'some-attack', trionCost: 30));
       wireTeam([enemy]);
 
       final coldread = holder.passiveCounters[PassiveCounterKind.coldread]!;
@@ -540,6 +542,80 @@ void main() {
       expect(coldread.cooldownTurns, 1);
     });
 
+    test('the Levy takes the costliest action, not a flat rate', () {
+      // The design document says "steal the Trion from their costliest
+      // action". The engine charged a flat 20 for any ability at all, and 0
+      // when the enemy had used none, which is neither.
+      final holder = makeChar(id: 'holder');
+      holder.passiveCounters[PassiveCounterKind.coldread] =
+          PassiveCounterState(PassiveCounterKind.coldread);
+      wireTeam([holder]);
+
+      final enemy = makeChar(id: 'enemy');
+      enemy.recordAbilityUse(testTrigger(id: 'cheap', trionCost: 7));
+      enemy.recordAbilityUse(testTrigger(id: 'dear', trionCost: 41));
+      wireTeam([enemy]);
+
+      final coldread = holder.passiveCounters[PassiveCounterKind.coldread]!;
+      coldread.markedEnemyId = 'enemy';
+      coldread.pendingResolution = true;
+      coldread.markedEnemyActedDamaging = true;
+
+      final enemyPool = TrionPool(current: 100);
+      final holderPool = TrionPool(current: 0);
+
+      engine().tickEndOfTurnPassiveCounters(
+        activeTeamStates: [enemy],
+        inactiveTeamStates: [holder],
+        activeTeamPool: enemyPool,
+        inactiveTeamPool: holderPool,
+        activeTeamDealtDamage: true,
+      );
+
+      expect(holderPool.current, 41, reason: 'the dearer of the two');
+      expect(enemyPool.current, 100 - 41);
+    });
+
+    test('an enemy who used nothing is levied nothing', () {
+      final holder = makeChar(id: 'holder');
+      holder.passiveCounters[PassiveCounterKind.coldread] =
+          PassiveCounterState(PassiveCounterKind.coldread);
+      wireTeam([holder]);
+
+      final enemy = makeChar(id: 'enemy');
+      wireTeam([enemy]);
+
+      final coldread = holder.passiveCounters[PassiveCounterKind.coldread]!;
+      coldread.markedEnemyId = 'enemy';
+      coldread.pendingResolution = true;
+      coldread.markedEnemyActedDamaging = true;
+
+      final enemyPool = TrionPool(current: 100);
+      final holderPool = TrionPool(current: 0);
+
+      engine().tickEndOfTurnPassiveCounters(
+        activeTeamStates: [enemy],
+        inactiveTeamStates: [holder],
+        activeTeamPool: enemyPool,
+        inactiveTeamPool: holderPool,
+        activeTeamDealtDamage: true,
+      );
+
+      expect(holderPool.current, 0);
+      expect(enemyPool.current, 100);
+    });
+
+    test('the cost does not carry over into the next turn', () {
+      final enemy = makeChar(id: 'enemy');
+      enemy.recordAbilityUse(testTrigger(id: 'dear', trionCost: 41));
+      expect(enemy.costliestTrionCostThisTurn, 41);
+
+      engine().endCharacterTurn(enemy);
+      expect(enemy.costliestTrionCostThisTurn, 0,
+          reason: 'a Levy next turn would otherwise steal for an action that '
+              'was already paid for');
+    });
+
     test('correct reads alternate Levy then Seize (Levy first)', () {
       final holder = makeChar(id: 'holder', attack: 1000, defense: 5);
       final ally = makeChar(id: 'ally', attack: 500, defense: 5);
@@ -548,7 +624,9 @@ void main() {
       wireTeam([holder, ally]);
 
       final enemy = makeChar(id: 'enemy');
-      enemy.triggersUsedThisTurn.add('some-attack');
+      // Through the real path, so the use records its Trion cost. Setting
+      // `triggersUsedThisTurn` by hand leaves the Levy nothing to steal.
+      enemy.recordAbilityUse(testTrigger(id: 'some-attack', trionCost: 30));
       wireTeam([enemy]);
 
       final coldread = holder.passiveCounters[PassiveCounterKind.coldread]!;
