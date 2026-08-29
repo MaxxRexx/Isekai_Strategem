@@ -303,6 +303,31 @@ C, and folded D in as the tapped-open state rather than the resting one. **E is
 not built** and is still the escalation if "who is winning the status war" turns
 out to be a question players ask.
 
+## Every ability says what it does
+
+Item 13b did this for the 62 status effects. The 17 **unique** abilities were
+the hole it left: they carried a `uniqueBehavior` and no description of it, so
+Martyr's End introduced itself as "Long Range attack on up to 3 targets. Costs
+10 Trion." and stopped, with the mechanic sitting in the engine, in the enum's
+own doc comments, and nowhere a player could reach.
+
+`uniqueBehaviorDescription` fills it, in the same shape as the
+`reactiveDescription` map that already did this for the ten reactive counters.
+Written off **what the engine does today**, not off what the enum comments
+specify: several of these were designed with a choice the caster makes, and the
+interface offers none of them (nothing passes `uniqueData`), so Called Shot
+always zeroes Attack, Forced Choice always locks the cheapest ability, Sensory
+Swap always moves the first effect it finds, and Sunder Arms picks the caster's
+own loss at random. Promising a choice the player cannot make would be the same
+defect in a new place, and `describe_trigger_test` holds the descriptions to it.
+
+Found by rendering the 17 and reading them: an ability aimed at an enemy called
+itself an *attack* whether or not it dealt any damage, so Mind's Eye was a
+"Long Range attack" that reads a Loadout and hurts nobody. Two questions were
+being answered by one flag. Whose side the target is on still decides which
+line an area covers; whether the trigger carries a damage type now decides
+whether the word "attack" is honest.
+
 ## Playing the Tests tab without playing it
 
 Every live scenario carries a `script` beside its prose: the same run written

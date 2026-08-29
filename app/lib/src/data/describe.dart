@@ -325,12 +325,17 @@ String describeActiveTrigger(
   // ability hits three characters spread across three lines: it catches one
   // line. The opening clause says what the ability actually is, on three
   // axes: who it is aimed at, whether it is an attack, and what it reaches.
-  final isAttack = t.targetAffiliation == TargetAffiliation.opponent;
+  // Two different questions, and conflating them called Mind's Eye a "Long
+  // Range attack" when it deals no damage and only reads a Loadout.
+  // Whose side the target is on decides which line an area covers; whether
+  // there is damage on it decides whether the word "attack" is honest.
+  final atEnemy = t.targetAffiliation == TargetAffiliation.opponent;
+  final isAttack = atEnemy && t.damageType != null;
   final noun = isAttack ? 'attack' : 'ability';
-  final whichLine = isAttack ? 'one enemy line' : 'one of your own lines';
+  final whichLine = atEnemy ? 'one enemy line' : 'one of your own lines';
   // What the ability does to the people on that line. An attack hits them;
   // a ward does not "catch" anybody, it affects them.
-  final reaches = isAttack ? 'hitting' : 'affecting';
+  final reaches = atEnemy ? 'hitting' : 'affecting';
   String people(int n) => n == 1 ? '1 who stands' : '$n who stand';
 
   if (t.targetAffiliation == TargetAffiliation.self) {
@@ -352,7 +357,7 @@ String describeActiveTrigger(
   } else if (t.targetAffiliation == TargetAffiliation.ally) {
     parts.add('$rangeWord ability, aimed at one ally.');
   } else {
-    parts.add('$rangeWord attack on a single target.');
+    parts.add('$rangeWord $noun on a single target.');
   }
   if (t.damageType != null && t.damage != null) {
     parts.add(
@@ -385,6 +390,10 @@ String describeActiveTrigger(
       '$recipient ${def.name}: '
       '${describeStatusEffect(def, onSelf: onSelf)}',
     );
+  }
+  if (t.uniqueBehavior != null) {
+    final line = uniqueBehaviorDescription[t.uniqueBehavior!];
+    if (line != null) parts.add(line);
   }
   if (t.armsReactive != null) {
     final line = reactiveDescription[t.armsReactive!];
@@ -499,6 +508,82 @@ const passiveCounterDescription = <PassiveCounterKind, String>{
 /// point is the reactive it sets up described itself as "Affects the user
 /// only", which tells nobody anything. A counter is a promise about the
 /// opponent's next turn, so the description has to say what the promise is.
+/// What each unique ability actually does, in the player's words.
+///
+/// Seventeen abilities carried a `uniqueBehavior` and no description of it,
+/// so Martyr's End introduced itself as "Long Range attack on up to 3
+/// targets. Costs 10 Trion." and stopped: no damage, no status, and not a
+/// word about the thing that makes it Martyr's End. The mechanic was in the
+/// engine, in the enum's own doc comments, and nowhere a player could reach.
+///
+/// Written off what the engine **does today**, not off what the enum's
+/// comments describe. Several of these were specified with a choice the
+/// caster makes, and the interface offers none of them yet: nothing passes
+/// `uniqueData`, so Called Shot always zeroes Attack, Forced Choice always
+/// locks the cheapest ability, Sensory Swap always moves the first effect it
+/// finds, and Sunder Arms picks the caster's own loss at random. Promising a
+/// choice the player cannot make would be the same defect in a new place.
+const uniqueBehaviorDescription = <UniqueBehavior, String>{
+  UniqueBehavior.sharedAgony:
+      'Picks an enemy you have hit in melee this battle, at random. Rolls its '
+      'damage, deals it to you in full, and deals 20% more than that to them. '
+      'It can kill you.',
+  UniqueBehavior.graveBargain:
+      'Spends a chunk of your current health and deals exactly that much as '
+      'true damage: no attack roll, and neither Armor nor Defense reduces it.',
+  UniqueBehavior.martyrsEnd:
+      'Only usable below a quarter health. You are removed from the battle, '
+      'and every enemy takes heavy damage as you go.',
+  UniqueBehavior.vowOfTheDuel:
+      'Binds you to one enemy for 3 turns. You deal double damage to them, '
+      'and in exchange you cannot act on anyone else and cannot be healed. If '
+      'they are still standing when it ends, you are Stunned for 2 turns.',
+  UniqueBehavior.sunderArms:
+      'A strike that permanently destroys one of the target\'s equipped '
+      'Triggers for the rest of the battle, picked at random. It costs you '
+      'one of your own the same way.',
+  UniqueBehavior.curvingShot:
+      'Ignores the first ward, dodge or counter the target has up and lands '
+      'anyway.',
+  UniqueBehavior.calledShot:
+      'No damage. Takes the target\'s Attack to zero for the effect\'s '
+      'duration.',
+  UniqueBehavior.mindsEye:
+      'Reveals one enemy\'s whole Loadout in their panel, so you can read '
+      'what they are carrying before deciding. You cannot use it on yourself.',
+  UniqueBehavior.forcedChoice:
+      'Next turn the target may use only their cheapest ability, whatever '
+      'else they were holding.',
+  UniqueBehavior.memoryTheft:
+      'Copies the last ability the target used. You may cast it once next '
+      'turn, out of this ability\'s own slot.',
+  UniqueBehavior.sensorySwap:
+      'Moves one active status effect off the first target and onto the '
+      'second, keeping the turns it had left.',
+  UniqueBehavior.dreadResonance:
+      'Damage scales with how much damage that enemy has dealt this battle, '
+      'so it punishes whoever has been hurting you most.',
+  UniqueBehavior.isolation:
+      'For 2 turns that enemy cannot be healed or buffed by their allies, and '
+      'cannot heal or buff them either.',
+  UniqueBehavior.illusoryDouble:
+      'They cannot be targeted at all during the opponent\'s next turn. It '
+      'starts with one charge and gains another every time one of your squad '
+      'is defeated.',
+  UniqueBehavior.echoingDoubt:
+      'The target\'s next attack misses outright while they still pay its '
+      'Trion and its cooldown, and they are Silenced afterwards. No roll: it '
+      'simply happens.',
+  UniqueBehavior.karmicBind:
+      'For 3 turns, part of every wound and every heal on you is dealt to a '
+      'chosen enemy as unavoidable damage. How large a part scales with your '
+      'Team Spirit.',
+  UniqueBehavior.unmaking:
+      'Turns every buff the target is holding into its opposite for whatever '
+      'duration was left: Empowered becomes Weakened, Guarded becomes '
+      'Exposed, and so on down the list.',
+};
+
 const reactiveDescription = <ReactiveKind, String>{
   ReactiveKind.reflectNonAoe:
       'Counter: the next single-target hit against you is reflected straight '

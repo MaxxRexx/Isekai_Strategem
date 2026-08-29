@@ -159,6 +159,59 @@ void main() {
     });
   });
 
+  group('an ability with a unique behaviour says what it does', () {
+    test('all seventeen of them explain themselves', () {
+      // Seventeen abilities carried a uniqueBehavior and no description of
+      // it, so Martyr's End read "Long Range attack on up to 3 targets.
+      // Costs 10 Trion." and stopped.
+      final unique = all.where((t) => t.uniqueBehavior != null).toList();
+      expect(unique, hasLength(17));
+
+      for (final t in unique) {
+        expect(uniqueBehaviorDescription[t.uniqueBehavior], isNotNull,
+            reason: '${t.id} has nothing to say about its own mechanic');
+        expect(describeActiveTrigger(t),
+            contains(uniqueBehaviorDescription[t.uniqueBehavior]!),
+            reason: t.id);
+      }
+    });
+
+    test('it does not promise a choice the interface does not offer', () {
+      // Several were specified with a caster's choice and the app passes no
+      // uniqueData, so the engine's default is what actually happens.
+      final calledShot = triggers.firstWhere((t) => t.id == 'called_shot');
+      expect(describeActiveTrigger(calledShot), contains('Attack to zero'),
+          reason: 'it always zeroes Attack today, whatever the spec said');
+
+      final forced = triggers.firstWhere((t) => t.id == 'forced_choice');
+      expect(describeActiveTrigger(forced), contains('cheapest'));
+      expect(describeActiveTrigger(forced), isNot(contains('you choose')));
+    });
+  });
+
+  group('only an ability that deals damage calls itself an attack', () {
+    test('a damage-less ability aimed at an enemy is not an attack', () {
+      // Mind's Eye reads a Loadout and deals nothing, and called itself a
+      // "Long Range attack" because the word was chosen off who it was
+      // aimed at rather than off whether it hurts anybody.
+      for (final t in all) {
+        if (t.damageType != null) continue;
+        expect(opening(t), isNot(contains('attack')), reason: t.id);
+      }
+    });
+
+    test('an area ability still points at the right lines either way', () {
+      // The two questions were conflated, so separating them must not send
+      // a damage-less enemy area ability at your own lines.
+      for (final t in all) {
+        if (t.attackSubtype != AttackSubtype.aoe) continue;
+        if (t.targetAffiliation != TargetAffiliation.opponent) continue;
+        expect(describeActiveTrigger(t), contains('one enemy line'),
+            reason: t.id);
+      }
+    });
+  });
+
   group('every description in the catalogue is well-formed English', () {
     test('nothing is empty, doubled-up or left dangling', () {
       for (final t in all) {
