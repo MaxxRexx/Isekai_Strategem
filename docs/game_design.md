@@ -667,10 +667,11 @@ is. The other fifty refresh and nothing more.
 
 **Reading a status badge.** Every effect on a character shows as one small
 notched square that answers four questions without a word on it. The **glyph**
-says what kind of thing the effect is, out of fourteen: the turn taken away, an
-option closed off, damage or healing every turn, Trion drained, damage taken or
-dealt going up or down, a stat stepped up, stepped down or taken to zero, your
-own aim spoiled, and one for the handful that are none of those. The **colour**
+says what kind of thing the effect is, out of sixteen: the turn taken away, an
+option closed off, damage or healing every turn, Trion drained or an ability's
+Trion cost going up or down, damage taken or dealt going up or down, a stat
+stepped up, stepped down or taken to zero, your own aim spoiled, and one for
+the handful that are none of those. The **colour**
 says whose side it is on: red for harm, green for help, and violet for the
 handful that are genuinely a trade, like Enraged, which buys damage and takes
 away the choice of who to hit. The **pips** along the top say how many stacks.

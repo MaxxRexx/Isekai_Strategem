@@ -219,7 +219,7 @@ learned.
 
 The classification lives in the engine (`StatusRole`, `StatusValence`, derived
 on `StatusEffectDefinition`) and is read off declared fields, never a list:
-fourteen roles, all of them populated, and a valence that is **counted** rather
+sixteen roles, all of them populated, and a valence that is **counted** rather
 than looked up. An effect whose signals all help is helpful, all hurt is
 harmful, and one carrying both is neutral, which is the answer rather than a
 shrug: Enraged buys damage and Psychic immunity at the cost of aiming, and the
@@ -256,10 +256,18 @@ expression to its average (`1d4` to "3", a number the dice do not promise).
 `guide_status_tab_test` holds the tab to the catalogue so a second copy of this
 data cannot creep back in.
 
-**Left alone:** Overcharged and Choked draw the "something else" glyph, because
-a Trion-cost multiplier is not one of the fourteen roles. They are the only two
-effects whose badge says "unusual, tap it" where it could say something
-specific. A fifteenth role would fix it and is not obviously worth the churn.
+**Then fixed on the owner's call:** Overcharged and Choked used to draw the
+"something else" glyph, because a Trion-cost multiplier was not one of the
+roles. They were the only two effects whose badge said "unusual, tap it" where
+it could say something specific, which is the exact failure the glyph set exists
+to remove. There are **sixteen** roles now: `trionCheaper` and `trionDearer`,
+split by direction for the same reason `takesLess` and `takesMore` are, since
+the colour already says which way and the glyph saying it too is the point of
+encoding it twice. Both draw a hollow Trion diamond with a chevron leading away
+from it, mirrored rather than flipped: pointing an up-chevron at the underside
+of the diamond merged the two into one blob at ten pixels, close enough to the
+glyph for losing the turn to matter. `special` is down from 8 effects to 6, and
+those 6 are the ones the rule genuinely cannot read.
 
 The proposal, kept for the two approaches not taken:
 
@@ -275,7 +283,7 @@ build, and not built. Findings, all measured rather than estimated:
   and a ward protecting them are the same picture. That is why the two 8px
   numbers feel so important: they are the only differentiated pixels.
 - **The catalogue is narrower than it looks.** The 62 effects do about
-  **fourteen different things** (4 tick damage, 2 tick healing, 5 deny the
+  **fourteen different things** at the time of the proposal (4 tick damage, 2 tick healing, 5 deny the
   turn, 8 step a stat down, 7 step one up, and so on, with 15 genuinely
   special), all derivable from fields the definitions already declare. So an
   icon set needs roughly fourteen glyphs, not sixty-two. By the same

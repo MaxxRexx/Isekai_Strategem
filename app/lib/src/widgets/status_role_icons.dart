@@ -7,11 +7,11 @@ import 'package:flutter/material.dart';
 /// Material icon survives, so each one is two to four strokes and nothing
 /// more. What matters at that size is the **silhouette**: a player should be
 /// able to tell a bleed from a ward without resolving any detail inside the
-/// shape, so no two of the fourteen share an outline.
+/// shape, so no two of the sixteen share an outline.
 ///
 /// Drawn from the role rather than from the effect's id on purpose. Sixty-two
 /// bespoke icons would be sixty-two things to learn and sixty-two things to
-/// maintain; fourteen is a vocabulary. The exact effect, its stat and its
+/// maintain; sixteen is a vocabulary. The exact effect, its stat and its
 /// magnitude are what the description is for.
 class StatusRoleIcon extends StatelessWidget {
   final StatusRole role;
@@ -84,6 +84,15 @@ class _RoleGlyphPainter extends CustomPainter {
       // The Trion diamond the rest of the interface already uses.
       case StatusRole.trionDrain:
         canvas.drawPath(_diamond(c, r), fill);
+
+      // The same diamond, hollow, over a chevron: about Trion, but about what
+      // it costs you rather than about losing it. Hollow because nothing is
+      // being taken away.
+      case StatusRole.trionCheaper:
+        _trionCost(canvas, stroke, c, r, cheaper: true);
+
+      case StatusRole.trionDearer:
+        _trionCost(canvas, stroke, c, r, cheaper: false);
 
       case StatusRole.takesLess:
         canvas.drawPath(_shield(c, r), stroke);
@@ -178,6 +187,30 @@ class _RoleGlyphPainter extends CustomPainter {
       c + Offset(r, -r * 0.5 * dy),
       paint,
     );
+  }
+
+  /// A hollow Trion diamond with a chevron leading away from it: the cost of
+  /// using an ability, going down or up.
+  ///
+  /// The two are mirror images rather than the same layout with the chevron
+  /// flipped. Pointing an up-chevron at the underside of the diamond merges
+  /// the two into one X-shaped blob at ten pixels, which is both illegible
+  /// and, worse, close to the glyph for losing the turn.
+  void _trionCost(Canvas canvas, Paint paint, Offset c, double r,
+      {required bool cheaper}) {
+    final lift = cheaper ? -1.0 : 1.0;
+    final diamond = Offset(c.dx, c.dy + r * 0.42 * lift);
+    canvas.drawPath(
+      Path()
+        ..moveTo(diamond.dx, diamond.dy - r * 0.62)
+        ..lineTo(diamond.dx + r * 0.48, diamond.dy)
+        ..lineTo(diamond.dx, diamond.dy + r * 0.62)
+        ..lineTo(diamond.dx - r * 0.48, diamond.dy)
+        ..close(),
+      paint,
+    );
+    _chevron(canvas, paint, Offset(c.dx, c.dy - r * 0.72 * lift), r * 0.62,
+        up: !cheaper);
   }
 
   void _star(Canvas canvas, Paint paint, Offset c, double r) {

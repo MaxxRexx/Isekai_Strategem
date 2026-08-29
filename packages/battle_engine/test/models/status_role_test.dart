@@ -33,7 +33,7 @@ void main() {
       }
     });
 
-    test('the fourteen roles are the ones the icon set draws', () {
+    test('the sixteen roles are the ones the icon set draws', () {
       // Pinned so a re-tune that moves an effect between roles is visible in
       // the diff rather than silently changing what a badge looks like.
       final roles = byRole();
@@ -52,6 +52,8 @@ void main() {
       ]);
       expect(roles[StatusRole.healOverTime], ['regenerating', 'radiant_blessing']);
       expect(roles[StatusRole.trionDrain], ['sapped']);
+      expect(roles[StatusRole.trionCheaper], ['overcharged']);
+      expect(roles[StatusRole.trionDearer], ['choked']);
       expect(roles[StatusRole.takesLess], ['guarded', 'untargetable']);
       expect(roles[StatusRole.takesMore], ['exposed', 'marked']);
       expect(roles[StatusRole.dealsMore], ['empowered', 'vow_of_the_duel']);
@@ -67,12 +69,9 @@ void main() {
     test('only what nothing can read falls through to special', () {
       expect(byRole()[StatusRole.special], [
         // Wet and Sickened change a damage-type relationship, which is its
-        // own thing and not one of the fourteen.
+        // own thing and not one of the sixteen.
         'wet',
         'sickened',
-        // Trion cost, up and down.
-        'overcharged',
-        'choked',
         // Punishes repeating an ability.
         'interdict',
         // Shares what happens to you with a bound enemy.
@@ -104,6 +103,21 @@ void main() {
 
     test('being untargetable reads as the strongest form of taking less', () {
       expect(catalog['untargetable'].role, StatusRole.takesLess);
+    });
+
+    test('what an ability costs is its own thing, split by direction', () {
+      // Added after the first pass, where both fell through to `special` and
+      // drew the "unusual, tap it" glyph on an effect the rule can read
+      // perfectly well. Split rather than one shared Trion-cost glyph, for
+      // the same reason takesLess and takesMore are split: the colour already
+      // says which way, and the glyph saying it too is the point of encoding
+      // it twice.
+      expect(catalog['overcharged'].role, StatusRole.trionCheaper);
+      expect(catalog['overcharged'].valence, StatusValence.helpful);
+      expect(catalog['choked'].role, StatusRole.trionDearer);
+      expect(catalog['choked'].valence, StatusValence.harmful);
+      expect(catalog['sapped'].role, StatusRole.trionDrain,
+          reason: 'losing Trion outright is not the same as paying more');
     });
 
     test('a roll that got worse reads with the stats that got worse', () {

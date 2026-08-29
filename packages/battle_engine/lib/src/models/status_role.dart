@@ -10,7 +10,7 @@
 /// still meant nothing.
 ///
 /// The catalogue is far narrower than 62 suggests: those effects do about
-/// **fourteen different things**. That is a learnable icon set, where 62 is
+/// **sixteen different things**. That is a learnable icon set, where 62 is
 /// not. Nothing here is a hand-kept list, so an effect written tomorrow gets
 /// the right glyph and the right colour the day it is written, and an effect
 /// re-tuned in wave 4 re-classifies itself.
@@ -43,6 +43,12 @@ enum StatusRole {
 
   /// Trion is moved out of the holder's squad and into the causer's (Sapped).
   trionDrain,
+
+  /// The holder's abilities cost less Trion (Overcharged).
+  trionCheaper,
+
+  /// The holder's abilities cost more Trion (Choked).
+  trionDearer,
 
   /// Incoming damage is reduced, or cannot be aimed at them at all
   /// (Guarded, Untargetable).
@@ -87,7 +93,7 @@ enum StatusRole {
 enum StatusValence { helpful, harmful, neutral }
 
 extension StatusRoleX on StatusEffectDefinition {
-  /// What this effect does, in one of [StatusRole]'s fourteen answers.
+  /// What this effect does, in one of [StatusRole]'s sixteen answers.
   ///
   /// First match wins, and the order is deliberate: an effect that both
   /// denies the turn and ticks damage is described by the denial, because
@@ -97,6 +103,14 @@ extension StatusRoleX on StatusEffectDefinition {
     if (turnStartDamage != null) return StatusRole.damageOverTime;
     if (turnStartHeal != null) return StatusRole.healOverTime;
     if (trionCapacityDrainPercentToCauser != null) return StatusRole.trionDrain;
+    // Kept beside the drain so everything about Trion shares a family mark.
+    // Split into cheaper and dearer for the same reason takesLess and
+    // takesMore are split: the colour already says which way, and the glyph
+    // saying it too is the whole point of encoding it twice.
+    final trion = trionCostMultiplier;
+    if (trion != null) {
+      return trion < 1 ? StatusRole.trionCheaper : StatusRole.trionDearer;
+    }
 
     // Not being targetable at all is the strongest form of taking less.
     if (preventsTargeting) return StatusRole.takesLess;

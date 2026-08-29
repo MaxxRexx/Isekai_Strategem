@@ -111,7 +111,7 @@ class BailingOutBadge extends StatelessWidget {
 ///
 /// So the same footprint now carries four facts and **no text at all**:
 ///
-/// - **What kind of effect**, from [StatusRoleX.role]: fourteen glyphs, drawn
+/// - **What kind of effect**, from [StatusRoleX.role]: sixteen glyphs, drawn
 ///   from fields the definition already declares.
 /// - **Whose side it is on**, from [StatusRoleX.valence]: red for harm, green
 ///   for help, violet for a trade that is genuinely neither.
