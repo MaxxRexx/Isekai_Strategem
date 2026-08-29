@@ -20,11 +20,14 @@ battle game plus its accounts and XP backend.
   actions resolve through a fixed six-phase order. A rule-based AI opponent (five
   skill classes) plays through the same system.
 - **A real battlefield.** Every character stands at Front, Middle or Back.
-  Distance to an enemy is the two positions added, and each range band reaches a
-  different window of it (Close 0-1, Mid 1-3, Long 2-4), so where you stand
-  decides what you can use. Repositioning costs a character their action, and the
-  battlefield strip under both squads shows the whole board with its distance
-  ruler and the move controls in one place.
+  Distance to an enemy is the two positions added **plus their screens**: every
+  squadmate standing on a line in front of them puts one more body in the way.
+  Each range band reaches a different window of it (Close 0-2, Mid 1-3, Long
+  2-4 against an enemy; towards an ally only the maximum applies, and Close
+  stays at 1), so where you stand decides what you can use and breaking a
+  screen is how you reach a back line. Repositioning costs a character their
+  action, and the battlefield strip under both squads shows the whole board
+  with its distance ruler and the move controls in one place.
 - **Deep combat systems:** 61 Triggers, 10 Black Triggers, 62 status effects, a
   reactive and passive counter system, 17 unique abilities, an 18-entry combo
   recognizer, Full Arms Trigger burst turns, a contested Bail Out window when a
@@ -35,6 +38,11 @@ battle game plus its accounts and XP backend.
   local-only fallback so the game always runs.
 - **A readable battle log** with plain-English breakdowns and clickable
   character and ability details.
+- **A Tests tab**, beside Play, Simulate and Guided Tutorial: pre-arranged
+  boards for cases an ordinary battle rarely produces, each one saying what
+  should happen. A scenario is retired once its case has been played and
+  confirmed, so the tab offers only what still needs a look, and an empty tab
+  is the finished state of a testing round rather than a fault.
 
 ## Documentation
 
@@ -95,12 +103,18 @@ with `dart run tool/<name>.dart`:
 | Tool | Answers |
 |---|---|
 | `balance_report.dart` | Accuracy, dice share, Trigger value, and 200 simulated battles against the 8-20 round pacing target. |
-| `position_matrix.dart` | Position against ability range, across the live catalogue. |
 | `formation_matrix.dart` | Formation versus formation, and archetype viability with `--kits`. |
 | `screening_model.dart` | The proposed screening rule per formation, against the current one. |
+| `trap_screening_sim.dart` | Whether a screen blocks a trap, run on real battles with deterministic dice. |
 | `stall_finder.dart` | Every board state in which neither side can reach the other, and whether it can be escaped. |
 | `reach_check.dart` | Specific reach claims, plus the maximum-health invariant. |
 | `stackable_statuses.dart` | Which status effects should stack, and why. |
+| `bail_out_sim.dart` | Whether the Trion Salvage is ever actually collected, counted over a batch of AI-vs-AI battles. |
+| `sptv_audit.dart` | What the catalogue costs today: every ability's economics, every status's magnitude and duration, every reactive duration. |
+| `sptv_baseline.dart` | What a point of damage-equivalent actually buys in a played battle, which is what the Status Point scale is calibrated against. |
+| `sptv_price.dart` | The whole catalogue priced under item #3's rule, with nothing hand-written. |
+| `propose_signature_combos.dart` | Design-time candidate signature combos for a human to review; never runs at runtime. |
+| `doc_facts.dart` | The roster and Trigger catalogues as JSON, which the design document's appendices are kept in step with. |
 
 The Flutter app:
 
@@ -110,6 +124,22 @@ flutter pub get
 flutter test
 flutter run -d chrome   # or another connected device
 ```
+
+Each Tests tab scenario also carries a **script**: the same run written so a
+machine can play it. This plays every scripted scenario fifty times over fixed
+dice and prints what held, so the mechanical half of a playtest costs a command
+rather than an evening:
+
+```
+cd app
+flutter test test/scenario_script_test.dart --reporter expanded
+```
+
+A check reads `PASSED` (held on every seed), `DICE 29/50` (held on some, which
+is the honest answer for anything behind an attack roll or an infliction
+contest), or `FAILED` (never held once, and the report prints what it saw
+instead). What it does not replace is judgement: "did spending a turn on that
+buff feel like it bought something" stays a question for a person.
 
 No local machine is required to try the app. Every push to `main` or a
 `claude/**` branch that touches `app/` or `packages/` runs
