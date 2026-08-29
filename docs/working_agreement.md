@@ -135,6 +135,46 @@ repository. The search was then reported as if it were a reading.
   updated" is not checkable. "I read README, game_design and the working
   agreement; the first was wrong about the range bands" is.
 
+### Complicated is bad. Complex but simple is good
+
+Added after "Status at a glance" grew into a three-column table whose middle
+cell was a 250-word paragraph, and the owner asked the obvious question: how
+does this tell me what to work on? It did not. The document had been kept
+accurate by adding a sentence every time something changed, which is how a
+summary stops being one.
+
+The rule is one sentence and it applies to everything in this project: the
+game's mechanics, how the work is run, how it is reported, how it is tested,
+how options are offered, and how it is written down.
+
+- **A low floor and a high ceiling.** Someone should understand the thing in
+  one look, and still find depth in it on the tenth. That is the target for a
+  status section and for a status effect alike. Range bands are the example
+  that works: three words (Close, Mid, Long) that a player gets immediately,
+  sitting on a distance rule with screening in it that takes a while to master.
+- **Complexity belongs in the system, never in the surface.** A deep mechanic
+  explained in one line is the goal. A shallow one explained in five is the
+  failure, and so is a deep one that never gets its line.
+- **A summary that grew is no longer a summary.** When something is added to a
+  short thing, something else comes out, or it stops being short. Detail goes
+  below, in a section of its own, linked to.
+- **Say it once.** A fact repeated in two places is two places to be wrong, and
+  it is the same failure wearing a different hat.
+
+### When the owner asks where things are
+
+Three bullets. Not four, not a table.
+
+```
+- We have done #a to #b.
+- We are on #c now. Done: #c1 to #c3. Next: #c4 to #c5.
+- After #c: #d to #g, in that order.
+```
+
+Item numbers and one clause each. Anything that does not fit that shape is
+detail, and detail is what `current_development_status.md` is for. If something
+genuinely needs deciding, it is a Signature underneath, not a fourth bullet.
+
 ## What the assistant should not do
 
 - **Use em dashes.** Anywhere: chat, commit messages, code comments, documents,

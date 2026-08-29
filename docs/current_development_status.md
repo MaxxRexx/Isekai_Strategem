@@ -7,15 +7,33 @@ explanation of the whole game itself, see
 [`game_design.md`](game_design.md). For how this project is run, see
 [`working_agreement.md`](working_agreement.md).
 
-## Status at a glance
+## Where we are
 
-| Done | Current priority | To do |
-|---|---|---|
-| Battle engine: queue-and-resolve turns, 6-phase resolution, reactive + passive counters, 17 unique abilities, 61 Triggers, 10 Black Triggers, 62 status effects, combo recognition, FAT, the Team Efficiency Grade with its in-battle effects and inverse XP, and the contested Bail Out window. | **Wave 1 and its playtest batch are merged to `main`.** All nine items shipped: #14, 5c, the duration fix (#D), 3b's mechanism, 5b, 13b, #3's rule (not its pass), the Trion drain fix and the two support spot-fixes. The owner then played all five Tests tab scenarios and filed a batch of ten interface findings; **all ten are resolved** (eight interface fixes, one design decision taken, and the badge legibility work built as A+B+C with D on tap) (see "Wave 1 playtest" below). The owner then re-played the four scenarios that stayed in the tab and returned **#TWC** on 2026-08-29, with the judgement half no runner can answer ("feel good") alongside it, so **all fourteen scenarios are now retired and the Tests tab is empty**. That closes wave 1. **Wave 2 is the current priority: #4, the Trion economy, and 4b before it**, since 4b is what every deferred pricing decision is waiting on alongside #3's pass, the support re-pricing, and the abilities the rule cannot see yet. The queue was re-sequenced after the #3 audit, so the numbers are names and the running order is its own table below. All seven of the design review's decisions are **approved as recommended**, and #D's was corrected mid-build (see its section). Wave 0 is **done**: 1b and #2 were playtested through the Tests tab's eight scenarios, all eight resolved correctly, and the three interface defects they found are fixed. | The approved queue runs #1 to #14 in order. #9 (story mode) and #12 (sign-in branding) are deferred, #10 (branch deletion) is done, #11 is closed as a non-issue. |
-| Accounts and XP backend: Supabase, live and verified end to end (guest, email, and Google sign-in; server-authoritative XP; keep-alive). | | Remaining Phase F interface: show the pending queue during a turn, and polish the resolve pause. |
-| Most of the Phase F interface: grade badge, all stats shown, Team Spirit readout, Loadout builder, passive-counter descriptions, clickable character and enemy panels with the Mind's Eye reveal, sign-in flow, post-battle XP screen, and the rebuilt battle log. | | AI tuning (Phase G): teach the AI to value the counters, uniques, and status effects. |
-| Documentation: the complete game design doc, four player-persona balance reviews plus a design-director synthesis, and a refreshed README. | | Story / visual-novel mode (only scaffolded so far). |
-| Balance: the five near-duplicate ("reskin") Trigger clusters differentiated; critical hits capped at a natural 17 and doubling dice only; the four dominant Triggers re-costed; the P0 bounded-accuracy re-tune landed (Attack compressed to 4-14, Defense to 2-12, and every damage expression rebuilt to about half dice); the opening turn is now earned, weighted by the Team Efficiency Grade instead of a coin flip; and the range tag became three real bands (Close/Mid/Long, 20 each, with every attack type present in every band). | | Optional polish: a custom domain so Google sign-in shows the game name instead of the Supabase URL. |
+- **Done: everything up to and including wave 1.** #1, 1b and #2 (the
+  battlefield, screening, Bail Out), then wave 1's #14, 5c, #D, 3b's mechanism,
+  5b, 13b, #3's rule and the two support spot-fixes. All merged to `main`, all
+  playtested, #TWC on 2026-08-29.
+- **Now: wave 2, #4 (the Trion economy).** Nothing built in it yet. Next is
+  **4b** (diagnose the long tail of battle length), then **#4** itself.
+- **After it, in order:** wave 3 (1c, 3b's content, #4's traps), wave 4 (#3's
+  pass, #5), wave 5 (#6), wave 6 (#7), wave 7 (#13, #8).
+
+Deferred and out of the order: #9 (story mode), #12 (sign-in branding).
+
+Everything below is detail. The queue is in "The work queue", the reasoning for
+the order is in "The running order", and what each wave found is in its own
+section.
+
+## Progress by area
+
+```
+Battle engine      ██████████ 100%   done
+Accounts and XP    ██████████ 100%   live and verified
+Phase F interface  ████████▒▒  85%   a couple of items left
+Balance pass       █████████▒  85%   P0, initiative, range bands, screening, Bail Out
+AI tuning          ▒▒▒▒▒▒▒▒▒▒   0%   not started
+Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
+```
 
 ## Branches
 
@@ -32,25 +50,12 @@ wave 1 playtest batch. Every commit on it is on `main`, and the **local branch
 was deleted** on 2026-08-29. The **remote one is still there**: deleting it
 from a session is refused with an HTTP 403, so it is the owner's to delete, on
 GitHub or from a local checkout. Nothing depends on it. Wave 2 gets a branch of
-its own.
-
-Every other work branch was deleted once merged. The next item gets a branch
-of its own.
+its own. Every other work branch was deleted once merged.
 
 Branch names are deliberately absent from the phase table further down: every
 phase listed there is merged, so the branch it arrived on no longer exists and
 naming it only invites confusion.
 
-Progress by area:
-
-```
-Battle engine      ██████████ 100%   done
-Accounts and XP    ██████████ 100%   live and verified
-Phase F interface  ████████▒▒  85%   a couple of items left
-Balance pass       █████████▒  85%   P0, initiative, range bands, screening, Bail Out
-AI tuning          ▒▒▒▒▒▒▒▒▒▒   0%   not started
-Story mode         ▒▒▒▒▒▒▒▒▒▒   0%   scaffold only
-```
 
 ## Abbreviations
 
