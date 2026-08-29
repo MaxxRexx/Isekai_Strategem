@@ -37,9 +37,12 @@ the owner asks for one.
   quietly "fixing" correct behaviour.
 - **Flag knock-on effects early.** Before a change lands, not after it is
   discovered mid-rebalance.
-- **Keep the documents current.** `game_design.md` describes the game on `main`;
-  `current_development_status.md` describes where the work is. Re-render the PDF
-  when the design document changes.
+- **Keep the documents current.** All of them, not the two named here:
+  `game_design.md` describes the game on `main`, `current_development_status.md`
+  describes where the work is, and `README.md`, `app/README.md` and `CLAUDE.md`
+  all make claims that a change can falsify. Re-render the PDF when the design
+  document changes. "Update the docs" means every document that says something
+  about what moved, and the check for that is its own section below.
 - **Test, then report honestly.** Say what passed, what was verified only
   through tests rather than by driving the real interface, and what was not
   checked at all.
@@ -92,6 +95,46 @@ round trip every time.
   what is genuinely still open. A finding with no decision in it belongs in the
   work in progress, not in a queue of things for the owner to bless.
 
+### A search that finds nothing has proved nothing
+
+Added after the owner asked for the docs to be updated and the README was left
+untouched. It had been checked, with one grep for the words the change used
+("tests tab", "scenario", "wave 1", "wave 2"). The README contains none of
+those words and never did, so the search could not have matched however stale
+the file was. It was stale: Close Range was still written as 0-1 two waves
+after item 1b widened it to 0-2, the distance rule still had no screening in
+it, and the tool table listed a `position_matrix` tool that is not in the
+repository. The search was then reported as if it were a reading.
+
+- **An empty result is evidence about the search, not about the document.**
+  Terms taken from the change can only match documents that already use the
+  change's vocabulary, which are the documents least likely to be wrong. A
+  document that is stale is usually stale in the old words.
+- **Read the documents that make claims about what moved.** Open them. A rule
+  restated in prose (a range band, a distance formula, a cost, a count) is
+  where drift hides, because nothing compiles it and no test reads it.
+- **Run the three checks that are mechanical**, from the repository root:
+
+  ```bash
+  # every file a document names exists
+  grep -rhoE '`[a-zA-Z0-9_./-]+\.(dart|md|yml|yaml|sql|py)`' --include=*.md . \
+    | tr -d '`' | sort -u \
+    | while read f; do find . -name "$(basename $f)" | grep -q . || echo "MISSING: $f"; done
+
+  # no document names a branch that is gone (the [^.a-z] skips .claude/ paths)
+  git ls-remote --heads origin
+  grep -rnE '(^|[^.a-z])claude/[a-z0-9-]+' --include=*.md . | grep -v 'claude/\*\*'
+
+  # every relative link resolves from its own directory, not from the root
+  for f in $(find . -name "*.md" -not -path "./.git/*"); do d=$(dirname "$f"); \
+    grep -ohE '\]\(([^)#]+)\)' "$f" | sed -E 's/\]\(|\)//g' | grep -v '^http' \
+    | while read t; do [ -e "$d/$t" ] || echo "BROKEN in $f -> $t"; done; done
+  ```
+
+- **Name the documents that were opened**, in the report. "The docs are
+  updated" is not checkable. "I read README, game_design and the working
+  agreement; the first was wrong about the range bands" is.
+
 ## What the assistant should not do
 
 - **Use em dashes.** Anywhere: chat, commit messages, code comments, documents,
@@ -103,7 +146,8 @@ round trip every time.
   and it cannot be asked for, stop and report exactly what was needed. Do not
   proceed on an assumed default.
 - **Leave documentation stale or duplicated.** Including branch names that no
-  longer exist, and phase tables that repeat what a live section already says.
+  longer exist, phase tables that repeat what a live section already says, and
+  a rule written in prose that the code has since changed underneath it.
 - **Describe a feature as working when only its tests have been run.** Tests
   passing and the feature being right are different claims.
 - **Merge, push to another branch, or open a pull request** without being asked.
