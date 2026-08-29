@@ -20,7 +20,13 @@ ordinary battle. A scenario is **retired** once its case has been played and
 confirmed, so the tab only ever offers what still needs a look. Ten are
 retired (wave 0's eight, #14's Mirror, and wave 1's Lock); four are waiting:
 Buff, Bleed, Freeze and Duration. Each scenario has a one-word name, because
-the playtest shorthand in the working agreement addresses them by it. The next item is whatever
+the playtest shorthand in the working agreement addresses them by it.
+
+Every live scenario also carries a **script**: the same run written so a
+machine can play it. `flutter test test/scenario_script_test.dart --reporter
+expanded` plays all four fifty times over fixed dice and prints what held, so
+the mechanical half of a playtest costs a command rather than an evening. The
+judgement half ("did that buff feel worth the turn") still needs a person. The next item is whatever
 `current_development_status.md` names as the current priority.
 
 # Session setup and handoffs

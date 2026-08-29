@@ -1906,6 +1906,22 @@ class TurnEngine {
         return;
       }
       if (forcedMiss || !outcome.isHit) {
+        // A dodge that beat the roll has to be recorded as not landing. It
+        // used to keep the rolled outcome, so a Decoy'd attack went into the
+        // log as a hit that dealt no damage: "(1 hit) -> HP 100", with a
+        // details panel that said "so it lands" and then showed no damage.
+        // The dice are still what they were; what changed is whether it
+        // landed, which is the thing everything downstream reads.
+        if (forcedMiss && outcome.isHit) {
+          outcome = AttackRollOutcome(
+            attackerRoll: outcome.attackerRoll,
+            defenderRoll: outcome.defenderRoll,
+            isHit: false,
+            isCriticalHit: false,
+            isCriticalMiss: outcome.isCriticalMiss,
+            criticalHitThreshold: outcome.criticalHitThreshold,
+          );
+        }
         // Ilona-style "Riposte" Side Effect: a melee attack that misses her
         // grants a stacking Attack buff for her next turn.
         final riposteBonus =

@@ -303,6 +303,42 @@ C, and folded D in as the tapped-open state rather than the resting one. **E is
 not built** and is still the escalation if "who is winning the status war" turns
 out to be a question players ask.
 
+## Playing the Tests tab without playing it
+
+Every live scenario carries a `script` beside its prose: the same run written
+as instructions a machine can execute (`scenario_script.dart`). Run it with
+
+```
+cd app && flutter test test/scenario_script_test.dart --reporter expanded
+```
+
+Each scenario is played **fifty times over fixed dice**, and every check comes
+back one of three ways.
+
+| Verdict | Means |
+|---|---|
+| `PASSED` | Held on every seed. Nothing to look at. |
+| `DICE 29/50` | Held on some. The honest answer for anything sitting behind an attack roll or an infliction contest. |
+| `FAILED` | Never held once in fifty tries, and the report prints what it saw instead. This is a real problem. |
+
+A check whose subject is no longer on the board is **not counted** rather than
+failed: how many turns are left of a buff is unanswerable once its holder has
+been defeated, and the first version of this runner reported that as a bug in
+item #D when the rule was working perfectly.
+
+What this does not replace is judgement. "Does spending a turn on this buff
+feel like it bought something" is not a question a runner can answer, and the
+prose steps and expectations stay in the brief for a person to read.
+
+**It found two things on its first real run.** Duration's `steps` still told
+the tester the badge should read one turn after their next turn, which was
+written when War Chant's Empowered lasted two turns and never updated when it
+became three; the same scenario's `expectations` said three, so the brief
+disagreed with itself and with the game. The step now reads its numbers out of
+the catalogue, like the screening briefs already do. And the first script for
+it was itself off by one, which is exactly what item #D is about: the turn you
+cast on is a free remainder and spends none of the duration.
+
 ## The work queue
 
 Every item, with what it is and where it stands. **The numbers are names, not

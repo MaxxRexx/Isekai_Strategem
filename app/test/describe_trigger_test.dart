@@ -50,14 +50,14 @@ void main() {
     });
   });
 
-  group('an area ability says it catches a line', () {
+  group('an area ability says it covers a line', () {
     test('every area ability names the line and the cap together', () {
       for (final t in all) {
         if (t.attackSubtype != AttackSubtype.aoe) continue;
         if (t.targetAffiliation == TargetAffiliation.self) continue;
         final text = describeActiveTrigger(t);
         expect(text, contains('line'), reason: t.id);
-        expect(text, contains('nobody on any other line'), reason: t.id);
+        expect(text, contains('nobody on another line'), reason: t.id);
         expect(text, contains('${t.targetCount}'), reason: t.id);
       }
     });
@@ -78,7 +78,34 @@ void main() {
 
       expect(text, contains('one enemy line'));
       expect(text, contains('2'));
-      expect(text, contains('nobody on any other line'));
+      expect(text, contains('nobody on another line'));
+    });
+
+    test('a ward affects a line, it does not catch one', () {
+      // "Catching up to 3" is what an attack does. Guardian's Aegis is a
+      // ward, and a playtest called the word out.
+      for (final t in all) {
+        if (t.attackSubtype != AttackSubtype.aoe) continue;
+        final text = describeActiveTrigger(t);
+        if (t.targetAffiliation == TargetAffiliation.opponent) {
+          expect(text, contains('hitting up to'), reason: t.id);
+        } else {
+          expect(text, contains('affecting up to'), reason: t.id);
+          expect(text, isNot(contains('hitting')), reason: t.id);
+        }
+        expect(text, isNot(contains('catching')), reason: t.id);
+      }
+    });
+
+    test('an ability aimed at more than one target does not say single', () {
+      // Martyr's End reaches three and used to describe itself as
+      // "an attack on a single target".
+      for (final t in all) {
+        if (t.targetCount <= 1) continue;
+        if (t.targetAffiliation == TargetAffiliation.self) continue;
+        expect(describeActiveTrigger(t), isNot(contains('a single target')),
+            reason: '${t.id} reaches ${t.targetCount}');
+      }
     });
 
     test('an area ability aimed at your side points at your lines', () {
@@ -111,12 +138,12 @@ void main() {
       }
     });
 
-    test('an area attack leaves everyone it catches, not "the target"', () {
+    test('an area attack leaves everyone it hits, not "the target"', () {
       for (final t in all) {
         if (t.attackSubtype != AttackSubtype.aoe) continue;
         if (t.targetAffiliation != TargetAffiliation.opponent) continue;
         if (t.inflictedStatusEffects.isEmpty) continue;
-        expect(describeActiveTrigger(t), contains('Leaves everyone it catches'),
+        expect(describeActiveTrigger(t), contains('Leaves everyone it hits'),
             reason: t.id);
       }
     });

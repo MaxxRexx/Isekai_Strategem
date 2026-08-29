@@ -328,21 +328,29 @@ String describeActiveTrigger(
   final isAttack = t.targetAffiliation == TargetAffiliation.opponent;
   final noun = isAttack ? 'attack' : 'ability';
   final whichLine = isAttack ? 'one enemy line' : 'one of your own lines';
+  // What the ability does to the people on that line. An attack hits them;
+  // a ward does not "catch" anybody, it affects them.
+  final reaches = isAttack ? 'hitting' : 'affecting';
+  String people(int n) => n == 1 ? '1 who stands' : '$n who stand';
 
   if (t.targetAffiliation == TargetAffiliation.self) {
     parts.add('Used on yourself. Nobody else is affected.');
   } else if (t.attackSubtype == AttackSubtype.aoe) {
     parts.add(
-      '$rangeWord $noun. Covers $whichLine, catching up to '
-      '${t.targetCount} standing on it and nobody on any other line.',
+      '$rangeWord $noun. Covers $whichLine, $reaches up to '
+      '${people(t.targetCount)} on it and nobody on another line.',
     );
   } else if (t.attackSubtype == AttackSubtype.burst) {
     parts.add(
-      '$rangeWord $noun: ${t.hitsPerUse} hits split across up to '
-      '${t.targetCount} target(s).',
+      '$rangeWord $noun. ${t.hitsPerUse} hits, split across up to '
+      '${t.targetCount} ${t.targetCount == 1 ? 'target' : 'targets'}.',
     );
+  } else if (t.targetCount > 1) {
+    // A unique ability aimed at more than one target used to describe itself
+    // as single-target, which is simply not what Martyr's End does.
+    parts.add('$rangeWord $noun on up to ${t.targetCount} targets.');
   } else if (t.targetAffiliation == TargetAffiliation.ally) {
-    parts.add('$rangeWord. Aimed at one ally.');
+    parts.add('$rangeWord ability, aimed at one ally.');
   } else {
     parts.add('$rangeWord attack on a single target.');
   }
@@ -369,7 +377,7 @@ String describeActiveTrigger(
     TargetAffiliation.ally =>
       t.attackSubtype == AttackSubtype.aoe ? 'Everyone it covers becomes' : 'Makes the ally',
     TargetAffiliation.opponent =>
-      t.attackSubtype == AttackSubtype.aoe ? 'Leaves everyone it catches' : 'Leaves the target',
+      t.attackSubtype == AttackSubtype.aoe ? 'Leaves everyone it hits' : 'Leaves the target',
   };
   for (final application in t.inflictedStatusEffects) {
     final def = catalog[application.statusEffectId];

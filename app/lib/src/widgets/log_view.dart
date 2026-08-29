@@ -253,8 +253,8 @@ class BailOutLogLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
+    return Text.rich(
+      TextSpan(
         style: const TextStyle(color: Colors.white70, fontSize: 12.5),
         children: entry.refused
             ? [
@@ -385,8 +385,12 @@ class _LogLineState extends State<LogLine> {
   static const _linkUnderline = TextDecoration.underline;
 
   void _showCharacterInfo(String characterId) {
-    final character = roster[CombatantIds.characterOf(characterId)];
-    if (character == null) return;
+    // `roster[]` throws on an unknown id rather than returning null, so the
+    // null check this used to do was dead code that read as a guard against
+    // exactly the case it did not guard against.
+    final id = CombatantIds.characterOf(characterId);
+    if (!roster.contains(id)) return;
+    final character = roster[id];
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -493,8 +497,8 @@ class _LogLineState extends State<LogLine> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: RichText(
-                    text: TextSpan(
+                  child: Text.rich(
+                    TextSpan(
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.white70,
@@ -608,7 +612,13 @@ class _LogLineState extends State<LogLine> {
           ),
         ),
         if (_expanded && action.bend != null) BendExplanation(bend: action.bend!),
-        if (_expanded && hasBreakdown && t.rolls.isNotEmpty)
+        // Not `&& t.rolls.isNotEmpty`. That was true of every ability until
+        // friendly ones stopped rolling, at which point War Chant and
+        // Guardian's Aegis offered a Details button, flipped it to Hide, and
+        // showed nothing: the affordance was decided by one condition and
+        // the panel by a stricter one. One condition now, and the panel
+        // handles having no rolls to show.
+        if (_expanded && hasBreakdown)
           RollBreakdownView(
             actorName: action.characterName,
             abilityName: action.triggerName,
@@ -700,6 +710,10 @@ class RollBreakdownView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      // Full width whatever it holds. Without this the panel shrank to its
+      // content, so an ability with no rolls to explain drew a short stub
+      // where every other line drew a full-width block.
+      width: double.infinity,
       margin: const EdgeInsets.only(top: 2, bottom: 6),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -709,8 +723,8 @@ class RollBreakdownView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RichText(
-            text: TextSpan(
+          Text.rich(
+            TextSpan(
               style: _body,
               children: [
                 TextSpan(text: actorName, style: _total),
@@ -753,17 +767,56 @@ class RollBreakdownView extends StatelessWidget {
             _outcomeChip(b),
           ],
         ),
-        const SizedBox(height: 3),
-        RichText(text: TextSpan(style: _body, children: _toHitSpans(b))),
+        const SizedBox(height: 4),
+        _steps(_toHitSteps(b)),
         if (b.damageDetail != null) ...[
-          const SizedBox(height: 3),
-          RichText(
-            text: TextSpan(style: _body, children: _damageSpans(b.damageDetail!)),
-          ),
+          const SizedBox(height: 6),
+          _sectionLabel('Damage'),
+          const SizedBox(height: 2),
+          _steps(_damageSteps(b.damageDetail!)),
         ],
       ],
     );
   }
+
+  /// One bullet per step of the arithmetic.
+  ///
+  /// This was a single run-on sentence per roll, with the steps separated by
+  /// full stops: "The ability rolls 2d6: 5+2 = 7, plus the ability's flat +7
+  /// to 14. Team Spirit bonus x1.38 to 19. The target's Armor 1 soaks some to
+  /// 18. Resistance x0.75. Final: 14 damage." Every number in it is worth
+  /// reading and none of them stood out. A step per line is the same content
+  /// and a tenth of the effort.
+  Widget _steps(List<List<InlineSpan>> steps) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final step in steps)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text.rich(
+                TextSpan(
+                  style: _body,
+                  children: [
+                    const TextSpan(
+                      text: '• ',
+                      style: TextStyle(color: Colors.white38),
+                    ),
+                    ...step,
+                  ],
+                ),
+              ),
+            ),
+        ],
+      );
+
+  Widget _sectionLabel(String text) => Text(
+        text,
+        style: const TextStyle(
+          color: Palette.accent,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w600,
+        ),
+      );
 
   Widget _outcomeChip(LogRollBreakdown b) {
     final (label, color) = b.isCriticalMiss
@@ -811,90 +864,125 @@ class RollBreakdownView extends StatelessWidget {
     );
   }
 
-  List<InlineSpan> _toHitSpans(LogRollBreakdown b) {
+  /// The to-hit arithmetic, one step per line, ending in a verdict that
+  /// cannot contradict the numbers above it.
+  ///
+  /// It used to read "15 ≥ 7, so it misses" on a critical miss: the
+  /// comparison came from the totals and the verb came from the outcome, and
+  /// on any roll that something overrode they disagreed in the same sentence.
+  /// When the dice were not what decided it, the line says so and then says
+  /// what did.
+  List<List<InlineSpan>> _toHitSteps(LogRollBreakdown b) {
     final a = b.attackerRoll;
     final d = b.defenderRoll;
+    final numbersLanded = a.total >= d.total;
+
     return [
-      const TextSpan(
-        text: 'To land, the attack roll has to beat the target’s defense '
-            'roll. ',
-      ),
-      const TextSpan(text: 'Attack: '),
-      _dieSpan(a),
-      const TextSpan(text: ' + Attack '),
-      TextSpan(text: '${a.modifier}', style: _stat),
-      const TextSpan(text: ' = '),
-      TextSpan(text: '${a.total}', style: _total),
-      const TextSpan(text: '.  Defense: '),
-      _dieSpan(d),
-      const TextSpan(text: ' + Defense '),
-      TextSpan(text: '${d.modifier}', style: _stat),
-      const TextSpan(text: ' = '),
-      TextSpan(text: '${d.total}', style: _total),
-      const TextSpan(text: '.  '),
-      TextSpan(
-        text: '${a.total} ${a.total >= d.total ? '≥' : '<'} ${d.total}',
-        style: _total,
-      ),
-      TextSpan(text: b.isHit ? ', so it lands.' : ', so it misses.'),
+      [
+        const TextSpan(text: 'Attack: '),
+        _dieSpan(a),
+        const TextSpan(text: ' + Attack '),
+        TextSpan(text: '${a.modifier}', style: _stat),
+        const TextSpan(text: ' = '),
+        TextSpan(text: '${a.total}', style: _total),
+      ],
+      [
+        const TextSpan(text: 'Defense: '),
+        _dieSpan(d),
+        const TextSpan(text: ' + Defense '),
+        TextSpan(text: '${d.modifier}', style: _stat),
+        const TextSpan(text: ' = '),
+        TextSpan(text: '${d.total}', style: _total),
+      ],
+      [
+        TextSpan(
+          text: '${a.total} ${numbersLanded ? '≥' : '<'} ${d.total}',
+          style: _total,
+        ),
+        // When the dice and the outcome agree, one clause is the whole story.
+        // When they do not, the numbers get their own clause and the thing
+        // that overruled them gets the next one, so the line never reads
+        // "15 ≥ 7, so it misses".
+        if (numbersLanded == b.isHit)
+          TextSpan(text: b.isHit ? ', so it lands.' : ', so it misses.')
+        else if (b.isCriticalMiss) ...const [
+          TextSpan(text: ', which would have landed, but the attack roll was '),
+          TextSpan(
+            text: 'a critical miss',
+            style: TextStyle(color: Palette.danger),
+          ),
+          TextSpan(text: ', so it fails outright.'),
+        ] else if (numbersLanded) ...const [
+          TextSpan(text: ', which would have landed, but the attack was '),
+          TextSpan(
+            text: 'turned aside',
+            style: TextStyle(color: Palette.danger),
+          ),
+          TextSpan(text: ' before it arrived.'),
+        ] else
+          const TextSpan(text: ', and yet it lands.'),
+      ],
       if (b.isCriticalHit)
-        const TextSpan(
-          text: ' The roll hit the critical range, so the damage is doubled.',
-          style: TextStyle(color: Palette.good),
-        ),
-      if (b.isCriticalMiss)
-        const TextSpan(
-          text: ' A critical miss. The attack fails outright.',
-          style: TextStyle(color: Palette.danger),
-        ),
+        const [
+          TextSpan(
+            text: 'The roll hit the critical range, so the damage dice are '
+                'doubled.',
+            style: TextStyle(color: Palette.good),
+          ),
+        ],
     ];
   }
 
-  List<InlineSpan> _damageSpans(LogDamageDetail d) {
+  List<List<InlineSpan>> _damageSteps(LogDamageDetail d) {
     if (d.prevented) {
       return const [
-        TextSpan(
-          text: 'Damage: fully prevented (blocked or warded), so 0 gets '
-              'through.',
-          style: TextStyle(color: Palette.accent),
-        ),
+        [
+          TextSpan(
+            text: 'Fully prevented (blocked or warded), so 0 gets through.',
+            style: TextStyle(color: Palette.accent),
+          ),
+        ],
       ];
     }
-    // The dice and the flat bonus are printed as two separate steps. Run
-    // together as one chain they read as one more die, and a playtester
-    // reading `1+6+2+3+2+6+23` had no way to tell that the 23 was not a roll.
-    final spans = <InlineSpan>[
-      const TextSpan(text: 'The ability rolls '),
-      TextSpan(text: d.diceNotation, style: _die),
-      const TextSpan(text: ': '),
-      TextSpan(text: d.diceRollsDescribe, style: _die),
-      const TextSpan(text: ' = '),
-      TextSpan(text: '${d.diceRollsTotal}', style: _total),
+    // The dice and the flat bonus are separate steps. Run together as one
+    // chain they read as one more die, and a playtester reading
+    // `1+6+2+3+2+6+23` had no way to tell that the 23 was not a roll.
+    final steps = <List<InlineSpan>>[
+      [
+        const TextSpan(text: 'Rolls '),
+        TextSpan(text: d.diceNotation, style: _die),
+        const TextSpan(text: ': '),
+        TextSpan(text: d.diceRollsDescribe, style: _die),
+        const TextSpan(text: ' = '),
+        TextSpan(text: '${d.diceRollsTotal}', style: _total),
+      ],
     ];
     if (d.diceFlatBonus != 0) {
-      spans.addAll([
-        const TextSpan(text: ', plus the ability’s flat '),
+      steps.add([
+        const TextSpan(text: 'Plus the ability’s flat '),
         TextSpan(text: d.flatBonusDescribe, style: _stat),
         const TextSpan(text: ' → '),
         TextSpan(text: '${d.diceTotal}', style: _total),
       ]);
     }
     if (d.preCritMultiplier != 1.0) {
-      final after = (d.diceTotal * d.preCritMultiplier).round();
-      spans.addAll([
-        const TextSpan(text: '. Team Spirit / Side Effect bonus '),
+      steps.add([
+        const TextSpan(text: 'Team Spirit / Side Effect bonus '),
         TextSpan(
           text: '×${d.preCritMultiplier.toStringAsFixed(2)}',
           style: _stat,
         ),
         const TextSpan(text: ' → '),
-        TextSpan(text: '$after', style: _total),
+        TextSpan(
+          text: '${(d.diceTotal * d.preCritMultiplier).round()}',
+          style: _total,
+        ),
       ]);
     }
     if (d.criticalHitApplied) {
-      spans.addAll([
+      steps.add([
         const TextSpan(
-          text: '. Critical hit: the damage dice are rolled again for ',
+          text: 'Critical hit: the damage dice are rolled again for ',
           style: TextStyle(color: Palette.good),
         ),
         TextSpan(text: '+${d.criticalBonusDamage}', style: _die),
@@ -902,8 +990,8 @@ class RollBreakdownView extends StatelessWidget {
         TextSpan(text: '${d.afterCriticalHit}', style: _total),
       ]);
     }
-    spans.addAll([
-      const TextSpan(text: '. The target’s Armor '),
+    steps.add([
+      const TextSpan(text: 'The target’s Armor '),
       TextSpan(text: '${d.armor}', style: _stat),
       const TextSpan(text: ' soaks some → '),
       TextSpan(text: '${d.afterArmor}', style: _total),
@@ -911,39 +999,34 @@ class RollBreakdownView extends StatelessWidget {
     if (d.statusDamageTypeMultiplier != 1.0 || d.damageResistanceApplied) {
       final combined =
           d.statusDamageTypeMultiplier * (d.damageResistanceApplied ? 0.5 : 1);
-      spans.addAll([
-        const TextSpan(text: '. Resistance / vulnerability '),
+      steps.add([
+        const TextSpan(text: 'Resistance / vulnerability '),
         TextSpan(text: '×${combined.toStringAsFixed(2)}', style: _stat),
       ]);
     }
-    spans.addAll([
-      const TextSpan(text: '. Final: '),
+    steps.add([
+      const TextSpan(text: 'Final: '),
       TextSpan(
         text: '${d.finalDamage} damage',
-        style: const TextStyle(color: Palette.danger, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: Palette.danger,
+          fontWeight: FontWeight.bold,
+        ),
       ),
-      const TextSpan(text: '.'),
     ]);
-    return spans;
+    return steps;
   }
 
   Widget _statusSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Status effects applied:',
-          style: TextStyle(
-            color: Palette.accent,
-            fontSize: 10.5,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        _sectionLabel('Status effects applied'),
         for (final name in statusEffectsApplied)
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: RichText(
-              text: TextSpan(
+            child: Text.rich(
+              TextSpan(
                 style: _body,
                 children: [
                   TextSpan(text: '• $name', style: _total),
@@ -959,8 +1042,8 @@ class RollBreakdownView extends StatelessWidget {
 
   Widget _resultLine() {
     if (bodyDestroyed) {
-      return RichText(
-        text: TextSpan(
+      return Text.rich(
+        TextSpan(
           style: _body,
           children: [
             const TextSpan(text: 'Result: '),
@@ -980,8 +1063,8 @@ class RollBreakdownView extends StatelessWidget {
       );
     }
     if (refusedToBail) {
-      return RichText(
-        text: TextSpan(
+      return Text.rich(
+        TextSpan(
           style: _body,
           children: [
             const TextSpan(text: 'Result: '),
@@ -997,8 +1080,8 @@ class RollBreakdownView extends StatelessWidget {
         ),
       );
     }
-    return RichText(
-      text: TextSpan(
+    return Text.rich(
+      TextSpan(
         style: _body,
         children: [
           const TextSpan(text: 'Result: '),
@@ -1212,8 +1295,8 @@ class BendExplanation extends StatelessWidget {
             decoration: const BoxDecoration(
               border: Border(top: BorderSide(color: Palette.hairline)),
             ),
-            child: RichText(
-              text: TextSpan(
+            child: Text.rich(
+              TextSpan(
                 style: const TextStyle(
                   color: Palette.bend,
                   fontSize: 12,
@@ -1286,8 +1369,8 @@ class ReactionLogLine extends StatelessWidget {
           left: BorderSide(color: Palette.accent, width: 3),
         ),
       ),
-      child: RichText(
-        text: TextSpan(
+      child: Text.rich(
+        TextSpan(
           style: const TextStyle(fontSize: 12, color: Colors.white70),
           children: [
             const TextSpan(

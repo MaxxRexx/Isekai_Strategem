@@ -2,6 +2,7 @@ import 'package:battle_engine/battle_engine.dart';
 
 import 'draft.dart';
 import 'play_session.dart';
+import 'scenario_script.dart';
 
 /// A pre-arranged battle that puts one specific rule in front of the player
 /// in a turn or two.
@@ -58,6 +59,18 @@ class TestScenario {
   /// Honest about the dice: some of these need an attack to land.
   final String? caveat;
 
+  /// The same run as [steps], written so a machine can play it.
+  ///
+  /// [steps] and [expectations] are prose for a person: they say why the
+  /// case matters and what to look for. This says what to do, precisely
+  /// enough to execute, so `runScenarioScript` can play the scenario dozens
+  /// of times over fixed dice and report what held. The judgement calls stay
+  /// with the person; the mechanical checks stop needing one.
+  ///
+  /// Null on the retired scenarios, whose cases have already been confirmed.
+  /// `scenario_script_test` refuses a live one without a script.
+  final List<ScenarioStep>? script;
+
   final List<String> playerIds;
   final List<String> enemyIds;
 
@@ -109,6 +122,7 @@ class TestScenario {
     required this.steps,
     required this.expect,
     this.caveat,
+    this.script,
     required this.playerIds,
     required this.enemyIds,
     required this.kits,
@@ -122,6 +136,14 @@ class TestScenario {
   });
 
   bool _isPlayer(String id) => playerIds.contains(id);
+
+  /// A status effect's duration, read from the catalogue so a brief cannot
+  /// quote a number the game stopped using. This one was written when War
+  /// Chant's Empowered lasted two turns and still said so after it became
+  /// three, in the same scenario whose expectations said three.
+  int durationOf(String statusEffectId) =>
+      StatusEffectCatalog.defaultCatalog[statusEffectId].defaultDurationTurns ??
+      0;
 
   /// Where [characterId] stands at the start, which is what the scenario
   /// pinned or, failing that, the position their kit's range bands derive.
@@ -361,6 +383,25 @@ final List<TestScenario> allScenarios = [
           'Guardian\'s Aegis is still on two, deliberately: at one turn two '
           'defensive squads never finish each other off.',
     ],
+    // The mechanical half of the brief. The judgement half ("did the turn
+    // you spent buffing pay for itself") stays with the person.
+    script: const [
+      QueueAbility('kaito_reyes', 'war_chant',
+          targets: ['kaito_reyes', 'rurik_voss']),
+      ResolveOnly(),
+      Carries('kaito_reyes', 'empowered'),
+      Carries('rurik_voss', 'empowered'),
+      DoesNotCarry('mireille_song', 'empowered'),
+      Carries('kaito_reyes', 'empowered', turnsLeft: 3),
+      EndTurn(),
+      QueueAbility('kaito_reyes', 'guardians_aegis',
+          targets: ['kaito_reyes', 'rurik_voss']),
+      ResolveOnly(),
+      Carries('kaito_reyes', 'guarded'),
+      Carries('kaito_reyes', 'braced'),
+      Carries('rurik_voss', 'guarded'),
+      DoesNotCarry('mireille_song', 'guarded'),
+    ],
     caveat:
         'This one is a judgement, not a pass or fail. The rule prices War '
         'Chant at 2.06 and the Aegis at 1.38 against a 2.0 to 3.0 band, and '
@@ -419,6 +460,19 @@ final List<TestScenario> allScenarios = [
       'The bleed damage at the start of her turn goes up with the count: '
           'three stacks tick three times what one does.',
     ],
+    // Everything here sits behind an attack landing and then winning an
+    // infliction contest, so these come back as DICE rather than PASSED.
+    // What would be a failure is a check that never holds on any seed.
+    script: const [
+      QueueAbility('rurik_voss', 'whirlwind_slash', targets: ['vela_ashworth']),
+      ResolveOnly(),
+      Carries('vela_ashworth', 'bleeding', stacks: 1),
+      EndTurn(),
+      QueueAbility('kaito_reyes', 'rapid_fire', targets: ['vela_ashworth']),
+      ResolveOnly(),
+      Carries('vela_ashworth', 'bleeding', stacks: 2),
+      Carries('vela_ashworth', 'bleeding', stacks: 3),
+    ],
     caveat:
         'Every strike has to hit and then win the infliction contest to add '
         'a stack, so a turn can pass without the count moving. That is the '
@@ -471,6 +525,20 @@ final List<TestScenario> allScenarios = [
       'Mireille hits a frozen target with Thunder, and a second REACTION '
           'line says the ice shatters for double damage on that hit.',
       'Vela ends the turn without the Frozen badge. It was spent breaking.',
+    ],
+    script: const [
+      QueueAbility('rurik_voss', 'frost_lance', targets: ['vela_ashworth']),
+      QueueAbility('kaito_reyes', 'frost_lance', targets: ['vela_ashworth']),
+      QueueAbility('mireille_song', 'thunderclap_round',
+          targets: ['vela_ashworth']),
+      ResolveOnly(),
+      ReactionFired('Chilled', became: 'Frozen'),
+      ReactionFired('Frozen'),
+      DoesNotCarry('vela_ashworth', 'frozen'),
+      // The confusion a playtest reported: the log said Chilled became
+      // Frozen and Chilled was on her again. Both are true, and the line
+      // has to say so.
+      LogSays('the same attack applies Chilled again'),
     ],
     caveat:
         'Frost Lance still has to hit and win the infliction contest to apply '
@@ -565,10 +633,15 @@ final List<TestScenario> allScenarios = [
     steps: (s) => [
       'Queue War Chant from Kaito on himself and resolve the turn. It is a '
           'squad buff now, so aim it at Kaito alone to keep this simple.',
-      'Read the EMPOWERED badge on Kaito: it should say three turns left.',
-      'End your turn. On your next turn, check the badge is still there and '
-          'now says one.',
-      'End that turn too. On the turn after, the badge should be gone.',
+      'Read the EMPOWERED badge on Kaito: it should say '
+          '${s.durationOf('empowered')} turns left.',
+      'End your turn. On your next turn the badge should still say '
+          '${s.durationOf('empowered')}: the turn you cast it on is a free '
+          'remainder and does not count.',
+      'End that turn. Now it counts down one of your turns at a time, so it '
+          'reads ${s.durationOf('empowered') - 1}, then '
+          '${s.durationOf('empowered') - 2}, and is gone at the end of the '
+          '${s.durationOf('empowered')}th of your turns after the cast.',
     ],
     expect: (s) => [
       'Right after casting, the badge says 3 turns left, counting your next '
@@ -578,6 +651,23 @@ final List<TestScenario> allScenarios = [
           'turn with a buff that is about to be taken away unused.',
       'The count only moves on your own turns. The enemy taking a turn does '
           'not spend one of yours.',
+    ],
+    // Item #D as arithmetic: cast, and it reads 3. One of your turns later
+    // it reads 2, not 1. The enemy's turn in between spends nothing.
+    script: const [
+      QueueAbility('kaito_reyes', 'war_chant', targets: ['kaito_reyes']),
+      ResolveOnly(),
+      Carries('kaito_reyes', 'empowered', turnsLeft: 3),
+      // Item #D itself: the turn it was cast on is a free remainder, so
+      // ending it spends none of the three.
+      EndTurn(),
+      Carries('kaito_reyes', 'empowered', turnsLeft: 3),
+      EndTurn(),
+      Carries('kaito_reyes', 'empowered', turnsLeft: 2),
+      EndTurn(),
+      Carries('kaito_reyes', 'empowered', turnsLeft: 1),
+      EndTurn(),
+      DoesNotCarry('kaito_reyes', 'empowered'),
     ],
     playerIds: _playerSquad,
     enemyIds: _enemySquad,

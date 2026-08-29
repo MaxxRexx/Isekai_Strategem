@@ -122,17 +122,19 @@ void main() {
         ),
       );
 
-      final text = tester
-          .widgetList<RichText>(find.byType(RichText))
-          .map((w) => w.text.toPlainText())
-          .join(' ');
+      // Every line of the panel, as the player reads it. The breakdown is a
+      // bullet per step now rather than one run-on sentence, so the dice and
+      // the bonus are separate lines and not merely separate clauses.
+      final lines = [
+        for (final w in tester.widgetList<Text>(find.byType(Text)))
+          w.textSpan?.toPlainText() ?? w.data ?? '',
+      ];
+      final text = lines.join(' ');
 
-      expect(text, contains('rolls 6d6'));
-      expect(text, contains('1+6+2+3+2+6'));
-      expect(text, contains('= 20'));
-      expect(text, contains('flat'));
-      expect(text, contains('+23'));
-      expect(text, contains('43'));
+      expect(lines.any((l) => l.contains('Rolls 6d6: 1+6+2+3+2+6 = 20')), isTrue,
+          reason: 'the dice are one step: notation, the rolls, the total');
+      expect(lines.any((l) => l.contains('flat +23') && l.contains('43')), isTrue,
+          reason: 'and the flat bonus is the next one');
       // The chain that started all this must not come back.
       expect(text, isNot(contains('1+6+2+3+2+6+23')));
     });

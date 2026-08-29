@@ -2397,6 +2397,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     // and the portrait art are all properties of the character, not of the
     // combatant, so they are asked for by the character's own id.
     final characterId = CombatantIds.characterOf(id);
+    // `roster[]` throws on an unknown id rather than returning null, so the
+    // null handling below it was dead code reading as a guard against the
+    // one case it did not guard against.
+    if (!roster.contains(characterId)) return const SizedBox.shrink();
     final character = roster[characterId];
     final flavor = characterFlavor[characterId];
     final isOwn = _session!.teamA.any((f) => f.id == id);
@@ -2482,10 +2486,10 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ),
             ],
           ),
-          if (character?.sideEffect != null) ...[
+          if (character.sideEffect != null) ...[
             const SizedBox(height: 8),
             Text(
-              character!.sideEffect!.name,
+              character.sideEffect!.name,
               style: const TextStyle(
                 color: Palette.gold,
                 fontSize: 11.5,
@@ -2508,10 +2512,8 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
               ),
             ),
           ],
-          if (character != null) ...[
-            const SizedBox(height: 8),
-            CharacterStatRow(stats: character.baseStats),
-          ],
+          const SizedBox(height: 8),
+          CharacterStatRow(stats: character.baseStats),
           if (fighter.statusEffects.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(
