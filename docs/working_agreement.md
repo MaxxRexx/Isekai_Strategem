@@ -48,7 +48,6 @@ the owner asks for one.
   checked at all.
 - **Distinguish a bug from a design change** when reporting, because they carry
   different risk and different urgency.
-- **Use Signatures when giving options or asking questions** Examples: #A choose A; #B choose B; #C design C?; etc
 
 ### Check the work before calling it done
 
@@ -88,13 +87,11 @@ round trip every time.
 - **Escalate a decision, never a chore.** Something is the owner's call when
   two directions are both defensible, when a balance number or a mechanic is at
   stake, or when the fix rewrites something they own. Everything else is work.
-- **Every choice put to the owner is a Signature, never a hint or a paragraph
-  of loose prose.** Any time options are offered, even mid-discussion, label
-  them #A / #B / #C (and #D onward as needed), each with what it means and a
-  recommendation, so the reply can be a single token. "Say the word", "let me
-  know", "if you want", and a wall of unlabelled alternatives are all
-  unanswerable. One decision per letter set; when there are several decisions,
-  use several sets (#1A/#1B, #2A/#2B, and so on).
+- **A question, or any options you offer, is a Signature, never a hint.** "Say
+  the word", "let me know", "if you want" are not answerable. Ask as #A / #B /
+  #C, with what each one means, so the reply can be a single token. Recommend an
+  option only where the whole context, checked with due diligence, genuinely
+  points to one being best; a reflexive recommendation is worse than none.
 - **One report, one state of the world.** Say what changed, what it cost, and
   what is genuinely still open. A finding with no decision in it belongs in the
   work in progress, not in a queue of things for the owner to bless.
