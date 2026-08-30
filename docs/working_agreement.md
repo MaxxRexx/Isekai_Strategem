@@ -214,8 +214,17 @@ Rules, not preferences. They apply to every future item without being restated.
 
 ## Naming and vocabulary
 
-- Abbreviations are defined once, in `current_development_status.md`: TEG, FAT,
-  SPTV.
+- **Never introduce a term the owner has not used or approved.** In chat, in
+  commit messages, in the documents, and in code comments, use plain English,
+  and reach for the owner's own words before any specialist one. `cds` is fine,
+  because the owner uses it. Words like "tail" or "seam" are not: they were
+  never introduced, and they read as jargon to anyone who has not already met
+  them. When a new idea genuinely needs a short name, say it in plain language
+  first, then propose the name and let the owner approve it before it goes into
+  the documents. A term already sitting in the documents that fails this test
+  is flagged for a plain-English replacement, not quietly kept.
+- Every approved abbreviation and piece of shorthand lives in one place, the
+  next section. Nothing else is approved, so spell it out.
 - Range bands are **Close Range**, **Mid Range**, **Long Range**. Attack types
   are **melee**, **ranged**, **psychic**. They are different axes and the names
   do not overlap.
@@ -224,12 +233,21 @@ Rules, not preferences. They apply to every future item without being restated.
   what it does and how long it lasts in the player's own turns, never just its
   name.
 
-## Shorthand
+## Approved abbreviations and shorthand
 
-- **"pif"** on its own means "port into Flutter": take the most recently
-  approved mockup and build it in the real app under `app/`, matching existing
-  conventions, verified with `dart analyze` and `flutter test`, then committed
-  and pushed.
+The whole list, in one place. Anything not here has not been approved, so spell
+it out rather than coin a new short form. The game-design terms are defined in
+full in the cds (`current_development_status.md`); the expansions below are the
+roster, not a second definition to keep in step.
+
+| Short | Stands for | What it means |
+|---|---|---|
+| **cds** | `current_development_status.md` | The status document: where the work stands, the wave plan, the work queue, and every decision taken. |
+| **TEG** | Team Efficiency Grade | The D-to-SSS score for how well a squad is put together. |
+| **FAT** | Full Arms Trigger | The burst turn that grants up to three ability uses instead of one. |
+| **SE** | Side Effect | A character's one innate, always-on trait. Called a "perk" until item 5c renamed it. |
+| **SPTV** | Status Points and Trigger Value | The two-part pricing rule from item #3: SP prices an effect, TV prices a whole ability, and SP feeds into TV. |
+| **pif** | "port into Flutter" | Take the most recently approved mockup and build it in the real app under `app/`, matching existing conventions, verified with `dart analyze` and `flutter test`, then committed and pushed. |
 
 ### Playtest verdicts
 
