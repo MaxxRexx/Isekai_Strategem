@@ -194,6 +194,26 @@ the owner asks for it:
   branch-deletion note repeated at the end of every session is nagging, and the
   owner has already heard it.
 
+### Polishing
+
+"Polish" is a request for a researched, finished design, not a tidy of wording.
+When the owner says polish, of a mechanic, a feature, or an idea they have
+sketched:
+
+- **Research it properly first.** How the best and most relevant games have
+  handled the same mechanic, current industry practice, and, where it matters,
+  how the game's own lore and existing systems fit. Use real sources, not memory
+  alone.
+- **Fit it to this game.** Show how it synergises with what already exists,
+  where it improves the current design, and what it would cost or complicate.
+  Name the trade-offs honestly.
+- **Present a highly polished version, or a few.** Concrete options worked
+  through to the point of being buildable, each with its reasoning, and a
+  recommendation. Not a menu of vague directions.
+
+It is a design deliverable for the owner to approve, not a licence to build.
+Nothing is built off a polish until the owner picks a direction.
+
 ## What the assistant should not do
 
 - **Use em dashes.** Anywhere: chat, commit messages, code comments, documents,
