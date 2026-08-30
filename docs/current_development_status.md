@@ -13,10 +13,11 @@ explanation of the whole game itself, see
   battlefield, screening, Bail Out), then wave 1's #14, 5c, #D, 3b's mechanism,
   5b, 13b, #3's rule and the two support spot-fixes. All merged to `main`, all
   playtested, #TWC on 2026-08-29.
-- **Now: wave 2, #4 (the Trion economy). 4b's diagnosis is done and merged to
-  `main`** (2026-08-30): the long battles come from missed attacks, not from the
-  economy, and a third of the problem was a measurement defect that is now
-  fixed. See "What 4b found" below. **#4 itself is not started.**
+- **Now: wave 2. 4b is done and merged; #4's design is decided, nothing built.**
+  4b (2026-08-30) found the long battles come from missed attacks, not the
+  economy. #4's decisions (D1 to D5) are taken, and the income question grew
+  into a new **typed-Trion** mechanic, an **origin rebalance**, and an `attack`
+  to `ability` **rename**. See "Wave 2 decisions" below.
 - **After it:** waves 3 to 7, laid out in "The waves" directly below.
 
 Everything below is detail. The full plan is in "The waves" next; the queue is
@@ -35,7 +36,7 @@ audit, approved by the owner as #Q1 to #Q4.
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
 | **1** | ~~#14~~ ~~5c~~ ~~the duration fix (#D)~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ ~~the Trion drain fix~~ ~~**#3's rule only**~~ ~~two support spot-fixes~~ **wave 1 complete, merged, playtested and closed out (#TWC, 2026-08-29)** | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
-| **2** | ~~**4b**~~ **diagnosed**, then **#4**. **This is the current priority** | 4b went first, because the 30-round limit would otherwise have cut the long battles off rather than explained them. It found they come from missed attacks, not the economy, and cleared the limit to land as specified. Left: income, capacity-gated FAT, the FAT cap, the round limit, and range as an input to the cost model. Its numbers come from wave 1's rule rather than by eye |
+| **2** | ~~**4b**~~ **done**. Then **#4** (economy), the **origin re-tag rebalance**, the **`attack` to `ability` rename** (with the Sealed recode), and **typed Trion**. **Current priority; design decided, not built.** | 4b went first and cleared the round limit (it found the long battles are accuracy, not economy). #4's decisions and everything the design pass pulled in are recorded in "Wave 2 decisions" above. Typed Trion follows the origin re-tag; its typed costs price in wave 4 |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
 | **5** | **#6**, carrying #3's tooltip setting | Pending queue with un-queue, the resolve pause, and the squads laid out on the board itself. The tooltip duration setting moves here because it is interface work with no pricing in it |
@@ -627,6 +628,130 @@ band, or the model in `balance_report.hitChance` being too simple) is not
 answered here. It matters to #3's pricing, which values an infliction against
 the chance the attack lands first, so it is recorded rather than fixed.
 
+## Wave 2 decisions: the Trion economy (#4) and what it pulled in
+
+Taken 2026-08-30 in a design pass with the owner, recorded as Signatures #1 to
+#8 across that conversation. The typed-Trion idea and the misnomer sweep grew
+the wave well beyond the original #4, so the whole picture is here in one place.
+
+### The #4 economy decisions (D1 to D5)
+
+- **D1, the Levy (A1):** it steals the Trion cost of the **costliest ability the
+  enemy actually used that turn**, and it is **uncapped**. An enemy who used
+  nothing is levied nothing. (The wave-1 fix already made it read the ability's
+  own cost rather than a flat 20; this settles the two open questions.)
+- **D3, capacity-gated FAT (B):** already the behavior and confirmed as intended,
+  so nothing to build. FAT clears cooldowns and grants the extra actions, but
+  those actions still cost Trion from the pool, so a thin pool cannot afford the
+  burst even when it rolls. Capacity gates by affordability.
+- **D4, range as a cost input (A):** build to the spec in the #4 row. Mid Range
+  carries the highest cooldowns (up to 4), Long Range the highest Trion costs
+  (up to 3x the Close average) on both the equip and the in-battle cost. Watch
+  the sniper Capacity budget in the same pass.
+- **D5, denial as a real sub-game (B):** the full version. It **splits**: wave 2
+  makes the existing denial statuses (Sapped, Choked, Overcharged) pay off under
+  the new economy; the sharper half, draining and stealing **typed** Trion,
+  rides with typed Trion below.
+- **The 30-round limit with a health tiebreak:** build as specified. 4b measured
+  it at 3% of battles touched and 4 of 21 reversed, so it lands as-is.
+- **The FAT cap:** one character per squad may cash in FAT per turn (from the #1
+  playtest).
+
+### Typed Trion: the D2 answer, a new feature
+
+The "steadier income" question (D2) became a new mechanic instead of a number: a
+Naruto-Arena style layer of **typed Trion** over the existing pool. The pool
+still answers *how much* (tier roll plus Affinity); the tokens answer *what
+kind*. Full brief (researched, with the axis comparison and sources):
+<https://claude.ai/code/artifact/ac769d9b-f6fa-443b-b9cb-cd3cd0f64247>.
+
+- **Keyed to origin** (physical / energy / afflict / mental). Chosen over attack
+  type and range because origin is the only axis already written as an "energy
+  type", it maps one-to-one onto Naruto-Arena's four chakra types, and it is
+  orthogonal to range so it does not overload the range axis #4 already loads.
+- **Signature gate:** ordinary turns run on the pool alone, so a bad roll never
+  locks you out. Typed tokens are the currency of the big plays: a Black
+  Trigger, a FAT extra action, an ability's signature effect.
+- **Wild valve:** one token per living member per turn, banked in a shared squad
+  reserve; a share rolls **Wild** (pays any origin), and the roll is biased by
+  Team Affinity toward the squad's own origins. This is the fix for the type-
+  screw Naruto-Arena players complain about.
+- **Denial (D5)** drains and steals typed tokens.
+- **Depends on the origin rebalance below.** Its typed costs are priced in wave
+  4's SPTV pass like everything else.
+
+### The origin rebalance: a re-tag, not new content
+
+Typed Trion keyed to origin needs the origins roughly even, so all four can
+anchor a build. Today the equippable actives are skewed: **physical 23, mental
+21, energy 11, afflict 6**.
+
+- **Approach (#1A): re-tag and reflavor existing abilities to ~15 per origin.**
+  Not new content. Origin does not feed SPTV pricing, so a re-tag is cheap and,
+  crucially, **un-gated from the wave-3 content pass**, which is why typed Trion
+  can come back into wave 2 after it (#2A) rather than waiting for wave 3.
+- **Also break the psychic-to-mental collapse.** Today all 21 psychic abilities
+  are mental origin and all 21 mental are psychic, so for a psychic ability
+  origin carries no information attack type does not. Give some psychic abilities
+  Energy or Afflict origin and put some mental origin on non-psychic delivery, so
+  origin becomes a genuinely independent axis.
+
+### The `attack` to `ability` rename (#3A)
+
+`attackType` / `attackSubtype` are required on every ability, but 25 of 61 deal
+no damage and 10 target your own side, so a healing ward is tagged an "attack".
+The wave-0 P1 fix already split "attack or ability" in the descriptions but
+never renamed the field. Rename `AttackType` to `AbilityType`, `AttackSubtype`
+to `AbilitySubtype`, the fields, and the doc prose; the values (melee/ranged/
+psychic, single/aoe/burst/unique) stay. Mechanical, the 5c shape, no behavior
+change. The **Optional** Trigger category stays as-is (#4B): it is a World
+Trigger term.
+
+### Sealed, recoded to seal an ability type (#6B)
+
+`Sealed` zeroes Trion Affinity and FAT Chance today (and always has), but its
+name and the doc intend "seal one ability type". The owner's call: the intent is
+right and the code is the bug. Recode `Sealed` to block abilities of one chosen
+**ability type** (the renamed axis), the way Origin Lockout blocks one origin.
+This adds the ability-type lock the catalogue currently lacks. Pairs with the
+rename above.
+
+### The status-catalogue reconciliation (#7A, folds into #13)
+
+`game_design.md` section 12 is hand-written and has drifted from the code. A
+full diff of all 62 generated descriptions against it found two tiers.
+
+- **Tier 1, clear doc drift (about fifteen), fix the doc:** Radiant Blessing
+  still promises "+10 Max Health" that was removed for the no-overheal rule;
+  Origin Lockout says "category" for what is an origin; Stunned and Petrified
+  also zero Team Spirit; Frozen also zeroes Trion Affinity; Necrotic Wound also
+  blocks healing; Forced Repetition also pins to the line; Bleeding, Hastened,
+  Slowed, Blinded and Electrocuted each drop a rider.
+- **Tier 2, ten genuine forks** where doc and code describe different mechanics,
+  each to be resolved with per-status diligence (definition plus git history)
+  and brought as a Signature when built, since a couple may be the generator not
+  rendering a reactive or unique half: **Poisoned** (doc: a damage-over-time;
+  code: attack-roll disadvantage), **Charmed** (turned against own team vs
+  cannot-target-the-charmer), **Prone** (easier to hit vs lose a random ability),
+  **Shadow-Bound** (pinned vs lose a random ability plus attack disadvantage),
+  **Overwhelmed** (takes more damage vs crit zeroed plus attack disadvantage),
+  **Silenced** (no abilities vs cannot act at all), **Misfire** (action fails vs
+  hits the wrong target), **Echoing Doubt** (20 backlash vs forced miss), **Vow
+  of the Duel** (mutual double damage plus stun vs cannot-be-healed plus double
+  damage), **Threatened** (softened up vs ranged attack disadvantage).
+
+This is the same problem as #13 (Appendix A prose), so it folds there; the
+tier-1 doc fixes are worth pulling earlier since they are simply wrong today.
+
+### Sequencing, after all of the above
+
+Wave 2 now carries: the #4 economy (Levy, range costs, the round limit, the FAT
+cap, D5's non-token half), the origin re-tag rebalance, the `attack` to
+`ability` rename with the Sealed recode, and typed Trion (after the re-tag,
+priced in wave 4). Wave 3's content pass is unchanged except the origin
+rebalance is not in it (it became a cheap re-tag). The status reconciliation
+folds into #13.
+
 ## The work queue
 
 Every item, with what it is and where it stands. **The numbers are names, not
@@ -644,7 +769,7 @@ numbers everywhere else in this document.
 | **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. **Merged. Playtested by the owner once and revised** (the same character on both squads, a body reading as defeated in the text report, and the recall's grammar; all three below). Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. **Re-tested** through the Tests tab's four Bail Out scenarios: the contested window with both endings, what may be aimed at a body, Refuse to Bail (equipped and fired in the real app for the first time), and a squad's last member falling with no window. All four resolved correctly. | Merged and re-tested | 0 |
 | 3b | **Status reactions.** **Mechanism, table and Enraged built in wave 1.** `StatusReaction` is a data field on `StatusEffectDefinition`, read in exactly the two places the spec named (the damage path and `StatusEffectEngine.apply`), with no switch statement naming a status anywhere. All twelve rows are on the definitions. Enraged gained Psychic immunity and random targeting. Reactions fire automatically, per decision #G. Found while building: a status ticking its own damage type fired its own reaction, so Bleeding refreshed itself forever; a tick is not a hit, and no longer counts as one. **The other half is still wave 3**, which is the abilities that apply Wet, Frozen and Electrocuted: until then the rows starting from those three cannot be reached from a Loadout. Original spec: A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. **Split across two waves.** The mechanism, the table and Enraged land in wave 1, because #4's trap pass already includes a reaction-armed trap and the primitive has to exist first, and because none of it depends on the economy. The new abilities and Side Effects land in wave 3 with 1c, and wave 4 prices the lot. **In design: the review asks whether a reaction has to win an infliction contest.** | In design | 1 and 3 |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** **The rule is built, wave 1** (see the section below); the pass over the catalogue is wave 4's. Original spec: SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. **Split across two waves (#Q1).** Wave 1 builds the rule only: the SP conversion table, the measured baselines it reads, the tool that prices the catalogue from them, and the SP term in Trigger Value. Wave 4 runs the pass over the finished catalogue. The tooltip setting moves to #6, being interface work with no pricing in it. **Audited; the review is waiting on seven decisions.** | In design | 1 and 4 |
-| 4 | **Trion economy.** **Read "What 4b found" first: the round limit is cheap, and battle length is not this item's to fix.** 4b measured the 30-round limit at 3% of battles touched and 4 of 21 results reversed, so it can land as specified; it also showed the long battles are an accuracy problem, so no income number here will shorten them. **Read "Found closing out wave 1: the Levy stole a flat 20" before setting any number here**: the Levy is fixed but two questions about it are this item's (whose costliest action, and whether it caps). Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Queued | 2 |
+| 4 | **Trion economy.** **Decisions taken 2026-08-30 (D1 A1, D3 B, D4 A, D5 B, plus the round limit and FAT cap); full record in "Wave 2 decisions" above, which also carries the typed-Trion mechanic, the origin rebalance, the rename and the Sealed recode this item pulled in.** **Read "What 4b found" first: the round limit is cheap, and battle length is not this item's to fix.** 4b measured the 30-round limit at 3% of battles touched and 4 of 21 results reversed, so it can land as specified; it also showed the long battles are an accuracy problem, so no income number here will shorten them. **Read "Found closing out wave 1: the Levy stole a flat 20" before setting any number here**: the Levy is fixed but two questions about it are this item's (whose costliest action, and whether it caps). Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Designed, not built | 2 |
 | 4b | **Why some battles run long.** **Diagnosed. Both suspects were wrong, and the fix is not an economy number.** Neither squads out-healing each other (healing runs 0.02 health per round against 34.6 damage) nor Trion starvation (long battles hold *more* Trion and use the same 1.42 abilities per turn) explains anything. The cause is **accuracy**: a battle's length tracks the matchup's Attack-versus-Defense gap almost monotonically, from 19 rounds at gap -3 to 8.5 at +6. A third of the problem was also a **measurement defect**, now fixed: four tools and one player-facing mode dropped each character's Black Trigger abilities from the list handed to the AI. Full findings, numbers and the two defects are in "What 4b found" below. New tool: `tool/long_battle_diagnosis.dart`. | Diagnosed | 2 |
 | 5 | **Support abilities do not pay for their action.** **The two interim spot-fixes are built (wave 1)**: War Chant and Guardian's Aegis are squad buffs now, priced with #3's rule, at TV 2.06 and 1.38 against 0.30 and 0.46 before. The full re-pricing is still wave 4's. See the section below. Original spec: Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced in #3's wave 4 pass, which owns every magnitude and duration. The #3 audit re-derived this table and found the four are not uniformly bad: Rally Cry buys 1.05 actions, Cleansing Ward 0.80, Guardian's Aegis 0.51 and War Chant 0.25, so the work is to lift the bottom two. The bottom two get an interim spot-fix in wave 1 so the wave 2 playtests are not played with support that does nothing. | Queued | 4 |
 | 5b | **Stackable statuses.** **Built, wave 1.** `maxStacks` on the definition (1 for fifty of them, 3 for the twelve), `stacks` on the instance, counted in `StatusEffectEngine.apply`. Still one instance with one duration: the stat folding and all three tick kinds multiply by the count, and the badge carries an `x2`/`x3` with the count in its tooltip. Original spec: 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be. A stackable effect is worth more Status Points, so the flags land in wave 1 ahead of the rule that reads them, and wave 4 prices them. | Approved, queued | 1 |
@@ -656,9 +781,12 @@ numbers everywhere else in this document.
 | 10 | Delete the merged branches. | Done. All seven deleted; only `main` and `gh-pages` remain. | - |
 | 11 | "Close" overloaded as a dialog button label. | Closed, not an issue | - |
 | 12 | Google sign-in branding (needs a paid custom domain). | Deferred | - |
-| 13 | **Appendix A prose.** Add human-readable descriptions alongside the existing generated ones, keeping both. | Queued | 7 |
+| 13 | **Appendix A prose, and the section-12 reconciliation (#7A).** Add human-readable descriptions alongside the generated ones, and reconcile `game_design.md` section 12 with the code: fix the ~15 tier-1 doc drifts and resolve the 10 tier-2 forks (both listed under "Wave 2 decisions" above), each fork with per-status diligence and its own Signature. | Queued | 7 |
 | 14 | **Mirror matches: both squads free to pick any character.** Decided by the owner after the #2 playtest, which found that drafting the same character onto both squads silently corrupted the battle (see the section below). The stopgap forbids it; this item is the real support, so each side can field whoever they want and two Ilona Vances can fight each other. **What it takes:** a battle-scoped combatant id (`A:ilona_vance`, so the character id is still recoverable by stripping the side) replacing the character's own id as the key to everything in a battle. Audited off the live code: **33 maps and sets keyed by a character id** (`Battle.states`, `characterRegistry`, `teamTrionPools`, the TEG profile maps, both `equipped*` maps, the Loadout maps, the Death Ledger swaps, and the per-character id sets on `CharacterBattleState`), **123 reads of `.character.id`**, and 196 mentions of `characterId` across the engine and the app. Three that are not mechanical: **`_teamKeyFor` derives a team's identity by joining its sorted character ids**, so a true mirror (the same three characters both sides) hands both teams the same key and breaks the combo ledger's same-team filter, which means `Team` has to carry its own id; the **interface has to tell two identical characters apart** in the squad panels, the battle log, the target picker and the battlefield strip, which is a copy decision, not a rename; and the **draft screens then drop the cross-squad exclusion** while the engine's duplicate guard stays, re-keyed, since it still catches a genuine repeat within one squad. **Built, wave 1.** A combatant id is the squad's id and the character's joined (`player:ilona_vance`), held on `CharacterBattleState.combatantId` and defaulting to the character's own id so a battle that never needed the distinction is unchanged. The 123 reads of `.character.id` were a mechanical rename; the 42 `states[c.id]` lookups collapsed into one `Battle.statesOf(team)`, which is the thing every one of them actually wanted. `_teamKeyFor` needed nothing: scoped ids distinguish the two squads on their own. The draft screens no longer exclude the other squad, the interface names the squad only where a character is mirrored, and a ninth Tests tab scenario plays one. | Done | 1 |
-| 13b | **Every ability and status explains itself.** **Built, wave 1.** All 62 statuses now describe themselves; the placeholder count went 16 to 0, checked by a test rather than by eye. Three of the five field-less ones got real declarative fields (`forcesNextAttackCriticalMiss`, `locksToSingleChosenAbility`, `sharesMagnitudeWithBoundEnemy`), which also removed the last three hardcoded status ids from the engine's own logic. The other two keep written sentences, exactly as decision #B allowed. Original spec: Raised by the owner in the #2 playtest, against Guardian's Aegis: it explains Guarded ("You take 25% less damage") and then says of Braced only "You are affected by Braced", which tells the player nothing. The cause is that `describeStatusEffect` renders some of `StatusEffectDefinition`'s fields and falls back to a placeholder for the rest, and Braced's whole effect lives in an unrendered one (`perRemainingTurnStatModifiers`, +1 Defense per remaining turn). Measured off the live catalogue: **16 of the 62 status effects hit that placeholder** (Wet, Sickened, Sapped, Reeling, Prepared, Braced, Focused, Hastened, Chilled, Origin Lockout, Interdict, Forced Critical Miss, Forced Choice, Karmic Bind, Called Shot, Mind's Eye). The standing rule is already written down in the working agreement: a status effect's description says what it does and how long it lasts in the player's own turns, never just its name. **Moved to wave 1 (#Q3).** It sat after #3 on the grounds that #3 was about to change those magnitudes, but `describeStatusEffect` renders from the definition at runtime, so a re-priced magnitude updates its own description for nothing. It is also the same audit as #3's rule: five of the sixteen set no declarative field at all, which is exactly what a field-derived price values at zero. Doing it in wave 1 makes every playtest from there on readable. | Queued | 1 |
+| 13b | **Every ability and status explains itself.** **Built, wave 1.** All 62 statuses now describe themselves; the placeholder count went 16 to 0, checked by a test rather than by eye. Three of the five field-less ones got real declarative fields (`forcesNextAttackCriticalMiss`, `locksToSingleChosenAbility`, `sharesMagnitudeWithBoundEnemy`), which also removed the last three hardcoded status ids from the engine's own logic. The other two keep written sentences, exactly as decision #B allowed. Original spec: Raised by the owner in the #2 playtest, against Guardian's Aegis: it explains Guarded ("You take 25% less damage") and then says of Braced only "You are affected by Braced", which tells the player nothing. The cause is that `describeStatusEffect` renders some of `StatusEffectDefinition`'s fields and falls back to a placeholder for the rest, and Braced's whole effect lives in an unrendered one (`perRemainingTurnStatModifiers`, +1 Defense per remaining turn). Measured off the live catalogue: **16 of the 62 status effects hit that placeholder** (Wet, Sickened, Sapped, Reeling, Prepared, Braced, Focused, Hastened, Chilled, Origin Lockout, Interdict, Forced Critical Miss, Forced Choice, Karmic Bind, Called Shot, Mind's Eye). The standing rule is already written down in the working agreement: a status effect's description says what it does and how long it lasts in the player's own turns, never just its name. **Moved to wave 1 (#Q3).** It sat after #3 on the grounds that #3 was about to change those magnitudes, but `describeStatusEffect` renders from the definition at runtime, so a re-priced magnitude updates its own description for nothing. It is also the same audit as #3's rule: five of the sixteen set no declarative field at all, which is exactly what a field-derived price values at zero. Doing it in wave 1 makes every playtest from there on readable. | Done | 1 |
+| 15 | **Typed Trion (origin-keyed).** The D2 answer: a typed-energy layer over the Trion pool, keyed to origin, with a signature gate and a wild valve. Full design and brief link under "Wave 2 decisions" above. Depends on #16 (the origin rebalance); typed costs priced in wave 4. | Designed, not built | 2 |
+| 16 | **Origin rebalance (re-tag).** Re-tag and reflavor existing abilities to ~15 per origin (from physical 23 / mental 21 / energy 11 / afflict 6) and break the psychic-to-mental 1:1 collapse, so origin is an even, independent axis for #15. Not new content, does not touch SPTV pricing. Precedes #15. | Approved, queued | 2 |
+| 17 | **`attack` to `ability` rename, and the Sealed recode.** `AttackType` to `AbilityType`, `AttackSubtype` to `AbilitySubtype`, the fields, and the doc prose; the 5c shape, no behavior change. Carries the Sealed recode (#6B): make Sealed seal one ability type, which is what its name and the doc always meant. | Approved, queued | 2 |
 
 ### Found in the second #2 playtest, and fixed
 
