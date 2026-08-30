@@ -13,11 +13,10 @@ explanation of the whole game itself, see
   battlefield, screening, Bail Out), then wave 1's #14, 5c, #D, 3b's mechanism,
   5b, 13b, #3's rule and the two support spot-fixes. All merged to `main`, all
   playtested, #TWC on 2026-08-29.
-- **Now: wave 2, #4 (the Trion economy). 4b is diagnosed**, on branch
-  `claude/wave-2-run-4b-diagnosis-mrlfs0`: the long battles come from missed
-  attacks, not from the economy, and a third of the problem was a measurement
-  defect that is now fixed. See "What 4b found" below. **#4 itself is not
-  started.**
+- **Now: wave 2, #4 (the Trion economy). 4b's diagnosis is done and merged to
+  `main`** (2026-08-30): the long battles come from missed attacks, not from the
+  economy, and a third of the problem was a measurement defect that is now
+  fixed. See "What 4b found" below. **#4 itself is not started.**
 - **After it:** waves 3 to 7, laid out in "The waves" directly below.
 
 Everything below is detail. The full plan is in "The waves" next; the queue is
@@ -66,7 +65,7 @@ older note is gone.
 |---|---|
 | `main` | The trunk, and up to date. Wave 1, the playtest batch that followed it and the wave 1 close-out are merged here. |
 | `gh-pages` | The published web build. Deploy target only; never develop on it. |
-| `claude/wave-2-run-4b-diagnosis-mrlfs0` | Wave 2's branch. Carries item 4b's diagnosis and the tool and code fixes that came out of it. Not merged. |
+| `claude/wave-2-run-4b-diagnosis-mrlfs0` | Wave 2's branch. Its 4b diagnosis and the fixes from it are merged to `main` (2026-08-30). Still open for #4. |
 
 `claude/tasks-3-3b-r8ceab` carried the #3 audit, the whole wave 1 build and the
 wave 1 playtest batch. Every commit on it is on `main`, the local branch was
