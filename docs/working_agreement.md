@@ -175,6 +175,25 @@ Item numbers and one clause each. Anything that does not fit that shape is
 detail, and detail is what `current_development_status.md` is for. If something
 genuinely needs deciding, it is a Signature underneath, not a fourth bullet.
 
+### Cleaning up
+
+"Clean up" is a command with a definite end state, not a nudge to tidy. When
+the owner asks for it:
+
+- **Get the work genuinely clean first.** A clean working tree, the tests and
+  analyzers green, and the documents updated to match what actually shipped: no
+  stale merge status, no branch named that is gone, no rule left in prose that
+  the code has outgrown. Everything under "Check the work before calling it
+  done" applies. This is the substance of a clean-up; the branch list below is
+  the last line of it, not the point.
+- **Then say which branches are safe to delete, once.** One list, each entry
+  with why it is safe (its work is merged, or it was abandoned). The owner
+  deletes branches; the assistant does not, and cannot anyway (a session's
+  attempt is refused with an HTTP 403).
+- **Never turn it into a standing reminder.** Say it the once and stop. A
+  branch-deletion note repeated at the end of every session is nagging, and the
+  owner has already heard it.
+
 ## What the assistant should not do
 
 - **Use em dashes.** Anywhere: chat, commit messages, code comments, documents,
@@ -191,6 +210,10 @@ genuinely needs deciding, it is a Signature underneath, not a fourth bullet.
 - **Describe a feature as working when only its tests have been run.** Tests
   passing and the feature being right are different claims.
 - **Merge, push to another branch, or open a pull request** without being asked.
+- **Delete a branch.** Deleting branches is the owner's, and a session cannot do
+  it anyway (the attempt is refused with an HTTP 403). When work is merged, say
+  so and, on a clean-up, list the branch as safe to delete; do not try to remove
+  it. See "Cleaning up".
 
 ## Standing design rules
 
