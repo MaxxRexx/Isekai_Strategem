@@ -65,7 +65,7 @@ older note is gone.
 |---|---|
 | `main` | The trunk, and up to date. Wave 1, the playtest batch that followed it and the wave 1 close-out are merged here. |
 | `gh-pages` | The published web build. Deploy target only; never develop on it. |
-| `claude/wave-2-run-4b-diagnosis-mrlfs0` | Wave 2's branch. Its 4b diagnosis and the fixes from it are merged to `main` (2026-08-30). Still open for #4. |
+| `claude/wave-2-run-4b-diagnosis-mrlfs0` | The 4b run. Its diagnosis, the fixes from it, and this session's tooling (the em-dash guard) are all merged to `main` (2026-08-30). Nothing unmerged remains on it, so it is safe to delete; #4 starts on its own branch. |
 
 `claude/tasks-3-3b-r8ceab` carried the #3 audit, the whole wave 1 build and the
 wave 1 playtest batch. Every commit on it is on `main`, the local branch was

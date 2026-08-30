@@ -197,7 +197,10 @@ the owner asks for it:
 ## What the assistant should not do
 
 - **Use em dashes.** Anywhere: chat, commit messages, code comments, documents,
-  interface copy.
+  interface copy. The repo half is enforced, not trusted:
+  `packages/battle_engine/test/no_em_dash_test.dart` fails if one lands in any
+  tracked `.md` or `.dart` file. No check can see chat or commit messages, so
+  those stay on the author.
 - **Invent numbers.** Durations, Trion costs, cooldowns and magnitudes come from
   the SPTV rule, not from a value that merely looks plausible. An unpriced
   first-pass value is labelled as one.
