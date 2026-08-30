@@ -3,7 +3,7 @@
 //   dart run tool/long_battle_diagnosis.dart [--battles N] [--seeds a,b,c,d]
 //
 // `balance_report.dart` reports the shape of the distribution; it does not say
-// what the tail is made of. This plays the same batch, with the same drafts
+// what the long battles are made of. This plays the same batch, with the same drafts
 // and the same dice, and records what each battle spent its rounds doing, so
 // the long ones can be compared against the ordinary ones rather than
 // guessed at.
@@ -418,10 +418,10 @@ void reportDraftDefect(List<BattleTrace> traces) {
     print('When neither can: '
         '${meanOf(both.map((t) => t.rounds)).toStringAsFixed(1)} rounds.');
   }
-  final tail = affected.where((t) => !t.resolved || t.rounds > 20).length;
-  final cleanTail = clean.where((t) => !t.resolved || t.rounds > 20).length;
-  print('${pct(tail / affected.length)} of them run past 20 rounds, against '
-      '${pct(cleanTail / clean.length)} of the rest.');
+  final longCount = affected.where((t) => !t.resolved || t.rounds > 20).length;
+  final cleanLong = clean.where((t) => !t.resolved || t.rounds > 20).length;
+  print('${pct(longCount / affected.length)} of them run past 20 rounds, against '
+      '${pct(cleanLong / clean.length)} of the rest.');
   final profiles = <String, int>{};
   for (final t in affected) {
     for (final p in [t.profileA, t.profileB]) {
@@ -488,15 +488,15 @@ void reportByGap(List<BattleTrace> traces) {
 }
 
 void reportCharacters(List<BattleTrace> traces) {
-  print('== Who is in the tail ==');
+  print('== Who is in the long battles ==');
   print('');
   final appearances = <String, int>{};
-  final tailAppearances = <String, int>{};
+  final longAppearances = <String, int>{};
   for (final t in traces) {
     final isLong = !t.resolved || t.rounds > 20;
     for (final name in [...t.squadA, ...t.squadB]) {
       appearances[name] = (appearances[name] ?? 0) + 1;
-      if (isLong) tailAppearances[name] = (tailAppearances[name] ?? 0) + 1;
+      if (isLong) longAppearances[name] = (longAppearances[name] ?? 0) + 1;
     }
   }
   final baseline = traces.where((t) => !t.resolved || t.rounds > 20).length /
@@ -506,20 +506,20 @@ void reportCharacters(List<BattleTrace> traces) {
   };
   final names = appearances.keys.toList()
     ..sort((a, b) {
-      final ra = (tailAppearances[a] ?? 0) / appearances[a]!;
-      final rb = (tailAppearances[b] ?? 0) / appearances[b]!;
+      final ra = (longAppearances[a] ?? 0) / appearances[a]!;
+      final rb = (longAppearances[b] ?? 0) / appearances[b]!;
       return rb.compareTo(ra);
     });
   print('${pad('Character', 20)}${padLeft('atk', 4)}  ${padLeft('def', 4)}  '
-      '${padLeft('battles', 8)}  ${padLeft('in tail', 8)}  '
+      '${padLeft('battles', 8)}  ${padLeft('long', 8)}  '
       '${padLeft('rate', 6)}  ${padLeft('vs base', 8)}');
   for (final name in names) {
-    final rate = (tailAppearances[name] ?? 0) / appearances[name]!;
+    final rate = (longAppearances[name] ?? 0) / appearances[name]!;
     print('${pad(name, 20)}'
         '${padLeft('${stats[name]?.attack ?? 0}', 4)}  '
         '${padLeft('${stats[name]?.defense ?? 0}', 4)}  '
         '${padLeft('${appearances[name]}', 8)}  '
-        '${padLeft('${tailAppearances[name] ?? 0}', 8)}  '
+        '${padLeft('${longAppearances[name] ?? 0}', 8)}  '
         '${padLeft(pct(rate), 6)}  '
         '${padLeft('${(rate / baseline).toStringAsFixed(2)}x', 8)}');
   }
@@ -579,11 +579,11 @@ void reportDrivers(List<BattleTrace> traces) {
   }
   void row(String label, double Function(BattleTrace) f, {bool asPct = false}) {
     final inBand = meanOf(band.map(f));
-    final inTail = meanOf(long.map(f));
-    final ratio = inBand == 0 ? double.nan : inTail / inBand;
+    final inLong = meanOf(long.map(f));
+    final ratio = inBand == 0 ? double.nan : inLong / inBand;
     String fmt(double v) => asPct ? pct(v) : v.toStringAsFixed(2);
     print('${pad(label, 34)}${padLeft(fmt(inBand), 10)}  '
-        '${padLeft(fmt(inTail), 10)}  '
+        '${padLeft(fmt(inLong), 10)}  '
         '${padLeft(ratio.isNaN ? '-' : '${ratio.toStringAsFixed(2)}x', 8)}');
   }
 
@@ -644,7 +644,7 @@ void main(List<String> args) {
     }
   }
 
-  print('== Item 4b: the long tail of battle length ==');
+  print('== Item 4b: why some battles run long ==');
   print('${traces.length} battles, $battles per seed, '
       'seeds ${seeds.join(', ')}');
   print(blackTriggerActives

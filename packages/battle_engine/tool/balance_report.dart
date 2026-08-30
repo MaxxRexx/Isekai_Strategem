@@ -193,8 +193,9 @@ class Draft {
 ///
 /// It was false until item 4b measured what that cost. Every pacing number
 /// this tool printed before then was measured on under-armed squads, which
-/// stretched the tail: p90 went 26 to 23 and the worst battle 73 rounds to 54
-/// when the drop was fixed. Pass false to reproduce those older numbers;
+/// stretched the long battles: p90 went 26 to 23 and the worst battle 73
+/// rounds to 54 when the drop was fixed. Pass false to reproduce those older
+/// numbers;
 /// `tool/long_battle_diagnosis.dart --drop-black-trigger-actives` does.
 Draft draft(
   String teamId,
@@ -244,7 +245,7 @@ void reportSimulation({int battles = 200, int seed = 20260814}) {
     // Every source of chance in the battle is drawn from the one seed, so a
     // pacing number printed here can be reproduced later. Without this only
     // the matchups were seeded and the dice were not, which made two runs of
-    // the same seed disagree about the tail.
+    // the same seed disagree about the long battles.
     final dice = Random(seed * 1000003 + i);
     final battle = Battle(
       teamA: a.team,
@@ -313,8 +314,8 @@ void reportSimulation({int battles = 200, int seed = 20260814}) {
       '(mean ${mean.toStringAsFixed(1)})');
   // The design target is a band, 8 to 20 rounds (design section 11): under it
   // somebody was deleted before they got to play, over it nobody's damage is
-  // keeping up. Judge it on the middle of the distribution, since the tails
-  // are matchups rather than pacing.
+  // keeping up. Judge it on the middle, since the shortest and longest
+  // battles are matchups rather than pacing.
   const targetLow = 8;
   const targetHigh = 20;
   final inBand = rounds.where((r) => r >= targetLow && r <= targetHigh).length;
@@ -332,7 +333,7 @@ void reportSimulation({int battles = 200, int seed = 20260814}) {
 ///
 /// The seed is an argument rather than a constant because a pacing claim made
 /// from one batch of 200 is one sample, and the questions this tool gets asked
-/// (does a change move the median, does it move the tail) need several. Four
+/// (does a change move the median, does it move the long battles) need several. Four
 /// runs on four seeds is what items 1b and #2 were both measured with.
 void main(List<String> args) {
   int intArg(String name, int fallback) {
