@@ -275,7 +275,16 @@ class TestScenario {
 // Four kits, each exactly four active abilities and comfortably inside the
 // smallest Trion Capacity in the roster (100).
 const _brawler = ['twin_fang_strike', 'shatterpoint', 'cleave', 'guardians_aegis'];
-const _sniper = ['longshot', 'split_shot', 'frag_grenade', 'venom_needle'];
+// Item #4 made Long Range the priciest band to carry, and Longshot its
+// ceiling at 48 of a 100-point Trion Capacity. Piercing Thrust is the same
+// role at a price a 100-Capacity sniper can actually field alongside three
+// others.
+const _sniper = [
+  'piercing_thrust',
+  'split_shot',
+  'frag_grenade',
+  'venom_needle',
+];
 const _controller = [
   'charm_whisper',
   'twin_fang_strike',

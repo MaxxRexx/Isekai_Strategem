@@ -442,7 +442,8 @@ void main() {
       final parry = catalog['predictive_parry'] as ActiveTrigger;
       expect(parry.armsReactive, ReactiveKind.dodgeMeleeSingle);
       expect(parry.armsReactiveDefaultTurns, isNull);
-      expect(parry.trionCost, 20);
+      // Close range, so item #4's range-keyed costing brought it down.
+      expect(parry.trionCost, 18);
       expect(parry.cooldownTurns, 2);
       expect(parry.targetAffiliation, TargetAffiliation.self);
     });
@@ -452,7 +453,8 @@ void main() {
       final toxin = catalog['numbing_toxin'] as ActiveTrigger;
       expect(toxin.armsReactive, ReactiveKind.burstMitigation);
       expect(toxin.armsReactiveDefaultTurns, 2);
-      expect(toxin.trionCost, 20);
+      // Close range, so item #4's range-keyed costing brought it down.
+      expect(toxin.trionCost, 18);
       expect(toxin.cooldownTurns, 2);
       expect(toxin.targetAffiliation, TargetAffiliation.self);
     });

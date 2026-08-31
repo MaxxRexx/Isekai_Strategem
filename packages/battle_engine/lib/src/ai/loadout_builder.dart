@@ -153,16 +153,35 @@ class LoadoutBuilder {
     final scoredActives = activeTriggerPool.toList()
       ..sort((a, b) => _score(b, profile).compareTo(_score(a, profile)));
 
+    /// What the remaining [slots] will cost at best, once [excluding] and
+    /// everything already chosen is off the table: the sum of that many
+    /// cheapest distinct candidates.
+    ///
+    /// Distinct is the point. Reserving `slots * cheapestActiveCost` assumes
+    /// the floor price can be bought over and over, which held while a dozen
+    /// abilities shared it and stopped holding when item #4 spread the equip
+    /// costs by range band. With only two abilities at the floor, that
+    /// arithmetic promised a fourth slot for 12 that nothing could fill, and
+    /// the build came back one active short of the Loadout rule.
+    int reserveFor(int slots, ActiveTrigger excluding) {
+      if (slots <= 0) return 0;
+      final costs = <int>[
+        for (final t in scoredActives)
+          if (t != excluding && !chosenActives.contains(t)) t.equipCost,
+      ]..sort();
+      return costs.take(slots).fold(0, (a, b) => a + b);
+    }
+
     // Greedily take the highest-scoring actives, but only if doing so
     // still leaves enough budget to afford (at minimum, the cheapest
-    // option for) every remaining required slot - otherwise an early
+    // options for) every remaining required slot - otherwise an early
     // expensive pick can starve later slots and leave the Loadout short
     // of the exact active-ability requirement.
     for (final trigger in scoredActives) {
       if (chosenActives.length >= requiredActive) break;
       if (itemCount >= rules.maxEquippedTriggers) break;
       final slotsAfterThisPick = requiredActive - chosenActives.length - 1;
-      final reserveForRemainingSlots = slotsAfterThisPick * cheapestActiveCost;
+      final reserveForRemainingSlots = reserveFor(slotsAfterThisPick, trigger);
       if (spent + trigger.equipCost + reserveForRemainingSlots > budget) {
         continue;
       }

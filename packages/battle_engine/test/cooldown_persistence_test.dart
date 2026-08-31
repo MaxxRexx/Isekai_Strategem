@@ -24,8 +24,11 @@ class _NoFatRandom implements Random {
 void main() {
   final roster = CharacterRoster.defaultRoster;
   final catalog = TriggerCatalog.defaultCatalog;
+  // Item #4 moved the cooldowns by range band: Mid pays in tempo, so nothing
+  // there sits at 1 any more. Close is the fast band, and this test needs an
+  // ability with a 1-turn cooldown, not a particular ability.
   final slash = // cooldownTurns: 1
-      catalog['frost_lance'] as ActiveTrigger;
+      catalog['shatterpoint'] as ActiveTrigger;
   final volley = // cooldownTurns: 2
       catalog['twin_fang_strike'] as ActiveTrigger;
 
@@ -71,10 +74,10 @@ void main() {
     vela.recordAbilityUse(slash);
     // The cooldown is not set until end of turn (Play mode spends Trion at
     // queue time but defers cooldowns to resolution/end of turn).
-    expect(vela.cooldowns['frost_lance'] ?? 0, 0);
+    expect(vela.cooldowns['shatterpoint'] ?? 0, 0);
 
     battle.endTurn(); // team A ends -> cooldown now applies.
-    expect(vela.cooldowns['frost_lance'], 1);
+    expect(vela.cooldowns['shatterpoint'], 1);
     expect(engine.canUseAbility(vela, slash), isFalse);
 
     // Opponent's turn passes; the caster is still on cooldown on its own
@@ -82,12 +85,12 @@ void main() {
     battle.startTurn(); // team B
     battle.endTurn();
     battle.startTurn(); // team A, the caster's next turn
-    expect(vela.cooldowns['frost_lance'], 1);
+    expect(vela.cooldowns['shatterpoint'], 1);
     expect(engine.canUseAbility(vela, slash), isFalse);
 
     // Only after ending that own turn does it clear.
     battle.endTurn();
-    expect(vela.cooldowns['frost_lance'] ?? 0, 0);
+    expect(vela.cooldowns['shatterpoint'] ?? 0, 0);
     battle.startTurn();
     expect(engine.canUseAbility(vela, slash), isTrue);
   });
