@@ -540,10 +540,19 @@ per ability, and then the positional layer above gave those bands teeth.*
 Every Trigger has one of four **origin** tags, describing what sort of energy is
 behind it:
 
-- **Physical (23 Triggers):** raw body and weapon work.
-- **Energy (11):** Trion channelled directly, elemental blasts and wards.
-- **Afflict (6):** poison, venom, decay.
-- **Mental (20):** psychic pressure and illusion.
+- **Physical (15 Triggers):** raw body and weapon work.
+- **Energy (15):** Trion channelled directly, elemental blasts and wards.
+- **Afflict (15):** poison, venom, decay.
+- **Mental (16):** psychic pressure and illusion.
+
+*The four were re-tagged to near-even in 2026-08-30 (they ran 23 / 11 / 6 / 20).
+An origin only six abilities deep cannot anchor a build, which matters now that
+the Trion you earn is typed by origin. The same pass broke a hidden tie: every
+psychic ability used to be Mental origin and every Mental ability psychic, so
+for those two tags one was simply restating the other. Mental now also sits on
+abilities that work by reading or binding an opponent rather than by force
+(Called Shot, Curving Shot, Predictive Parry, Vow of the Duel), and psychic
+abilities that are raw force or festering affliction carry Energy or Afflict.*
 
 Origin exists so that some abilities can shut down a whole *kind* of attack
 rather than a specific one. Seal of Severance locks a target out of one origin

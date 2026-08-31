@@ -712,7 +712,9 @@ void main() {
       final catalog = TriggerCatalog.builtIn();
       final sc = catalog['scramble'] as ActiveTrigger;
       expect(sc.category, TriggerCategory.trapper);
-      expect(sc.originTag, OriginTag.mental);
+      // Item #16 re-tagged Scramble: jamming someone's signal is raw force,
+      // not illusion, so its origin is Energy rather than Mental.
+      expect(sc.originTag, OriginTag.energy);
       expect(sc.inflictedStatusEffects.single.statusEffectId, 'misfire');
     });
 
