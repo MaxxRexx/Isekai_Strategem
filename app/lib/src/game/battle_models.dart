@@ -497,6 +497,12 @@ class StatusBadgeInfo {
 /// Everything an AI-vs-AI simulation produces for the results UI.
 class SimulationResult {
   final bool concluded;
+
+  /// Whether item #4's round limit decided this battle rather than a defeat:
+  /// nobody was wiped out, time was called, and it went to the squad ahead on
+  /// remaining health. A different result from a win, and reported as one.
+  final bool endedOnRoundLimit;
+
   final BattleOutcome outcome;
   final int roundsPlayed;
   final List<LogRound> rounds;
@@ -507,6 +513,7 @@ class SimulationResult {
 
   const SimulationResult({
     required this.concluded,
+    this.endedOnRoundLimit = false,
     required this.outcome,
     required this.roundsPlayed,
     required this.rounds,

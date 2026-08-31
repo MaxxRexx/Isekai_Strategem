@@ -104,6 +104,25 @@ class TypedTrionConfig {
   static const TypedTrionConfig defaults = TypedTrionConfig();
 }
 
+/// Config for item #4's round limit.
+///
+/// A battle that neither squad has won by the end of [maxRounds] is awarded
+/// to whoever is ahead on total remaining health, and is a draw if they are
+/// level. Without it a stalled engagement runs until something random breaks
+/// it, and only the simulator ever stopped.
+///
+/// The number is measured rather than picked: `tool/long_battle_diagnosis.dart`
+/// found 21 of 800 battles (3%) still running at round 30, of which the health
+/// leader went on to win 17, so the limit reverses 4 results in 800 and none of
+/// them level on health.
+class RoundLimitConfig {
+  final int maxRounds;
+
+  const RoundLimitConfig({this.maxRounds = 30});
+
+  static const RoundLimitConfig defaults = RoundLimitConfig();
+}
+
 /// Config for Full Arms Trigger (FAT).
 class FatConfig {
   /// Turns FAT stays locked out after triggering, before modifiers.

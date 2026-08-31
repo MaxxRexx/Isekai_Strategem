@@ -110,15 +110,23 @@ String _loadoutLines(Map<String, Loadout> loadouts) {
 /// The plain-text engagement report for a completed simulation, meant to
 /// be copied and pasted back to Claude for balance analysis.
 String buildSimulationReport(SimulationConfig config, SimulationResult result) {
-  final (outcomeText, _) = outcomeCopy(result.outcome);
+  final (outcomeText, _) =
+      outcomeCopy(result.outcome, onRoundLimit: result.endedOnRoundLimit);
+  final outcomeNote = result.endedOnRoundLimit
+      ? ' (time called at ${config.maxRounds} rounds, awarded on remaining '
+          'health)'
+      : result.concluded
+          ? ' (concluded in ${result.roundsPlayed} round(s))'
+          : ' (round cap reached after ${result.roundsPlayed} round(s), '
+              'not concluded)';
   return '''
 === Isekai Strategem Engagement Report ===
 
 Squad A: ${config.teamAIds.map((id) => roster[id].name).join(', ')}  [AI: ${profileById(config.teamAProfileId).name}]
 Squad B: ${config.teamBIds.map((id) => roster[id].name).join(', ')}  [AI: ${profileById(config.teamBProfileId).name}]
-Round cap: ${config.maxRounds}
+Round limit: ${config.maxRounds}
 
-OUTCOME: $outcomeText${result.concluded ? ' (concluded in ${result.roundsPlayed} round(s))' : ' (round cap reached after ${result.roundsPlayed} round(s), not concluded)'}
+OUTCOME: $outcomeText$outcomeNote
 
 --- Final State ---
 Squad A:

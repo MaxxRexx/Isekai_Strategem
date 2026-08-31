@@ -3,16 +3,26 @@ import 'package:flutter/material.dart';
 
 import '../ui/palette.dart';
 
-(String, Color) outcomeCopy(BattleOutcome outcome) => switch (outcome) {
-  BattleOutcome.teamAWins => ('SQUAD A WINS', Palette.teamA),
-  BattleOutcome.teamBWins => ('SQUAD B WINS', Palette.teamB),
-  BattleOutcome.draw => ('MUTUAL DEFEAT', Colors.grey),
-  BattleOutcome.ongoing => ('NO CONCLUSION REACHED', Palette.warn),
-};
+/// The headline for an outcome. [onRoundLimit] is item #4's round limit
+/// deciding it, which changes only the level result: nobody was defeated
+/// there, so calling it a mutual defeat would be plainly untrue.
+(String, Color) outcomeCopy(BattleOutcome outcome,
+        {bool onRoundLimit = false}) =>
+    switch (outcome) {
+      BattleOutcome.teamAWins => ('SQUAD A WINS', Palette.teamA),
+      BattleOutcome.teamBWins => ('SQUAD B WINS', Palette.teamB),
+      BattleOutcome.draw when onRoundLimit => ('STALEMATE', Colors.grey),
+      BattleOutcome.draw => ('MUTUAL DEFEAT', Colors.grey),
+      BattleOutcome.ongoing => ('NO CONCLUSION REACHED', Palette.warn),
+    };
 
 class OutcomeBanner extends StatelessWidget {
   final BattleOutcome outcome;
   final String note;
+
+  /// Whether item #4's round limit decided this, which changes the wording
+  /// of a level result.
+  final bool onRoundLimit;
 
   /// Overrides the default outcome text (Play mode says "VICTORY" or
   /// "DEFEAT" instead of "SQUAD A/B WINS").
@@ -23,11 +33,12 @@ class OutcomeBanner extends StatelessWidget {
     required this.outcome,
     required this.note,
     this.textOverride,
+    this.onRoundLimit = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final (text, color) = outcomeCopy(outcome);
+    final (text, color) = outcomeCopy(outcome, onRoundLimit: onRoundLimit);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

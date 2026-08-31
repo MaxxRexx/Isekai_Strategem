@@ -1535,12 +1535,19 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
         if (session.isOver) ...[
           OutcomeBanner(
             outcome: session.outcome,
+            onRoundLimit: session.endedOnRoundLimit,
             textOverride: switch (session.outcome) {
               BattleOutcome.teamAWins => 'VICTORY',
               BattleOutcome.teamBWins => 'DEFEAT',
               _ => null,
             },
-            note: 'Concluded in ${session.roundNumber} round(s).',
+            // Winning on health at the limit is a different result from
+            // wiping the squad out, so it does not read the same.
+            note: session.endedOnRoundLimit
+                ? 'Time called at ${session.roundLimit} rounds. Awarded on '
+                    'remaining health: yours ${session.teamAHealth}, theirs '
+                    '${session.teamBHealth}.'
+                : 'Concluded in ${session.roundNumber} round(s).',
           ),
           const SizedBox(height: 8),
           _xpAwardReadout(),

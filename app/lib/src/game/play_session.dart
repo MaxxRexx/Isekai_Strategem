@@ -361,6 +361,17 @@ class PlaySession {
   bool get isOver => battle.isOver;
   BattleOutcome get outcome => battle.outcome;
 
+  /// Whether item #4's round limit decided this battle rather than a defeat:
+  /// time was called and it went to the squad ahead on remaining health.
+  bool get endedOnRoundLimit => battle.endedOnRoundLimit;
+
+  /// The round limit in force, for the interface to name.
+  int get roundLimit => battle.roundLimitConfig.maxRounds;
+
+  /// Total remaining health, the two numbers the round limit compares.
+  int get teamAHealth => battle.remainingHealthOf(battle.teamA);
+  int get teamBHealth => battle.remainingHealthOf(battle.teamB);
+
   /// Awards battle XP for the finished battle to [account]'s player through
   /// [ledger] (the player controls team A, so its Team Efficiency Grade drives
   /// the inverse-TEG multiplier). Returns the award, or null if the battle

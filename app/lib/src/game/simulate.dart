@@ -9,6 +9,10 @@ class SimulationConfig {
   final List<String> teamBIds;
   final String teamAProfileId;
   final String teamBProfileId;
+  /// The round limit this run plays under. Defaults to the game's own rule
+  /// (item #4), so the simulator measures the game rather than a variant of
+  /// it; the Simulate screen can raise or lower it to ask what a different
+  /// limit would decide, which is what the control is for.
   final int maxRounds;
 
   const SimulationConfig({
@@ -16,14 +20,16 @@ class SimulationConfig {
     required this.teamBIds,
     required this.teamAProfileId,
     required this.teamBProfileId,
-    this.maxRounds = 40,
+    this.maxRounds = 30,
   });
 }
 
 /// Runs one full AI-vs-AI battle, collecting a turn-by-turn log for the
-/// UI to render, up to [SimulationConfig.maxRounds] (a battle that hasn't
-/// concluded by then reports `concluded: false` rather than looping
-/// forever).
+/// UI to render, up to [SimulationConfig.maxRounds].
+///
+/// The limit is the game's own round limit, so a battle that reaches it is
+/// awarded on health and reports `concluded: true`. The loop's own bound is
+/// the safety net behind that, not the rule.
 SimulationResult runSimulation(SimulationConfig config) {
   final teamADraft = DraftedTeam.draftWithProfile(
     teamId: 'team-a',
@@ -55,12 +61,17 @@ SimulationResult runSimulation(SimulationConfig config) {
     states: {...teamADraft.states, ...teamBDraft.states},
     teamAGoesFirst:
         rollsOpeningTurn(teamAEfficiency.tier, teamBEfficiency.tier),
+    roundLimitConfig: RoundLimitConfig(maxRounds: config.maxRounds),
   );
 
   final rounds = <LogRound>[];
   var concluded = false;
 
-  for (var i = 0; i < config.maxRounds * 2; i++) {
+  // Two team turns per round, plus a little headroom so the loop reaches the
+  // top once more after the last round is played and sees the battle the
+  // round limit just ended. Without it the run would fall out of the loop
+  // reporting no conclusion when the rule had in fact decided it.
+  for (var i = 0; i < config.maxRounds * 2 + 2; i++) {
     if (battle.isOver) {
       concluded = true;
       break;
@@ -115,6 +126,7 @@ SimulationResult runSimulation(SimulationConfig config) {
 
   return SimulationResult(
     concluded: concluded,
+    endedOnRoundLimit: battle.endedOnRoundLimit,
     outcome: battle.outcome,
     roundsPlayed: battle.roundNumber,
     rounds: rounds,

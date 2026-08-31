@@ -28,7 +28,9 @@ class _SimulateScreenState extends State<SimulateScreen> {
   final List<String?> _teamBIds = [null, null, null];
   String? _profileAId;
   String? _profileBId;
-  int _maxRounds = 40;
+  /// The round limit this run plays under. Defaults to the game's own rule
+  /// (item #4); changing it here asks what a different limit would decide.
+  int _maxRounds = RoundLimitConfig.defaults.maxRounds;
   String? _error;
   bool _running = false;
 
@@ -143,7 +145,7 @@ class _SimulateScreenState extends State<SimulateScreen> {
                 ),
                 const SizedBox(width: 16),
                 const Text(
-                  'Round cap',
+                  'Round limit',
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 const SizedBox(width: 8),
@@ -266,9 +268,14 @@ class _SimulateScreenState extends State<SimulateScreen> {
             Expanded(
               child: OutcomeBanner(
                 outcome: result.outcome,
-                note: result.concluded
-                    ? 'Concluded in ${result.roundsPlayed} round(s).'
-                    : 'Still contesting after ${result.roundsPlayed} rounds (round cap reached), raise the round cap to let it play out further.',
+                onRoundLimit: result.endedOnRoundLimit,
+                note: result.endedOnRoundLimit
+                    ? 'Time called at $_maxRounds rounds and awarded on '
+                        'remaining health. Raise the round limit to let it '
+                        'play out further.'
+                    : result.concluded
+                        ? 'Concluded in ${result.roundsPlayed} round(s).'
+                        : 'Still contesting after ${result.roundsPlayed} rounds (round cap reached), raise the round cap to let it play out further.',
               ),
             ),
           ],
