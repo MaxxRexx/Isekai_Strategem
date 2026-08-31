@@ -13,11 +13,11 @@ explanation of the whole game itself, see
   battlefield, screening, Bail Out), then wave 1's #14, 5c, #D, 3b's mechanism,
   5b, 13b, #3's rule and the two support spot-fixes. All merged to `main`, all
   playtested, #TWC on 2026-08-29.
-- **Now: wave 2. 4b is done and merged; #4's design is decided, nothing built.**
-  4b (2026-08-30) found the long battles come from missed attacks, not the
-  economy. #4's decisions (D1 to D5) are taken, and the income question grew
-  into a new **typed-Trion** mechanic, an **origin rebalance**, and an `attack`
-  to `ability` **rename**. See "Wave 2 decisions" below.
+- **Now: wave 2, part built.** Done and merged: **4b**'s diagnosis, and **#17**
+  (the `attack` to `ability` rename, the Sealed recode, and the Origin Lockout
+  fix). **Not started: #16** (the origin re-tag rebalance), **#15** (typed
+  Trion) and **#4** itself (the economy). Every decision behind those three is
+  taken and recorded in "Wave 2 decisions" below, so they are ready to build.
 - **After it:** waves 3 to 7, laid out in "The waves" directly below.
 
 Everything below is detail. The full plan is in "The waves" next; the queue is
@@ -36,8 +36,8 @@ audit, approved by the owner as #Q1 to #Q4.
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
 | **1** | ~~#14~~ ~~5c~~ ~~the duration fix (#D)~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ ~~the Trion drain fix~~ ~~**#3's rule only**~~ ~~two support spot-fixes~~ **wave 1 complete, merged, playtested and closed out (#TWC, 2026-08-29)** | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
-| **2** | ~~**4b**~~ **done**. Then **#4** (economy), the **origin re-tag rebalance**, the **`attack` to `ability` rename** (with the Sealed recode), and **typed Trion**. **Current priority; design decided, not built.** | 4b went first and cleared the round limit (it found the long battles are accuracy, not economy). #4's decisions and everything the design pass pulled in are recorded in "Wave 2 decisions" above. Typed Trion follows the origin re-tag; its typed costs price in wave 4 |
-| **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
+| **2** | ~~**4b**~~ ~~**#17**, the rename with the Sealed recode and the Origin Lockout fix~~ **both built**. Left, in order: **#16** the origin re-tag rebalance, then **#15** typed Trion, then **#4** the economy itself. **Current priority; the three left are designed but not built.** | 4b went first and cleared the round limit (it found the long battles are accuracy, not economy). #4's decisions and everything the design pass pulled in are recorded in "Wave 2 decisions" above. Typed Trion follows the origin re-tag; its typed costs price in wave 4 |
+| **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps, and **a home for Sealed** (#12D) | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
 | **5** | **#6**, carrying #3's tooltip setting | Pending queue with un-queue, the resolve pause, and the squads laid out on the board itself. The tooltip duration setting moves here because it is interface work with no pricing in it |
 | **6** | **#7** | AI tuning needs the final economy, the final prices, and the reactions from 3b to value |
@@ -723,16 +723,22 @@ already picks its damage types, so an explicitly passed value still wins.
 nothing ever wrote `lockedOrigin` outside a test, making it the only one of the
 four data-driven locks missing its writer.
 
-**Still open: Sealed has no applier.** Nothing in the catalogue inflicts it, so
-the recode gave it teeth but not a home. The owner chose #10B, home it on an
-existing Trigger, and the search for one turned up a real constraint: **none of
-the 17 unique-behavior Triggers declares a status**, and the unique resolution
-path passes a hardcoded empty status list, so homing it there would need engine
-work and would break the established pattern. Every non-unique psychic or
-mental Trigger already inflicts a status, so the home means adding a second
-status to one of them, which raises that Trigger's Trigger Value and is
-therefore a balance change for wave 4's SPTV pass to price. Awaiting the
-owner's pick of the Trigger.
+**Sealed still has no applier, and that is deferred to wave 3 (#12D).** Nothing
+in the catalogue inflicts it, so the recode gave it teeth but not a home. The
+owner first chose to home it on an existing Trigger (#10B), and the search for
+one turned up a real constraint: **none of the 17 unique-behavior Triggers
+declares a status**, and the unique resolution path passes a hardcoded empty
+status list, so homing it there would need engine work and would break the
+established pattern. Every non-unique psychic or mental Trigger already inflicts
+a status, so the home would mean adding a second status to one of them, raising
+that Trigger's Trigger Value: a balance change, and not one to make by eye. So
+the home goes to **wave 3's content pass**, which already owns finding homes for
+the remaining unreachable statuses (3b's spec names that job).
+
+**This is a known, tracked exception to a standing design rule.** The working
+agreement says every catalogued status effect must have something that applies
+it. Sealed does not, and did not before this work either. It is listed here so
+it is an exception on the record rather than a silent one, and wave 3 closes it.
 
 ### The status-catalogue reconciliation (#7A, folds into #13)
 
@@ -804,7 +810,7 @@ numbers everywhere else in this document.
 | 13b | **Every ability and status explains itself.** **Built, wave 1.** All 62 statuses now describe themselves; the placeholder count went 16 to 0, checked by a test rather than by eye. Three of the five field-less ones got real declarative fields (`forcesNextAttackCriticalMiss`, `locksToSingleChosenAbility`, `sharesMagnitudeWithBoundEnemy`), which also removed the last three hardcoded status ids from the engine's own logic. The other two keep written sentences, exactly as decision #B allowed. Original spec: Raised by the owner in the #2 playtest, against Guardian's Aegis: it explains Guarded ("You take 25% less damage") and then says of Braced only "You are affected by Braced", which tells the player nothing. The cause is that `describeStatusEffect` renders some of `StatusEffectDefinition`'s fields and falls back to a placeholder for the rest, and Braced's whole effect lives in an unrendered one (`perRemainingTurnStatModifiers`, +1 Defense per remaining turn). Measured off the live catalogue: **16 of the 62 status effects hit that placeholder** (Wet, Sickened, Sapped, Reeling, Prepared, Braced, Focused, Hastened, Chilled, Origin Lockout, Interdict, Forced Critical Miss, Forced Choice, Karmic Bind, Called Shot, Mind's Eye). The standing rule is already written down in the working agreement: a status effect's description says what it does and how long it lasts in the player's own turns, never just its name. **Moved to wave 1 (#Q3).** It sat after #3 on the grounds that #3 was about to change those magnitudes, but `describeStatusEffect` renders from the definition at runtime, so a re-priced magnitude updates its own description for nothing. It is also the same audit as #3's rule: five of the sixteen set no declarative field at all, which is exactly what a field-derived price values at zero. Doing it in wave 1 makes every playtest from there on readable. | Done | 1 |
 | 15 | **Typed Trion (origin-keyed).** The D2 answer: a typed-energy layer over the Trion pool, keyed to origin, with a signature gate and a wild valve. Full design and brief link under "Wave 2 decisions" above. Depends on #16 (the origin rebalance); typed costs priced in wave 4. | Designed, not built | 2 |
 | 16 | **Origin rebalance (re-tag).** Re-tag and reflavor existing abilities to ~15 per origin (from physical 23 / mental 21 / energy 11 / afflict 6) and break the psychic-to-mental 1:1 collapse, so origin is an even, independent axis for #15. Not new content, does not touch SPTV pricing. Precedes #15. | Approved, queued | 2 |
-| 17 | **`attack` to `ability` rename, and the Sealed recode.** **Rename built 2026-08-30**, one commit: `AttackType` to `AbilityType`, `AttackSubtype` to `AbilitySubtype`, the fields, the `AttackTypeSubtypes` extension and `lastTurnAttackType`, across **794 occurrences in 41 Dart files**; plus the web demo's two JSON keys **and** the `battle_sim.html` reader that consumes them (renaming one without the other would have broken the demo), the guide's player-facing copy, and `game_design.md`'s two taxonomy sections, which also stopped calling a subtype "how the attack lands". **No behavior change**: 1061 engine and 470 app tests pass unchanged, analyzers clean but for the pre-existing `anonKey` deprecation. **Sealed recode built 2026-08-30** as its own commit, since a behavior change does not belong in a rename. `locksAbilityTypeFromData` on the definition, read in `canUseAbility` beside the origin check, and the type **picked at random when the status lands** (#9B), seeded in `StatusEffectEngine.apply` next to the way Sickened already picks its damage types. Sealed stopped zeroing Trion Affinity and FAT Chance, so it also moved from the `statZeroed` badge role to `optionDenied`, beside Origin Lockout. **Found and fixed on the way (#11A): Origin Lockout was inert.** A Black Trigger applies it, but nothing ever wrote `lockedOrigin` outside a test, so the engine compared its lock against null and it blocked nothing; it is the only one of the four data-driven locks whose writer was missing (Prone, Forced Choice and Karmic Bind all seed theirs). Both locks now name what they shut off, and an explicitly passed value still wins. Six new tests; 1067 engine and 470 app tests pass. **Still open: Sealed has no applier** (#10B), see the note below the queue. | Rename and recode built; Sealed's home open | 2 |
+| 17 | **`attack` to `ability` rename, and the Sealed recode.** **Rename built 2026-08-30**, one commit: `AttackType` to `AbilityType`, `AttackSubtype` to `AbilitySubtype`, the fields, the `AttackTypeSubtypes` extension and `lastTurnAttackType`, across **794 occurrences in 41 Dart files**; plus the web demo's two JSON keys **and** the `battle_sim.html` reader that consumes them (renaming one without the other would have broken the demo), the guide's player-facing copy, and `game_design.md`'s two taxonomy sections, which also stopped calling a subtype "how the attack lands". **No behavior change**: 1061 engine and 470 app tests pass unchanged, analyzers clean but for the pre-existing `anonKey` deprecation. **Sealed recode built 2026-08-30** as its own commit, since a behavior change does not belong in a rename. `locksAbilityTypeFromData` on the definition, read in `canUseAbility` beside the origin check, and the type **picked at random when the status lands** (#9B), seeded in `StatusEffectEngine.apply` next to the way Sickened already picks its damage types. Sealed stopped zeroing Trion Affinity and FAT Chance, so it also moved from the `statZeroed` badge role to `optionDenied`, beside Origin Lockout. **Found and fixed on the way (#11A): Origin Lockout was inert.** A Black Trigger applies it, but nothing ever wrote `lockedOrigin` outside a test, so the engine compared its lock against null and it blocked nothing; it is the only one of the four data-driven locks whose writer was missing (Prone, Forced Choice and Karmic Bind all seed theirs). Both locks now name what they shut off, and an explicitly passed value still wins. Six new tests; 1067 engine and 470 app tests pass. **Sealed's home is deferred to wave 3 (#12D)**, with the content pass that already owns finding homes for unreachable statuses; it has teeth but nothing applies it until then. | Built | 2 |
 
 ### Found in the second #2 playtest, and fixed
 
