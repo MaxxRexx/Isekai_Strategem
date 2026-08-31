@@ -58,12 +58,15 @@ void main() {
       expect(roles[StatusRole.takesMore], ['exposed', 'marked']);
       expect(roles[StatusRole.dealsMore], ['empowered', 'vow_of_the_duel']);
       expect(roles[StatusRole.dealsLess], ['weakened']);
+      // Sealed left this group when it stopped zeroing Trion Affinity and
+      // FAT Chance and started sealing an ability type, which is an option
+      // closed off rather than a number taken to zero.
       expect(roles[StatusRole.statZeroed],
-          ['shattered_guard', 'sealed', 'overwhelmed']);
+          ['shattered_guard', 'overwhelmed']);
       expect(roles[StatusRole.statUp], hasLength(8));
       expect(roles[StatusRole.statDown], hasLength(11));
       expect(roles[StatusRole.aimSpoiled], hasLength(7));
-      expect(roles[StatusRole.optionDenied], hasLength(6));
+      expect(roles[StatusRole.optionDenied], hasLength(7));
     });
 
     test('only what nothing can read falls through to special', () {

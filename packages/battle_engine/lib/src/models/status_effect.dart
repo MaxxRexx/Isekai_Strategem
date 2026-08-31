@@ -162,8 +162,15 @@ class StatusEffectDefinition {
 
   /// While active, abilities whose [OriginTag] matches the origin stored
   /// in the instance's `data['lockedOrigin']` are blocked. Seal of
-  /// Severance inflicts this.
+  /// Severance inflicts this. The origin is picked at random when the status
+  /// lands (`StatusEffectEngine.apply`) unless the caller names one.
   final bool locksOriginFromData;
+
+  /// While active, abilities whose [AbilityType] matches the type stored in
+  /// the instance's `data['lockedAbilityType']` are blocked. This is what
+  /// Sealed means: one whole kind of ability, melee, ranged or psychic, is
+  /// shut off. Picked at random when the status lands, like the origin above.
+  final bool locksAbilityTypeFromData;
 
   /// While active, the character may only use the ability whose id matches
   /// their last-used trigger (`CharacterBattleState.lastUsedTriggerId`).
@@ -266,6 +273,7 @@ class StatusEffectDefinition {
     this.preventsHealing = false,
     this.trionCostMultiplier,
     this.locksOriginFromData = false,
+    this.locksAbilityTypeFromData = false,
     this.forcesRepetitionOfLastAbility = false,
     this.misfireChance,
     this.repeatAbilityDamageMultiplier,

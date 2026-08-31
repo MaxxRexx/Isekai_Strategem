@@ -231,6 +231,9 @@ String describeStatusEffect(
   if (def.locksOriginFromData) {
     bits.add('cannot use abilities of one named origin');
   }
+  if (def.locksAbilityTypeFromData) {
+    bits.add('cannot use one whole ability type, melee, ranged or psychic');
+  }
   if (def.locksToSingleChosenAbility) {
     bits.add('may use only one named ability and nothing else');
   }

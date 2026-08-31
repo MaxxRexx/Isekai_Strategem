@@ -218,6 +218,7 @@ extension StatusRoleX on StatusEffectDefinition {
       preventsAllyInteraction ||
       preventsReposition ||
       locksOriginFromData ||
+      locksAbilityTypeFromData ||
       locksRandomAbilityEachTurn ||
       locksToSingleChosenAbility ||
       forcesRepetitionOfLastAbility;

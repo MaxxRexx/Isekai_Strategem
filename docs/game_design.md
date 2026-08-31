@@ -961,8 +961,11 @@ bleed is not somebody hitting you with a blade.
   statuses).
 - **Warded:** +10 Status Resistance for 2 turns (better at shrugging statuses).
 - **Hexed:** 10 less Status Resistance for 2 turns (easier to afflict).
-- **Sealed:** one ability type is sealed off for 2 turns.
-- **Origin Lockout:** locked out of a category of Trigger for 2 turns.
+- **Sealed:** one whole ability type (melee, ranged or psychic), picked at
+  random when it lands, is sealed off for 2 turns.
+- **Origin Lockout:** locked out of one **origin**, picked at random when it
+  lands, for 2 turns. (Not a category: origin and category are different
+  tags.)
 
 ### Healing and protection
 

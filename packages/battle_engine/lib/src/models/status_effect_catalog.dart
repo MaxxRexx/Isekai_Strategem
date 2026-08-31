@@ -446,10 +446,10 @@ class StatusEffectCatalog {
         id: 'sealed',
         name: 'Sealed',
         defaultDurationTurns: magnitudes.sealedDurationTurns,
-        zeroedStats: const {
-          ModifiableStat.trionAffinity,
-          ModifiableStat.fatChance,
-        },
+        // Its name and the design document always meant "one kind of ability
+        // is sealed off". It zeroed Trion Affinity and FAT Chance instead,
+        // which is a different effect wearing this one's name.
+        locksAbilityTypeFromData: true,
       ),
       StatusEffectDefinition(
         id: 'overwhelmed',

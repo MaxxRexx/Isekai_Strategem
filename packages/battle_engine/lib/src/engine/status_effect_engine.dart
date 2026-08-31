@@ -174,6 +174,22 @@ class StatusEffectEngine {
           allTypes.take(def.vulnerableToRandomDamageTypesCount!).toSet();
     }
 
+    // Both locks name what they shut off when they land, picked at random,
+    // the same way Sickened picks its damage types just above. Origin Lockout
+    // never did this, so nothing was ever written to `lockedOrigin` outside a
+    // test and the lock silently blocked nothing. An explicit value passed in
+    // still wins, so a caller or a test can name the locked one.
+    if (def.locksOriginFromData && !instance.data.containsKey('lockedOrigin')) {
+      instance.data['lockedOrigin'] =
+          OriginTag.values[diceRoller.random.nextInt(OriginTag.values.length)]
+              .name;
+    }
+    if (def.locksAbilityTypeFromData &&
+        !instance.data.containsKey('lockedAbilityType')) {
+      instance.data['lockedAbilityType'] = AbilityType
+          .values[diceRoller.random.nextInt(AbilityType.values.length)].name;
+    }
+
     target.statusEffects.add(instance);
     return true;
   }

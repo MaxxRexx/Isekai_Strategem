@@ -879,6 +879,10 @@ class TurnEngine {
           instance.data['lockedOrigin'] == trigger.originTag.name) {
         return false;
       }
+      if (def.locksAbilityTypeFromData &&
+          instance.data['lockedAbilityType'] == trigger.abilityType.name) {
+        return false;
+      }
       if (def.forcesRepetitionOfLastAbility &&
           state.lastUsedTriggerId != null &&
           trigger.id != state.lastUsedTriggerId) {
