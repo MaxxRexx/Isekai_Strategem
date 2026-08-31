@@ -115,6 +115,24 @@ String _rollTagList(Set<StatusRollTag> tags) {
   return '${parts.take(parts.length - 1).join(', ')} and ${parts.last}';
 }
 
+/// An origin's player-facing name. Origin was a background tag until typed
+/// Trion (item #15) made it the thing you spend, so it needs a label now.
+String originLabel(OriginTag origin) => switch (origin) {
+      OriginTag.physical => 'Physical',
+      OriginTag.energy => 'Energy',
+      OriginTag.afflict => 'Afflict',
+      OriginTag.mental => 'Mental',
+    };
+
+/// The token's player-facing name, Wild included.
+String trionTokenLabel(TrionTokenType type) => switch (type) {
+      TrionTokenType.physical => 'Physical',
+      TrionTokenType.energy => 'Energy',
+      TrionTokenType.afflict => 'Afflict',
+      TrionTokenType.mental => 'Mental',
+      TrionTokenType.wild => 'Wild',
+    };
+
 String describeStatusEffect(
   StatusEffectDefinition def, {
   required bool onSelf,

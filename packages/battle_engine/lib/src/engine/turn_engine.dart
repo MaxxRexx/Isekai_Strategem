@@ -16,6 +16,7 @@ import '../models/teg_profile.dart';
 import '../models/trigger.dart';
 import 'combo_recognizer.dart';
 import '../models/trion.dart';
+import '../models/trion_token.dart';
 import '../models/unique_behavior.dart';
 import '../util/dice.dart';
 import 'character_battle_state.dart';
@@ -220,6 +221,7 @@ class TurnEngine {
   final PassiveCounterConfig passiveCounterConfig;
   final UniqueConfig uniqueConfig;
   final BailOutConfig bailOutConfig;
+  final TypedTrionConfig typedTrionConfig;
 
   /// Per-character shared team Trion pool (character id -> the pool of the
   /// team they belong to), set by the Battle layer. Used to pay the attacking
@@ -227,6 +229,12 @@ class TurnEngine {
   /// `StatusEffectEngine` credits a Sapped drain to its causer's pool. Empty
   /// when TurnEngine is used standalone, which simply skips the payment.
   Map<String, TrionPool> teamTrionPools = {};
+
+  /// Item #15: per-character view of the squad's typed Trion reserve
+  /// (character id -> the reserve of the team they belong to), set by the
+  /// Battle layer exactly like [teamTrionPools]. Empty when TurnEngine is used
+  /// standalone, which simply leaves the typed gate off.
+  Map<String, TypedTrionReserve> teamTypedTrion = {};
 
   /// Battle-wide character registry (id -> state), set by the Battle layer
   /// so cross-team unique effects (Karmic Bind's live link) can look up a
@@ -408,6 +416,7 @@ class TurnEngine {
     this.passiveCounterConfig = PassiveCounterConfig.defaults,
     this.uniqueConfig = UniqueConfig.defaults,
     this.bailOutConfig = BailOutConfig.defaults,
+    this.typedTrionConfig = TypedTrionConfig.defaults,
   })  : trionGainEngine = trionGainEngine ?? TrionGainEngine(),
         fatEngine = fatEngine ?? FatEngine(),
         combatEngine = combatEngine ?? CombatEngine(),
@@ -428,6 +437,59 @@ class TurnEngine {
   /// it used to take was only ever indexed to find them, and doing that here
   /// meant this had to know how the battle was keyed. `Battle.statesOf` is
   /// the one place that answers that now.
+  /// Item #15: rolls this turn's typed Trion, one token per living member.
+  ///
+  /// The type is weighted toward the origins the squad actually runs, read off
+  /// their equipped abilities, so committing to an origin is rewarded rather
+  /// than punished. A [TypedTrionConfig.uniformFloor] keeps every origin
+  /// reachable, and [TypedTrionConfig.wildChance] pays out a Wild instead,
+  /// which is the valve for a roll that keeps missing.
+  ///
+  /// Returns the tokens gained, in order, so a caller can log them.
+  List<TrionTokenType> resolveTypedTrionGain(
+    Team team,
+    List<CharacterBattleState> teamStates,
+    Map<String, List<ActiveTrigger>> equippedActiveTriggers,
+  ) {
+    final living = teamStates.where((s) => s.isAlive).toList();
+    if (living.isEmpty) return const [];
+
+    // What this squad is built out of, which is what it should mostly draw.
+    final weights = {for (final o in OriginTag.values) o: 0.0};
+    for (final state in living) {
+      for (final t in equippedActiveTriggers[state.combatantId] ?? const []) {
+        weights[t.originTag] = weights[t.originTag]! + 1;
+      }
+    }
+    for (final o in OriginTag.values) {
+      weights[o] = weights[o]! + typedTrionConfig.uniformFloor;
+    }
+    final totalWeight = weights.values.fold<double>(0, (a, b) => a + b);
+
+    final gained = <TrionTokenType>[];
+    for (var i = 0; i < living.length; i++) {
+      if (combatEngine.diceRoller.random.nextDouble() <
+          typedTrionConfig.wildChance) {
+        gained.add(TrionTokenType.wild);
+        continue;
+      }
+      var roll = combatEngine.diceRoller.random.nextDouble() * totalWeight;
+      var picked = OriginTag.values.last;
+      for (final o in OriginTag.values) {
+        roll -= weights[o]!;
+        if (roll < 0) {
+          picked = o;
+          break;
+        }
+      }
+      gained.add(TrionTokenType.of(picked));
+    }
+    for (final t in gained) {
+      team.typedTrion.gain(t);
+    }
+    return gained;
+  }
+
   TrionGainResult resolveTeamTrionGain(
     Team team,
     List<CharacterBattleState> teamStates, {
@@ -860,6 +922,27 @@ class TurnEngine {
   /// action-prevented (Stunned/Frozen), not locked by Prone, and within
   /// this turn's ability-use limit (1, or up to 3 if FAT triggered).
   /// Passive Triggers are never "used" - this only applies to actives.
+  /// Item #15's signature gate: which abilities cost a typed token on top of
+  /// their Trion cost.
+  ///
+  /// An ordinary turn runs on the pool alone, so a roll that goes against you
+  /// never locks you out of acting. Tokens buy the plays the pool cannot: a
+  /// Black Trigger ability, and the extra actions a Full Arms Trigger turn
+  /// unlocks. (The third case the design names, an ability's own signature
+  /// effect, needs a per-ability field and lands with wave 4's pricing pass.)
+  bool requiresTypedTrion(CharacterBattleState state, ActiveTrigger trigger) {
+    final black = state.character.blackTrigger;
+    if (black != null && black.activeAbilities.any((a) => a.id == trigger.id)) {
+      return true;
+    }
+    return state.abilitiesUsedThisTurnCount >= fatConfig.normalAbilitiesPerTurn;
+  }
+
+  /// The reserve backing [state], or null when none is wired up (standalone
+  /// TurnEngine use, which leaves the typed gate off entirely).
+  TypedTrionReserve? _reserveFor(CharacterBattleState state) =>
+      teamTypedTrion[state.combatantId];
+
   bool canUseAbility(CharacterBattleState state, ActiveTrigger trigger) {
     if (state.isActionPrevented()) return false;
     if ((state.cooldowns[trigger.id] ?? 0) > 0) return false;
@@ -889,6 +972,13 @@ class TurnEngine {
         return false;
       }
     }
+    // Item #15: the big plays also cost a typed token.
+    final reserve = _reserveFor(state);
+    if (reserve != null &&
+        requiresTypedTrion(state, trigger) &&
+        !reserve.canPay(trigger.originTag)) {
+      return false;
+    }
     return true;
   }
 
@@ -900,7 +990,13 @@ class TurnEngine {
   bool useAbility(
       CharacterBattleState state, ActiveTrigger trigger, TrionPool teamPool) {
     final cost = (trigger.trionCost * state.trionCostMultiplier()).round();
+    // The typed token is checked before the pool is touched, so a use that
+    // cannot afford both spends neither.
+    final reserve = _reserveFor(state);
+    final needsToken = reserve != null && requiresTypedTrion(state, trigger);
+    if (needsToken && !reserve.canPay(trigger.originTag)) return false;
     if (!teamPool.trySpend(cost)) return false;
+    if (needsToken) reserve.spend(trigger.originTag);
     state.recordAbilityUse(trigger);
     return true;
   }

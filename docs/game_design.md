@@ -222,9 +222,38 @@ drains 15% of it (and stops them acting), Silenced stops them using abilities at
 all, Overcharged halves your ability costs, and Choked doubles the target's
 costs.
 
-*Design note: right now income is a semi-random roll and most turns you only cast
-one ability, so your Capacity rarely runs dry. A future balance pass may make
-income steadier and tie your big burst turns to your Capacity.*
+### Typed Trion: what kind, as well as how much
+
+The pool above answers **how much** your squad can do this turn. A second,
+smaller resource answers **what kind**.
+
+At the start of each of your turns, **each living member of your squad earns one
+Trion token**. Its kind is rolled: usually one of the four **origins** (Physical,
+Energy, Afflict, Mental), and sometimes a **Wild**, which pays for any of them.
+The roll leans toward the origins your squad actually runs, so committing to an
+origin is rewarded rather than punished, though every origin stays possible.
+Tokens are **shared across the squad and banked**, so holding one back to afford
+next turn's big play is a real decision.
+
+**Most turns you will not spend one.** An ordinary action costs only Trion from
+the pool, so a run of unhelpful tokens never stops you playing. Tokens buy the
+expensive plays:
+
+- a **Black Trigger** ability, and
+- the **extra actions** a Full Arms Trigger turn unlocks.
+
+Either costs one token **matching that ability's own origin**, on top of its
+Trion cost. A Wild covers anything. If you cannot pay the token, the ability is
+unavailable, and the game says so by name rather than greying out silently.
+
+*Design note: this is the Naruto half of the game's DNA reaching the economy at
+last, and it is deliberately a layer over the pool rather than a replacement for
+it. The four origins were evened out first (they ran as lopsided as 23 against
+6), because a resource keyed to a tag only six abilities deep is dead weight for
+most squads. The Wild share and the lean toward your own origins are the two
+valves against the oldest complaint in this genre, which is being handed a
+resource you cannot spend. Every number here is first-pass and unpriced until
+the SPTV pass.*
 
 ---
 

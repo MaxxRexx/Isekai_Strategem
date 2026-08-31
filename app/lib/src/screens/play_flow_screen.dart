@@ -1463,6 +1463,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           isOver: session.isOver,
           roundNumber: session.roundNumber,
           teamATrion: session.teamATrion,
+          teamATypedTrion: session.teamATypedTrion,
           opponentName: opponentProfile.name,
           opponentSkillLabel: skillClassLabel[opponentProfile.skillClass]!,
           onPlayerTap: _resolving ? null : _showAccountInfo,
@@ -2740,6 +2741,7 @@ class _BattleTopBar extends StatelessWidget {
   final bool isOver;
   final int roundNumber;
   final int teamATrion;
+  final Map<TrionTokenType, int> teamATypedTrion;
   final String opponentName;
   final String opponentSkillLabel;
 
@@ -2752,6 +2754,7 @@ class _BattleTopBar extends StatelessWidget {
     required this.isOver,
     required this.roundNumber,
     required this.teamATrion,
+    required this.teamATypedTrion,
     required this.opponentName,
     required this.opponentSkillLabel,
     this.onPlayerTap,
@@ -2885,6 +2888,16 @@ class _BattleTopBar extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      if (teamATypedTrion.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '◇ Typed: ${teamATypedTrion.entries.map((e) => '${trionTokenLabel(e.key)} ${e.value}').join('  ')}',
+                          style: const TextStyle(
+                            color: Palette.gold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -36,6 +36,7 @@ void main() {
     test('highestDamage picks the strongest usable ability', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       final ai = ProfileDrivenAi(AiProfile.theExecutioner,
           random: const _FixedDoubleRandom(1.0));
 
@@ -56,6 +57,7 @@ void main() {
     test('aoeFavoring picks an AOE ability over a higher-damage single', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       final ai = ProfileDrivenAi(AiProfile.theBlastRadius,
           random: const _FixedDoubleRandom(1.0));
 
@@ -86,6 +88,7 @@ void main() {
         'plain attack', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       final ai = ProfileDrivenAi(AiProfile.theAfflictor,
           random: const _FixedDoubleRandom(1.0));
 
@@ -137,6 +140,7 @@ void main() {
       ]);
       final battle = Battle(teamA: teamA, teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       final ai = ProfileDrivenAi(AiProfile.theGambler,
           random: const _FixedDoubleRandom(1.0));
 
@@ -159,6 +163,7 @@ void main() {
     test('lowestHealth focuses the weakest legal opponent', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['b-1']!.currentHealth = 80;
       battle.states['b-2']!.currentHealth = 10;
       battle.states['b-3']!.currentHealth = 50;
@@ -195,6 +200,7 @@ void main() {
       ]);
       final battle = Battle(teamA: _team('a'), teamB: teamB);
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['b-1']!.currentHealth = 40;
       battle.states['b-2']!.currentHealth = 45;
 
@@ -241,6 +247,7 @@ void main() {
         'matchup-aware top pick', () {
       final battle = Battle(teamA: _team('a'), teamB: lookaheadOpponents());
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['b-a']!.currentHealth = 15;
       battle.states['b-b']!.currentHealth = 8;
 
@@ -265,6 +272,7 @@ void main() {
         "with the normal top pick even though it can't kill it", () {
       final battle = Battle(teamA: _team('a'), teamB: lookaheadOpponents());
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['b-a']!.currentHealth = 15;
       battle.states['b-b']!.currentHealth = 8;
 
@@ -291,6 +299,7 @@ void main() {
         'its normal firstAvailable priority', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['a-1']!.lastDamagedTargetId = 'b-3';
 
       final ai = ProfileDrivenAi(AiProfile.theBerserker,
@@ -325,6 +334,7 @@ void main() {
       ]);
       final battle = Battle(teamA: _team('a'), teamB: teamB);
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['b-2']!.cumulativeDamageDealt = 500;
 
       final ai = ProfileDrivenAi(AiProfile.theGrudgeHolder,
@@ -349,6 +359,7 @@ void main() {
         'pick', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['b-1']!.lastActiveTriggerCategory = TriggerCategory.trapper;
 
       final ai = ProfileDrivenAi(AiProfile.theCopycat,
@@ -378,6 +389,7 @@ void main() {
         'when drafting a Loadout', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
 
       final ai = ProfileDrivenAi(AiProfile.theSharpshooter,
           random: const _FixedDoubleRandom(1.0));
@@ -406,6 +418,7 @@ void main() {
         'no-op, unlike a profile with the normal usefulness gate', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.turnEngine.statusEffectEngine
           .apply(battle.states['a-1']!, 'guarded');
 
@@ -456,6 +469,7 @@ void main() {
       ]);
       final battle = Battle(teamA: _team('a'), teamB: teamB);
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['b-1']!.currentHealth = 1;
       battle.states['b-2']!.currentHealth = 1;
       battle.states['b-3']!.currentHealth = 100;
@@ -509,6 +523,7 @@ void main() {
       ]);
       final battle = Battle(teamA: _team('a'), teamB: teamB);
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['b-1']!.currentHealth = 1;
       battle.states['b-2']!.currentHealth = 100;
       battle.states['b-3']!.currentHealth = 100;
@@ -542,6 +557,7 @@ void main() {
         'though its base priority is otherwise damage-driven', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
 
       final ai = ProfileDrivenAi(AiProfile.theProdigy,
           random: const _FixedDoubleRandom(1.0));
@@ -572,6 +588,7 @@ void main() {
         'remains and it has no status effects yet', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       battle.states['b-2']!.currentHealth = 0;
       battle.states['b-3']!.currentHealth = 0;
 
@@ -603,6 +620,7 @@ void main() {
         'would normally choose', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
 
       // nextDouble() always returns 0.0, which is below any positive
       // mistake chance, so the ability choice is forced into the
@@ -643,6 +661,7 @@ void main() {
             TurnEngine(fatEngine: FatEngine(diceRoller: DiceRoller(Random(2)))),
       );
       battle.teamA.trionPool.gain(1000);
+      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
       var fatTriggered = false;
       for (var i = 0; i < 20 && !fatTriggered; i++) {
         battle.states['a-1']!.fatCooldownRemaining = 0;

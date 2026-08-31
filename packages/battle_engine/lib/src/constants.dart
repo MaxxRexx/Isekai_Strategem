@@ -82,6 +82,28 @@ class TrionTierConfig {
   static const TrionTierConfig defaults = TrionTierConfig();
 }
 
+/// Config for item #15's typed Trion.
+class TypedTrionConfig {
+  /// Chance a token comes up Wild rather than an origin. The pressure valve
+  /// for a squad whose origins the roll keeps missing.
+  final double wildChance;
+
+  /// Added to every origin's weight before the roll, so a squad that runs one
+  /// origin heavily can still draw the others. Without it a mono-origin squad
+  /// would never see a token it could not use, which sounds kind and removes
+  /// the decision the mechanic exists to create.
+  final double uniformFloor;
+
+  /// First-pass values, chosen to keep a token roughly as scarce as the big
+  /// plays that spend one. Unpriced until item #3's wave 4 pass.
+  const TypedTrionConfig({
+    this.wildChance = 0.20,
+    this.uniformFloor = 1.0,
+  });
+
+  static const TypedTrionConfig defaults = TypedTrionConfig();
+}
+
 /// Config for Full Arms Trigger (FAT).
 class FatConfig {
   /// Turns FAT stays locked out after triggering, before modifiers.

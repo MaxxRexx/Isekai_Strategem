@@ -37,7 +37,9 @@ void main() {
   }) {
     final battle = Battle(teamA: _team('a'), teamB: _team('b'));
     battle.teamA.trionPool.gain(1000);
+    battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
     battle.teamB.trionPool.gain(1000);
+    battle.teamB.typedTrion.gain(TrionTokenType.wild, 20);
     for (final c in battle.teamA.characters) {
       battle.states[c.id]!.position = aLine;
     }
