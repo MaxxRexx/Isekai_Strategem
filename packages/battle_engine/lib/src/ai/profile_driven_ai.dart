@@ -358,7 +358,7 @@ class ProfileDrivenAi {
 
       case AiAbilityPriority.aoeFavoring:
         final aoe =
-            usable.where((t) => t.attackSubtype == AttackSubtype.aoe).toList();
+            usable.where((t) => t.abilitySubtype == AbilitySubtype.aoe).toList();
         if (aoe.isEmpty) return byPower(usable).first;
         if (!profile.aoeOnlyWhenMultipleInKillRange) return byPower(aoe).first;
 
@@ -401,7 +401,7 @@ class ProfileDrivenAi {
             .toList();
         if (aliveEnemyStates.length >= 2) {
           final aoe = usable
-              .where((t) => t.attackSubtype == AttackSubtype.aoe)
+              .where((t) => t.abilitySubtype == AbilitySubtype.aoe)
               .toList();
           if (aoe.isNotEmpty) return byPower(aoe).first;
         }
@@ -456,7 +456,7 @@ class ProfileDrivenAi {
   double _abilityPower(ActiveTrigger trigger) {
     final damage = trigger.damage;
     final hits =
-        trigger.attackSubtype == AttackSubtype.burst ? trigger.hitsPerUse : 1;
+        trigger.abilitySubtype == AbilitySubtype.burst ? trigger.hitsPerUse : 1;
     final damagePower = damage == null ? 0.0 : damage.average * hits;
     final matchedTags = _tagLookup
         .triggerTags(trigger)
@@ -634,7 +634,7 @@ class ProfileDrivenAi {
 
     final stats = attacker.effectiveStats();
     final bonuses = engine.teamSpiritCurve.bonusesFor(stats.teamSpirit);
-    final isBurst = trigger.attackSubtype == AttackSubtype.burst;
+    final isBurst = trigger.abilitySubtype == AbilitySubtype.burst;
     final damageBonus =
         isBurst ? bonuses.burstDamageBonus : bonuses.singleTargetDamageBonus;
     final hits = isBurst ? trigger.hitsPerUse : 1;

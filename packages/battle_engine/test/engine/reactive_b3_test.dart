@@ -46,7 +46,7 @@ void main() {
         id: 'ranged-shot',
         damage: damage,
         rangeTag: RangeTag.long,
-        attackType: AttackType.ranged,
+        abilityType: AbilityType.ranged,
         cooldownTurns: 2,
       );
 
@@ -138,7 +138,7 @@ void main() {
         attacker: attacker,
         trigger: testTrigger(
           damage: damage,
-          attackSubtype: AttackSubtype.aoe,
+          abilitySubtype: AbilitySubtype.aoe,
           targetCount: 3,
         ),
         targets: [defender],
@@ -277,7 +277,7 @@ void main() {
         attacker: attacker,
         trigger: testTrigger(
           damage: damage,
-          attackSubtype: AttackSubtype.aoe,
+          abilitySubtype: AbilitySubtype.aoe,
           targetCount: 3,
         ),
         targets: [defender],
@@ -310,7 +310,7 @@ void main() {
         trigger: testTrigger(
           id: 'enemy_aoe',
           damage: damage,
-          attackSubtype: AttackSubtype.aoe,
+          abilitySubtype: AbilitySubtype.aoe,
           targetCount: 3,
         ),
         targets: [defender],

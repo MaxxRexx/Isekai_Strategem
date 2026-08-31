@@ -134,10 +134,10 @@ class _GuideScreenState extends State<GuideScreen>
         ),
         _section(
           icon: GameIcons.ranged,
-          title: 'Attack Type and Range Band',
+          title: 'Ability Type and Range Band',
           children: const [
             _Plain(
-              'These are two different tags and it is worth keeping them apart. The ATTACK TYPE is what kind of attack it is: Melee, Ranged, or Psychic, 20 Triggers each. The RANGE BAND is how far away you can be when you use it: Close, Mid, or Long Range, also 20 each. Every attack type appears in every band.',
+              'These are two different tags and it is worth keeping them apart. The ABILITY TYPE is what kind of ability it is: Melee, Ranged, or Psychic, 20 Triggers each. The RANGE BAND is how far away you can be when you use it: Close, Mid, or Long Range, also 20 each. Every ability type appears in every band.',
             ),
             _Bullet(
               'Close Range (20). You have to be right there. Mostly blades and fists, but also the point-blank shots (Scattershot, Pepper Shot) and the psychic effects that need contact (Charm Whisper, Soul Siphon, Memory Theft).',
@@ -401,7 +401,7 @@ class _GuideScreenState extends State<GuideScreen>
             icon: TriggerIcon(trigger: t, size: 14),
             title: t.name,
             meta: t is ActiveTrigger
-                ? '${t.category.name} - ${t.rangeTag.label} - ${t.attackSubtype.name}'
+                ? '${t.category.name} - ${t.rangeTag.label} - ${t.abilitySubtype.name}'
                 : '${t.category.name} - passive',
             body: describeTrigger(t),
           ),

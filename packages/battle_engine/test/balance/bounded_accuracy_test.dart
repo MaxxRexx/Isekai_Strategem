@@ -118,28 +118,28 @@ void main() {
       expect(byBand[RangeTag.long], 20);
     });
 
-    test('every attack type spans all three bands', () {
+    test('every ability type spans all three bands', () {
       // This is the failure the band was rescued from: when it was
-      // derivable from the attack type it carried nothing of its own. A
+      // derivable from the ability type it carried nothing of its own. A
       // melee attack can be a lunge that crosses the gap, a ranged one can
       // be a point-blank scattergun, and a psychic one can need contact -
-      // so no attack type may sit entirely in one band.
-      for (final type in AttackType.values) {
+      // so no ability type may sit entirely in one band.
+      for (final type in AbilityType.values) {
         final bands = catalog.activeTriggers
-            .where((t) => t.attackType == type)
+            .where((t) => t.abilityType == type)
             .map((t) => t.rangeTag)
             .toSet();
         expect(bands, hasLength(RangeTag.values.length),
             reason: '$type Triggers only occupy $bands, which makes the '
-                'band partly redundant with the attack type');
+                'band partly redundant with the ability type');
       }
     });
 
     test('no cell of the type-by-band grid is empty', () {
-      for (final type in AttackType.values) {
+      for (final type in AbilityType.values) {
         for (final band in RangeTag.values) {
           final count = catalog.activeTriggers
-              .where((t) => t.attackType == type && t.rangeTag == band)
+              .where((t) => t.abilityType == type && t.rangeTag == band)
               .length;
           expect(count, greaterThan(0),
               reason: 'there is no $type Trigger at $band range');

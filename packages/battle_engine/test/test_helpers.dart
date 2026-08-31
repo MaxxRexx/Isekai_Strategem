@@ -102,8 +102,8 @@ ActiveTrigger testTrigger({
   // the default Middle-against-Middle standoff (distance 2) that battle
   // states start in. A fixture that cares about range says so explicitly.
   RangeTag rangeTag = RangeTag.mid,
-  AttackType attackType = AttackType.melee,
-  AttackSubtype attackSubtype = AttackSubtype.single,
+  AbilityType abilityType = AbilityType.melee,
+  AbilitySubtype abilitySubtype = AbilitySubtype.single,
   int hitsPerUse = 1,
   int targetCount = 1,
   TargetAffiliation targetAffiliation = TargetAffiliation.opponent,
@@ -126,8 +126,8 @@ ActiveTrigger testTrigger({
     cooldownTurns: cooldownTurns,
     originTag: originTag,
     rangeTag: rangeTag,
-    attackType: attackType,
-    attackSubtype: attackSubtype,
+    abilityType: abilityType,
+    abilitySubtype: abilitySubtype,
     hitsPerUse: hitsPerUse,
     targetCount: targetCount,
     targetAffiliation: targetAffiliation,

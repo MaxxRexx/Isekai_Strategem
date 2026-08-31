@@ -340,12 +340,12 @@ String describeActiveTrigger(
 
   if (t.targetAffiliation == TargetAffiliation.self) {
     parts.add('Used on yourself. Nobody else is affected.');
-  } else if (t.attackSubtype == AttackSubtype.aoe) {
+  } else if (t.abilitySubtype == AbilitySubtype.aoe) {
     parts.add(
       '$rangeWord $noun. Covers $whichLine, $reaches up to '
       '${people(t.targetCount)} on it and nobody on another line.',
     );
-  } else if (t.attackSubtype == AttackSubtype.burst) {
+  } else if (t.abilitySubtype == AbilitySubtype.burst) {
     parts.add(
       '$rangeWord $noun. ${t.hitsPerUse} hits, split across up to '
       '${t.targetCount} ${t.targetCount == 1 ? 'target' : 'targets'}.',
@@ -362,7 +362,7 @@ String describeActiveTrigger(
   if (t.damageType != null && t.damage != null) {
     parts.add(
       '${capitalize(t.damageType!.name)} damage, avg ${t.damage!.average.round()}'
-      '${t.attackSubtype == AttackSubtype.burst ? ' per hit' : ''}.',
+      '${t.abilitySubtype == AbilitySubtype.burst ? ' per hit' : ''}.',
     );
   }
   if (t.healAmount != null) {
@@ -380,9 +380,9 @@ String describeActiveTrigger(
   final recipient = switch (t.targetAffiliation) {
     TargetAffiliation.self => 'Makes you',
     TargetAffiliation.ally =>
-      t.attackSubtype == AttackSubtype.aoe ? 'Everyone it covers becomes' : 'Makes the ally',
+      t.abilitySubtype == AbilitySubtype.aoe ? 'Everyone it covers becomes' : 'Makes the ally',
     TargetAffiliation.opponent =>
-      t.attackSubtype == AttackSubtype.aoe ? 'Leaves everyone it hits' : 'Leaves the target',
+      t.abilitySubtype == AbilitySubtype.aoe ? 'Leaves everyone it hits' : 'Leaves the target',
   };
   for (final application in t.inflictedStatusEffects) {
     final def = catalog[application.statusEffectId];
@@ -495,7 +495,7 @@ const passiveCounterDescription = <PassiveCounterKind, String>{
       '(+2 to your whole squad’s rolls for 1 turn). A wrong read docks '
       'your next Trion gain.',
   PassiveCounterKind.ironvow:
-      'Each turn a random attack type is sanctioned (never last turn’s). '
+      'Each turn a random ability type is sanctioned (never last turn’s). '
       'Attack with it for a Sanctioned Strike: unblockable, strips a buff, '
       'and brands the target (repeating an ability two turns running lands '
       'weakened). Cost: your other allies are left vulnerable to that type '

@@ -326,8 +326,8 @@ class TurnEngine {
         teamId: _teamKeyFor(attacker),
         triggerId: trigger.id,
         originTag: trigger.originTag,
-        attackType: trigger.attackType,
-        attackSubtype: trigger.attackSubtype,
+        abilityType: trigger.abilityType,
+        abilitySubtype: trigger.abilitySubtype,
         targetAffiliation: trigger.targetAffiliation,
         targetIds: [target.combatantId],
         statusesApplied: const [],
@@ -1263,7 +1263,7 @@ class TurnEngine {
 
   /// [attacker]'s own roll-context contribution for using [trigger]:
   /// disadvantage from Poisoned (`StatusRollTag.attackRoll`, applies to
-  /// every attack type) merged with Threatened/Blinded's
+  /// every ability type) merged with Threatened/Blinded's
   /// `StatusRollTag.rangedAttackRoll` disadvantage if [trigger] is ranged.
   RollContext _attackRollContextFor(
       CharacterBattleState attacker, ActiveTrigger trigger) {
@@ -1336,7 +1336,7 @@ class TurnEngine {
     CharacterBattleState target,
   ) {
     // Foresight Counter: negate by origin tag (non-AoE only).
-    if (trigger.attackSubtype != AttackSubtype.aoe) {
+    if (trigger.abilitySubtype != AbilitySubtype.aoe) {
       final negateIndex = target.reactiveEffects.indexWhere((r) =>
           r.kind == ReactiveKind.negateByOrigin &&
           r.data['originTag'] == trigger.originTag.name);
@@ -1348,7 +1348,7 @@ class TurnEngine {
     }
 
     // Mirror Ward: reflect non-AoE.
-    if (trigger.attackSubtype != AttackSubtype.aoe) {
+    if (trigger.abilitySubtype != AbilitySubtype.aoe) {
       final wardIndex = target.reactiveEffects
           .indexWhere((r) => r.kind == ReactiveKind.reflectNonAoe);
       if (wardIndex >= 0) {
@@ -1359,7 +1359,7 @@ class TurnEngine {
 
     // Puppet Strings: redirect non-AoE attacks to a random ally of the
     // attacker. Consumes the reactive and removes the caster's Exposed.
-    if (trigger.attackSubtype != AttackSubtype.aoe) {
+    if (trigger.abilitySubtype != AbilitySubtype.aoe) {
       final puppetIndex = target.reactiveEffects
           .indexWhere((r) => r.kind == ReactiveKind.redirectToOwnAlly);
       if (puppetIndex >= 0) {
@@ -1376,8 +1376,8 @@ class TurnEngine {
     }
 
     // Predictive Parry: dodge melee single and counter-hit.
-    if (trigger.attackType == AttackType.melee &&
-        trigger.attackSubtype == AttackSubtype.single) {
+    if (trigger.abilityType == AbilityType.melee &&
+        trigger.abilitySubtype == AbilitySubtype.single) {
       final parryIndex = target.reactiveEffects
           .indexWhere((r) => r.kind == ReactiveKind.dodgeMeleeSingle);
       if (parryIndex >= 0) {
@@ -1504,7 +1504,7 @@ class TurnEngine {
 
     // Death Ledger: if the attacker has nullifyAoe and uses an AoE, nullify it
     // and signal the wielder to swap the AoE Trigger into their loadout.
-    if (trigger.attackSubtype == AttackSubtype.aoe) {
+    if (trigger.abilitySubtype == AbilitySubtype.aoe) {
       final ledgerIndex = attacker.reactiveEffects.indexWhere((r) =>
           r.kind == ReactiveKind.nullifyAoe && _trapStillReaches(r, attacker));
       if (ledgerIndex >= 0) {
@@ -1600,7 +1600,7 @@ class TurnEngine {
 
     final aoeBonus = sideEffect.aoeDamageBonusPercentVsDebuffedTarget;
     if (aoeBonus != null &&
-        trigger.attackSubtype == AttackSubtype.aoe &&
+        trigger.abilitySubtype == AbilitySubtype.aoe &&
         target.statusEffects.isNotEmpty) {
       multiplier += aoeBonus;
     }
@@ -1697,7 +1697,7 @@ class TurnEngine {
     // not. This is what makes stacking a squad dangerous and spreading out
     // a real defence, and it is the half of the change that gives the
     // opponent a reason to want you clumped together.
-    if (trigger.attackSubtype == AttackSubtype.aoe &&
+    if (trigger.abilitySubtype == AbilitySubtype.aoe &&
         filteredTargets.isNotEmpty) {
       final aimedAt = filteredTargets.first.position;
       filteredTargets =
@@ -1723,7 +1723,7 @@ class TurnEngine {
     // handling - e.g. Curving Shot deliberately bends around the first
     // ward instead of being reflected by it). Dispatch here, before the
     // remap, on the canTarget/misfire-filtered targets.
-    if (trigger.attackSubtype == AttackSubtype.unique &&
+    if (trigger.abilitySubtype == AbilitySubtype.unique &&
         trigger.uniqueBehavior != null) {
       return _resolveUniqueBehavior(
         attacker: attacker,
@@ -1744,7 +1744,7 @@ class TurnEngine {
     final baseContext = _attackRollContextFor(attacker, trigger);
     final stats = attacker.effectiveStats(fatConfig: fatConfig);
     final bonuses = teamSpiritCurve.bonusesFor(stats.teamSpirit);
-    final isBurst = trigger.attackSubtype == AttackSubtype.burst;
+    final isBurst = trigger.abilitySubtype == AbilitySubtype.burst;
 
     // Ren-style "First Strike" Side Effect: a flat Attack bonus on this
     // character's first ability use of the battle. Gated on the Side Effect
@@ -1926,7 +1926,7 @@ class TurnEngine {
         // grants a stacking Attack buff for her next turn.
         final riposteBonus =
             target.character.sideEffect?.attackStackBonusOnMeleeMissAgainstSelf;
-        if (riposteBonus != null && trigger.attackType == AttackType.melee) {
+        if (riposteBonus != null && trigger.abilityType == AbilityType.melee) {
           target.applyFlatBonus(
               ModifiableStat.attack, riposteBonus.toDouble(), 2);
         }
@@ -1981,7 +1981,7 @@ class TurnEngine {
         if (damageDealt > 0) {
           attacker.cumulativeDamageDealt += damageDealt;
           attacker.lastDamagedTargetId = target.combatantId;
-          if (trigger.attackType == AttackType.melee) {
+          if (trigger.abilityType == AbilityType.melee) {
             attacker.meleeHitEnemyIds.add(target.combatantId);
           }
         }
@@ -2102,22 +2102,22 @@ class TurnEngine {
       record(damageDealt, damageDetail, appliedIds, appliedStacks);
     }
 
-    switch (trigger.attackSubtype) {
-      case AttackSubtype.single:
+    switch (trigger.abilitySubtype) {
+      case AbilitySubtype.single:
         if (clampedTargets.isNotEmpty) resolveHitAgainst(clampedTargets.first);
         break;
-      case AttackSubtype.unique:
+      case AbilitySubtype.unique:
         // A unique trigger with a behavior is dispatched earlier (before
         // the reactive remap); only the no-behavior fallback reaches here,
         // resolving like a plain single-target hit.
         if (clampedTargets.isNotEmpty) resolveHitAgainst(clampedTargets.first);
         break;
-      case AttackSubtype.aoe:
+      case AbilitySubtype.aoe:
         for (final target in clampedTargets) {
           resolveHitAgainst(target);
         }
         break;
-      case AttackSubtype.burst:
+      case AbilitySubtype.burst:
         final burstFirstHitLanded = <String, bool>{};
         for (final target in clampedTargets) {
           for (var hitIndex = 0; hitIndex < trigger.hitsPerUse; hitIndex++) {
@@ -2403,11 +2403,11 @@ class TurnEngine {
       _draegorOnAbilityUsed(draegor, attacker, cfg);
     }
 
-    // Ironvow: track attack type for sanctioned strike detection.
+    // Ironvow: track ability type for sanctioned strike detection.
     final ironvow =
         attacker.getPassiveCounter(PassiveCounterKind.ironvow);
     if (ironvow != null && trigger.targetAffiliation == TargetAffiliation.opponent) {
-      ironvow.lastTurnAttackType = trigger.attackType;
+      ironvow.lastTurnAbilityType = trigger.abilityType;
     }
 
     // --- Defender-side counters ---
@@ -2501,15 +2501,15 @@ class TurnEngine {
         }
       }
 
-      // Ironvow: sanction one attack type at random (not last turn's).
+      // Ironvow: sanction one ability type at random (not last turn's).
       final ironvow =
           state.getPassiveCounter(PassiveCounterKind.ironvow);
       if (ironvow != null) {
         if (ironvow.sanctionedStrikeCooldown > 0) {
           ironvow.sanctionedStrikeCooldown--;
         }
-        final eligible = AttackType.values
-            .where((t) => t != ironvow.lastTurnAttackType)
+        final eligible = AbilityType.values
+            .where((t) => t != ironvow.lastTurnAbilityType)
             .toList();
         ironvow.sanctionedType = eligible[
             combatEngine.diceRoller.random.nextInt(eligible.length)];
@@ -2902,7 +2902,7 @@ class TurnEngine {
   }
 
   /// Ironvow Sanctioned Strike check: returns true if [attacker] has an
-  /// Ironvow counter and [trigger]'s attack type matches the sanctioned
+  /// Ironvow counter and [trigger]'s ability type matches the sanctioned
   /// type, the strike is available, and the cost is affordable. If true,
   /// the strike is consumed and effects applied.
   bool checkSanctionedStrike(
@@ -2913,7 +2913,7 @@ class TurnEngine {
     final ironvow =
         attacker.getPassiveCounter(PassiveCounterKind.ironvow);
     if (ironvow == null) return false;
-    if (ironvow.sanctionedType != trigger.attackType) return false;
+    if (ironvow.sanctionedType != trigger.abilityType) return false;
     if (ironvow.sanctionedStrikeCooldown > 0) return false;
     if (ironvow.chargesUsed >= passiveCounterConfig.ironvowMaxSanctionedStrikes) {
       return false;

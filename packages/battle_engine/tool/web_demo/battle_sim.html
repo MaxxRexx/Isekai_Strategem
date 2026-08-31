@@ -1487,9 +1487,9 @@ BATTLE_DEMO_JS_PLACEHOLDER
   function describeActiveTrigger(t) {
     const parts = [];
     const rangeWord = t.rangeTag === 'ranged' ? 'Ranged' : 'Melee';
-    if (t.attackSubtype === 'aoe') {
+    if (t.abilitySubtype === 'aoe') {
       parts.push(rangeWord + ' attack, hits all ' + t.targetCount + ' targets at once.');
-    } else if (t.attackSubtype === 'burst') {
+    } else if (t.abilitySubtype === 'burst') {
       parts.push(rangeWord + ' attack: ' + t.hitsPerUse + ' hits split across up to ' + t.targetCount + ' target(s).');
     } else if (t.targetAffiliation === 'self') {
       parts.push('Affects the user only.');
@@ -1499,7 +1499,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
       parts.push(rangeWord + ' attack on a single target.');
     }
     if (t.damageType && t.damageAvg) {
-      parts.push(capitalize(t.damageType) + ' damage, avg ' + Math.round(t.damageAvg) + (t.attackSubtype === 'burst' ? ' per hit' : '') + '.');
+      parts.push(capitalize(t.damageType) + ' damage, avg ' + Math.round(t.damageAvg) + (t.abilitySubtype === 'burst' ? ' per hit' : '') + '.');
     }
     if (t.healAvg) {
       parts.push('Heals ' + (t.healsCasterInstead ? 'the user' : 'the target') + ' for avg ' + Math.round(t.healAvg) + '.');
@@ -1530,7 +1530,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
 
   function triggerIcon(t) {
     if (t.isPassive) return icon('icon-passive');
-    if (t.attackSubtype === 'burst') return icon('icon-burst');
+    if (t.abilitySubtype === 'burst') return icon('icon-burst');
     if (t.rangeTag === 'ranged') return icon('icon-ranged');
     if (t.healAvg) return icon('icon-heal');
     if (!t.damageType && t.inflictedStatusEffects && t.inflictedStatusEffects.length) return icon('icon-status');
@@ -2053,7 +2053,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
     el.innerHTML = triggerCatalog.map((t) =>
       '<div class="guide-entry">' + triggerIcon(t) +
         '<strong>' + escapeHtml(t.name) + '</strong> <span class="t-meta">' +
-        (t.isPassive ? (t.category + ' - passive') : (t.category + ' - ' + t.rangeTag + ' - ' + t.attackSubtype)) +
+        (t.isPassive ? (t.category + ' - passive') : (t.category + ' - ' + t.rangeTag + ' - ' + t.abilitySubtype)) +
         '</span>' +
         '<div class="t-desc">' + escapeHtml(describeTriggerCatalogEntry(t)) + '</div>' +
       '</div>'
@@ -2225,7 +2225,7 @@ BATTLE_DEMO_JS_PLACEHOLDER
       return '<label class="trigger-check-item">' +
         '<input type="checkbox" data-tid="' + t.id + '"' + (checked ? ' checked' : '') + '>' +
         '<span>' + triggerIcon(t) + ' <span class="t-name">' + t.name + '</span><br><span class="t-meta">' +
-        t.category + ' · ' + t.rangeTag + ' · ' + t.attackSubtype +
+        t.category + ' · ' + t.rangeTag + ' · ' + t.abilitySubtype +
         '</span><span class="t-desc">' + escapeHtml(describeActiveTrigger(t)) + '</span></span>' +
         '<span class="t-cost">' + t.equipCost + '</span></label>';
     }).join('');

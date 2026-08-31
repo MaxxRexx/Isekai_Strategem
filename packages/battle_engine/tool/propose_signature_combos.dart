@@ -63,7 +63,7 @@ void main() {
   final heavyHits = triggers.where((t) =>
       _isOffensive(t) &&
       t.damageType != null &&
-      t.attackSubtype == AttackSubtype.single);
+      t.abilitySubtype == AbilitySubtype.single);
 
   final existing = {for (final c in ComboCatalog.all) c.id};
   final out = StringBuffer();

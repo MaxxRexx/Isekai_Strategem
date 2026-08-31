@@ -142,8 +142,8 @@ void main() {
     ].join(' ');
     print(t.id.padRight(26) +
         t.rangeTag.name.padRight(7) +
-        t.attackType.name.padRight(9) +
-        t.attackSubtype.name.padRight(8) +
+        t.abilityType.name.padRight(9) +
+        t.abilitySubtype.name.padRight(8) +
         '${t.trionCost}'.padLeft(4) +
         '${t.cooldownTurns}'.padLeft(4) +
         '${t.equipCost}'.padLeft(4) +
@@ -164,13 +164,13 @@ void main() {
     median('band ${band.name}',
         [for (final t in damaging.where((t) => t.rangeTag == band)) perUseOutput(t)]);
   }
-  for (final at in AttackType.values) {
+  for (final at in AbilityType.values) {
     median('type ${at.name}',
-        [for (final t in damaging.where((t) => t.attackType == at)) perUseOutput(t)]);
+        [for (final t in damaging.where((t) => t.abilityType == at)) perUseOutput(t)]);
   }
-  for (final sub in AttackSubtype.values) {
+  for (final sub in AbilitySubtype.values) {
     median('sub ${sub.name}',
-        [for (final t in damaging.where((t) => t.attackSubtype == sub)) perUseOutput(t)]);
+        [for (final t in damaging.where((t) => t.abilitySubtype == sub)) perUseOutput(t)]);
   }
   print('');
   print('-- distribution of throughput and cost --');

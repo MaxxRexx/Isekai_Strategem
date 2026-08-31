@@ -59,7 +59,7 @@ void main() {
     engine().resolveAbilityUse(
       attacker: a,
       trigger: testTrigger(
-        attackSubtype: AttackSubtype.aoe,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
         damage: damage,
       ),

@@ -64,7 +64,7 @@ void main() {
     const id = 'marren_osei';
     final ironvow = PassiveCounterState(PassiveCounterKind.ironvow);
     ironvow.sanctionedType =
-        (triggerCatalog['twin_fang_strike'] as ActiveTrigger).attackType;
+        (triggerCatalog['twin_fang_strike'] as ActiveTrigger).abilityType;
     s.battle.stateById(id).passiveCounters[PassiveCounterKind.ironvow] = ironvow;
 
     s.queue(id, 'twin_fang_strike', [oppTarget(s, id, 'twin_fang_strike')]);

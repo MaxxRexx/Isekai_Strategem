@@ -115,7 +115,7 @@ class RuleBasedAi {
     final damage = trigger.damage;
     if (damage == null) return 0;
     final hits =
-        trigger.attackSubtype == AttackSubtype.burst ? trigger.hitsPerUse : 1;
+        trigger.abilitySubtype == AbilitySubtype.burst ? trigger.hitsPerUse : 1;
     return damage.average * hits;
   }
 

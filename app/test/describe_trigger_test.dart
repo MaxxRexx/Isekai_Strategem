@@ -53,7 +53,7 @@ void main() {
   group('an area ability says it covers a line', () {
     test('every area ability names the line and the cap together', () {
       for (final t in all) {
-        if (t.attackSubtype != AttackSubtype.aoe) continue;
+        if (t.abilitySubtype != AbilitySubtype.aoe) continue;
         if (t.targetAffiliation == TargetAffiliation.self) continue;
         final text = describeActiveTrigger(t);
         expect(text, contains('line'), reason: t.id);
@@ -85,7 +85,7 @@ void main() {
       // "Catching up to 3" is what an attack does. Guardian's Aegis is a
       // ward, and a playtest called the word out.
       for (final t in all) {
-        if (t.attackSubtype != AttackSubtype.aoe) continue;
+        if (t.abilitySubtype != AbilitySubtype.aoe) continue;
         final text = describeActiveTrigger(t);
         if (t.targetAffiliation == TargetAffiliation.opponent) {
           expect(text, contains('hitting up to'), reason: t.id);
@@ -110,7 +110,7 @@ void main() {
 
     test('an area ability aimed at your side points at your lines', () {
       for (final t in all) {
-        if (t.attackSubtype != AttackSubtype.aoe) continue;
+        if (t.abilitySubtype != AbilitySubtype.aoe) continue;
         if (t.targetAffiliation != TargetAffiliation.ally) continue;
         expect(describeActiveTrigger(t), contains('one of your own lines'),
             reason: t.id);
@@ -140,7 +140,7 @@ void main() {
 
     test('an area attack leaves everyone it hits, not "the target"', () {
       for (final t in all) {
-        if (t.attackSubtype != AttackSubtype.aoe) continue;
+        if (t.abilitySubtype != AbilitySubtype.aoe) continue;
         if (t.targetAffiliation != TargetAffiliation.opponent) continue;
         if (t.inflictedStatusEffects.isEmpty) continue;
         expect(describeActiveTrigger(t), contains('Leaves everyone it hits'),
@@ -151,7 +151,7 @@ void main() {
     test('a single-target ally ability names the ally', () {
       for (final t in all) {
         if (t.targetAffiliation != TargetAffiliation.ally) continue;
-        if (t.attackSubtype == AttackSubtype.aoe) continue;
+        if (t.abilitySubtype == AbilitySubtype.aoe) continue;
         if (t.inflictedStatusEffects.isEmpty) continue;
         expect(describeActiveTrigger(t), contains('Makes the ally'),
             reason: t.id);
@@ -204,7 +204,7 @@ void main() {
       // The two questions were conflated, so separating them must not send
       // a damage-less enemy area ability at your own lines.
       for (final t in all) {
-        if (t.attackSubtype != AttackSubtype.aoe) continue;
+        if (t.abilitySubtype != AbilitySubtype.aoe) continue;
         if (t.targetAffiliation != TargetAffiliation.opponent) continue;
         expect(describeActiveTrigger(t), contains('one enemy line'),
             reason: t.id);

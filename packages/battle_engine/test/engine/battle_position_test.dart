@@ -356,7 +356,7 @@ void main() {
       final blast = testTrigger(
         id: 'blast',
         rangeTag: RangeTag.close,
-        attackSubtype: AttackSubtype.aoe,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
         damage: const DiceExpression(1, 4, flatBonus: 40),
       );
@@ -379,7 +379,7 @@ void main() {
       final blast = testTrigger(
         id: 'blast',
         rangeTag: RangeTag.close,
-        attackSubtype: AttackSubtype.aoe,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
         damage: const DiceExpression(1, 4, flatBonus: 40),
       );

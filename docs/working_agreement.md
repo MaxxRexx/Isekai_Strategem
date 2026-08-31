@@ -272,9 +272,10 @@ Rules, not preferences. They apply to every future item without being restated.
   is flagged for a plain-English replacement, not quietly kept.
 - Every approved abbreviation and piece of shorthand lives in one place, the
   next section. Nothing else is approved, so spell it out.
-- Range bands are **Close Range**, **Mid Range**, **Long Range**. Attack types
+- Range bands are **Close Range**, **Mid Range**, **Long Range**. Ability types
   are **melee**, **ranged**, **psychic**. They are different axes and the names
-  do not overlap.
+  do not overlap. ("Ability type", never "attack type": the tag sits on wards,
+  buffs and heals too.)
 - Battlefield lines are **Front**, **Middle**, **Back**.
 - Interface copy is written for a layman. A status effect's description says
   what it does and how long it lasts in the player's own turns, never just its

@@ -169,7 +169,7 @@ void main() {
         trigger: testTrigger(
           damage: damage,
           rangeTag: RangeTag.long,
-          attackType: AttackType.ranged,
+          abilityType: AbilityType.ranged,
         ),
         targets: [defender],
       );
@@ -193,7 +193,7 @@ void main() {
         attacker: attacker,
         trigger: testTrigger(
           damage: damage,
-          attackSubtype: AttackSubtype.aoe,
+          abilitySubtype: AbilitySubtype.aoe,
           targetCount: 3,
         ),
         targets: [defender],
@@ -277,7 +277,7 @@ void main() {
         trigger: testTrigger(
           damage: damage,
           originTag: OriginTag.physical,
-          attackSubtype: AttackSubtype.aoe,
+          abilitySubtype: AbilitySubtype.aoe,
           targetCount: 3,
         ),
         targets: [defender],
@@ -304,9 +304,9 @@ void main() {
         attacker: attacker,
         trigger: testTrigger(
           damage: damage,
-          attackType: AttackType.ranged,
+          abilityType: AbilityType.ranged,
           rangeTag: RangeTag.long,
-          attackSubtype: AttackSubtype.burst,
+          abilitySubtype: AbilitySubtype.burst,
           hitsPerUse: 3,
           targetCount: 1,
         ),

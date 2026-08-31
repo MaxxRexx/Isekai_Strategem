@@ -42,17 +42,17 @@ void main() {
     });
   });
 
-  group('C1: AttackType.validSubtypes includes unique', () {
+  group('C1: AbilityType.validSubtypes includes unique', () {
     test('melee allows unique', () {
-      expect(AttackType.melee.validSubtypes, contains(AttackSubtype.unique));
+      expect(AbilityType.melee.validSubtypes, contains(AbilitySubtype.unique));
     });
 
     test('ranged allows unique', () {
-      expect(AttackType.ranged.validSubtypes, contains(AttackSubtype.unique));
+      expect(AbilityType.ranged.validSubtypes, contains(AbilitySubtype.unique));
     });
 
     test('psychic allows unique', () {
-      expect(AttackType.psychic.validSubtypes, contains(AttackSubtype.unique));
+      expect(AbilityType.psychic.validSubtypes, contains(AbilitySubtype.unique));
     });
   });
 
@@ -64,8 +64,8 @@ void main() {
 
     test('can be set', () {
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.sharedAgony,
       );
       expect(trigger.uniqueBehavior, UniqueBehavior.sharedAgony);
@@ -247,26 +247,26 @@ void main() {
 
     for (final behavior in UniqueBehavior.values) {
       test('dispatch routes $behavior without error', () {
-        final attackType = switch (behavior) {
+        final abilityType = switch (behavior) {
           UniqueBehavior.sharedAgony ||
           UniqueBehavior.graveBargain ||
           UniqueBehavior.martyrsEnd ||
           UniqueBehavior.vowOfTheDuel ||
           UniqueBehavior.sunderArms =>
-            AttackType.melee,
+            AbilityType.melee,
           UniqueBehavior.curvingShot ||
           UniqueBehavior.calledShot =>
-            AttackType.ranged,
-          _ => AttackType.psychic,
+            AbilityType.ranged,
+          _ => AbilityType.psychic,
         };
 
-        final rangeTag = attackType == AttackType.ranged
+        final rangeTag = abilityType == AbilityType.ranged
             ? RangeTag.long
             : RangeTag.close;
 
         final trigger = testTrigger(
-          attackType: attackType,
-          attackSubtype: AttackSubtype.unique,
+          abilityType: abilityType,
+          abilitySubtype: AbilitySubtype.unique,
           rangeTag: rangeTag,
           uniqueBehavior: behavior,
           includeDamage: false,
@@ -293,8 +293,8 @@ void main() {
       final target = CharacterBattleState(testCharacter(id: 'def'));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
       );
 
       final result = engine.resolveAbilityUse(

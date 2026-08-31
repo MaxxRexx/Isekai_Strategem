@@ -159,8 +159,8 @@ void main() {
         cooldownTurns: 1,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.close,
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.single,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.single,
         damageType: DamageType.slashing,
         damage: const DiceExpression(1, 6),
       );

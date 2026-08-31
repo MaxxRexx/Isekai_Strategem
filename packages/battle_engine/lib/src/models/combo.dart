@@ -17,8 +17,8 @@ class ComboLedgerEntry {
 
   final String triggerId;
   final OriginTag originTag;
-  final AttackType attackType;
-  final AttackSubtype attackSubtype;
+  final AbilityType abilityType;
+  final AbilitySubtype abilitySubtype;
   final TargetAffiliation targetAffiliation;
 
   /// Character ids this action actually resolved against (post targeting).
@@ -38,8 +38,8 @@ class ComboLedgerEntry {
     required this.teamId,
     required this.triggerId,
     required this.originTag,
-    required this.attackType,
-    required this.attackSubtype,
+    required this.abilityType,
+    required this.abilitySubtype,
     required this.targetAffiliation,
     required this.targetIds,
     required this.statusesApplied,

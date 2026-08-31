@@ -37,9 +37,9 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.ranged,
+        abilityType: AbilityType.ranged,
         rangeTag: RangeTag.long,
-        attackSubtype: AttackSubtype.unique,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.curvingShot,
         damage: _flat10,
         damageType: DamageType.piercing,
@@ -73,9 +73,9 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.ranged,
+        abilityType: AbilityType.ranged,
         rangeTag: RangeTag.long,
-        attackSubtype: AttackSubtype.unique,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.curvingShot,
         damage: _flat10,
         damageType: DamageType.piercing,
@@ -102,9 +102,9 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.ranged,
+        abilityType: AbilityType.ranged,
         rangeTag: RangeTag.long,
-        attackSubtype: AttackSubtype.unique,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.calledShot,
         includeDamage: false,
       );
@@ -134,9 +134,9 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.ranged,
+        abilityType: AbilityType.ranged,
         rangeTag: RangeTag.long,
-        attackSubtype: AttackSubtype.unique,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.calledShot,
         includeDamage: false,
       );
@@ -163,9 +163,9 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.ranged,
+        abilityType: AbilityType.ranged,
         rangeTag: RangeTag.long,
-        attackSubtype: AttackSubtype.unique,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.calledShot,
         includeDamage: false,
       );
@@ -193,8 +193,8 @@ void main() {
     DiceExpression? damage,
   }) =>
       testTrigger(
-        attackType: AttackType.psychic,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.psychic,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: behavior,
         targetCount: targetCount,
         includeDamage: includeDamage,

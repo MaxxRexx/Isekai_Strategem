@@ -657,7 +657,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
       // An area ability is aimed at a line, not at a person: tapping anyone
       // on it selects everyone legal standing there, and tapping again
       // clears. Anything else toggles the one portrait.
-      if (action.trigger.attackSubtype == AttackSubtype.aoe) {
+      if (action.trigger.abilitySubtype == AbilitySubtype.aoe) {
         final line = lineTargets(
           tappedId: id,
           legalTargetIds: action.legalTargetIds,
@@ -2230,7 +2230,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
     Widget targetLine;
     if (t.targetAffiliation == TargetAffiliation.self) {
       targetLine = _targetHint('Self-cast: ${names[charId]} highlighted.');
-    } else if (t.attackSubtype == AttackSubtype.aoe) {
+    } else if (t.abilitySubtype == AbilitySubtype.aoe) {
       targetLine = _targetHint(
         _selectedTargets.isEmpty
             ? 'Area of effect: tap anyone to aim at their whole line. It '

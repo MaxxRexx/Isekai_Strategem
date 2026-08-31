@@ -81,7 +81,7 @@ void main() {
       final activeIds =
           loadout.triggers.whereType<ActiveTrigger>().map((t) => t.id);
       final hasAoe = activeIds.any((id) =>
-          (triggers[id] as ActiveTrigger).attackSubtype == AttackSubtype.aoe);
+          (triggers[id] as ActiveTrigger).abilitySubtype == AbilitySubtype.aoe);
       expect(hasAoe, isTrue);
     });
   });

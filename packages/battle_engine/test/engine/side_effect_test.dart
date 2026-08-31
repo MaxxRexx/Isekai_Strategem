@@ -86,8 +86,8 @@ void main() {
 
       final trigger = testTrigger(
         rangeTag: RangeTag.long,
-        attackType: AttackType.ranged,
-        attackSubtype: AttackSubtype.burst,
+        abilityType: AbilityType.ranged,
+        abilitySubtype: AbilitySubtype.burst,
         targetCount: 3,
         hitsPerUse: 1,
       );
@@ -337,7 +337,7 @@ void main() {
       final target = battle.states['foe-1']!;
       final trigger = testTrigger(
         damage: const DiceExpression(0, 1, flatBonus: 10),
-        attackType: AttackType.melee,
+        abilityType: AbilityType.melee,
       );
 
       state.currentHealth = 100;
@@ -380,8 +380,8 @@ void main() {
       battle.turnEngine.statusEffectEngine.apply(debuffedTarget, 'reeling');
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.aoe,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 2,
         damage: const DiceExpression(0, 1, flatBonus: 10),
       );
@@ -422,7 +422,7 @@ void main() {
       final trigger = testTrigger(
         trionCost: 0,
         cooldownTurns: 0,
-        attackType: AttackType.melee,
+        abilityType: AbilityType.melee,
         damage: const DiceExpression(0, 1, flatBonus: 10),
       );
       final pool = TrionPool(current: 1000);
@@ -467,7 +467,7 @@ void main() {
       expect(state.sideEffectChargeUsed, isFalse);
 
       final target = battle.states['foe-1']!;
-      final trigger = testTrigger(attackType: AttackType.melee);
+      final trigger = testTrigger(abilityType: AbilityType.melee);
       engine.resolveAbilityUse(
           attacker: state, trigger: trigger, targets: [target]);
 
@@ -489,7 +489,7 @@ void main() {
       final battle = _battleWith(mireille);
       final state = battle.states['mireille']!;
       final attackerState = battle.states['foe-1']!;
-      final trigger = testTrigger(attackType: AttackType.melee);
+      final trigger = testTrigger(abilityType: AbilityType.melee);
 
       expect(state.sideEffectChargeUsed, isFalse);
       final result = battle.turnEngine.resolveAbilityUse(
@@ -557,7 +557,7 @@ void main() {
       final state = battle.states['ilona']!;
       final attackerState = battle.states['foe-1']!;
       final trigger = testTrigger(
-          attackType: AttackType.melee, attackSubtype: AttackSubtype.single);
+          abilityType: AbilityType.melee, abilitySubtype: AbilitySubtype.single);
 
       final before = state.effectiveStats().attack;
       engine.resolveAbilityUse(
@@ -587,7 +587,7 @@ void main() {
       final state = battle.states['bastian']!;
       final attackerState = battle.states['foe-1']!;
       final trigger = testTrigger(
-          attackType: AttackType.melee,
+          abilityType: AbilityType.melee,
           damage: const DiceExpression(0, 1, flatBonus: 100));
 
       expect(state.sideEffectChargeUsed, isFalse);
@@ -672,7 +672,7 @@ void main() {
       final battle = _battleWith(ren);
       final state = battle.states['ren']!;
       final target = battle.states['foe-1']!;
-      final trigger = testTrigger(attackType: AttackType.melee);
+      final trigger = testTrigger(abilityType: AbilityType.melee);
 
       expect(state.sideEffectChargeUsed, isFalse);
       final firstUse = battle.turnEngine.resolveAbilityUse(

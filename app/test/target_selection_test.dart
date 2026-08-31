@@ -37,11 +37,11 @@ void main() {
       isTrue,
     );
     expect(
-      actives.any((t) => t.attackSubtype == AttackSubtype.aoe),
+      actives.any((t) => t.abilitySubtype == AbilitySubtype.aoe),
       isTrue,
     );
     expect(
-      actives.any((t) => t.attackSubtype == AttackSubtype.burst),
+      actives.any((t) => t.abilitySubtype == AbilitySubtype.burst),
       isTrue,
     );
     expect(
@@ -51,7 +51,7 @@ void main() {
   });
 
   for (final t in actives) {
-    group('${t.id} (${t.attackSubtype.name}/${t.targetAffiliation.name})', () {
+    group('${t.id} (${t.abilitySubtype.name}/${t.targetAffiliation.name})', () {
       final legal = legalPoolFor(t);
       // Non-blinded target budget, as PlaySession would compute it.
       final maxTargets =

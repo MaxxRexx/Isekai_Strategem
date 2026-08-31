@@ -178,8 +178,8 @@ void main() {
         id: 'lethal',
         trionCost: 0,
         cooldownTurns: 0,
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.aoe,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
         damage: const DiceExpression(0, 1, flatBonus: 999),
       );

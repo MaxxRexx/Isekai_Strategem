@@ -61,13 +61,13 @@ void main() {
 
       final singleStrong = testTrigger(
         id: 'single_strong',
-        attackSubtype: AttackSubtype.single,
+        abilitySubtype: AbilitySubtype.single,
         damage: const DiceExpression(0, 1, flatBonus: 50),
       );
       final aoeWeak = testTrigger(
         id: 'aoe_weak',
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.aoe,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
         damage: const DiceExpression(0, 1, flatBonus: 1),
       );
@@ -464,14 +464,14 @@ void main() {
           random: const _FixedDoubleRandom(1.0));
       final aoeWeak = testTrigger(
         id: 'aoe_weak',
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.aoe,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
         damage: const DiceExpression(0, 1, flatBonus: 1),
       );
       final singleStrong = testTrigger(
         id: 'single_strong',
-        attackSubtype: AttackSubtype.single,
+        abilitySubtype: AbilitySubtype.single,
         damage: const DiceExpression(0, 1, flatBonus: 100),
       );
 
@@ -517,14 +517,14 @@ void main() {
           random: const _FixedDoubleRandom(1.0));
       final aoeWeak = testTrigger(
         id: 'aoe_weak',
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.aoe,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
         damage: const DiceExpression(0, 1, flatBonus: 1),
       );
       final singleStrong = testTrigger(
         id: 'single_strong',
-        attackSubtype: AttackSubtype.single,
+        abilitySubtype: AbilitySubtype.single,
         damage: const DiceExpression(0, 1, flatBonus: 100),
       );
 
@@ -547,13 +547,13 @@ void main() {
           random: const _FixedDoubleRandom(1.0));
       final singleStrong = testTrigger(
         id: 'single_strong',
-        attackSubtype: AttackSubtype.single,
+        abilitySubtype: AbilitySubtype.single,
         damage: const DiceExpression(0, 1, flatBonus: 50),
       );
       final aoeWeak = testTrigger(
         id: 'aoe_weak',
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.aoe,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
         damage: const DiceExpression(0, 1, flatBonus: 1),
       );

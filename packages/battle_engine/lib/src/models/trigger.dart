@@ -16,16 +16,16 @@ enum OriginTag { physical, energy, afflict, mental }
 /// How far away a Trigger operates: the band the wielder has to be in to
 /// use it.
 ///
-/// Deliberately named apart from [AttackType], which also has melee and
-/// ranged members but answers a different question. [AttackType] is *what
+/// Deliberately named apart from [AbilityType], which also has melee and
+/// ranged members but answers a different question. [AbilityType] is *what
 /// kind of attack this is* (a blade, a shot, or a psychic assault);
 /// [RangeTag] is *how far away it reaches*. A psychic attack still sits in
-/// one of these bands, and two Triggers of the same attack type can sit in
+/// one of these bands, and two Triggers of the same ability type can sit in
 /// different ones.
 ///
 /// [mid] was added in the balance pass. Before it the catalog only had
 /// near and far, and every non-melee Trigger was lumped into far, which
-/// made this tag perfectly derivable from the attack type and therefore
+/// made this tag perfectly derivable from the ability type and therefore
 /// carrying no information of its own. The catalog is now split 20 / 20 /
 /// 20 across the three bands by what each ability actually does, so the
 /// band is a real property.
@@ -53,31 +53,31 @@ extension RangeTagReach on RangeTag {
       };
 }
 
-/// Attack type tag. `psychic` is intentionally distinct from `melee`
+/// Ability type tag. `psychic` is intentionally distinct from `melee`
 /// /`ranged` per the design (Psychic Attack: Unique, Single, AoE) rather
 /// than being folded into ranged.
-enum AttackType { melee, ranged, psychic }
+enum AbilityType { melee, ranged, psychic }
 
-/// Attack subtype tag. Not every (AttackType, AttackSubtype) pair is
-/// meaningful - see [AttackType.validSubtypes] - but subtypes are shared
-/// across attack types rather than split into per-type enums so new
+/// Ability subtype tag. Not every (AbilityType, AbilitySubtype) pair is
+/// meaningful - see [AbilityType.validSubtypes] - but subtypes are shared
+/// across ability types rather than split into per-type enums so new
 /// combinations can be added without introducing parallel enum families.
-enum AttackSubtype { single, aoe, burst, unique }
+enum AbilitySubtype { single, aoe, burst, unique }
 
-extension AttackTypeSubtypes on AttackType {
-  Set<AttackSubtype> get validSubtypes {
+extension AbilityTypeSubtypes on AbilityType {
+  Set<AbilitySubtype> get validSubtypes {
     switch (this) {
-      case AttackType.melee:
-        return {AttackSubtype.single, AttackSubtype.aoe, AttackSubtype.unique};
-      case AttackType.ranged:
+      case AbilityType.melee:
+        return {AbilitySubtype.single, AbilitySubtype.aoe, AbilitySubtype.unique};
+      case AbilityType.ranged:
         return {
-          AttackSubtype.single,
-          AttackSubtype.burst,
-          AttackSubtype.aoe,
-          AttackSubtype.unique,
+          AbilitySubtype.single,
+          AbilitySubtype.burst,
+          AbilitySubtype.aoe,
+          AbilitySubtype.unique,
         };
-      case AttackType.psychic:
-        return {AttackSubtype.unique, AttackSubtype.single, AttackSubtype.aoe};
+      case AbilityType.psychic:
+        return {AbilitySubtype.unique, AbilitySubtype.single, AbilitySubtype.aoe};
     }
   }
 }
@@ -131,11 +131,11 @@ class ActiveTrigger extends Trigger {
 
   final OriginTag originTag;
   final RangeTag rangeTag;
-  final AttackType attackType;
-  final AttackSubtype attackSubtype;
+  final AbilityType abilityType;
+  final AbilitySubtype abilitySubtype;
 
   /// Number of independent to-hit rolls made against *each* targeted
-  /// character. Only meaningful for `AttackSubtype.burst`; every other
+  /// character. Only meaningful for `AbilitySubtype.burst`; every other
   /// subtype should leave this at 1.
   final int hitsPerUse;
 
@@ -182,7 +182,7 @@ class ActiveTrigger extends Trigger {
 
   /// If non-null, this trigger uses unique-subtype resolution: the engine
   /// dispatches on this value instead of standard hit/damage/status flow.
-  /// Only meaningful when [attackSubtype] is [AttackSubtype.unique].
+  /// Only meaningful when [abilitySubtype] is [AbilitySubtype.unique].
   final UniqueBehavior? uniqueBehavior;
 
   ActiveTrigger({
@@ -194,8 +194,8 @@ class ActiveTrigger extends Trigger {
     required this.cooldownTurns,
     required this.originTag,
     required this.rangeTag,
-    required this.attackType,
-    required this.attackSubtype,
+    required this.abilityType,
+    required this.abilitySubtype,
     this.hitsPerUse = 1,
     this.targetCount = 1,
     this.targetAffiliation = TargetAffiliation.opponent,
@@ -208,8 +208,8 @@ class ActiveTrigger extends Trigger {
     this.armsReactiveDefaultTurns,
     this.uniqueBehavior,
   }) : assert(
-          attackType.validSubtypes.contains(attackSubtype),
-          '$attackSubtype is not a valid subtype for $attackType',
+          abilityType.validSubtypes.contains(abilitySubtype),
+          '$abilitySubtype is not a valid subtype for $abilityType',
         );
 }
 

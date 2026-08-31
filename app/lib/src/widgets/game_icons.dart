@@ -26,7 +26,7 @@ abstract final class GameIcons {
 
   static IconData forTrigger(Trigger t) => switch (t) {
     PassiveTrigger() => passive,
-    ActiveTrigger a when a.attackSubtype == AttackSubtype.burst => burst,
+    ActiveTrigger a when a.abilitySubtype == AbilitySubtype.burst => burst,
     ActiveTrigger a when a.rangeTag.isAtRange => ranged,
     ActiveTrigger a when a.healAmount != null => heal,
     ActiveTrigger a

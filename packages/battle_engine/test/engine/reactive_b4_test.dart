@@ -717,7 +717,7 @@ void main() {
       wireTeam([holder, ally]);
 
       final ironvow = holder.passiveCounters[PassiveCounterKind.ironvow]!;
-      ironvow.sanctionedType = AttackType.melee;
+      ironvow.sanctionedType = AbilityType.melee;
 
       final target = makeChar(id: 'target');
       target.statusEffects.add(StatusEffectInstance(
@@ -727,7 +727,7 @@ void main() {
       wireTeam([target]);
 
       final trigger =
-          testTrigger(damage: damage, attackType: AttackType.melee);
+          testTrigger(damage: damage, abilityType: AbilityType.melee);
       final e = engine();
 
       final fired = e.checkSanctionedStrike(holder, trigger, target);
@@ -781,20 +781,20 @@ void main() {
           reason: 'Interdict reduces repeated-ability damage');
     });
 
-    test('does not fire when attack type does not match', () {
+    test('does not fire when ability type does not match', () {
       final holder = makeChar(id: 'holder');
       holder.passiveCounters[PassiveCounterKind.ironvow] =
           PassiveCounterState(PassiveCounterKind.ironvow);
       wireTeam([holder]);
 
       final ironvow = holder.passiveCounters[PassiveCounterKind.ironvow]!;
-      ironvow.sanctionedType = AttackType.ranged;
+      ironvow.sanctionedType = AbilityType.ranged;
 
       final target = makeChar(id: 'target');
       wireTeam([target]);
 
       final trigger =
-          testTrigger(damage: damage, attackType: AttackType.melee);
+          testTrigger(damage: damage, abilityType: AbilityType.melee);
       final e = engine();
 
       final fired = e.checkSanctionedStrike(holder, trigger, target);
@@ -808,14 +808,14 @@ void main() {
       wireTeam([holder]);
 
       final ironvow = holder.passiveCounters[PassiveCounterKind.ironvow]!;
-      ironvow.sanctionedType = AttackType.melee;
+      ironvow.sanctionedType = AbilityType.melee;
       ironvow.chargesUsed = 3;
 
       final target = makeChar(id: 'target');
       wireTeam([target]);
 
       final trigger =
-          testTrigger(damage: damage, attackType: AttackType.melee);
+          testTrigger(damage: damage, abilityType: AbilityType.melee);
       final e = engine();
 
       final fired = e.checkSanctionedStrike(holder, trigger, target);

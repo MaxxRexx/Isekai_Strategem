@@ -268,9 +268,9 @@ double _loadoutSynergy(List<Loadout> los) {
     (t) => _isDamage(t) && (t.damage?.average ?? 0) >= 30,
   );
   final hasSupport = all.any(_isSupport);
-  final hasAoe = all.any((t) => t.attackSubtype == AttackSubtype.aoe);
+  final hasAoe = all.any((t) => t.abilitySubtype == AbilitySubtype.aoe);
   final hasFinisher = all.any(
-    (t) => _isDamage(t) && t.attackSubtype == AttackSubtype.single,
+    (t) => _isDamage(t) && t.abilitySubtype == AbilitySubtype.single,
   );
   final damageTypes = {
     for (final t in all)
@@ -299,7 +299,7 @@ double _sideEffectUtilization(List<Character> chars, List<Loadout> los) {
     final support = actives.where(_isSupport).length;
     final debuff = actives.where(_isEnemyDebuff).length;
     final aoe = actives
-        .where((t) => t.attackSubtype == AttackSubtype.aoe)
+        .where((t) => t.abilitySubtype == AbilitySubtype.aoe)
         .length;
 
     double score = 50; // neutral default when a sideEffect fits no clear kit

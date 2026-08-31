@@ -36,8 +36,8 @@ class LoadoutBuilder {
   /// scoring heuristic, not part of the Trigger's own data contract.
   Set<String> triggerTags(ActiveTrigger trigger) {
     final tags = <String>{};
-    if (trigger.attackSubtype == AttackSubtype.aoe) tags.add('aoe');
-    if (trigger.attackSubtype == AttackSubtype.burst) tags.add('burst');
+    if (trigger.abilitySubtype == AbilitySubtype.aoe) tags.add('aoe');
+    if (trigger.abilitySubtype == AbilitySubtype.burst) tags.add('burst');
     // Both the specific band and an umbrella tag, so a profile can prefer
     // "anything at range" (the Sharpshooter) or a single band.
     tags.add(trigger.rangeTag.name);
@@ -61,7 +61,7 @@ class LoadoutBuilder {
   double _rawDamagePower(ActiveTrigger trigger) {
     final damage = trigger.damage;
     final hits =
-        trigger.attackSubtype == AttackSubtype.burst ? trigger.hitsPerUse : 1;
+        trigger.abilitySubtype == AbilitySubtype.burst ? trigger.hitsPerUse : 1;
     return damage == null ? 0.0 : damage.average * hits;
   }
 

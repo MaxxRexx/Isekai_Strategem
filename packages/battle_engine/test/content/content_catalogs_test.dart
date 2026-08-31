@@ -53,7 +53,7 @@ void main() {
     ///
     /// Refuse to Bail (item #2) is the 61st active Trigger and is excluded on
     /// purpose. It is self-targeted and deals nothing, so `canReach`
-    /// short-circuits before its band is ever consulted and its attack type
+    /// short-circuits before its band is ever consulted and its ability type
     /// never rolls against anything: giving it either would tilt a grid that
     /// is a statement about the attacking catalog. Counted here, it would make
     /// psychic 21 and Close Range 21 while changing nothing anyone can play
@@ -72,32 +72,32 @@ void main() {
       expect(catalog.passiveTriggers, hasLength(12));
     });
 
-    test('active Triggers are balanced to exactly 20 / 20 / 20 by attack type '
+    test('active Triggers are balanced to exactly 20 / 20 / 20 by ability type '
         'with the target subtype distribution', () {
-      int count(AttackType type, AttackSubtype subtype) => combatTriggers
-          .where((t) => t.attackType == type && t.attackSubtype == subtype)
+      int count(AbilityType type, AbilitySubtype subtype) => combatTriggers
+          .where((t) => t.abilityType == type && t.abilitySubtype == subtype)
           .length;
 
       // Melee: 10 single, 5 aoe, 0 burst, 5 unique.
-      expect(count(AttackType.melee, AttackSubtype.single), 10);
-      expect(count(AttackType.melee, AttackSubtype.aoe), 5);
-      expect(count(AttackType.melee, AttackSubtype.burst), 0);
-      expect(count(AttackType.melee, AttackSubtype.unique), 5);
+      expect(count(AbilityType.melee, AbilitySubtype.single), 10);
+      expect(count(AbilityType.melee, AbilitySubtype.aoe), 5);
+      expect(count(AbilityType.melee, AbilitySubtype.burst), 0);
+      expect(count(AbilityType.melee, AbilitySubtype.unique), 5);
 
       // Ranged: 5 single, 5 aoe, 8 burst, 2 unique.
-      expect(count(AttackType.ranged, AttackSubtype.single), 5);
-      expect(count(AttackType.ranged, AttackSubtype.aoe), 5);
-      expect(count(AttackType.ranged, AttackSubtype.burst), 8);
-      expect(count(AttackType.ranged, AttackSubtype.unique), 2);
+      expect(count(AbilityType.ranged, AbilitySubtype.single), 5);
+      expect(count(AbilityType.ranged, AbilitySubtype.aoe), 5);
+      expect(count(AbilityType.ranged, AbilitySubtype.burst), 8);
+      expect(count(AbilityType.ranged, AbilitySubtype.unique), 2);
 
       // Psychic: 5 single, 5 aoe, 0 burst, 10 unique.
-      expect(count(AttackType.psychic, AttackSubtype.single), 5);
-      expect(count(AttackType.psychic, AttackSubtype.aoe), 5);
-      expect(count(AttackType.psychic, AttackSubtype.burst), 0);
-      expect(count(AttackType.psychic, AttackSubtype.unique), 10);
+      expect(count(AbilityType.psychic, AbilitySubtype.single), 5);
+      expect(count(AbilityType.psychic, AbilitySubtype.aoe), 5);
+      expect(count(AbilityType.psychic, AbilitySubtype.burst), 0);
+      expect(count(AbilityType.psychic, AbilitySubtype.unique), 10);
 
-      for (final type in AttackType.values) {
-        expect(combatTriggers.where((t) => t.attackType == type).length, 20,
+      for (final type in AbilityType.values) {
+        expect(combatTriggers.where((t) => t.abilityType == type).length, 20,
             reason: '$type should total 20');
       }
     });
@@ -107,11 +107,11 @@ void main() {
       expect(ids.toSet(), hasLength(ids.length));
     });
 
-    test('every active Trigger has a valid attack type/subtype combination',
+    test('every active Trigger has a valid ability type/subtype combination',
         () {
       for (final t in catalog.activeTriggers) {
-        expect(t.attackType.validSubtypes.contains(t.attackSubtype), isTrue,
-            reason: '${t.id}: ${t.attackType}/${t.attackSubtype}');
+        expect(t.abilityType.validSubtypes.contains(t.abilitySubtype), isTrue,
+            reason: '${t.id}: ${t.abilityType}/${t.abilitySubtype}');
       }
     });
 
@@ -126,7 +126,7 @@ void main() {
     });
 
     test('every unique-behavior Trigger uses the unique subtype and a valid '
-        'attack type', () {
+        'ability type', () {
       const meleeBehaviors = {
         UniqueBehavior.sharedAgony,
         UniqueBehavior.graveBargain,
@@ -141,13 +141,13 @@ void main() {
       for (final t in catalog.activeTriggers) {
         final behavior = t.uniqueBehavior;
         if (behavior == null) continue;
-        expect(t.attackSubtype, AttackSubtype.unique, reason: t.id);
+        expect(t.abilitySubtype, AbilitySubtype.unique, reason: t.id);
         final expectedType = meleeBehaviors.contains(behavior)
-            ? AttackType.melee
+            ? AbilityType.melee
             : rangedBehaviors.contains(behavior)
-                ? AttackType.ranged
-                : AttackType.psychic;
-        expect(t.attackType, expectedType, reason: t.id);
+                ? AbilityType.ranged
+                : AbilityType.psychic;
+        expect(t.abilityType, expectedType, reason: t.id);
       }
     });
   });

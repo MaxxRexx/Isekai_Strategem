@@ -8,8 +8,8 @@ void main() {
     ActiveTrigger active(String id, {int equipCost = 10}) => testTrigger(
           id: id,
           equipCost: equipCost,
-          attackType: AttackType.melee,
-          attackSubtype: AttackSubtype.single,
+          abilityType: AbilityType.melee,
+          abilitySubtype: AbilitySubtype.single,
         );
 
     PassiveTrigger passive(String id, {int equipCost = 5}) =>
@@ -146,11 +146,11 @@ void main() {
     });
   });
 
-  group('Trigger attack type/subtype validity', () {
-    test('rejects an invalid subtype for a given attack type', () {
+  group('Trigger ability type/subtype validity', () {
+    test('rejects an invalid subtype for a given ability type', () {
       expect(
         () => testTrigger(
-            attackType: AttackType.melee, attackSubtype: AttackSubtype.burst),
+            abilityType: AbilityType.melee, abilitySubtype: AbilitySubtype.burst),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -158,40 +158,40 @@ void main() {
     test('allows every documented combination', () {
       expect(
           () => testTrigger(
-              attackType: AttackType.melee,
-              attackSubtype: AttackSubtype.single),
+              abilityType: AbilityType.melee,
+              abilitySubtype: AbilitySubtype.single),
           returnsNormally);
       expect(
           () => testTrigger(
-              attackType: AttackType.melee, attackSubtype: AttackSubtype.aoe),
+              abilityType: AbilityType.melee, abilitySubtype: AbilitySubtype.aoe),
           returnsNormally);
       expect(
           () => testTrigger(
-              attackType: AttackType.ranged,
-              attackSubtype: AttackSubtype.single),
+              abilityType: AbilityType.ranged,
+              abilitySubtype: AbilitySubtype.single),
           returnsNormally);
       expect(
           () => testTrigger(
-              attackType: AttackType.ranged,
-              attackSubtype: AttackSubtype.burst),
+              abilityType: AbilityType.ranged,
+              abilitySubtype: AbilitySubtype.burst),
           returnsNormally);
       expect(
           () => testTrigger(
-              attackType: AttackType.ranged, attackSubtype: AttackSubtype.aoe),
+              abilityType: AbilityType.ranged, abilitySubtype: AbilitySubtype.aoe),
           returnsNormally);
       expect(
           () => testTrigger(
-              attackType: AttackType.psychic,
-              attackSubtype: AttackSubtype.unique),
+              abilityType: AbilityType.psychic,
+              abilitySubtype: AbilitySubtype.unique),
           returnsNormally);
       expect(
           () => testTrigger(
-              attackType: AttackType.psychic,
-              attackSubtype: AttackSubtype.single),
+              abilityType: AbilityType.psychic,
+              abilitySubtype: AbilitySubtype.single),
           returnsNormally);
       expect(
           () => testTrigger(
-              attackType: AttackType.psychic, attackSubtype: AttackSubtype.aoe),
+              abilityType: AbilityType.psychic, abilitySubtype: AbilitySubtype.aoe),
           returnsNormally);
     });
   });

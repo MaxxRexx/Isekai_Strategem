@@ -36,7 +36,7 @@ enum PassiveCounterKind {
   /// your Trion gain is docked next turn. 1-turn cooldown between reads.
   coldread,
 
-  /// Ironvow: start of holder's turn, one attack type sanctioned at random
+  /// Ironvow: start of holder's turn, one ability type sanctioned at random
   /// (never last turn's type). Attack with sanctioned type = Sanctioned
   /// Strike: unblockable/undodgeable, strips one buff, brands target with
   /// Interdict. Allies Vulnerable to sanctioned type until next turn.
@@ -99,11 +99,11 @@ class PassiveCounterState {
   bool coldreadNextRewardIsSeize = false;
 
   // --- Ironvow ---
-  /// The attack type sanctioned this turn (null if on cooldown or unset).
-  AttackType? sanctionedType;
+  /// The ability type sanctioned this turn (null if on cooldown or unset).
+  AbilityType? sanctionedType;
 
-  /// The attack type the holder used last turn (for forced rotation).
-  AttackType? lastTurnAttackType;
+  /// The ability type the holder used last turn (for forced rotation).
+  AbilityType? lastTurnAbilityType;
 
   /// Cooldown between Sanctioned Strikes.
   int sanctionedStrikeCooldown = 0;

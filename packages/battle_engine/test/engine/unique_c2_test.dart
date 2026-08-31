@@ -40,8 +40,8 @@ void main() {
       attacker.meleeHitEnemyIds.add('enemy-1');
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.sharedAgony,
         damage: const DiceExpression(2, 6),
         damageType: DamageType.slashing,
@@ -71,8 +71,8 @@ void main() {
       final enemy = _state(testCharacter(id: 'enemy-1'));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.sharedAgony,
       );
 
@@ -103,8 +103,8 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.sharedAgony,
         damage: const DiceExpression(2, 6),
       );
@@ -140,8 +140,8 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.graveBargain,
         includeDamage: false,
       );
@@ -176,8 +176,8 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.graveBargain,
         includeDamage: false,
       );
@@ -210,8 +210,8 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.graveBargain,
         includeDamage: false,
       );
@@ -251,8 +251,8 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.martyrsEnd,
         includeDamage: false,
         targetCount: 3,
@@ -289,8 +289,8 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.martyrsEnd,
         includeDamage: false,
       );
@@ -321,8 +321,8 @@ void main() {
       ));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.martyrsEnd,
         includeDamage: false,
         targetCount: 3,
@@ -350,8 +350,8 @@ void main() {
       final enemy = _state(testCharacter(id: 'enemy-1'));
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.vowOfTheDuel,
         includeDamage: false,
       );
@@ -475,8 +475,8 @@ void main() {
       );
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.sunderArms,
         damage: const DiceExpression(2, 6),
         damageType: DamageType.slashing,
@@ -511,8 +511,8 @@ void main() {
       );
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.sunderArms,
       );
 
@@ -549,8 +549,8 @@ void main() {
       );
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.sunderArms,
         damage: const DiceExpression(1, 6),
       );
@@ -588,8 +588,8 @@ void main() {
       );
 
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.unique,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.unique,
         uniqueBehavior: UniqueBehavior.sunderArms,
         damage: const DiceExpression(1, 6),
       );
@@ -624,8 +624,8 @@ void main() {
       ));
 
       final meleeTrigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.single,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.single,
         damage: const DiceExpression(1, 6),
       );
 
@@ -653,8 +653,8 @@ void main() {
       ));
 
       final rangedTrigger = testTrigger(
-        attackType: AttackType.ranged,
-        attackSubtype: AttackSubtype.single,
+        abilityType: AbilityType.ranged,
+        abilitySubtype: AbilitySubtype.single,
         rangeTag: RangeTag.long,
         damage: const DiceExpression(1, 6),
       );

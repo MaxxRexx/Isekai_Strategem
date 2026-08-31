@@ -238,8 +238,8 @@ void main() {
       final targets = List.generate(
           3, (i) => CharacterBattleState(testCharacter(id: 'target-$i')));
       final trigger = testTrigger(
-        attackType: AttackType.melee,
-        attackSubtype: AttackSubtype.aoe,
+        abilityType: AbilityType.melee,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
       );
 
@@ -264,8 +264,8 @@ void main() {
       final targetB = CharacterBattleState(testCharacter(id: 'b'));
       final trigger = testTrigger(
         rangeTag: RangeTag.long,
-        attackType: AttackType.ranged,
-        attackSubtype: AttackSubtype.burst,
+        abilityType: AbilityType.ranged,
+        abilitySubtype: AbilitySubtype.burst,
         hitsPerUse: 5,
         targetCount: 2,
       );
@@ -293,8 +293,8 @@ void main() {
           3, (i) => CharacterBattleState(testCharacter(id: 'target-$i')));
       final trigger = testTrigger(
         rangeTag: RangeTag.long,
-        attackType: AttackType.ranged,
-        attackSubtype: AttackSubtype.burst,
+        abilityType: AbilityType.ranged,
+        abilitySubtype: AbilitySubtype.burst,
         hitsPerUse: 2,
         targetCount: 2,
       );
@@ -334,7 +334,7 @@ void main() {
       final singleTarget = CharacterBattleState(
           testCharacter(id: 'single', stats: testStats(armor: 0)));
       final singleTrigger = testTrigger(
-        attackSubtype: AttackSubtype.single,
+        abilitySubtype: AbilitySubtype.single,
         damage: const DiceExpression(0, 1, flatBonus: 10),
       );
       final singleResult = engine.resolveAbilityUse(
@@ -348,8 +348,8 @@ void main() {
           testCharacter(id: 'burst', stats: testStats(armor: 0)));
       final burstTrigger = testTrigger(
         rangeTag: RangeTag.long,
-        attackType: AttackType.ranged,
-        attackSubtype: AttackSubtype.burst,
+        abilityType: AbilityType.ranged,
+        abilitySubtype: AbilitySubtype.burst,
         hitsPerUse: 1,
         targetCount: 1,
         damage: const DiceExpression(0, 1, flatBonus: 10),
@@ -372,23 +372,23 @@ void main() {
 
       final rangedTrigger = testTrigger(
         rangeTag: RangeTag.long,
-        attackType: AttackType.ranged,
-        attackSubtype: AttackSubtype.aoe,
+        abilityType: AbilityType.ranged,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
       );
       expect(engine.maxRangedTargets(attacker, rangedTrigger), 2);
 
       final floorTrigger = testTrigger(
         rangeTag: RangeTag.long,
-        attackType: AttackType.ranged,
-        attackSubtype: AttackSubtype.single,
+        abilityType: AbilityType.ranged,
+        abilitySubtype: AbilitySubtype.single,
         targetCount: 1,
       );
       expect(engine.maxRangedTargets(attacker, floorTrigger), 1);
     });
 
     test('does not affect Close Range Triggers', () {
-      // Blinded keys off the range band, not the attack type: what it cuts
+      // Blinded keys off the range band, not the ability type: what it cuts
       // is how wide you can spread an attack made at a distance. A Close
       // Range ability is untouched however it is delivered.
       final engine = TurnEngine();
@@ -396,9 +396,9 @@ void main() {
       engine.statusEffectEngine.apply(attacker, 'blinded');
 
       final closeTrigger = testTrigger(
-        attackType: AttackType.melee,
+        abilityType: AbilityType.melee,
         rangeTag: RangeTag.close,
-        attackSubtype: AttackSubtype.aoe,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
       );
       expect(engine.maxRangedTargets(attacker, closeTrigger), 3);
@@ -414,8 +414,8 @@ void main() {
           3, (i) => CharacterBattleState(testCharacter(id: 'target-$i')));
       final trigger = testTrigger(
         rangeTag: RangeTag.long,
-        attackType: AttackType.ranged,
-        attackSubtype: AttackSubtype.aoe,
+        abilityType: AbilityType.ranged,
+        abilitySubtype: AbilitySubtype.aoe,
         targetCount: 3,
       );
 

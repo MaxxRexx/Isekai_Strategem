@@ -32,7 +32,7 @@ advantage or disadvantage, critical hits, and a big list of status conditions).
 4. Stats: what each number means
 5. Team Spirit: the offense-or-sustain slider
 6. Trion: the resource you spend
-7. Triggers and Loadouts: building an ability set (category, attack type,
+7. Triggers and Loadouts: building an ability set (category, ability type,
    subtype, range, origin)
 8. Full Arms Trigger (FAT): your burst turn
 9. How a turn works: queue then resolve
@@ -252,7 +252,7 @@ Trion cost, a cooldown in turns, how much damage it rolls, how many targets it
 can hit, how many separate hits it makes, an optional heal, any status effects it
 applies, and sometimes a special unique or counter behavior. On top of that it
 carries five **tags** that decide how it behaves and what can interact with it:
-its category, its attack type, its attack subtype, its range, and its origin.
+its category, its ability type, its ability subtype, its range, and its origin.
 Those five are worth understanding properly, because most of the game's
 interactions key off them.
 
@@ -271,22 +271,26 @@ and deals nothing):
 - **Optional (8, plus Refuse to Bail):** buffs, wards, self-help, and the
   reactive counters.
 
-### Attack type: melee, ranged, or psychic
+### Ability type: melee, ranged, or psychic
 
-Every active Trigger is one of three **attack types**, and the catalog is
+*Called "attack type" until 2026-08-30. The tag sits on every ability, including
+the wards, buffs and heals that are not attacks at all, so naming it after
+attacks told a reader the opposite of the truth.*
+
+Every active Trigger is one of three **ability types**, and the catalog is
 deliberately balanced to exactly 20 of each:
 
-- **Melee (20):** physical attacks made up close. Blades, fists, impact.
-- **Ranged (20):** attacks made at a distance. Shots, grenades, thrown effects.
-- **Psychic (20):** attacks on the mind rather than the body. Fear, silence,
+- **Melee (20):** worked up close and physical. Blades, fists, impact.
+- **Ranged (20):** delivered at a distance. Shots, grenades, thrown effects.
+- **Psychic (20):** aimed at the mind rather than the body. Fear, silence,
   illusion, and most of the strangest abilities in the game.
 
 Psychic is its own type rather than a flavor of ranged, because it is the type
 that carries the mind-affecting statuses and the bulk of the unique abilities.
 
-### Attack subtype: how the attack lands
+### Ability subtype: how the ability lands
 
-The **subtype** is what actually decides how an attack resolves:
+The **subtype** is what actually decides how an ability resolves:
 
 - **Single (20 Triggers):** one target, one to-hit roll, one damage roll.
 - **Area, or AOE (15):** covers **one line**, catching up to 3 of the
@@ -309,7 +313,7 @@ The **subtype** is what actually decides how an attack resolves:
 Not every combination exists. Melee has no bursts, and psychic has no bursts
 either, so the distribution across the 60 combat Triggers looks like this:
 
-| Attack type | Single | Area | Burst | Unique | Total |
+| Ability type | Single | Area | Burst | Unique | Total |
 |---|--:|--:|--:|--:|--:|
 | Melee | 10 | 5 | 0 | 5 | 20 |
 | Ranged | 5 | 5 | 8 | 2 | 20 |
@@ -318,7 +322,7 @@ either, so the distribution across the 60 combat Triggers looks like this:
 
 ### Range band: how far away it works
 
-Separately from its attack type, each Trigger sits in one of three **range
+Separately from its ability type, each Trigger sits in one of three **range
 bands**, 20 Triggers each:
 
 - **Close Range (20):** you have to be right there. Contact work.
@@ -326,13 +330,13 @@ bands**, 20 Triggers each:
   them, but you are not on top of each other.
 - **Long Range (20):** across the field.
 
-**These bands are not the same thing as the attack type**, and the names are
-deliberately different so the two do not get mixed up. Attack type answers *what
-kind of attack is this*; the band answers *how far away can you be when you use
-it*. Those are genuinely independent questions, and **every attack type appears
+**These bands are not the same thing as the ability type**, and the names are
+deliberately different so the two do not get mixed up. Ability type answers *what
+kind of ability is this*; the band answers *how far away can you be when you use
+it*. Those are genuinely independent questions, and **every ability type appears
 in every band**:
 
-| Attack type | Close | Mid | Long | Total |
+| Ability type | Close | Mid | Long | Total |
 |---|--:|--:|--:|--:|
 | Melee | 12 | 5 | 3 | 20 |
 | Ranged | 3 | 8 | 9 | 20 |
@@ -528,7 +532,7 @@ next to, because a bodyguard has to actually be there.
 
 *Design note: the band used to be a two-value near/far tag, and every non-melee
 Trigger was lumped into "ranged", which made it perfectly predictable from the
-attack type and therefore empty of information. It became three bands assigned
+ability type and therefore empty of information. It became three bands assigned
 per ability, and then the positional layer above gave those bands teeth.*
 
 ### Origin: what kind of power drives it
@@ -1054,7 +1058,7 @@ effect when full:
   read them correctly: first a Levy (steal the Trion from their costliest action),
   then a Seize (+2 to your whole squad's dice rolls for 1 turn). Guess wrong and
   your next Trion gain is docked.
-- **Ironvow:** each turn a random attack type is "sanctioned" (never the same as
+- **Ironvow:** each turn a random ability type is "sanctioned" (never the same as
   last turn). If you attack with that type, you land a Sanctioned Strike that
   cannot be blocked, strips one of the target's buffs, and brands them (so
   repeating an ability against them two turns running lands weakened). The cost is
@@ -1434,7 +1438,7 @@ cost and cooldown, are first-pass values. The Status Point and Trigger Value pas
   about half dice, so the 20-sided die decides a real share of every attack. The
   opening turn is earned rather than flipped for, weighted by the Team Efficiency
   Grade. And the range tag became three real bands, Close, Mid and Long, 20
-  Triggers each, with every attack type present in every band.
+  Triggers each, with every ability type present in every band.
 - **The spatial pillar is built.** Front, Middle and Back are real positions,
   distance is measured across the gap, every band reaches its own window of it,
   and Reposition costs a character their action. Range is enforced both at queue
@@ -1457,7 +1461,7 @@ cost and cooldown, are first-pass values. The Status Point and Trigger Value pas
 
 ## Appendix A: Every Trigger, explained
 
-Each entry lists the cost in Trion, the cooldown in turns, and a plain description. There are 61 active Triggers: 60 combat Triggers, evenly split 20 per attack type and 20 per range band, plus Refuse to Bail, which is self-targeted and deals nothing and so sits outside both splits.
+Each entry lists the cost in Trion, the cooldown in turns, and a plain description. There are 61 active Triggers: 60 combat Triggers, evenly split 20 per ability type and 20 per range band, plus Refuse to Bail, which is self-targeted and deals nothing and so sits outside both splits.
 
 
 ### Attacker Triggers (melee bruisers) (16)
