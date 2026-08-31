@@ -416,6 +416,8 @@ class Battle {
     // Combos never span turns under alternating resolution: start each turn
     // with an empty combo ledger.
     turnEngine.comboLedger.clearTurn();
+    // Item #4: this squad's one extra action is unclaimed again.
+    turnEngine.fatExtraClaimant = null;
     // Draegor's 2-tier TEG boost decays once per turn.
     turnEngine.tickTegBoost();
     final isFirstTurnOfBattle = !_firstTurnHandicapApplied;

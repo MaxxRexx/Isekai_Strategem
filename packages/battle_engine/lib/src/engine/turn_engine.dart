@@ -918,10 +918,28 @@ class TurnEngine {
     return fatEngine.rollTrigger(state, stats.fatChance + bonus);
   }
 
-  /// Whether [state] may use [trigger] right now: not on cooldown, not
-  /// action-prevented (Stunned/Frozen), not locked by Prone, and within
-  /// this turn's ability-use limit (1, or up to 3 if FAT triggered).
-  /// Passive Triggers are never "used" - this only applies to actives.
+  /// Item #4's FAT cap: the combatant who has taken this squad's one extra
+  /// action this turn, or null while it is still unclaimed.
+  ///
+  /// Only the active squad acts in a turn, so one field covers both sides.
+  /// Cleared by `Battle.startTurn`.
+  String? fatExtraClaimant;
+
+  /// Whether using [trigger] now would be an *extra* action: one beyond the
+  /// single action an ordinary turn allows, which only a Full Arms Trigger
+  /// turn makes possible at all.
+  bool isExtraAction(CharacterBattleState state) =>
+      state.abilitiesUsedThisTurnCount >= fatConfig.normalAbilitiesPerTurn;
+
+  /// Item #4: whether [state] may take an extra action, given that the squad
+  /// gets only one per turn however many of them rolled FAT.
+  ///
+  /// The cooldown wipe still lands for everyone who rolled. It is only the
+  /// extra *actions* that are capped, so a squad cannot turn one lucky turn
+  /// into three characters acting twice.
+  bool canClaimExtraAction(CharacterBattleState state) =>
+      fatExtraClaimant == null || fatExtraClaimant == state.combatantId;
+
   /// Item #15's signature gate: which abilities cost a typed token on top of
   /// their Trion cost.
   ///
@@ -935,7 +953,7 @@ class TurnEngine {
     if (black != null && black.activeAbilities.any((a) => a.id == trigger.id)) {
       return true;
     }
-    return state.abilitiesUsedThisTurnCount >= fatConfig.normalAbilitiesPerTurn;
+    return isExtraAction(state);
   }
 
   /// The reserve backing [state], or null when none is wired up (standalone
@@ -943,6 +961,10 @@ class TurnEngine {
   TypedTrionReserve? _reserveFor(CharacterBattleState state) =>
       teamTypedTrion[state.combatantId];
 
+  /// Whether [state] may use [trigger] right now: not on cooldown, not
+  /// action-prevented (Stunned/Frozen), not locked by Prone, and within
+  /// this turn's ability-use limit (1, or up to 3 if FAT triggered).
+  /// Passive Triggers are never "used" - this only applies to actives.
   bool canUseAbility(CharacterBattleState state, ActiveTrigger trigger) {
     if (state.isActionPrevented()) return false;
     if ((state.cooldowns[trigger.id] ?? 0) > 0) return false;
@@ -972,6 +994,8 @@ class TurnEngine {
         return false;
       }
     }
+    // Item #4: one extra action per squad per turn, whoever rolled FAT.
+    if (isExtraAction(state) && !canClaimExtraAction(state)) return false;
     // Item #15: the big plays also cost a typed token.
     final reserve = _reserveFor(state);
     if (reserve != null &&
@@ -995,8 +1019,11 @@ class TurnEngine {
     final reserve = _reserveFor(state);
     final needsToken = reserve != null && requiresTypedTrion(state, trigger);
     if (needsToken && !reserve.canPay(trigger.originTag)) return false;
+    final extra = isExtraAction(state);
+    if (extra && !canClaimExtraAction(state)) return false;
     if (!teamPool.trySpend(cost)) return false;
     if (needsToken) reserve.spend(trigger.originTag);
+    if (extra) fatExtraClaimant = state.combatantId;
     state.recordAbilityUse(trigger);
     return true;
   }
