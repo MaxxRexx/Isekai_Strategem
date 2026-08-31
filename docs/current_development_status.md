@@ -36,7 +36,7 @@ audit, approved by the owner as #Q1 to #Q4.
 |---|---|---|
 | **0** | ~~Playtest **1b** and **#2**~~ **Done** | Played through the Tests tab's eight scenarios. All eight resolved correctly; three interface defects came out of it and are fixed (see below). Landed before wave 1's two wide refactors, which is where they were much cheaper |
 | **1** | ~~#14~~ ~~5c~~ ~~the duration fix (#D)~~ ~~**3b** mechanism~~ ~~**5b**~~ ~~**13b**~~ ~~the Trion drain fix~~ ~~**#3's rule only**~~ ~~two support spot-fixes~~ **wave 1 complete, merged, playtested and closed out (#TWC, 2026-08-29)** | Everything that #4 needs, plus everything that makes a playtest of #4 readable. All of it is independent of the Trion economy. Ordered inside the wave so the two widest mechanical changes land first and everything after is written against them |
-| **2** | ~~**4b**~~ ~~**#17**, the rename with the Sealed recode and the Origin Lockout fix~~ **both built**. Left, in order: **#16** the origin re-tag rebalance, then **#15** typed Trion, then **#4** the economy itself. **Current priority; the three left are designed but not built.** | 4b went first and cleared the round limit (it found the long battles are accuracy, not economy). #4's decisions and everything the design pass pulled in are recorded in "Wave 2 decisions" above. Typed Trion follows the origin re-tag; its typed costs price in wave 4 |
+| **2** | ~~**4b**~~ ~~**#17**~~ ~~**#16**~~ ~~**#15**~~ ~~**#4**~~ **all built**. One question outstanding on D5, below. | 4b went first and cleared the round limit (it found the long battles are accuracy, not economy). #4's decisions and everything the design pass pulled in are recorded in "Wave 2 decisions" above. #4 itself landed the FAT cap, the round limit and D4's range costing; D1 and D3 needed no code. D5's wave-2 half is the one thing still open, because all three statuses it names turn out to be unreachable |
 | **3** | **1c**, 3b's new abilities and Side Effects, #4's positional traps, and **a home for Sealed** (#12D) | The content pass. It lands after the economy so every new ability is written against the Trion costs that will actually ship, on the rule this document has already recorded: the catalogue is priced once, not twice |
 | **4** | **#3's pass** and **#5** | The catalogue is final here: 62 status effects, 75 active abilities, 11 reactive durations, Bail Out's attacker share. Price once. #5's acceptance test is the gate on it |
 | **5** | **#6**, carrying #3's tooltip setting | Pending queue with un-queue, the resolve pause, and the squads laid out on the board itself. The tooltip duration setting moves here because it is interface work with no pricing in it |
@@ -657,6 +657,84 @@ the wave well beyond the original #4, so the whole picture is here in one place.
 - **The FAT cap:** one character per squad may cash in FAT per turn (from the #1
   playtest).
 
+### What D4 measured, and what it moved
+
+Built 2026-08-31. The three bands were priced almost identically before it
+(Close 16.7 Trion on average, Mid 15.6, Long 17.1; every band's mean cooldown
+2.0), so a band was a different window and nothing else.
+
+| | Close | Mid | Long |
+|---|---|---|---|
+| Trion to fire (mean) | 16.7 to **14.7** | 15.6, unchanged | 17.1 to **21.4** |
+| Trion to fire (ceiling) | 22 to 20 | 24, unchanged | 24 to **42** |
+| Cooldown (mean / max) | 2.0 to 1.9 / **2** | 2.0 to **3.0** / **4** | 2.2 / 4, unchanged |
+| Equip cost (mean) | 21.5 to **17.4** | 22.2, unchanged | 23.5 to **30.9** |
+
+Long's ceiling of 42 Trion and 48 equip sit just under three times the Close
+average, which is the ceiling the decision named. Each band's existing ordering
+is kept, since that already encodes payload from the balance pass and SPTV;
+what moved is the band.
+
+**Trion Capacity was not touched.** The decision warned the sniper budget might
+need revisiting and the numbers say it does not: the four cheapest Long
+abilities come to 74, inside the smallest Capacity on the roster (100), so any
+character can specialise into any band. What Long gives up for its reach is the
+pick of the band, not access to it.
+
+**Pacing improved as a side effect**, measured over the same 800 battles as 4b:
+
+| | before D4 | after D4 |
+|---|---|---|
+| median rounds | 14 | **12** |
+| mean rounds | 15.1 | **13.4** |
+| p90 | 24 | **22** |
+| inside the 8-20 band | 74% | **77%** |
+| battles past 20 rounds | 155 | **99** |
+| turns idle on Trion (in band) | 681 | **528** |
+| abilities used per turn (in band) | 1.42 | **1.52** |
+
+Making Close cheap and fast raised throughput, and throughput is what shortened
+the battles. This does not contradict 4b: accuracy is still what stretches the
+long ones.
+
+**Two things the re-cost exposed.** The Loadout builder reserved
+`slots * cheapestActiveCost` for its remaining required slots, which assumed the
+floor price could be bought over and over; that held while a dozen abilities
+shared the floor and stopped holding when the equip costs spread by band, so it
+returned Loadouts one active short of the rule. It now reserves the sum of the
+cheapest *distinct* remaining candidates. And the Tests tab's sniper kit came to
+119 against a 100 Trion Capacity, so it carries Piercing Thrust in Longshot's
+place.
+
+### D5's non-token half: still open
+
+The decision asked wave 2 to make Sapped, Choked and Overcharged "pay off under
+the new economy". Building it turned up two things.
+
+**All three are unreachable.** Nothing in the game applies any of them: not one
+of the 61 active Triggers, not one Black Trigger ability, and not the reaction
+table. They are 3 of the 34 statuses on that list, which the queue's own note
+says wave 3's content pass is there to shrink. So they cannot be made to pay off
+anywhere until something applies them, and homing them is content work, not
+economy work. Same shape as the Sealed finding (#12D), and it belongs in the
+same wave.
+
+**Sapped's magnitude is a switch, not a sub-game.** It drains 25% of the
+victim's base Trion Capacity per turn, per stack, for 3 turns, stacking to 3.
+Average Capacity across the roster is 108, so one stack takes **27 Trion a
+turn** against a measured squad income of about **25**, and three stacks take
+81. That is more than the enemy squad earns, every turn, handed to you. The new
+economy makes it worse rather than better: D4 gave the game 42-cost abilities
+worth banking for, and the drain is clamped to what the victim actually holds,
+so it punishes precisely the banking D4 introduced.
+
+The 25% is one of the two numbers the original design brief gave explicitly, so
+changing it is the owner's call rather than a re-tune. **The question is in the
+chat**; nothing has been changed here pending the answer.
+
+(The drain being a transfer rather than a printing press was already fixed in
+wave 1, so that part needs nothing.)
+
 ### Typed Trion: the D2 answer, a new feature
 
 The "steadier income" question (D2) became a new mechanic instead of a number: a
@@ -793,7 +871,7 @@ numbers everywhere else in this document.
 | **2** | **Bail Out, contested.** Not a revive: the operator leaves the engagement. **Merged. Playtested by the owner once and revised** (the same character on both squads, a body reading as defeated in the text report, and the recall's grammar; all three below). Built: `BailOutState` beside health rather than replacing it (the 59 reads of `isAlive` all keep treating a bailing character as gone, and exactly two questions read the new `isOnBoard` instead); the window armed at the start of the enemy's next turn and settled at the end of it, so the turn the kill landed in never counts; Trion Salvage at 20% of base Trion Capacity on a recall and 10% to the attacker on a destruction; any landed hit of any size destroying a body, from either side; bodies screening through all five places that compute screening; damaging abilities as the only thing that may be aimed at a body; **Refuse to Bail** as a 61st Trigger and an eleventh reactive kind; the AI's floor rule for clearing bodies; and the interface (a colourless BAILING pill, the ruler's pip, three new log moments and a plain-English reactive description for all ten counters). Decisions D1 to D8 and the mid-build ones are recorded below. **Re-tested** through the Tests tab's four Bail Out scenarios: the contested window with both endings, what may be aimed at a body, Refuse to Bail (equipped and fired in the real app for the first time), and a squad's last member falling with no window. All four resolved correctly. | Merged and re-tested | 0 |
 | 3b | **Status reactions.** **Mechanism, table and Enraged built in wave 1.** `StatusReaction` is a data field on `StatusEffectDefinition`, read in exactly the two places the spec named (the damage path and `StatusEffectEngine.apply`), with no switch statement naming a status anywhere. All twelve rows are on the definitions. Enraged gained Psychic immunity and random targeting. Reactions fire automatically, per decision #G. Found while building: a status ticking its own damage type fired its own reaction, so Bleeding refreshed itself forever; a tick is not a hit, and no longer counts as one. **The other half is still wave 3**, which is the abilities that apply Wet, Frozen and Electrocuted: until then the rows starting from those three cannot be reached from a Loadout. Original spec: A small data table letting statuses react to damage types and to each other (Wet plus Cold becomes Frozen, Frozen plus Bludgeoning shatters, Chilled plus Fire melts back to Wet, and so on), plus homes for the five remaining unreachable statuses and a redesigned Enraged that is immune to Psychic but targets at random. Full spec above. **Split across two waves.** The mechanism, the table and Enraged land in wave 1, because #4's trap pass already includes a reaction-armed trap and the primitive has to exist first, and because none of it depends on the economy. The new abilities and Side Effects land in wave 3 with 1c, and wave 4 prices the lot. **In design: the review asks whether a reaction has to win an infliction contest.** | In design | 1 and 3 |
 | 3 | **SPTV (Status Points and Trigger Value), plus the tooltip fix.** **The rule is built, wave 1** (see the section below); the pass over the catalogue is wave 4's. Original spec: SP prices effects and feeds into the TV formula, so the two compose rather than compete; 3 damage per SP as the starting conversion. **In scope:** the 62 status effects, every Trigger's Trion cost and cooldown, and the durations on the reactive counters and traps (`armsReactiveDefaultTurns`), which are all still unpriced Phase B first-pass values. Tooltip duration becomes a 2-10 second setting under the volume slider (needs `shared_preferences`), dismissed by tapping elsewhere. **Split across two waves (#Q1).** Wave 1 builds the rule only: the SP conversion table, the measured baselines it reads, the tool that prices the catalogue from them, and the SP term in Trigger Value. Wave 4 runs the pass over the finished catalogue. The tooltip setting moves to #6, being interface work with no pricing in it. **Audited; the review is waiting on seven decisions.** | In design | 1 and 4 |
-| 4 | **Trion economy.** **Decisions taken 2026-08-30 (D1 A1, D3 B, D4 A, D5 B, plus the round limit and FAT cap); full record in "Wave 2 decisions" above, which also carries the typed-Trion mechanic, the origin rebalance, the rename and the Sealed recode this item pulled in.** **Read "What 4b found" first: the round limit is cheap, and battle length is not this item's to fix.** 4b measured the 30-round limit at 3% of battles touched and 4 of 21 results reversed, so it can land as specified; it also showed the long battles are an accuracy problem, so no income number here will shorten them. **Read "Found closing out wave 1: the Levy stole a flat 20" before setting any number here**: the Levy is fixed but two questions about it are this item's (whose costliest action, and whether it caps). Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). | Designed, not built | 2 |
+| 4 | **Trion economy.** **Decisions taken 2026-08-30 (D1 A1, D3 B, D4 A, D5 B, plus the round limit and FAT cap); full record in "Wave 2 decisions" above, which also carries the typed-Trion mechanic, the origin rebalance, the rename and the Sealed recode this item pulled in.** **Read "What 4b found" first: the round limit is cheap, and battle length is not this item's to fix.** 4b measured the 30-round limit at 3% of battles touched and 4 of 21 results reversed, so it can land as specified; it also showed the long battles are an accuracy problem, so no income number here will shorten them. **Read "Found closing out wave 1: the Levy stole a flat 20" before setting any number here**: the Levy is fixed but two questions about it are this item's (whose costliest action, and whether it caps). Also carries: a **30-round limit with a health tiebreak** (PlaySession has no round cap at all today, only the simulator does) and the FAT cap below. Screening no longer waits for this item; 1b is being built on its own. Steadier income, capacity-gated FAT, and the denial statuses becoming a real sub-game. Plus two additions agreed during the #1 playtest: **only one character per squad may cash in FAT per turn**. FAT still rolls per character per turn as now, and several may roll it; the squad claims it when one of them queues a **second** action, at which point every other character's FAT switches off. Un-queueing that second action releases the claim. The cooldown wipe stays with everyone who rolled; only the extra actions are capped; and **range becomes an input to the cost model**, with Mid Range carrying the highest cooldowns (up to 4) and Long Range the highest Trion costs, both the Loadout equip cost and the in-battle cost, up to three times the Close Range average. Each band then has an economic identity, not just a different window: Close is cheap and fast but demands you stand in the danger, Long is safe and you pay for it twice over, Mid is flexible and pays in tempo. Watch the knock-on: tripling Long Range equip costs shrinks what fits inside a Loadout's Trion Capacity, so the sniper builds may need the Capacity budget revisited in the same pass. **Also carries: more traps, designed around positional play** (see the section below). **Built 2026-08-31**, except the traps (wave 3 content) and D5's non-token half (see below). D1 and D3 needed no code: the Levy already reads the costliest ability used that turn, uncapped, and FAT extras already spend Trion. **The FAT cap** is enforced in the engine (`TurnEngine.fatExtraClaimant`, cleared at turn start) and again in the player's queue, which commits a whole turn before the engine sees any of it; the queue derives the claim from what is queued rather than storing it, so un-queueing the second action hands it back, and a blocked ability names who holds it. **The round limit** lives in `Battle.outcome`, so Play, Quick Battle and the simulator all get it: past round 30 the battle goes to the squad ahead on total remaining health, a defeat still outranks it so a wipe reads as a wipe, and a level result at the limit is a stalemate rather than a mutual defeat because nobody was defeated in it. **D4's range costing** gave each band an economic identity (see "What D4 measured" below). **Left open: D5's non-token half** - all three statuses it names are unreachable, so see the question below. | Built (traps and D5's half left) | 2 |
 | 4b | **Why some battles run long.** **Diagnosed. Both suspects were wrong, and the fix is not an economy number.** Neither squads out-healing each other (healing runs 0.02 health per round against 34.6 damage) nor Trion starvation (long battles hold *more* Trion and use the same 1.42 abilities per turn) explains anything. The cause is **accuracy**: a battle's length tracks the matchup's Attack-versus-Defense gap almost monotonically, from 19 rounds at gap -3 to 8.5 at +6. A third of the problem was also a **measurement defect**, now fixed: four tools and one player-facing mode dropped each character's Black Trigger abilities from the list handed to the AI. Full findings, numbers and the two defects are in "What 4b found" below. New tool: `tool/long_battle_diagnosis.dart`. | Diagnosed | 2 |
 | 5 | **Support abilities do not pay for their action.** **The two interim spot-fixes are built (wave 1)**: War Chant and Guardian's Aegis are squad buffs now, priced with #3's rule, at TV 2.06 and 1.38 against 0.30 and 0.46 before. The full re-pricing is still wave 4's. See the section below. Original spec: Was "healing is too weak"; the #1 playtest showed the same problem across every buff and ward, not just heals. One action per turn, the average attack turn deals 37.3 damage, and War Chant buys 9.3, Rally Cry 11.2, Guardian's Aegis 9.3, Cleansing Ward 9. Every one is a net loss of 26 to 28 against simply attacking. Acceptance test for the fix: **on an ordinary one-action turn, a support ability must pay for its own action within its own duration.** No ability may need a FAT turn to be worth using. Re-priced in #3's wave 4 pass, which owns every magnitude and duration. The #3 audit re-derived this table and found the four are not uniformly bad: Rally Cry buys 1.05 actions, Cleansing Ward 0.80, Guardian's Aegis 0.51 and War Chant 0.25, so the work is to lift the bottom two. The bottom two get an interim spot-fix in wave 1 so the wave 2 playtests are not played with support that does nothing. | Queued | 4 |
 | 5b | **Stackable statuses.** **Built, wave 1.** `maxStacks` on the definition (1 for fifty of them, 3 for the twelve), `stacks` on the instance, counted in `StatusEffectEngine.apply`. Still one instance with one duration: the stat folding and all three tick kinds multiply by the count, and the badge carries an `x2`/`x3` with the count in its tooltip. Original spec: 12 stack, capped at 3: Bleeding, Electrocuted, Regenerating and Sapped (ticks that add), and Acid, Adrenaline Rush, Battle Trance, Fatigued, Hexed, Inspired, Suppressed and Warded (flat stat steps). The other 50 refresh only. Rallied was the 13th and is now removed. Stacking has to be an explicit flag with a maximum, never the accidental default it used to be. A stackable effect is worth more Status Points, so the flags land in wave 1 ahead of the rule that reads them, and wave 4 prices them. | Approved, queued | 1 |

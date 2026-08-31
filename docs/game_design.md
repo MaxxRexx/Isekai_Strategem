@@ -35,7 +35,7 @@ advantage or disadvantage, critical hits, and a big list of status conditions).
 7. Triggers and Loadouts: building an ability set (category, ability type,
    subtype, range, origin)
 8. Full Arms Trigger (FAT): your burst turn
-9. How a turn works: queue then resolve
+9. How a turn works: queue then resolve, and when a battle ends
 10. Resolution order: the six phases
 11. How an attack is decided: the dice math, damage types, and SPTV
 12. Status effects: the full list, explained
@@ -216,11 +216,17 @@ forms:
   amounts. A high-Affinity Support like Haru Ellison (Affinity 32) noticeably
   raises the whole team's income.
 
-**Attacking the enemy's Trion is a real strategy.** Several status effects target
-it: Sapped drains a quarter of the target's Trion Capacity, Genjutsu Trapped
-drains 15% of it (and stops them acting), Silenced stops them using abilities at
-all, Overcharged halves your ability costs, and Choked doubles the target's
-costs.
+**Attacking the enemy's Trion is meant to be a real strategy**, and the status
+effects for it are written: Sapped drains a quarter of the target's Trion
+Capacity, Genjutsu Trapped drains 15% of it (and stops them acting), Silenced
+stops them using abilities at all, Overcharged halves your ability costs, and
+Choked doubles the target's costs.
+
+*Where this stands today: of those five, only **Silenced** can actually reach
+the board. Nothing in the game applies Sapped, Choked, Overcharged or Genjutsu
+Trapped, so they are written but unplayable. They are four of the 34 status
+effects in that position, which the content pass exists to fix. Until then, the
+Trion sub-game is Silenced and the income roll, and nothing else.*
 
 ### Typed Trion: what kind, as well as how much
 
@@ -358,6 +364,32 @@ bands**, 20 Triggers each:
 - **Mid Range (20):** the middle distance. You can see them clearly and reach
   them, but you are not on top of each other.
 - **Long Range (20):** across the field.
+
+**Each band costs differently, and that is the point.** A band is not just a
+different window; it is an economic identity, so choosing one is a real
+decision about how you want to spend.
+
+| | Close | Mid | Long |
+|---|---|---|---|
+| Trion to fire (average) | **14.7**, the cheapest | 15.6 | **21.4**, the priciest |
+| Trion to fire (most expensive) | 20 | 24 | **42** |
+| Cooldown (average / longest) | **1.9 / 2** | **3.0 / 4**, the longest | 2.2 / 4 |
+| Trion Capacity to carry (average) | **17.4**, the cheapest | 22.2 | **30.9**, the priciest |
+
+- **Close is cheap and fast, but you have to stand in the danger.** Nothing in
+  it sits out more than one turn, so a Close kit acts every turn.
+- **Mid is flexible and pays in tempo.** Its window reaches nearly the whole
+  board, and it carries the longest cooldowns in the game, up to 4 turns.
+- **Long is safe and you pay for it twice over**, once in Trion at the moment
+  you fire and again in the Trion Capacity it eats out of your Loadout. The
+  most expensive shot in the game, Longshot, costs 42 Trion, which is more than
+  a squad earns even on a high income turn: it is a play you bank across turns
+  for.
+
+Any character can specialise into any band. What Long gives up for its reach is
+the *pick* of the band, not access to it: the four cheapest Long abilities fit
+inside the smallest Trion Capacity on the roster, but four of the priciest do
+not fit inside any.
 
 **These bands are not the same thing as the ability type**, and the names are
 deliberately different so the two do not get mixed up. Ability type answers *what
@@ -609,6 +641,12 @@ Normally a character uses **one ability per turn**. **Full Arms Trigger**, or
 - Each turn, a character has a chance (equal to its FAT Chance stat, boosted by a
   high Team Spirit) to **trigger FAT**.
 - On a FAT turn, that character may use **up to 3 abilities** instead of 1.
+- **Only one character per squad may cash in per turn.** FAT still rolls for
+  each of them, and every character who rolls it gets their cooldowns cleared;
+  what is capped is the extra *actions*. The squad claims the extra when one of
+  them takes a second action, and every other character's FAT switches off for
+  that turn. In Play mode the claim follows the queue, so un-queueing that
+  second action hands it straight back.
 - Going greedy has a price. If you use 2 or more abilities on the FAT turn, you
   pay a penalty: that character's cooldowns are **doubled** and its Trion Affinity
   is **halved**, and FAT then **locks out for 3 turns** before it can happen
@@ -620,7 +658,7 @@ enemy who chains 2 or more abilities on a FAT turn.
 
 ---
 
-## 9. How a turn works: queue then resolve
+## 9. How a turn works: queue then resolve, and when a battle ends
 
 Turns **alternate** between the two squads. Who goes first at the very start of
 the battle is **weighted by the Team Efficiency Grade**: two squads on the same
@@ -658,6 +696,22 @@ On your turn:
 
 The AI builds and resolves a full queue the same way you do, which keeps single
 player and any future online play running on one shared system.
+
+### When a battle ends
+
+Normally a battle ends when one squad is wiped out: every member reduced to zero
+health, with a Bail Out body on the board counting for nothing.
+
+A battle that neither squad has won by the end of **round 30** is called there
+and awarded to whoever is ahead on **total remaining health**, or is a
+**stalemate** if the two are level. Being wiped out still outranks the limit, so
+a win by wipe-out reads as a win by wipe-out; only a battle that ran out of
+rounds is decided on health, and it says so.
+
+The number is measured rather than picked. Across 800 simulated battles, 21
+were still running at round 30, and in 17 of those the squad ahead on health at
+that point went on to win anyway. The limit therefore changes the result of
+about 1 battle in 200, and never one where the two squads were level.
 
 ---
 
@@ -1507,79 +1561,79 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 
 ### Attacker Triggers (melee bruisers) (16)
 
-- **"Martyr's End"** (costs 10 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: detonates for 50 damage when you are below 25% Health.
-- **Cinderburst** (costs 18 Trion, 2-turn cooldown). A close-range single-target fire attack dealing about 15 damage. Applies Scorched (12 burn damage per turn).
-- **Cleave** (costs 15 Trion, 2-turn cooldown). A close-range area slashing attack dealing about 22 damage to each of up to 2 enemies. Applies Shattered Guard (guard broken, weaker defense).
-- **Cryo Burst** (costs 18 Trion, 2-turn cooldown). A long-range area cold attack dealing about 18 damage to each of up to 3 enemies. Applies Chilled (attack sinks each turn).
-- **Dread Resonance** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: hits harder the more damage the target has taken.
-- **Dread Wave** (costs 18 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 16 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
-- **Frost Lance** (costs 14 Trion, 1-turn cooldown). A mid-range single-target cold attack dealing about 22 damage. Applies Chilled (attack sinks each turn).
-- **Grave Bargain** (costs 8 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: spends 25% of your own Health to power the strike.
-- **Piercing Thrust** (costs 18 Trion, 2-turn cooldown). A long-range single-target piercing attack dealing about 52 damage.
-- **Predictive Parry** (costs 20 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: dodges the next single-target melee attack.
-- **Shared Agony** (costs 14 Trion, 2-turn cooldown). A mid-range unique necrotic attack dealing about 47 damage. Signature effect: links two enemies so damage bleeds between them.
-- **Soul Siphon** (costs 16 Trion, 2-turn cooldown). A close-range single-target psychic attack dealing about 22 damage.
-- **Sunder Arms** (costs 16 Trion, 3-turn cooldown). A close-range unique slashing attack dealing about 37 damage. Signature effect: shreds the target armor.
-- **Twin Fang Strike** (costs 15 Trion, 2-turn cooldown). A close-range single-target slashing attack dealing about 44 damage.
-- **Vow of the Duel** (costs 15 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: binds a duel: double damage between you plus a 2-turn stun.
-- **Whirlwind Slash** (costs 16 Trion, 2-turn cooldown). A close-range single-target slashing attack dealing about 17 damage. Applies Bleeding (8 damage per turn).
+- **"Martyr's End"** (costs 12 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: detonates for 50 damage when you are below 25% Health.
+- **Cinderburst** (costs 16 Trion, 2-turn cooldown). A close-range single-target fire attack dealing about 15 damage. Applies Scorched (12 burn damage per turn).
+- **Cleave** (costs 13 Trion, 2-turn cooldown). A close-range area slashing attack dealing about 22 damage to each of up to 2 enemies. Applies Shattered Guard (guard broken, weaker defense).
+- **Cryo Burst** (costs 22 Trion, 2-turn cooldown). A long-range area cold attack dealing about 18 damage to each of up to 3 enemies. Applies Chilled (attack sinks each turn).
+- **Dread Resonance** (costs 22 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: hits harder the more damage the target has taken.
+- **Dread Wave** (costs 22 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 16 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
+- **Frost Lance** (costs 14 Trion, 2-turn cooldown). A mid-range single-target cold attack dealing about 22 damage. Applies Chilled (attack sinks each turn).
+- **Grave Bargain** (costs 8 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: spends 25% of your own Health to power the strike.
+- **Piercing Thrust** (costs 22 Trion, 2-turn cooldown). A long-range single-target piercing attack dealing about 52 damage.
+- **Predictive Parry** (costs 18 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: dodges the next single-target melee attack.
+- **Shared Agony** (costs 14 Trion, 3-turn cooldown). A mid-range unique necrotic attack dealing about 47 damage. Signature effect: links two enemies so damage bleeds between them.
+- **Soul Siphon** (costs 14 Trion, 2-turn cooldown). A close-range single-target psychic attack dealing about 22 damage.
+- **Sunder Arms** (costs 14 Trion, 2-turn cooldown). A close-range unique slashing attack dealing about 37 damage. Signature effect: shreds the target armor.
+- **Twin Fang Strike** (costs 13 Trion, 2-turn cooldown). A close-range single-target slashing attack dealing about 44 damage.
+- **Vow of the Duel** (costs 15 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: binds a duel: double damage between you plus a 2-turn stun.
+- **Whirlwind Slash** (costs 14 Trion, 2-turn cooldown). A close-range single-target slashing attack dealing about 17 damage. Applies Bleeding (8 damage per turn).
 
 ### Shooter Triggers (ranged volume) (9)
 
-- **Arc Volley** (costs 20 Trion, 2-turn cooldown). A mid-range rapid burst lightning attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets.
-- **Frag Grenade** (costs 20 Trion, 2-turn cooldown). A long-range area piercing attack dealing about 20 damage to each of up to 3 enemies.
-- **Gatling Burst** (costs 24 Trion, 2-turn cooldown). A mid-range rapid burst piercing attack dealing about 10 damage per hit across 5 hits. Applies Exposed (takes +25% damage).
-- **Pepper Shot** (costs 16 Trion, 1-turn cooldown). A close-range rapid burst piercing attack dealing about 10 damage per hit across 3 hits.
-- **Rapid Fire** (costs 18 Trion, 2-turn cooldown). A mid-range rapid burst piercing attack dealing about 17 damage per hit across 3 hits. Applies Bleeding (8 damage per turn).
-- **Scattershot** (costs 22 Trion, 2-turn cooldown). A close-range rapid burst piercing attack dealing about 6 damage per hit across 4 hits on each of up to 3 targets. Applies Slowed (defense sinks each turn).
-- **Split Shot** (costs 18 Trion, 2-turn cooldown). A long-range rapid burst piercing attack dealing about 14 damage per hit across 2 hits on each of up to 2 targets.
-- **Suppressing Fire** (costs 20 Trion, 2-turn cooldown). A long-range rapid burst piercing attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets. Applies Suppressed (worse at applying statuses).
-- **Thunderclap Round** (costs 18 Trion, 2-turn cooldown). A long-range area thunder attack dealing about 13 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
+- **Arc Volley** (costs 20 Trion, 3-turn cooldown). A mid-range rapid burst lightning attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets.
+- **Frag Grenade** (costs 27 Trion, 2-turn cooldown). A long-range area piercing attack dealing about 20 damage to each of up to 3 enemies.
+- **Gatling Burst** (costs 24 Trion, 3-turn cooldown). A mid-range rapid burst piercing attack dealing about 10 damage per hit across 5 hits. Applies Exposed (takes +25% damage).
+- **Pepper Shot** (costs 14 Trion, 1-turn cooldown). A close-range rapid burst piercing attack dealing about 10 damage per hit across 3 hits.
+- **Rapid Fire** (costs 18 Trion, 3-turn cooldown). A mid-range rapid burst piercing attack dealing about 17 damage per hit across 3 hits. Applies Bleeding (8 damage per turn).
+- **Scattershot** (costs 20 Trion, 2-turn cooldown). A close-range rapid burst piercing attack dealing about 6 damage per hit across 4 hits on each of up to 3 targets. Applies Slowed (defense sinks each turn).
+- **Split Shot** (costs 22 Trion, 2-turn cooldown). A long-range rapid burst piercing attack dealing about 14 damage per hit across 2 hits on each of up to 2 targets.
+- **Suppressing Fire** (costs 27 Trion, 2-turn cooldown). A long-range rapid burst piercing attack dealing about 10 damage per hit across 3 hits on each of up to 2 targets. Applies Suppressed (worse at applying statuses).
+- **Thunderclap Round** (costs 22 Trion, 2-turn cooldown). A long-range area thunder attack dealing about 13 damage to each of up to 3 enemies. Applies Overwhelmed (swamped, takes extra damage).
 
 ### Sniper Triggers (long-range big hits) (3)
 
-- **Called Shot** (costs 16 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: zeroes one of the target stats.
-- **Curving Shot** (costs 18 Trion, 2-turn cooldown). A long-range unique piercing attack dealing about 37 damage. Signature effect: curves past cover and defense.
-- **Longshot** (costs 24 Trion, 2-turn cooldown). A long-range single-target piercing attack dealing about 56 damage.
+- **Called Shot** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: zeroes one of the target stats.
+- **Curving Shot** (costs 22 Trion, 2-turn cooldown). A long-range unique piercing attack dealing about 37 damage. Signature effect: curves past cover and defense.
+- **Longshot** (costs 42 Trion, 2-turn cooldown). A long-range single-target piercing attack dealing about 56 damage.
 
 ### Trapper Triggers (control and debuffs) (24)
 
-- **Acid Spray** (costs 16 Trion, 2-turn cooldown). A mid-range area acid attack dealing about 13 damage to each of up to 3 enemies. Applies Corroded (-3 armor).
-- **Caustic Cloud** (costs 16 Trion, 2-turn cooldown). A long-range area acid attack dealing about 9 damage to each of up to 3 enemies. Applies Poisoned (damage each turn).
-- **Charm Whisper** (costs 20 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Charmed (turned against their team).
-- **Death Ledger** (costs 18 Trion, 2-turn cooldown). A mid-range single-target piercing attack dealing about 10 damage. Counter: nullifies an incoming area attack.
-- **Dread Gaze** (costs 14 Trion, 1-turn cooldown). A mid-range single-target psychic attack dealing about 10 damage. Applies Terrified (too afraid to fight well).
-- **Echoing Doubt** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: backlashes for 20 if acted against.
-- **Flashbang Round** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Blinded (much less accurate).
-- **Forced Choice** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: forces a lose-lose choice.
+- **Acid Spray** (costs 16 Trion, 3-turn cooldown). A mid-range area acid attack dealing about 13 damage to each of up to 3 enemies. Applies Corroded (-3 armor).
+- **Caustic Cloud** (costs 18 Trion, 2-turn cooldown). A long-range area acid attack dealing about 9 damage to each of up to 3 enemies. Applies Poisoned (damage each turn).
+- **Charm Whisper** (costs 18 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Charmed (turned against their team).
+- **Death Ledger** (costs 18 Trion, 3-turn cooldown). A mid-range single-target piercing attack dealing about 10 damage. Counter: nullifies an incoming area attack.
+- **Dread Gaze** (costs 14 Trion, 2-turn cooldown). A mid-range single-target psychic attack dealing about 10 damage. Applies Terrified (too afraid to fight well).
+- **Echoing Doubt** (costs 16 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: backlashes for 20 if acted against.
+- **Flashbang Round** (costs 18 Trion, 3-turn cooldown). A utility ability (no direct damage). Applies Blinded (much less accurate).
+- **Forced Choice** (costs 14 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: forces a lose-lose choice.
 - **Isolation** (costs 14 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: cuts the target off from allies.
-- **Karmic Bind** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: damage you take or healing you receive is passed on to the bound enemy, scaled by Team Spirit.
-- **Mass Confusion** (costs 20 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Silenced (cannot use abilities).
-- **Memory Theft** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: steals or copies an ability.
-- **Mind Fog** (costs 16 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Blinded (much less accurate).
-- **Mind Shatter** (costs 18 Trion, 2-turn cooldown). A mid-range single-target psychic attack dealing about 10 damage. Applies Silenced (cannot use abilities).
-- **Nightmare Pulse** (costs 18 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 14 damage to each of up to 2 enemies. Applies Terrified (too afraid to fight well).
-- **Numbing Toxin** (costs 20 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: reduces incoming burst damage.
-- **Psychic Scream** (costs 18 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Silenced (cannot use abilities).
-- **Root Snare** (costs 18 Trion, 2-turn cooldown). A mid-range single-target bludgeoning attack dealing about 10 damage. Applies Forced Repetition (stuck repeating an action).
-- **Scramble** (costs 20 Trion, 2-turn cooldown). A mid-range single-target psychic attack dealing about 10 damage. Applies Misfire (50% chance actions fail).
-- **Sensory Swap** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: swaps a targeting link between two enemies.
-- **Shatterpoint** (costs 12 Trion, 1-turn cooldown). A close-range single-target acid attack dealing about 22 damage. Applies Corroded (-3 armor).
-- **Unmaking** (costs 18 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: a heavy unravelling debuff.
-- **Venom Needle** (costs 12 Trion, 1-turn cooldown). A mid-range single-target poison attack dealing about 15 damage. Applies Poisoned (damage each turn).
-- **Venom Spray** (costs 20 Trion, 2-turn cooldown). A close-range rapid burst poison attack dealing about 9 damage per hit across 3 hits on each of up to 2 targets. Applies Poisoned (damage each turn).
+- **Karmic Bind** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: damage you take or healing you receive is passed on to the bound enemy, scaled by Team Spirit.
+- **Mass Confusion** (costs 27 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Silenced (cannot use abilities).
+- **Memory Theft** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: steals or copies an ability.
+- **Mind Fog** (costs 18 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Blinded (much less accurate).
+- **Mind Shatter** (costs 18 Trion, 3-turn cooldown). A mid-range single-target psychic attack dealing about 10 damage. Applies Silenced (cannot use abilities).
+- **Nightmare Pulse** (costs 22 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 14 damage to each of up to 2 enemies. Applies Terrified (too afraid to fight well).
+- **Numbing Toxin** (costs 18 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: reduces incoming burst damage.
+- **Psychic Scream** (costs 22 Trion, 2-turn cooldown). A long-range area psychic attack dealing about 10 damage to each of up to 3 enemies. Applies Silenced (cannot use abilities).
+- **Root Snare** (costs 18 Trion, 3-turn cooldown). A mid-range single-target bludgeoning attack dealing about 10 damage. Applies Forced Repetition (stuck repeating an action).
+- **Scramble** (costs 20 Trion, 3-turn cooldown). A mid-range single-target psychic attack dealing about 10 damage. Applies Misfire (50% chance actions fail).
+- **Sensory Swap** (costs 12 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: swaps a targeting link between two enemies.
+- **Shatterpoint** (costs 10 Trion, 1-turn cooldown). A close-range single-target acid attack dealing about 22 damage. Applies Corroded (-3 armor).
+- **Unmaking** (costs 18 Trion, 4-turn cooldown). A utility ability (no direct damage). Signature effect: a heavy unravelling debuff.
+- **Venom Needle** (costs 12 Trion, 2-turn cooldown). A mid-range single-target poison attack dealing about 15 damage. Applies Poisoned (damage each turn).
+- **Venom Spray** (costs 18 Trion, 2-turn cooldown). A close-range rapid burst poison attack dealing about 9 damage per hit across 3 hits on each of up to 2 targets. Applies Poisoned (damage each turn).
 
 ### Optional Triggers (buffs, wards, counters) (9)
 
-- **"Guardian's Aegis"** (costs 14 Trion, 2-turn cooldown). A close-range area ward covering one of your lines, up to 3 allies (no direct damage). Applies Guarded (takes 25% less damage). Applies Braced (reduced incoming damage). Like every area ability it catches a line rather than a squad, so it is worth most to allies standing together.
-- **"Mind's Eye"** (costs 10 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: reveals the enemy Loadout for 3 turns.
-- **Cleansing Ward** (costs 16 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Regenerating (heals each turn). Applies Warded (+resistance).
-- **Frozen Tempo** (costs 18 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: extends the attacker cooldowns when they hit it.
-- **Illusory Double** (costs 0 Trion, 2-turn cooldown). A utility ability (no direct damage). Signature effect: a decoy that soaks a hit.
+- **"Guardian's Aegis"** (costs 12 Trion, 2-turn cooldown). A close-range area ward covering one of your lines, up to 3 allies (no direct damage). Applies Guarded (takes 25% less damage). Applies Braced (reduced incoming damage). Like every area ability it catches a line rather than a squad, so it is worth most to allies standing together.
+- **"Mind's Eye"** (costs 12 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: reveals the enemy Loadout for 3 turns.
+- **Cleansing Ward** (costs 16 Trion, 3-turn cooldown). A utility ability (no direct damage). Applies Regenerating (heals each turn). Applies Warded (+resistance).
+- **Frozen Tempo** (costs 16 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: extends the attacker cooldowns when they hit it.
+- **Illusory Double** (costs 0 Trion, 3-turn cooldown). A utility ability (no direct damage). Signature effect: a decoy that soaks a hit.
 - **Rally Cry** (costs 14 Trion, 2-turn cooldown). A utility ability (no direct damage). Applies Inspired (+2 attack and defense).
-- **Refuse to Bail** (costs 20 Trion, 3-turn cooldown). A self-targeted counter (no direct damage). Counter: the next drop to 0 Health does not happen. You stay on 1 Health, act one more time, and are then gone for good with no Trion Salvage. Stays armed until it fires. First-pass costs, awaiting the SPTV pass.
-- **Stored Retribution** (costs 16 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: banks damage taken to release later.
-- **War Chant** (costs 10 Trion, 1-turn cooldown). A close-range area buff covering one of your lines, up to 3 allies (no direct damage). Applies Empowered (deals +25% damage for 3 turns). Same reach rule as Guardian's Aegis: it catches a line, so a squad that stands together gets more out of it.
+- **Refuse to Bail** (costs 18 Trion, 2-turn cooldown). A self-targeted counter (no direct damage). Counter: the next drop to 0 Health does not happen. You stay on 1 Health, act one more time, and are then gone for good with no Trion Salvage. Stays armed until it fires. First-pass costs, awaiting the SPTV pass.
+- **Stored Retribution** (costs 14 Trion, 2-turn cooldown). A self-targeted setup or counter (no direct damage). Counter: banks damage taken to release later.
+- **War Chant** (costs 8 Trion, 1-turn cooldown). A close-range area buff covering one of your lines, up to 3 allies (no direct damage). Applies Empowered (deals +25% damage for 3 turns). Same reach rule as Guardian's Aegis: it catches a line, so a squad that stands together gets more out of it.
 
 
 ## Appendix B: The full character roster (20)
@@ -1660,7 +1714,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 | attackerGainPercentOfCapacity | 0.10 |
 
 The Salvage share is approved; the attacker's is a first-pass value, as are
-Refuse to Bail's 20 Trion cost, 20 equip cost and 3-turn cooldown.
+Refuse to Bail's 18 Trion cost, 16 equip cost and 2-turn cooldown.
 
 ### Full Arms Trigger
 | Setting | Value |
