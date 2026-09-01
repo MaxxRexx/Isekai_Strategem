@@ -97,7 +97,7 @@ void main() {
       engine
           .tickStatusEffects(target, causerTrionPools: {'causer': causerPool});
 
-      expect(causerPool.current, 25);
+      expect(causerPool.current, 12);
     });
 
     test('FAT roll integrates Team Spirit bonus into effective FAT Chance', () {

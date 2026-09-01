@@ -217,8 +217,8 @@ forms:
   raises the whole team's income.
 
 **Attacking the enemy's Trion is meant to be a real strategy**, and the status
-effects for it are written: Sapped drains a quarter of the target's Trion
-Capacity, Genjutsu Trapped drains 15% of it (and stops them acting), Silenced
+effects for it are written: Sapped drains 12% of the target's Trion
+Capacity per stack, Genjutsu Trapped drains 15% of it (and stops them acting), Silenced
 stops them using abilities at all, Overcharged halves your ability costs, and
 Choked doubles the target's costs.
 
@@ -1046,7 +1046,7 @@ bleed is not somebody hitting you with a blade.
 
 ### Trion and status economy
 
-- **Sapped:** loses 25% of Trion Capacity each turn for 3 turns, and the squad that applied it gains exactly what is taken. A drain moves Trion rather than making it, so an empty pool pays nothing.
+- **Sapped:** loses 12% of Trion Capacity each turn for 3 turns, stacking up to 3 times, and the squad that applied it gains exactly what is taken. A drain moves Trion rather than making it, so an empty pool pays nothing. One stack costs about one cheap ability; a full three costs a turn and a half of ordinary income, which is meant to be worth building a kit around without ending the battle on its own.
 - **Overcharged:** your abilities cost half Trion for 2 turns.
 - **Choked:** abilities cost double Trion for 2 turns.
 - **Suppressed:** 5 less Status Infliction for 2 turns (worse at applying
@@ -1688,7 +1688,7 @@ Each entry lists the cost in Trion, the cooldown in turns, and a plain descripti
 ### Trion, crit, and other
 | Setting | Value |
 |---|---|
-| sappedDrainPercentOfTrionCapacity | 0.25 |
+| sappedDrainPercentOfTrionCapacity | 0.12 |
 | genjutsuTrappedDrainPercentOfTrionCapacity | 0.15 |
 | adrenalineRushCriticalChanceBonus | 15 |
 | battleTranceFatChanceBonus | 20 |

@@ -154,7 +154,10 @@ void main() {
 
     test('a Trion drain says who gets it and when', () {
       final text = describeStatusEffect(catalog['sapped'], onSelf: false);
-      expect(text, contains('25%'));
+      // The share itself is item #4's to set, so read it off the catalogue
+      // rather than pinning a number this test is not about.
+      final drain = catalog['sapped'].trionCapacityDrainPercentToCauser!;
+      expect(text, contains('${(drain * 100).round()}%'));
       expect(text, contains('whoever applied this'));
     });
 

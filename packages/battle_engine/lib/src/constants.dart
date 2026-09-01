@@ -156,9 +156,10 @@ class FatConfig {
 /// Default durations/magnitudes for the built-in 50-entry status effect
 /// catalog (see `StatusEffectCatalog`), tuned against the baseline stat
 /// block in `Stats`/`testStats` (100 max Health, ~10 Attack/Defense, 5
-/// Armor, 100 Trion Capacity, Team Spirit centered on 50). Two values are
-/// given explicitly by the original design brief (Sickened's 4 random
-/// damage types, Sapped's 25% Trion Capacity drain); everything else is
+/// Armor, 100 Trion Capacity, Team Spirit centered on 50). One value is
+/// given explicitly by the original design brief (Sickened's 4 random damage
+/// types); Sapped's drain was a second until item #4 re-scaled it, see
+/// [sappedDrainPercentOfTrionCapacity]. Everything else is
 /// collected here as an explicit, tunable value rather than a silently
 /// hardcoded magic number - to rebalance, change values here (or
 /// construct an alternate config instance and inject it).
@@ -172,6 +173,19 @@ class StatusEffectMagnitudes {
   final int sickenedDurationTurns;
   final int sickenedVulnerableDamageTypeCount;
   final int sappedDurationTurns;
+
+  /// What one stack of Sapped moves from the victim's squad pool to the
+  /// causer's, each turn.
+  ///
+  /// The design brief said 25%. Item #4 measured that against the economy it
+  /// actually runs in and cut it to 12%, on the owner's call. Average Trion
+  /// Capacity across the roster is 108, so 25% took 27 Trion a turn per stack
+  /// against a measured squad income of about 25, and the three-stack cap took
+  /// 81: more than the enemy earned, every turn, handed to the causer. That is
+  /// a switch, not a sub-game. At 12% a stack costs the victim about 13, one
+  /// cheap action, and three stacks cost them a turn rather than the battle.
+  ///
+  /// SPTV prices this off the number, so the status re-prices itself.
   final double sappedDrainPercentOfTrionCapacity;
   final int reelingDurationTurns;
   final int proneDurationTurns;
@@ -280,7 +294,7 @@ class StatusEffectMagnitudes {
     this.sickenedDurationTurns = 3,
     this.sickenedVulnerableDamageTypeCount = 4,
     this.sappedDurationTurns = 3,
-    this.sappedDrainPercentOfTrionCapacity = 0.25,
+    this.sappedDrainPercentOfTrionCapacity = 0.12,
     this.reelingDurationTurns = 3,
     this.proneDurationTurns = 1,
     this.preparedDurationTurns = 3,

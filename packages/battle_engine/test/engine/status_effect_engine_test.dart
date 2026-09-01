@@ -219,7 +219,7 @@ void main() {
 
       expect(result.trionDrainEvents, hasLength(1));
       expect(result.trionDrainEvents.single.causerCharacterId, 'causer-1');
-      expect(result.trionDrainEvents.single.amount, 25); // 25% of 100
+      expect(result.trionDrainEvents.single.amount, 12); // 12% of 100
     });
 
     test('effects expire and are removed once remainingTurns reaches 0', () {
