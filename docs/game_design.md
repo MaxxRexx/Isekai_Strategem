@@ -238,12 +238,17 @@ There are **four Trion Types**, one per origin: **Physical**, **Energy**,
 coloured squares with a count, because what you are missing is as much of the
 decision as what you hold.
 
-At the start of each of your turns your squad earns a handful, **one per living
-member**, and the kind of each is **rolled evenly between the four**. Nothing
-tilts the roll toward what your squad happens to be built out of: the question
-the mechanic exists to ask is whether you drew the right kind, and a roll that
-mostly hands you your own origins never asks it. What you do not spend is
-**banked**, and the whole squad draws on one shared reserve.
+At the start of each of your turns your squad earns **one per living member**,
+so three a turn for a full squad, and the kind of each is **rolled evenly
+between the four**. Nothing tilts the roll toward what your squad happens to be
+built out of: the question the mechanic exists to ask is whether you drew the
+right kind, and a roll that mostly hands you your own origins never asks it.
+What you do not spend is **banked**, and the whole squad draws on one shared
+reserve.
+
+The **opening turn of the battle pays 1**, whoever moves first and however many
+of them are standing. Moving first is worth something, so it costs something,
+which is the same bargain the Raw Trion handicap already makes (see section 9).
 
 #### What an ability costs
 
@@ -270,7 +275,7 @@ and what lets a squad that commits to an origin actually run on it.
 
 #### When the roll goes against you
 
-Give up some of any kinds and take one of the kind you name. That is the
+Give up **three** of any kinds and take one of the kind you name. That is the
 **Exchange**, and it is the answer to a run of draws that keeps missing what
 your squad is built out of: a decision you make and pay for, rather than a
 rescue the dice hand you.
