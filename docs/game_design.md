@@ -228,38 +228,65 @@ Trapped, so they are written but unplayable. They are four of the 34 status
 effects in that position, which the content pass exists to fix. Until then, the
 Trion sub-game is Silenced and the income roll, and nothing else.*
 
-### Typed Trion: what kind, as well as how much
+### Trion Types: what kind, as well as how much
 
-The pool above answers **how much** your squad can do this turn. A second,
-smaller resource answers **what kind**.
+The pool above answers **how much** your squad can do this turn. A second
+resource answers **what kind**, and **every ability needs both**.
 
-At the start of each of your turns, **each living member of your squad earns one
-Trion token**. Its kind is rolled: usually one of the four **origins** (Physical,
-Energy, Afflict, Mental), and sometimes a **Wild**, which pays for any of them.
-The roll leans toward the origins your squad actually runs, so committing to an
-origin is rewarded rather than punished, though every origin stays possible.
-Tokens are **shared across the squad and banked**, so holding one back to afford
-next turn's big play is a real decision.
+There are **four Trion Types**, one per origin: **Physical**, **Energy**,
+**Afflict** and **Mental**. The interface shows all four at all times, as
+coloured squares with a count, because what you are missing is as much of the
+decision as what you hold.
 
-**Most turns you will not spend one.** An ordinary action costs only Trion from
-the pool, so a run of unhelpful tokens never stops you playing. Tokens buy the
-expensive plays:
+At the start of each of your turns your squad earns a handful, **one per living
+member**, and the kind of each is **rolled evenly between the four**. Nothing
+tilts the roll toward what your squad happens to be built out of: the question
+the mechanic exists to ask is whether you drew the right kind, and a roll that
+mostly hands you your own origins never asks it. What you do not spend is
+**banked**, and the whole squad draws on one shared reserve.
 
-- a **Black Trigger** ability, and
-- the **extra actions** a Full Arms Trigger turn unlocks.
+#### What an ability costs
 
-Either costs one token **matching that ability's own origin**, on top of its
-Trion cost. A Wild covers anything. If you cannot pay the token, the ability is
-unavailable, and the game says so by name rather than greying out silently.
+Every ability names a requirement of **one to four**, alongside its Raw Trion
+cost. A requirement can be:
 
-*Design note: this is the Naruto half of the game's DNA reaching the economy at
-last, and it is deliberately a layer over the pool rather than a replacement for
-it. The four origins were evened out first (they ran as lopsided as 23 against
-6), because a resource keyed to a tag only six abilities deep is dead weight for
-most squads. The Wild share and the lean toward your own origins are the two
-valves against the oldest complaint in this genre, which is being handed a
-resource you cannot spend. Every number here is first-pass and unpriced until
-the SPTV pass.*
+- one of a single kind, which most cheap abilities ask for;
+- several of one kind, so Mind Shatter wants three Mental;
+- **two different kinds**, which is where a requirement says something about
+  the ability: Acid Spray is a physical delivery that corrodes, so it wants one
+  Physical and two Afflict, and Dread Wave is raw energy working on the mind, so
+  it wants one Energy and two Mental;
+- any of the above with one or more **Random** slots.
+
+**Random is a cost, never something you hold.** A Random slot means "any one
+kind, your choice", so it is the flex that keeps a squad running one origin able
+to act. There is no fifth kind in your reserve and none in the roll, because a
+kind that paid for anything would simply be better than the other four, and the
+roll would become a good day or a bad day instead of a question about kinds.
+
+At least one slot of every requirement is the ability's **own origin**. That is
+what makes origin a live cost rather than a label you only read while drafting,
+and what lets a squad that commits to an origin actually run on it.
+
+#### When the roll goes against you
+
+Give up some of any kinds and take one of the kind you name. That is the
+**Exchange**, and it is the answer to a run of draws that keeps missing what
+your squad is built out of: a decision you make and pay for, rather than a
+rescue the dice hand you.
+
+If you cannot pay a requirement the ability is unavailable, and the game says
+which kinds it wanted and what you are short, rather than greying out silently.
+
+*Design note: this is the Naruto-Arena half of the game's DNA reaching the
+economy, and it is deliberately a layer over the pool rather than a replacement
+for it. The four origins were evened out first (they ran as lopsided as 23
+against 6), because a resource keyed to a tag only six abilities deep is dead
+weight for most squads. Requirements are set by ranking each ability against its
+own origin's peers rather than against the whole catalogue, so no origin is
+systematically cheaper to run than another; how strong an ability is, is priced
+in Raw Trion, and the types answer which kind you drew. Every number here is
+first-pass and unpriced until the SPTV pass.*
 
 ---
 
