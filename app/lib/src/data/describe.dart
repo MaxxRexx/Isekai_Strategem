@@ -124,14 +124,25 @@ String originLabel(OriginTag origin) => switch (origin) {
       OriginTag.mental => 'Mental',
     };
 
-/// The token's player-facing name, Wild included.
-String trionTokenLabel(TrionTokenType type) => switch (type) {
-      TrionTokenType.physical => 'Physical',
-      TrionTokenType.energy => 'Energy',
-      TrionTokenType.afflict => 'Afflict',
-      TrionTokenType.mental => 'Mental',
-      TrionTokenType.wild => 'Wild',
+/// A Trion Type's player-facing name.
+String trionTypeLabel(TrionType type) => switch (type) {
+      TrionType.physical => 'Physical',
+      TrionType.energy => 'Energy',
+      TrionType.afflict => 'Afflict',
+      TrionType.mental => 'Mental',
     };
+
+/// What an ability asks for in Trion Types, written out: "2 Physical, 1
+/// Random". Random is a slot any one kind may pay, never a kind you hold.
+String describeTrionTypeCost(TrionTypeCost cost) {
+  if (cost.isEmpty) return 'No Trion Types';
+  final parts = [
+    for (final t in TrionType.values)
+      if (cost[t] > 0) '${cost[t]} ${trionTypeLabel(t)}',
+    if (cost.random > 0) '${cost.random} Random',
+  ];
+  return parts.join(', ');
+}
 
 String describeStatusEffect(
   StatusEffectDefinition def, {
@@ -428,7 +439,9 @@ String describeActiveTrigger(
     }
   }
   parts.add(
-    'Costs ${t.trionCost} Trion. Usable again after ${t.cooldownTurns} '
+    'Costs ${t.trionCost} Raw Trion and '
+    '${describeTrionTypeCost(t.trionTypeCost)}. '
+    'Usable again after ${t.cooldownTurns} '
     'turn${t.cooldownTurns == 1 ? '' : 's'} '
     '(${t.cooldownTurns * 2} if you use two or more abilities in one Full '
     'Arms Trigger turn).',

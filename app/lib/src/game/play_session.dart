@@ -399,8 +399,8 @@ class PlaySession {
 
   /// Item #15: what typed Trion your squad is holding, kinds with none left
   /// dropped so the readout stays short.
-  Map<TrionTokenType, int> get teamATypedTrion => {
-        for (final e in battle.teamA.typedTrion.counts.entries)
+  Map<TrionType, int> get teamATrionTypes => {
+        for (final e in battle.teamA.trionTypes.counts.entries)
           if (e.value > 0) e.key: e.value,
       };
   int get teamBTrion => battle.teamB.trionPool.current;
@@ -731,15 +731,14 @@ class PlaySession {
             '${cooldown == 1 ? 'turn' : 'turns'}.';
       }
       if (state.isActionPrevented()) return 'This character cannot act.';
-      // Item #15: the big plays cost a typed Trion token as well as the pool,
-      // and "not available" tells the player nothing about a resource they can
-      // actually go and earn.
-      if (battle.turnEngine.requiresTypedTrion(state, trigger) &&
-          !battle.teamA.typedTrion.canPay(trigger.originTag)) {
-        return 'No ${originLabel(trigger.originTag)} Trion. An extra action on '
-            'a Full Arms Trigger turn, or a Black Trigger ability, also costs '
-            'one typed Trion matching the ability\'s origin. Your squad holds '
-            'none it can spend, and a Wild would pay for any.';
+      // Item #15: every ability asks for Trion Types as well as Raw Trion, and
+      // "not available" tells the player nothing about a resource they can
+      // watch arrive next turn.
+      if (!battle.teamA.trionTypes.canPay(trigger.trionTypeCost)) {
+        return 'Not enough Trion Types. This needs '
+            '${describeTrionTypeCost(trigger.trionTypeCost)}, and your squad '
+            'cannot cover it. You earn one of a random kind per living '
+            'squadmate each turn.';
       }
       return 'Not available right now.';
     }

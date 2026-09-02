@@ -98,6 +98,10 @@ class TestScenario {
   /// economy. Item #4 owns the real numbers; these are deliberately generous.
   final int startingTrion;
 
+  /// How many of each Trion Type both squads open a scenario holding, so the
+  /// case the scenario is about is always affordable (see [arrange]).
+  final int startingTypesPerKind;
+
   /// The AI driving the opposing squad. Held on the scenario rather than
   /// hardcoded in [start] because the battle screen shows the opponent's
   /// profile, so the two would otherwise be able to disagree.
@@ -131,6 +135,7 @@ class TestScenario {
     this.bailingOut = const {},
     this.destroyed = const {},
     this.startingTrion = 120,
+    this.startingTypesPerKind = 8,
     this.opponentProfileId = 'button_masher',
     this.retired = false,
   });
@@ -245,6 +250,17 @@ class TestScenario {
   void arrange(Battle battle) {
     battle.teamA.trionPool.gain(startingTrion);
     battle.teamB.trionPool.gain(startingTrion);
+
+    // A scenario exists so one case can be played immediately, and item #15
+    // made every ability ask for Trion Types as well as Raw Trion. Those
+    // arrive one per living squadmate on a random roll, so without this a
+    // scenario would sometimes open on a board where the ability it is about
+    // cannot be used at all. Stocked for both squads, like the Raw Trion
+    // above, since a scenario about a reaction needs the enemy able to act.
+    for (final type in TrionType.values) {
+      battle.teamA.trionTypes.gain(type, startingTypesPerKind);
+      battle.teamB.trionTypes.gain(type, startingTypesPerKind);
+    }
 
     positions.forEach((id, position) {
       _state(battle, id).position = position;

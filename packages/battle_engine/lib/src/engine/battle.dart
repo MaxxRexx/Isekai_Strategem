@@ -6,7 +6,7 @@ import '../models/status_effect.dart';
 import '../models/team.dart';
 import '../models/trigger.dart';
 import '../models/trion.dart';
-import '../models/trion_token.dart';
+import '../models/trion_type.dart';
 import '../models/unique_behavior.dart';
 import 'character_battle_state.dart';
 import 'status_effect_engine.dart';
@@ -24,13 +24,13 @@ class TeamTurnStartResult {
 
   /// Item #15: the typed Trion tokens this turn paid out, in order, so the
   /// log can say what the squad actually earned.
-  final List<TrionTokenType> typedTrionGain;
+  final List<TrionType> trionTypeGain;
 
   const TeamTurnStartResult({
     required this.trionGain,
     required this.statusTicks,
     required this.fatTriggered,
-    this.typedTrionGain = const [],
+    this.trionTypeGain = const [],
   });
 }
 
@@ -206,7 +206,7 @@ class Battle {
     // the pool map it needs to pay a squad for destroying a Bailing Out body.
     this.turnEngine.characterRegistry = this.states;
     this.turnEngine.teamTrionPools = _teamPoolsByCharacterId;
-    this.turnEngine.teamTypedTrion = _teamTypedTrionByCharacterId;
+    this.turnEngine.teamTrionTypes = _teamTrionTypesByCharacterId;
   }
 
   /// Each squad's states, in squad order, keyed by the squad's id.
@@ -309,9 +309,9 @@ class Battle {
   /// belong to - used to credit Trion-draining status effects (Sapped) to
   /// the causer's own team pool regardless of which team they're on.
   /// Item #15's typed reserve, keyed the same way as the Trion pools.
-  Map<String, TypedTrionReserve> get _teamTypedTrionByCharacterId => {
-        for (final s in statesOf(teamA)) s.combatantId: teamA.typedTrion,
-        for (final s in statesOf(teamB)) s.combatantId: teamB.typedTrion,
+  Map<String, TrionTypeReserve> get _teamTrionTypesByCharacterId => {
+        for (final s in statesOf(teamA)) s.combatantId: teamA.trionTypes,
+        for (final s in statesOf(teamB)) s.combatantId: teamB.trionTypes,
       };
 
   Map<String, TrionPool> get _teamPoolsByCharacterId => {
@@ -460,8 +460,8 @@ class Battle {
     // Item #15: typed Trion is earned alongside the pool, one token per living
     // member. It is not tiered and not affected by the first-turn handicap:
     // what the roll decides is the kind, not the amount.
-    final typedTrionGain = turnEngine.resolveTypedTrionGain(
-        team, statesOf(team), equippedActiveTriggers);
+    final trionTypeGain =
+        turnEngine.resolveTrionTypeGain(team, statesOf(team));
 
     final statusTicks = <String, StatusTickResult>{};
     final fatTriggered = <String, bool>{};
@@ -530,7 +530,7 @@ class Battle {
       trionGain: trionGain,
       statusTicks: statusTicks,
       fatTriggered: fatTriggered,
-      typedTrionGain: typedTrionGain,
+      trionTypeGain: trionTypeGain,
     );
   }
 

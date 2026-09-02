@@ -159,3 +159,15 @@ PassiveTrigger testPassiveTrigger({
     counterKind: counterKind,
   );
 }
+
+/// Fills [team]'s reserve with [amount] of every Trion Type.
+///
+/// For tests that are about something other than the type requirement: every
+/// ability asks for Trion Types now (item #15), and the roll that supplies
+/// them is random, so a test about targeting or positioning would otherwise
+/// intermittently measure the reserve instead.
+void stockEveryTrionType(Team team, [int amount = 20]) {
+  for (final type in TrionType.values) {
+    team.trionTypes.gain(type, amount);
+  }
+}

@@ -19,7 +19,7 @@ void main() {
     test('a character with no equipped active triggers takes no action', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
-      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
+      stockEveryTrionType(battle.teamA, 20);
 
       final results =
           const RuleBasedAi().takeTurn(battle, equippedActiveTriggers: {});
@@ -30,7 +30,7 @@ void main() {
     test('focuses the lowest-health legal opponent target', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
-      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
+      stockEveryTrionType(battle.teamA, 20);
       battle.states['b-1']!.currentHealth = 80;
       battle.states['b-2']!.currentHealth = 10; // lowest
       battle.states['b-3']!.currentHealth = 50;
@@ -62,7 +62,7 @@ void main() {
     test('prefers the highest-damage usable ability over a weaker one', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
-      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
+      stockEveryTrionType(battle.teamA, 20);
 
       final weak = testTrigger(
         id: 'weak',
@@ -94,7 +94,7 @@ void main() {
         'damage', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
-      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
+      stockEveryTrionType(battle.teamA, 20);
 
       final support = testTrigger(
         id: 'support',
@@ -131,7 +131,7 @@ void main() {
             TurnEngine(fatEngine: FatEngine(diceRoller: DiceRoller(Random(2)))),
       );
       battle.teamA.trionPool.gain(1000);
-      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
+      stockEveryTrionType(battle.teamA, 20);
 
       // Roll FAT so this character can use up to 3 abilities this turn.
       var fatTriggered = false;
@@ -174,7 +174,7 @@ void main() {
         ),
       );
       battle.teamA.trionPool.gain(1000);
-      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
+      stockEveryTrionType(battle.teamA, 20);
       // Make every opposing character one hit from death.
       for (final id in ['b-1', 'b-2', 'b-3']) {
         battle.states[id]!.currentHealth = 1;
@@ -210,7 +210,7 @@ void main() {
         'ability', () {
       final battle = Battle(teamA: _team('a'), teamB: _team('b'));
       battle.teamA.trionPool.gain(1000);
-      battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
+      stockEveryTrionType(battle.teamA, 20);
       battle.states['a-2']!.currentHealth = 20; // lowest ally health
       battle.states['a-3']!.currentHealth = 90;
 

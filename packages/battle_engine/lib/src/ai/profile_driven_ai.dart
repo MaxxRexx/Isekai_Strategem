@@ -63,6 +63,17 @@ class ProfileDrivenAi {
     final config = profile.skillConfig;
     final results = <AiActionResult>[];
 
+    // Item #15: a squad holding nothing it can pay for spends the Exchange
+    // rather than standing there. This is the only thing standing between a
+    // run of unhelpful draws and a wasted turn, so the AI takes it for the
+    // same reason a player would.
+    final wanted = engine.bestExchangeFor(
+      battle.activeTeam,
+      battle.statesOf(battle.activeTeam),
+      equippedActiveTriggers,
+    );
+    if (wanted != null) engine.exchangeTrionTypes(battle.activeTeam, wanted);
+
     for (final state in battle.statesOf(battle.activeTeam)) {
       if (!state.isAlive) continue;
 

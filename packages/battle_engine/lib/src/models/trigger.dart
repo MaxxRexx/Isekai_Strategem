@@ -2,6 +2,7 @@ import 'damage_type.dart';
 import 'passive_counter.dart';
 import 'passive_effect.dart';
 import 'reactive_effect.dart';
+import 'trion_type.dart';
 import 'unique_behavior.dart';
 import '../util/dice.dart';
 
@@ -185,6 +186,14 @@ class ActiveTrigger extends Trigger {
   /// Only meaningful when [abilitySubtype] is [AbilitySubtype.unique].
   final UniqueBehavior? uniqueBehavior;
 
+  /// What this ability asks for in Trion Types, on top of [trionCost].
+  ///
+  /// Every ability has one. The Raw Trion cost answers how much the squad can
+  /// afford this turn; this answers whether they drew the right kind. At least
+  /// one slot is always the ability's own [originTag], so committing a squad
+  /// to an origin is something the economy actually rewards.
+  final TrionTypeCost trionTypeCost;
+
   ActiveTrigger({
     required super.id,
     required super.name,
@@ -207,7 +216,9 @@ class ActiveTrigger extends Trigger {
     this.armsReactive,
     this.armsReactiveDefaultTurns,
     this.uniqueBehavior,
-  }) : assert(
+    TrionTypeCost? trionTypeCost,
+  })  : trionTypeCost = trionTypeCost ?? TrionTypeCost.one(TrionType.of(originTag)),
+        assert(
           abilityType.validSubtypes.contains(abilitySubtype),
           '$abilitySubtype is not a valid subtype for $abilityType',
         );

@@ -28,6 +28,7 @@ void main() {
     // Trion tier roll.
     session.battle.teamA.trionPool.gain(500);
     spreadForFullRangeCoverage(session);
+    stockEveryTrionType(session);
     return session;
   }
 
@@ -79,11 +80,13 @@ void main() {
     const charId = 'vela_ashworth';
     // Force FAT so the per-turn limit becomes 3.
     session.forceFat(charId);
-    // Item #15: the second and third actions each cost a typed Trion token as
-    // well. The squad's opening tokens are rolled, so without stocking the
-    // reserve this test intermittently measured the token gate rather than
-    // the per-turn limit it is about. Wilds pay for any origin.
-    session.battle.teamA.typedTrion.gain(TrionTokenType.wild, 20);
+    // Item #15: every ability asks for Trion Types too, and the squad's are
+    // rolled, so without stocking the reserve this test intermittently
+    // measured the type requirement rather than the per-turn limit it is
+    // about. Stock every kind.
+    for (final type in TrionType.values) {
+      session.battle.teamA.trionTypes.gain(type, 20);
+    }
 
     var succeeded = 0;
     QueueOutcome? overflow;

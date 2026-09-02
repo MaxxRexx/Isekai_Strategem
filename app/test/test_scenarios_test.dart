@@ -345,6 +345,18 @@ void main() {
         // failure; sixty attempts without one is the failure.
         final froze = actions[1].reactions.where((r) => r.became == 'Frozen');
         if (froze.isEmpty) continue;
+        // Frost Lance's own Chilled is a contested application like any
+        // other, so it can miss on the same hit whose reaction froze the
+        // target. A run where it missed is another attempt, not a failure:
+        // what this test is about is the sentence the log writes when both
+        // halves happen, so both halves have to have happened.
+        if (!actions[1]
+            .targets
+            .first
+            .statusEffectsApplied
+            .any((n) => n.startsWith('Chilled '))) {
+          continue;
+        }
         final shatter =
             actions[2].reactions.where((r) => r.reactingName == 'Frozen');
         if (shatter.isEmpty) continue;

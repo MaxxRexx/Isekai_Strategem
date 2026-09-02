@@ -21,6 +21,7 @@ import '../game/tutorial.dart';
 import '../game/xp_ledger.dart';
 import '../ui/notched.dart';
 import '../ui/palette.dart';
+import '../widgets/trion_type_pips.dart';
 import 'test_lab_screen.dart' show ScenarioBriefBody;
 import '../ui/rank.dart';
 import '../widgets/ability_slot.dart';
@@ -1463,7 +1464,7 @@ class _PlayFlowScreenState extends State<PlayFlowScreen> {
           isOver: session.isOver,
           roundNumber: session.roundNumber,
           teamATrion: session.teamATrion,
-          teamATypedTrion: session.teamATypedTrion,
+          teamATrionTypes: session.teamATrionTypes,
           opponentName: opponentProfile.name,
           opponentSkillLabel: skillClassLabel[opponentProfile.skillClass]!,
           onPlayerTap: _resolving ? null : _showAccountInfo,
@@ -2748,7 +2749,7 @@ class _BattleTopBar extends StatelessWidget {
   final bool isOver;
   final int roundNumber;
   final int teamATrion;
-  final Map<TrionTokenType, int> teamATypedTrion;
+  final Map<TrionType, int> teamATrionTypes;
   final String opponentName;
   final String opponentSkillLabel;
 
@@ -2761,7 +2762,7 @@ class _BattleTopBar extends StatelessWidget {
     required this.isOver,
     required this.roundNumber,
     required this.teamATrion,
-    required this.teamATypedTrion,
+    required this.teamATrionTypes,
     required this.opponentName,
     required this.opponentSkillLabel,
     this.onPlayerTap,
@@ -2889,22 +2890,30 @@ class _BattleTopBar extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '⟡ Trion Available: $teamATrion',
+                        '⟡ Raw Trion Reserves: $teamATrion',
                         style: const TextStyle(
                           color: Palette.gold,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (teamATypedTrion.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '◇ Typed: ${teamATypedTrion.entries.map((e) => '${trionTokenLabel(e.key)} ${e.value}').join('  ')}',
-                          style: const TextStyle(
-                            color: Palette.gold,
-                            fontSize: 11,
+                      const SizedBox(height: 4),
+                      // All four kinds, always, whether the squad holds any or
+                      // not: what you are missing is as much of the decision
+                      // as what you hold.
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Trion Types:',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          TrionTypeReserveRow(counts: teamATrionTypes),
+                        ],
+                      ),
                     ],
                   ),
                 ),

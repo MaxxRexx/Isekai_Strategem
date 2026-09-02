@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/draft.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
 
+import 'support/battle_positions.dart';
+
 /// #1 (range bands), queue side: the player plans against the position they
 /// will be standing in once the queue resolves, not the one they are standing
 /// in now. Repositions resolve first (the arm phase), so move-then-strike
@@ -43,6 +45,7 @@ void main() {
     for (final c in s.battle.teamB.characters) {
       s.battle.stateById(c.id).position = BattlePosition.middle;
     }
+    stockEveryTrionType(s);
     return s;
   }
 

@@ -221,6 +221,7 @@ void main() {
       final state = battle.states['a-1']!;
       final trigger = testTrigger(trionCost: 5, cooldownTurns: 2);
       battle.teamA.trionPool.gain(50);
+      stockEveryTrionType(battle.teamA);
 
       battle.turnEngine.useAbility(state, trigger, battle.activeTeamPool);
       battle.endTurn();

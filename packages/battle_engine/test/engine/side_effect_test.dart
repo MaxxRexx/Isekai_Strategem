@@ -712,6 +712,7 @@ void main() {
 
       final trigger = testTrigger(category: TriggerCategory.attacker);
       final pool = TrionPool(current: 1000);
+      stockEveryTrionType(battle.teamA);
       battle.turnEngine.useAbility(state, trigger, pool);
 
       expect(state.effectiveStats().attack, 12);

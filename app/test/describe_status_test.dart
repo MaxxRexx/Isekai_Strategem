@@ -91,7 +91,7 @@ void main() {
           reason: 'when the bonus actually pays, on an ordinary turn');
       expect(text, isNot(contains('Full Arms Trigger turn an attack')),
           reason: 'no ability should read as needing FAT to be useful');
-      expect(text, contains('Costs 8 Trion'));
+      expect(text, contains('Costs 8 Raw Trion and 1 Energy'));
     });
 
     test('an enemy-targeted status is described against them, not you', () {

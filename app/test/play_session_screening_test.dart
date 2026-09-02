@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/draft.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
 
+import 'support/battle_positions.dart';
+
 /// Item 1b, queue side: what screening does to a turn the player has already
 /// committed.
 ///
@@ -45,6 +47,7 @@ void main() {
       ),
     );
     s.battle.teamA.trionPool.gain(500);
+    stockEveryTrionType(s);
     return s;
   }
 

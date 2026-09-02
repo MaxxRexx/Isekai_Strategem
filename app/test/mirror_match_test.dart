@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:isekai_strategem/src/game/draft.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
 
+import 'support/battle_positions.dart';
+
 /// Item #14: both squads may field the same character.
 ///
 /// The #2 playtest found what happened before this: drafting one Ilona Vance
@@ -28,13 +30,19 @@ void main() {
   /// case that used to collapse hardest.
   const squad = ['ilona_vance', 'marren_osei', 'bastian_cole'];
 
-  PlaySession mirrorSession() => PlaySession.start(
+  PlaySession startMirror() => PlaySession.start(
         playerCharacterIds: squad,
         playerLoadouts: {for (final id in squad) id: kit(id)},
         opponentCharacterIds: squad,
         opponentProfileId: 'the_tactician',
         firstTurn: 'teamA',
       );
+
+  PlaySession mirrorSession() {
+    final session = startMirror();
+    stockEveryTrionType(session);
+    return session;
+  }
 
   group('a true mirror is six combatants, not three', () {
     test('the battle starts at all', () {

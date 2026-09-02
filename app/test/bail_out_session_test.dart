@@ -6,6 +6,8 @@ import 'package:isekai_strategem/src/data/describe.dart';
 import 'package:isekai_strategem/src/game/draft.dart';
 import 'package:isekai_strategem/src/game/play_session.dart';
 
+import 'support/battle_positions.dart';
+
 /// Item #2, the session side: what a Bailing Out body does to the interface.
 ///
 /// The engine rules have their own tests. These are the four things a player
@@ -44,6 +46,7 @@ void main() {
     for (final c in [...s.battle.teamA.characters, ...s.battle.teamB.characters]) {
       s.battle.stateById(c.id).position = BattlePosition.front;
     }
+    stockEveryTrionType(s);
     return s;
   }
 

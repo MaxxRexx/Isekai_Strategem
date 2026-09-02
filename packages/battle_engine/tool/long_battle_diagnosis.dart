@@ -55,6 +55,7 @@ class BattleTrace {
   int repositionTurns = 0;
   int idleCooldown = 0;
   int idleNoTrion = 0;
+  int idleNoTypes = 0;
   int idleNoReach = 0;
   int idlePassed = 0;
 
@@ -88,7 +89,8 @@ class BattleTrace {
   /// other's mean Defense, averaged. Negative means the defenders are ahead.
   double accuracyGap = 0;
 
-  int get idleTurns => idleCooldown + idleNoTrion + idleNoReach + idlePassed;
+  int get idleTurns =>
+      idleCooldown + idleNoTypes + idleNoTrion + idleNoReach + idlePassed;
   double get attackRollsPerTurn => turns == 0 ? 0 : attackRolls / turns;
   double get damagePerRound => rounds == 0 ? 0 : damage / rounds;
   double get healingPerRound => rounds == 0 ? 0 : healing / rounds;
@@ -262,21 +264,36 @@ BattleTrace playOne(
       trace.repositionTurns++;
     } else {
       // Nothing happened. Say what was missing, using the pool as it stood
-      // when the AI had to choose. Cooldown and Trion are asked separately:
-      // "nothing affordable" reads as poverty when the real answer is often
-      // that every ability the squad owns is still cooling down.
+      // when the AI had to choose. Each gate is asked separately: "nothing
+      // affordable" reads as poverty when the real answer is often that every
+      // ability the squad owns is still cooling down, or that the squad has
+      // Raw Trion to spare and not one of the right Trion Types.
+      //
+      // The Trion Type question has to be asked on its own rather than
+      // through `canUseAbility`, which now answers false for it too: routed
+      // through there it would be silently counted as a cooldown and the
+      // report would blame the wrong thing.
       var anyOffCooldown = false;
+      var anyTypesAffordable = false;
       var anyAffordable = false;
       for (final s in activeStates.where((s) => s.isAlive)) {
         for (final t in active.equipped[s.character.id] ?? const []) {
-          if (!battle.turnEngine.canUseAbility(s, t)) continue;
+          final types = battle.turnEngine.teamTrionTypes[s.combatantId];
+          final typesOk = types == null || types.canPay(t.trionTypeCost);
+          if (!battle.turnEngine.canUseAbilityIgnoringTrionTypes(s, t)) {
+            continue;
+          }
           anyOffCooldown = true;
+          if (!typesOk) continue;
+          anyTypesAffordable = true;
           final cost = (t.trionCost * s.trionCostMultiplier()).round();
           if (cost <= poolAtDecision) anyAffordable = true;
         }
       }
       if (!anyOffCooldown) {
         trace.idleCooldown++;
+      } else if (!anyTypesAffordable) {
+        trace.idleNoTypes++;
       } else if (!anyAffordable) {
         trace.idleNoTrion++;
       } else if (!reachable) {
@@ -372,7 +389,8 @@ void reportIdleBreakdown(List<BattleTrace> traces) {
   print('== Why an idle turn was idle ==');
   print('');
   print('${pad('Bucket', 14)}${padLeft('turns', 7)}  ${padLeft('idle', 6)}  '
-      '${padLeft('cooldown', 9)}  ${padLeft('no Trion', 9)}  '
+      '${padLeft('cooldown', 9)}  ${padLeft('no types', 9)}  '
+      '${padLeft('no Trion', 9)}  '
       '${padLeft('no reach', 9)}  ${padLeft('passed', 7)}  '
       '${padLeft('unreachable', 12)}');
   for (final bucket in bucketOrder) {
@@ -383,6 +401,7 @@ void reportIdleBreakdown(List<BattleTrace> traces) {
     print('${pad(bucket, 14)}${padLeft('$turns', 7)}  '
         '${padLeft('${sum((t) => t.idleTurns)}', 6)}  '
         '${padLeft('${sum((t) => t.idleCooldown)}', 9)}  '
+        '${padLeft('${sum((t) => t.idleNoTypes)}', 9)}  '
         '${padLeft('${sum((t) => t.idleNoTrion)}', 9)}  '
         '${padLeft('${sum((t) => t.idleNoReach)}', 9)}  '
         '${padLeft('${sum((t) => t.idlePassed)}', 7)}  '
@@ -548,7 +567,8 @@ void reportLongest(List<BattleTrace> traces, {int count = 12}) {
     print('    turns ${t.turns}: acted ${t.actedTurns}, '
         'repositioned ${t.repositionTurns}, '
         'idle ${t.idleTurns} '
-        '(cooldown ${t.idleCooldown}, no Trion ${t.idleNoTrion}, '
+        '(cooldown ${t.idleCooldown}, no types ${t.idleNoTypes}, '
+        'no Trion ${t.idleNoTrion}, '
         'no reach ${t.idleNoReach}, passed ${t.idlePassed})');
     print('    Trion: income ${t.trionIncome}, spent ${t.trionSpent}, '
         'mean pool at decision ${t.meanPool.toStringAsFixed(1)}; '

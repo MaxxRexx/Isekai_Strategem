@@ -27,3 +27,15 @@ void spreadForFullRangeCoverage(PlaySession session) {
     teamB[i].position = spread[i % spread.length];
   }
 }
+
+/// Fills the player squad's reserve with [amount] of every Trion Type.
+///
+/// Every ability asks for Trion Types now (item #15), and the roll that
+/// supplies them is random, so a test about anything else would otherwise
+/// intermittently measure the reserve instead of what it is about.
+void stockEveryTrionType(PlaySession session, [int amount = 20]) {
+  for (final type in TrionType.values) {
+    session.battle.teamA.trionTypes.gain(type, amount);
+    session.battle.teamB.trionTypes.gain(type, amount);
+  }
+}

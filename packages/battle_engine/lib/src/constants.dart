@@ -82,26 +82,20 @@ class TrionTierConfig {
   static const TrionTierConfig defaults = TrionTierConfig();
 }
 
-/// Config for item #15's typed Trion.
-class TypedTrionConfig {
-  /// Chance a token comes up Wild rather than an origin. The pressure valve
-  /// for a squad whose origins the roll keeps missing.
-  final double wildChance;
+/// Config for item #15's Trion Types.
+class TrionTypeConfig {
+  /// How many of any kinds the Exchange takes for one of the kind you name.
+  ///
+  /// Naruto-Arena's rate, and the reason there is no fifth kind you can hold:
+  /// a run of draws that misses what your squad is built out of is answered by
+  /// a decision you make rather than one the dice make for you. At one per
+  /// living member per turn, 5 is close to two turns of a full squad's income,
+  /// so it is a real price. **An unpriced first-pass value.**
+  final int exchangeRate;
 
-  /// Added to every origin's weight before the roll, so a squad that runs one
-  /// origin heavily can still draw the others. Without it a mono-origin squad
-  /// would never see a token it could not use, which sounds kind and removes
-  /// the decision the mechanic exists to create.
-  final double uniformFloor;
+  const TrionTypeConfig({this.exchangeRate = 3});
 
-  /// First-pass values, chosen to keep a token roughly as scarce as the big
-  /// plays that spend one. Unpriced until item #3's wave 4 pass.
-  const TypedTrionConfig({
-    this.wildChance = 0.20,
-    this.uniformFloor = 1.0,
-  });
-
-  static const TypedTrionConfig defaults = TypedTrionConfig();
+  static const TrionTypeConfig defaults = TrionTypeConfig();
 }
 
 /// Config for item #4's round limit.

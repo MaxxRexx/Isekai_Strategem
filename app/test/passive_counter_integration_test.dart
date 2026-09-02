@@ -33,6 +33,7 @@ void main() {
     );
     s.battle.teamA.trionPool.gain(500);
     spreadForFullRangeCoverage(s);
+    stockEveryTrionType(s);
     return s;
   }
 

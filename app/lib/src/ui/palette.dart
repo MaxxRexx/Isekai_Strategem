@@ -21,6 +21,22 @@ abstract final class Palette {
 
   static const hairline = Color(0x1AE9EBF1);
 
+  /// The four Trion Types, shown as coloured squares (item #15), each pushed
+  /// off the meaning the interface already gives its nearest neighbour:
+  /// Energy is a truer blue than the team teal, Afflict is yellower than the
+  /// health bar's mint, and Mental is carried toward magenta so it separates
+  /// from a bending shot's periwinkle.
+  static const Map<TrionType, Color> trionType = {
+    TrionType.physical: Color(0xFFE0533F),
+    TrionType.energy: Color(0xFF3D7DF5),
+    TrionType.afflict: Color(0xFF8FBF3F),
+    TrionType.mental: Color(0xFFB061D9),
+  };
+
+  /// A Random slot on an ability's cost: any one kind, the player's choice.
+  /// Never a kind you hold, so it is drawn neutral rather than coloured.
+  static const trionRandom = Color(0xFF6B7685);
+
   /// Per-type portrait gradient pairs (top-left, bottom-right), matching
   /// the approved battle-screen mockup's tile colors.
   static const Map<CharacterType, (Color, Color)> tileGradient = {
