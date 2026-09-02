@@ -501,35 +501,21 @@ class PlaySession {
   /// already queued is counted. The engine only records uses at resolution,
   /// so the queue has to do this accounting itself.
   ///
-  /// Item #4's FAT cap is enforced here too, for the same reason: the squad
-  /// gets one extra action per turn however many of them rolled Full Arms
-  /// Trigger, and by the time the engine could see a second action the whole
-  /// turn is already committed.
+  /// Item #4's cap needs nothing here: it is applied when Full Arms Trigger
+  /// is rolled, so at most one character in the squad ever has more than one
+  /// use to begin with.
   bool _hasUsesLeft(CharacterBattleState state) {
     final maxUses = battle.turnEngine.fatEngine.maxAbilitiesThisTurn(state);
-    final projected =
-        state.abilitiesUsedThisTurnCount + queuedCountFor(state.combatantId);
-    if (projected >= maxUses) return false;
-    final normal = battle.turnEngine.fatConfig.normalAbilitiesPerTurn;
-    if (projected < normal) return true;
-    // The next action would be an extra one, so it needs the squad's single
-    // claim to be free or already this character's.
-    final claimant = projectedExtraActionClaimant;
-    return claimant == null || claimant == state.combatantId;
+    return state.abilitiesUsedThisTurnCount +
+            queuedCountFor(state.combatantId) <
+        maxUses;
   }
 
-  /// The player character who holds this turn's one extra action, counting
-  /// the queue as though it had already resolved, or null while it is still
-  /// unclaimed.
-  ///
-  /// Derived rather than stored, which is what makes [unqueue] release it:
-  /// drop the second action and the claim goes with it.
-  String? get projectedExtraActionClaimant {
-    final normal = battle.turnEngine.fatConfig.normalAbilitiesPerTurn;
+  /// The player character who has Full Arms Trigger this turn, or null when
+  /// nobody rolled it. At most one, since item #4.
+  String? get fatHolder {
     for (final state in battle.statesOf(battle.teamA)) {
-      final projected =
-          state.abilitiesUsedThisTurnCount + queuedCountFor(state.combatantId);
-      if (projected > normal) return state.combatantId;
+      if (state.fatTriggeredThisTurn) return state.combatantId;
     }
     return null;
   }
@@ -777,18 +763,6 @@ class PlaySession {
           'squad has ${battle.teamA.trionPool.current}.';
     }
     if (!_hasUsesLeft(state)) {
-      // Item #4's cap, which is the one case where the character personally
-      // has a use left and still cannot take it. Name who took it, because
-      // the fix is to un-queue their second action rather than anything this
-      // character can do.
-      final claimant = projectedExtraActionClaimant;
-      if (claimant != null && claimant != state.combatantId) {
-        final holder =
-            battle.stateByIdOrNull(claimant)?.character.name ?? 'a squadmate';
-        return 'Your squad\'s one extra action this turn already belongs to '
-            '$holder. A Full Arms Trigger turn allows one second action '
-            'across the whole squad, however many of you rolled it.';
-      }
       // The case a stepping character hits constantly: the move spent the
       // turn's only action. Say which of the two problems it is, because the
       // fixes are opposite (un-queue the move, or wait for a FAT turn).

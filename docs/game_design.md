@@ -641,18 +641,21 @@ Normally a character uses **one ability per turn**. **Full Arms Trigger**, or
 - Each turn, a character has a chance (equal to its FAT Chance stat, boosted by a
   high Team Spirit) to **trigger FAT**.
 - On a FAT turn, that character may use **up to 3 abilities** instead of 1.
-- **Only one character per squad may cash in per turn.** FAT still rolls for
-  each of them, and every character who rolls it gets their cooldowns cleared;
-  what is capped is the extra *actions*. The squad claims the extra when one of
-  them takes a second action, and every other character's FAT switches off for
-  that turn. In Play mode the claim follows the queue, so un-queueing that
-  second action hands it straight back.
+- **Only one character per squad gets it per turn.** Every living member still
+  rolls, and several of them may come up; **one of those is then drawn at
+  random**, and is the only one who has FAT that turn. That character gets all
+  of it: up to 3 abilities, cooldowns cleared, and the lockout and penalty
+  below. Everyone else has an ordinary turn, keeps their cooldowns, and is not
+  locked out, because as far as they are concerned it never triggered.
+- A **Reposition counts as one of the 3**, since a move spends an ability use
+  like anything else. So a FAT turn is what lets one character step and still
+  strike.
 - Going greedy has a price. If you use 2 or more abilities on the FAT turn, you
   pay a penalty: that character's cooldowns are **doubled** and its Trion Affinity
   is **halved**, and FAT then **locks out for 3 turns** before it can happen
   again.
 
-FAT is your coordinated-nuke button, deliberately taxed so that spamming it hurts.
+FAT is the turn one of your characters gets to go big, deliberately taxed so that reaching for it every time hurts.
 It also interacts with counters: the Draegor counter specifically punishes an
 enemy who chains 2 or more abilities on a FAT turn.
 

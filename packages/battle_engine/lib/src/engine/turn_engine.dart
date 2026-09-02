@@ -912,33 +912,57 @@ class TurnEngine {
 
   /// Rolls whether Full Arms Trigger activates for [state] this turn,
   /// using its effective FAT Chance (base stat + Team Spirit bonus).
+  ///
+  /// Grants it on the spot. A whole squad's turn goes through
+  /// [rollSquadFatTrigger] instead, because only one of them may have it.
   bool rollFatTrigger(CharacterBattleState state) {
     final stats = state.effectiveStats(fatConfig: fatConfig);
     final bonus = teamSpiritCurve.bonusesFor(stats.teamSpirit).fatChanceBonus;
     return fatEngine.rollTrigger(state, stats.fatChance + bonus);
   }
 
-  /// Item #4's FAT cap: the combatant who has taken this squad's one extra
-  /// action this turn, or null while it is still unclaimed.
+  /// Item #4's Full Arms Trigger cap: **one character per squad** may have
+  /// FAT on a turn.
   ///
-  /// Only the active squad acts in a turn, so one field covers both sides.
-  /// Cleared by `Battle.startTurn`.
-  String? fatExtraClaimant;
+  /// Every living member still rolls, and several may come up; one of those
+  /// winners is then drawn at random and is the only one who gets it. That
+  /// character gets all of FAT, unchanged: up to
+  /// [FatConfig.maxAbilitiesOnFatTrigger] abilities (a Reposition among them,
+  /// since a move spends an ability use), every cooldown cleared, and the
+  /// lockout and the greed penalty that go with it. Everyone else has an
+  /// ordinary turn, keeps their cooldowns, and is not locked out, because
+  /// they never triggered it.
+  ///
+  /// Returns who ended up with it, keyed by combatant id, which is what the
+  /// battle log reports.
+  Map<String, bool> rollSquadFatTrigger(List<CharacterBattleState> squad) {
+    final rolled = <CharacterBattleState>[];
+    final outcome = <String, bool>{};
+    for (final state in squad) {
+      outcome[state.combatantId] = false;
+      final stats = state.effectiveStats(fatConfig: fatConfig);
+      final bonus = teamSpiritCurve.bonusesFor(stats.teamSpirit).fatChanceBonus;
+      if (fatEngine.rollsTrigger(state, stats.fatChance + bonus)) {
+        rolled.add(state);
+      }
+    }
+    final winner = fatEngine.drawWinner(rolled);
+    if (winner != null) {
+      fatEngine.grantTrigger(winner);
+      outcome[winner.combatantId] = true;
+    }
+    return outcome;
+  }
 
   /// Whether using [trigger] now would be an *extra* action: one beyond the
   /// single action an ordinary turn allows, which only a Full Arms Trigger
   /// turn makes possible at all.
+  ///
+  /// Since item #4 caps FAT to one character per squad per turn (see
+  /// [rollSquadFatTrigger]), the extra actions are capped with it: nobody
+  /// else has FAT to spend.
   bool isExtraAction(CharacterBattleState state) =>
       state.abilitiesUsedThisTurnCount >= fatConfig.normalAbilitiesPerTurn;
-
-  /// Item #4: whether [state] may take an extra action, given that the squad
-  /// gets only one per turn however many of them rolled FAT.
-  ///
-  /// The cooldown wipe still lands for everyone who rolled. It is only the
-  /// extra *actions* that are capped, so a squad cannot turn one lucky turn
-  /// into three characters acting twice.
-  bool canClaimExtraAction(CharacterBattleState state) =>
-      fatExtraClaimant == null || fatExtraClaimant == state.combatantId;
 
   /// Item #15's signature gate: which abilities cost a typed token on top of
   /// their Trion cost.
@@ -994,8 +1018,6 @@ class TurnEngine {
         return false;
       }
     }
-    // Item #4: one extra action per squad per turn, whoever rolled FAT.
-    if (isExtraAction(state) && !canClaimExtraAction(state)) return false;
     // Item #15: the big plays also cost a typed token.
     final reserve = _reserveFor(state);
     if (reserve != null &&
@@ -1019,11 +1041,8 @@ class TurnEngine {
     final reserve = _reserveFor(state);
     final needsToken = reserve != null && requiresTypedTrion(state, trigger);
     if (needsToken && !reserve.canPay(trigger.originTag)) return false;
-    final extra = isExtraAction(state);
-    if (extra && !canClaimExtraAction(state)) return false;
     if (!teamPool.trySpend(cost)) return false;
     if (needsToken) reserve.spend(trigger.originTag);
-    if (extra) fatExtraClaimant = state.combatantId;
     state.recordAbilityUse(trigger);
     return true;
   }

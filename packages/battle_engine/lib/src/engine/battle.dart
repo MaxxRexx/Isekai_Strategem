@@ -451,8 +451,6 @@ class Battle {
     // Combos never span turns under alternating resolution: start each turn
     // with an empty combo ledger.
     turnEngine.comboLedger.clearTurn();
-    // Item #4: this squad's one extra action is unclaimed again.
-    turnEngine.fatExtraClaimant = null;
     // Draegor's 2-tier TEG boost decays once per turn.
     turnEngine.tickTegBoost();
     final isFirstTurnOfBattle = !_firstTurnHandicapApplied;
@@ -467,6 +465,7 @@ class Battle {
 
     final statusTicks = <String, StatusTickResult>{};
     final fatTriggered = <String, bool>{};
+    final fatEligible = <CharacterBattleState>[];
     final causerPools = _teamPoolsByCharacterId;
 
     for (final state in statesOf(team)) {
@@ -481,8 +480,13 @@ class Battle {
         turnEngine.statusEffectEngine.refreshAbilityLocks(state, equipped);
       }
 
-      fatTriggered[state.combatantId] = turnEngine.rollFatTrigger(state);
+      fatEligible.add(state);
     }
+
+    // Item #4: everyone rolls, one of the winners is drawn, and only that
+    // character gets Full Arms Trigger this turn. Rolled after the status
+    // ticks above, because a tick can drop a character out of the turn.
+    fatTriggered.addAll(turnEngine.rollSquadFatTrigger(fatEligible));
 
     // Phase B4: start-of-turn passive counter hooks.
     turnEngine.tickStartOfTurnPassiveCounters(
