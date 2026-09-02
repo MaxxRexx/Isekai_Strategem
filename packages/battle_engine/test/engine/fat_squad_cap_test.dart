@@ -148,6 +148,34 @@ void main() {
     expect(states[2].fatTriggeredThisTurn, isFalse);
   });
 
+  test('next turn it is up for grabs again, on the same rules as ever', () {
+    // The whole change is "one per turn instead of two or three". Nothing
+    // carries across turns beyond the per-character lockout FAT always had,
+    // so a character who lost the draw is a candidate again immediately.
+    final battle = battleWith(_AlwaysTriggers([0]));
+    final states = battle.statesOf(battle.teamA);
+
+    battle.startTurn();
+    final firstHolder = states.firstWhere((s) => s.fatTriggeredThisTurn);
+    final losers = states.where((s) => !s.fatTriggeredThisTurn).toList();
+    for (final loser in losers) {
+      expect(loser.canTriggerFat, isTrue,
+          reason: 'losing the draw must not cost them anything');
+    }
+    battle.endTurn(); // team A ends
+    battle.startTurn(); // team B
+    battle.endTurn();
+
+    battle.startTurn(); // team A again
+    final secondHolder = states.firstWhere((s) => s.fatTriggeredThisTurn);
+
+    expect(states.where((s) => s.fatTriggeredThisTurn), hasLength(1),
+        reason: 'still exactly one, turn after turn');
+    expect(secondHolder.combatantId, isNot(firstHolder.combatantId),
+        reason: 'the one who took it is locked out, as FAT always locked out, '
+            'so it goes to somebody who qualified this turn');
+  });
+
   test('nobody rolling it means nobody gets it', () {
     final battle = Battle(
       turnEngine: TurnEngine(
