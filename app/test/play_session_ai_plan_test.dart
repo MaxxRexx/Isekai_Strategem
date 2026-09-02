@@ -32,7 +32,12 @@ void main() {
     expect(s.battle.isTeamATurn, isFalse);
     s.battle.startTurn(equippedActiveTriggers: s.equippedB);
     // Guarantee the AI can afford to act, independent of the opening roll.
+    // Both costs: Raw Trion, and item #15's Trion Types, which arrive on a
+    // roll and so cannot be counted on in a test about planning.
     s.battle.teamB.trionPool.gain(500);
+    for (final type in TrionType.values) {
+      s.battle.teamB.trionTypes.gain(type, 20);
+    }
 
     final healthBefore = {
       for (final f in s.teamA) f.id: f.currentHealth,

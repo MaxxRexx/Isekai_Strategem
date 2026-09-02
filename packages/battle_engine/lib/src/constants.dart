@@ -86,21 +86,32 @@ class TrionTierConfig {
 class TrionTypeConfig {
   /// How many of any kinds the Exchange takes for one of the kind you name.
   ///
-  /// Naruto-Arena's rate, and the reason there is no fifth kind you can hold:
-  /// a run of draws that misses what your squad is built out of is answered by
-  /// a decision you make rather than one the dice make for you. At one per
-  /// living member per turn, 5 is close to two turns of a full squad's income,
-  /// so it is a real price. **An unpriced first-pass value.**
+  /// Naruto-Arena's answer to a run of draws that misses what your squad is
+  /// built out of, and the reason there is no fifth kind you can hold: the
+  /// rescue is a decision you pay for rather than one the dice make for you.
+  /// **An unpriced first-pass value.**
   final int exchangeRate;
 
   /// How many Trion Types each living squad member earns per turn.
+  ///
+  /// One, which is Naruto-Arena's rate exactly: a full squad of three draws
+  /// three a turn. Two was measured and rejected, because at six a turn the
+  /// gate stopped biting entirely (one turn blocked across 800 battles).
   final int perLivingMember;
 
-  /// Added to the squad's draw each turn, on top of [perLivingMember].
-  final int perSquad;
+  /// What the squad draws on the opening turn of the battle instead, however
+  /// many of them are standing.
+  ///
+  /// Also Naruto-Arena's rule, and the same shape as the Raw Trion handicap
+  /// already applied to whoever moves first: going first is worth something,
+  /// so it costs something.
+  final int openingTurnAmount;
 
-  const TrionTypeConfig(
-      {this.exchangeRate = 3, this.perLivingMember = 1, this.perSquad = 1});
+  const TrionTypeConfig({
+    this.exchangeRate = 3,
+    this.perLivingMember = 1,
+    this.openingTurnAmount = 1,
+  });
 
   static const TrionTypeConfig defaults = TrionTypeConfig();
 }

@@ -57,7 +57,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 16,
         trionCost: 13,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
+        // Trion Types: two blades, one target.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.close,
@@ -72,7 +73,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 19,
         trionCost: 13,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
+        // Trion Types: one swing through two of them.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.close,
@@ -89,7 +91,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 35,
         trionCost: 27,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}, random: 2),
+        // Trion Types: fire heavy enough to stop them acting.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 2, TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.long,
@@ -107,7 +110,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 15,
         trionCost: 10,
-        trionTypeCost: const TrionTypeCost({TrionType.afflict: 2}),
+        // Trion Types: acid that corrodes what it touches.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 1,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.close,
@@ -123,7 +127,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 18,
         trionCost: 12,
-        trionTypeCost: const TrionTypeCost({TrionType.afflict: 2}),
+        // Trion Types: a single dose of poison.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.mid,
@@ -139,6 +144,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 20,
         trionCost: 14,
+        // Trion Types: a gaze that leaves the target terrified.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
@@ -155,7 +161,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 21,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
+        // Trion Types: turns the target's own will around.
+        trionTypeCost: const TrionTypeCost({TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.close,
@@ -171,6 +178,7 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 20,
         trionCost: 14,
+        // Trion Types: lifts the squad.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
@@ -192,6 +200,7 @@ class TriggerCatalog {
         // damage a character deals in a turn is 1.5 a turn, against an action
         // worth 12. A chant the whole squad hears, on a cooldown you can
         // actually keep up, prices at 2.05. Wave 4 prices it again for real.
+        // Trion Types: raises the squad's own energy.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
         cooldownTurns: 1,
         originTag: OriginTag.energy,
@@ -216,6 +225,7 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 26,
         trionCost: 22,
+        // Trion Types: the hardest single thrust in the game.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
@@ -235,7 +245,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 18,
         trionCost: 14,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.afflict: 1}),
+        // Trion Types: opens a wound that keeps bleeding.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.close,
@@ -261,7 +272,8 @@ class TriggerCatalog {
         category: TriggerCategory.sniper,
         equipCost: 48,
         trionCost: 42,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
+        // Trion Types: reads the whole field, then takes the shot.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 2, TrionType.mental: 1}, random: 1),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.long,
@@ -276,7 +288,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 21,
         trionCost: 20,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}, random: 2),
+        // Trion Types: four shots across three of them.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.close,
@@ -294,7 +307,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 22,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
+        // Trion Types: light loud enough to take the senses away.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.mid,
@@ -309,7 +323,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 22,
         trionCost: 14,
-        trionTypeCost: const TrionTypeCost({TrionType.energy: 2}),
+        // Trion Types: cold, thrown as a lance.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.mid,
@@ -330,6 +345,7 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 21,
         trionCost: 16,
+        // Trion Types: fire that goes on burning.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
@@ -351,7 +367,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 24,
         trionCost: 16,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.afflict: 2}),
+        // Trion Types: acid, thrown with the body across a whole line.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.afflict: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.mid,
@@ -368,6 +385,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 35,
         trionCost: 22,
+        // Trion Types: a nightmare pushed into three minds at once.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 1, TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
@@ -385,7 +403,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 19,
         trionCost: 14,
-        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1, TrionType.mental: 1}),
+        // Trion Types: drains the target and feeds on it.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.close,
@@ -402,7 +421,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 24,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 3}),
+        // Trion Types: breaks a mind's hold on its own abilities.
+        trionTypeCost: const TrionTypeCost({TrionType.mental: 2}),
         cooldownTurns: 3,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.mid,
@@ -429,6 +449,7 @@ class TriggerCatalog {
         // out-sustains what two defensive squads can deal. Under band and
         // concluding beats in band and endless, and wave 4 owns the real
         // number.
+        // Trion Types: stands in front of the squad.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
@@ -451,6 +472,7 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 22,
         trionCost: 16,
+        // Trion Types: energy that mends and wards.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 2}),
         cooldownTurns: 3,
         originTag: OriginTag.energy,
@@ -469,7 +491,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 16,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
+        // Trion Types: reads the swing, then parries it.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.close,
@@ -484,7 +507,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 15,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
+        // Trion Types: a toxin that dulls the senses.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.close,
@@ -500,7 +524,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 20,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
+        // Trion Types: pins the target into repeating itself.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.mid,
@@ -518,7 +543,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 20,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
+        // Trion Types: keeps count in bullets.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
         cooldownTurns: 3,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.mid,
@@ -535,6 +561,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 24,
         trionCost: 20,
+        // Trion Types: scrambles what the target meant to do.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.energy,
@@ -551,6 +578,7 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 15,
         trionCost: 14,
+        // Trion Types: takes the hit, gives it back.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
@@ -566,7 +594,8 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 16,
         trionCost: 16,
-        trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
+        // Trion Types: freezes the enemy's timing, which is a decision not a body.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.close,
@@ -594,7 +623,8 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 16,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
+        // Trion Types: sheer will, holding a body upright at nothing.
+        trionTypeCost: const TrionTypeCost({TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.close,
@@ -614,7 +644,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 24,
         trionCost: 14,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.afflict: 2}, random: 1),
+        // Trion Types: necrosis linking two enemies so pain bleeds between them.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.mid,
@@ -630,6 +661,7 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 14,
         trionCost: 8,
+        // Trion Types: pays its own Health as the price, and nothing else.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.afflict,
@@ -644,6 +676,7 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 41,
         trionCost: 12,
+        // Trion Types: holds its own energy back to detonate.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
         cooldownTurns: 4,
         originTag: OriginTag.energy,
@@ -659,7 +692,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 24,
         trionCost: 15,
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
+        // Trion Types: a duel sworn and then fought.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.mental: 1}),
         cooldownTurns: 4,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.mid,
@@ -673,7 +707,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 22,
         trionCost: 14,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2, TrionType.afflict: 1}),
+        // Trion Types: corrodes armour off the target.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.close,
@@ -691,7 +726,8 @@ class TriggerCatalog {
         category: TriggerCategory.sniper,
         equipCost: 35,
         trionCost: 22,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.mental: 1}, random: 2),
+        // Trion Types: reads the arc, then bends the shot around a body.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 2, TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.long,
@@ -707,7 +743,8 @@ class TriggerCatalog {
         category: TriggerCategory.sniper,
         equipCost: 30,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
+        // Trion Types: reads the target, then shoots the part it named.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.long,
@@ -723,6 +760,7 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 22,
         trionCost: 12,
+        // Trion Types: reads what the enemy is carrying.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.mental,
@@ -737,6 +775,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 22,
         trionCost: 14,
+        // Trion Types: leaves the target one thing they may do.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.mental,
@@ -751,6 +790,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 19,
         trionCost: 14,
+        // Trion Types: takes something out of their memory.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
@@ -765,6 +805,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 18,
         trionCost: 12,
+        // Trion Types: swaps two people's senses.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
@@ -780,7 +821,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 35,
         trionCost: 22,
-        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
+        // Trion Types: dread that grows in the mind with every wound taken.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1, TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.long,
@@ -795,6 +837,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 26,
         trionCost: 14,
+        // Trion Types: cuts one mind off from the rest.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.mental,
@@ -809,6 +852,7 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 24,
         trionCost: 0,
+        // Trion Types: a double that exists only in their heads.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.mental,
@@ -824,7 +868,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 24,
         trionCost: 16,
-        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
+        // Trion Types: a doubt that festers in the mind.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1, TrionType.mental: 1}),
         cooldownTurns: 4,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.mid,
@@ -838,6 +883,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 21,
         trionCost: 14,
+        // Trion Types: binds two fates together.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
@@ -852,7 +898,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 26,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
+        // Trion Types: unmakes what the target is.
+        trionTypeCost: const TrionTypeCost({TrionType.mental: 2}),
         cooldownTurns: 4,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.mid,
@@ -870,7 +917,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 35,
         trionCost: 27,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}, random: 1),
+        // Trion Types: fragments carried by a blast.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 2, TrionType.energy: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.long,
@@ -886,6 +934,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 18,
         trionCost: 18,
+        // Trion Types: nothing but corrosion, over three of them.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
@@ -903,7 +952,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 35,
         trionCost: 22,
-        trionTypeCost: const TrionTypeCost({TrionType.energy: 2}, random: 2),
+        // Trion Types: cold poured over three of them.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 3}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.long,
@@ -920,7 +970,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 35,
         trionCost: 22,
-        trionTypeCost: const TrionTypeCost({TrionType.energy: 2}, random: 1),
+        // Trion Types: thunder loud enough to overwhelm.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 2, TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.long,
@@ -939,7 +990,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 16,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2, TrionType.afflict: 1}),
+        // Trion Types: three rounds that leave the target bleeding.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1, TrionType.afflict: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.mid,
@@ -957,7 +1009,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 28,
         trionCost: 24,
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}, random: 1),
+        // Trion Types: five rounds, and the target left exposed.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 3}),
         cooldownTurns: 3,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.mid,
@@ -975,6 +1028,7 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 18,
         trionCost: 22,
+        // Trion Types: one shot split across two targets.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
@@ -992,7 +1046,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 26,
         trionCost: 20,
-        trionTypeCost: const TrionTypeCost({TrionType.energy: 2}, random: 2),
+        // Trion Types: lightning, three arcs of it.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 2}),
         cooldownTurns: 3,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.mid,
@@ -1009,6 +1064,7 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 12,
         trionCost: 14,
+        // Trion Types: three quick shots.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
         cooldownTurns: 1,
         originTag: OriginTag.physical,
@@ -1026,7 +1082,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 19,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.afflict: 2}, random: 2),
+        // Trion Types: poison three times over, across two targets.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.close,
@@ -1046,7 +1103,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 35,
         trionCost: 22,
-        trionTypeCost: const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
+        // Trion Types: a scream that silences three minds.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.long,
@@ -1063,7 +1121,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 18,
         trionCost: 18,
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 3}, random: 1),
+        // Trion Types: fogs three minds.
+        trionTypeCost: const TrionTypeCost({TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.long,
@@ -1080,7 +1139,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 35,
         trionCost: 27,
-        trionTypeCost: const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
+        // Trion Types: silences three minds at once.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.long,
@@ -1097,6 +1157,7 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 35,
         trionCost: 22,
+        // Trion Types: raw force pushed through three minds.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,

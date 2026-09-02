@@ -460,8 +460,9 @@ class Battle {
     // Item #15: typed Trion is earned alongside the pool, one token per living
     // member. It is not tiered and not affected by the first-turn handicap:
     // what the roll decides is the kind, not the amount.
-    final trionTypeGain =
-        turnEngine.resolveTrionTypeGain(team, statesOf(team));
+    final trionTypeGain = turnEngine.resolveTrionTypeGain(
+        team, statesOf(team),
+        isOpeningTurn: isFirstTurnOfBattle);
 
     final statusTicks = <String, StatusTickResult>{};
     final fatTriggered = <String, bool>{};

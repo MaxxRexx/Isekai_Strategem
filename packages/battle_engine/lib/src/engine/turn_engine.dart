@@ -449,13 +449,15 @@ class TurnEngine {
   /// Returns what was gained, in order, so a caller can log it.
   List<TrionType> resolveTrionTypeGain(
     Team team,
-    List<CharacterBattleState> teamStates,
-  ) {
-    final living = teamStates.where((s) => s.isAlive).length *
-            trionTypeConfig.perLivingMember +
-        trionTypeConfig.perSquad;
+    List<CharacterBattleState> teamStates, {
+    bool isOpeningTurn = false,
+  }) {
+    final draws = isOpeningTurn
+        ? trionTypeConfig.openingTurnAmount
+        : teamStates.where((s) => s.isAlive).length *
+            trionTypeConfig.perLivingMember;
     final gained = <TrionType>[
-      for (var i = 0; i < living; i++)
+      for (var i = 0; i < draws; i++)
         TrionType.values[
             combatEngine.diceRoller.random.nextInt(TrionType.values.length)],
     ];
