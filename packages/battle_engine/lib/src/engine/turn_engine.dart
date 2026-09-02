@@ -451,7 +451,9 @@ class TurnEngine {
     Team team,
     List<CharacterBattleState> teamStates,
   ) {
-    final living = teamStates.where((s) => s.isAlive).length;
+    final living = teamStates.where((s) => s.isAlive).length *
+            trionTypeConfig.perLivingMember +
+        trionTypeConfig.perSquad;
     final gained = <TrionType>[
       for (var i = 0; i < living; i++)
         TrionType.values[

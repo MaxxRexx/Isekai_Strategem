@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:battle_engine/battle_engine.dart';
 import 'package:test/test.dart';
 
+import 'test_helpers.dart';
+
 /// A [Random] that always returns the maximum value, so [DiceRoller.rollPercent]
 /// yields 100 and [FatEngine] never triggers FAT. Without this the test flakes:
 /// a randomly-triggered FAT clears the caster's cooldowns (the very thing under
@@ -56,6 +58,16 @@ void main() {
     ),
   );
 
+  /// The battle these tests want: nothing standing between the caster and the
+  /// ability except its cooldown, which is what they are about. Item #15 put
+  /// Trion Types in the way as well, and those arrive on a roll.
+  Battle stockedBattle() {
+    final battle = freshBattle();
+    stockEveryTrionType(battle.teamA);
+    stockEveryTrionType(battle.teamB);
+    return battle;
+  }
+
   // Advances a full round: the opponent's turn (no action) then team A's turn
   // (no action), so team A's cooldowns tick exactly once per round.
   void advanceFullRound(Battle b) {
@@ -66,7 +78,7 @@ void main() {
   }
 
   test('a 1-turn cooldown blocks the ability through the next own turn', () {
-    final battle = freshBattle();
+    final battle = stockedBattle();
     final vela = battle.states['vela_ashworth']!;
     final engine = battle.turnEngine;
 
@@ -96,7 +108,7 @@ void main() {
   });
 
   test('a 2-turn cooldown blocks two of the caster\'s own turns', () {
-    final battle = freshBattle();
+    final battle = stockedBattle();
     final vela = battle.states['vela_ashworth']!;
     final engine = battle.turnEngine;
 

@@ -93,7 +93,14 @@ class TrionTypeConfig {
   /// so it is a real price. **An unpriced first-pass value.**
   final int exchangeRate;
 
-  const TrionTypeConfig({this.exchangeRate = 3});
+  /// How many Trion Types each living squad member earns per turn.
+  final int perLivingMember;
+
+  /// Added to the squad's draw each turn, on top of [perLivingMember].
+  final int perSquad;
+
+  const TrionTypeConfig(
+      {this.exchangeRate = 3, this.perLivingMember = 1, this.perSquad = 1});
 
   static const TrionTypeConfig defaults = TrionTypeConfig();
 }
