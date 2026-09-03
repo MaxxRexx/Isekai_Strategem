@@ -57,9 +57,10 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 16,
         trionCost: 13,
-        // Trion Types: SPTV 3.38 for 13 Trion. Two blades, one target, nothing
-        // else.
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
+        // Trion Types: SPTV 3.38: 13 Trion for 44 to one target on a 2-turn
+        // cooldown. Two blades, and one of the best deals in the game, so it
+        // pays like one.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 3}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.close,
@@ -74,9 +75,9 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 19,
         trionCost: 13,
-        // Trion Types: SPTV 4.23, the best deal in the catalogue: 13 Trion for
-        // 43 across two bodies plus a broken guard. Pure steel, and priced
-        // where Raw Trion undercharges it.
+        // Trion Types: SPTV 4.23, the best deal in the catalogue: 13 Trion,
+        // cooldown 2, 22 slashing to each of two bodies and their guard
+        // shattered. Pays the top price, all of it steel.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 3}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
@@ -96,9 +97,9 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 35,
         trionCost: 27,
-        // Trion Types: SPTV 2.59. Weight of fire, but what it buys is
-        // Suppressed: they stop acting, which is a decision taken away from
-        // them.
+        // Trion Types: SPTV 2.59: 60 across two targets, and Suppressed drops
+        // their chance of landing anything. Weight of fire that takes a
+        // decision away from them.
         trionTypeCost:
             const TrionTypeCost({TrionType.physical: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
@@ -118,9 +119,10 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 15,
         trionCost: 10,
-        // Trion Types: SPTV 3.81, third highest, on a 10-Trion ability with a
-        // 1-turn cooldown. Acid on a weak point, every turn.
-        trionTypeCost: const TrionTypeCost({TrionType.afflict: 2}),
+        // Trion Types: SPTV 3.81, third-best deal in the catalogue: 10 Trion,
+        // 1-turn cooldown, 22 acid every turn and Corroded on top. Priced as
+        // the bargain it is, not as the filler it looks like.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 3}),
         cooldownTurns: 1,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.close,
@@ -136,7 +138,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 18,
         trionCost: 12,
-        // Trion Types: SPTV 1.69. One dose of poison.
+        // Trion Types: SPTV 1.69: one dose of poison for 12 Trion.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
@@ -153,8 +155,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 20,
         trionCost: 14,
-        // Trion Types: SPTV 0.99. Ten damage and a light Terror. Cheap in
-        // value, cheap in kinds.
+        // Trion Types: SPTV 0.99: ten damage and a light Terror.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
@@ -171,7 +172,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 21,
         trionCost: 18,
-        // Trion Types: SPTV 0.32, the lowest in the catalogue. Three turns of
+        // Trion Types: SPTV 0.32, the lowest in the catalogue: three turns of
         // Charmed and nothing else.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 2,
@@ -189,8 +190,8 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 20,
         trionCost: 14,
-        // Trion Types: SPTV 0.97. Inspired across the squad for 14 Trion, and
-        // nothing more.
+        // Trion Types: SPTV 0.97: Inspired across the squad for 14 Trion and
+        // nothing else.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
@@ -212,9 +213,9 @@ class TriggerCatalog {
         // damage a character deals in a turn is 1.5 a turn, against an action
         // worth 12. A chant the whole squad hears, on a cooldown you can
         // actually keep up, prices at 2.05. Wave 4 prices it again for real.
-        // Trion Types: SPTV 2.57 on an 8-Trion ability with a 1-turn cooldown,
-        // so the squad can be Empowered almost every turn. The cheapest thing
-        // in the game and one of the best.
+        // Trion Types: SPTV 2.57 on an 8-Trion ability with a 1-turn cooldown:
+        // the squad Empowered nearly every turn for the cheapest Raw Trion in
+        // the game.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 2}),
         cooldownTurns: 1,
         originTag: OriginTag.energy,
@@ -239,8 +240,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 26,
         trionCost: 22,
-        // Trion Types: SPTV 2.34. The hardest single thrust in the game, and
-        // it costs 22 Trion for it.
+        // Trion Types: SPTV 2.34: the hardest single thrust in the game at 52,
+        // and it costs 22 Trion for it.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
@@ -260,10 +261,10 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 18,
         trionCost: 14,
-        // Trion Types: SPTV 3.11. The blade is 17 damage; Bleeding at 30 SP is
-        // most of it, so the wound matters more than the swing.
+        // Trion Types: SPTV 3.11: the swing is 17; Bleeding at 30 SP is the
+        // ability, so it is a blade that opens a wound that keeps bleeding.
         trionTypeCost:
-            const TrionTypeCost({TrionType.physical: 1, TrionType.afflict: 1}),
+            const TrionTypeCost({TrionType.physical: 1, TrionType.afflict: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.close,
@@ -289,10 +290,10 @@ class TriggerCatalog {
         category: TriggerCategory.sniper,
         equipCost: 48,
         trionCost: 42,
-        // Trion Types: SPTV 1.33, low only because 42 Trion is the highest Raw
-        // cost in the game. A 56-damage shot is still a killing blow, so it
-        // pays twice rather than once.
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
+        // Trion Types: SPTV 1.33, because 42 Raw Trion is the highest price in
+        // the game and it pays it every shot. A 56-damage bullet, paid for in
+        // Raw Trion rather than here.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.long,
@@ -308,7 +309,7 @@ class TriggerCatalog {
         equipCost: 21,
         trionCost: 20,
         // Trion Types: SPTV 4.10, second only to Cleave: twelve hits across
-        // three of them for 20 Trion, and they end up Slowed.
+        // three of them for 20 Trion and they end up Slowed. A wall of shot.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 3}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
@@ -327,11 +328,10 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 22,
         trionCost: 18,
-        // Trion Types: SPTV 0.51, because it deals nothing at all. Light loud
-        // enough to Blind three of them: the effect is entirely on what they
-        // can perceive.
-        trionTypeCost:
-            const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
+        // Trion Types: SPTV 0.51, and Blinded is priced, so that is its real
+        // worth: three of them lose their aim and nothing else happens. Cheap
+        // in value, cheap in kinds.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.mid,
@@ -346,8 +346,7 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 22,
         trionCost: 14,
-        // Trion Types: SPTV 1.69. Cold, thrown as a lance, with a light Chill
-        // on it.
+        // Trion Types: SPTV 1.69: 22 cold and a light Chill, for 14 Trion.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
@@ -369,8 +368,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 21,
         trionCost: 16,
-        // Trion Types: SPTV 2.26. The fire is 15 damage; Scorched at 24 SP is
-        // most of the ability, and a burn that keeps burning is an affliction.
+        // Trion Types: SPTV 2.26: the fire is 15; Scorched at 24 SP is most of
+        // it, and a burn that keeps burning is an affliction.
         trionTypeCost:
             const TrionTypeCost({TrionType.energy: 1, TrionType.afflict: 1}),
         cooldownTurns: 2,
@@ -393,7 +392,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 24,
         trionCost: 16,
-        // Trion Types: SPTV 2.54. Acid across three of them, thrown by hand.
+        // Trion Types: SPTV 2.54: acid to each of three, thrown by hand, and
+        // Corroded after.
         trionTypeCost:
             const TrionTypeCost({TrionType.physical: 1, TrionType.afflict: 1}),
         cooldownTurns: 3,
@@ -412,10 +412,9 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 35,
         trionCost: 22,
-        // Trion Types: SPTV 1.62. A nightmare pushed into two minds, leaving
-        // them Terrified.
-        trionTypeCost:
-            const TrionTypeCost({TrionType.afflict: 1, TrionType.mental: 1}),
+        // Trion Types: SPTV 1.62: 14 to two minds and Terrified, at 22 Trion.
+        // Priced in Raw Trion already.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.long,
@@ -432,7 +431,7 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 19,
         trionCost: 14,
-        // Trion Types: SPTV 1.64. Drains the target for 22 and feeds the
+        // Trion Types: SPTV 1.64: drains the target for 22 and feeds the
         // caster 2.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
@@ -451,7 +450,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 24,
         trionCost: 18,
-        // Trion Types: SPTV 0.92. Ten damage and one turn of Silence, for 18
+        // Trion Types: SPTV 0.92: ten damage and one turn of Silence, for 18
         // Trion.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 3,
@@ -480,8 +479,8 @@ class TriggerCatalog {
         // out-sustains what two defensive squads can deal. Under band and
         // concluding beats in band and endless, and wave 4 owns the real
         // number.
-        // Trion Types: SPTV 1.61. Guarded and Braced across the squad for 12
-        // Trion. It stands in front of them, and that is all it does.
+        // Trion Types: SPTV 1.61: Guarded and Braced across the squad for 12
+        // Trion. It stands in front of them and that is all it does.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
@@ -504,8 +503,8 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 22,
         trionCost: 16,
-        // Trion Types: SPTV 1.01. Mends and wards one ally. Cheap in value as
-        // well as in kinds.
+        // Trion Types: SPTV 1.01: mends and wards one ally. Modest in every
+        // way.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.energy,
@@ -525,7 +524,8 @@ class TriggerCatalog {
         equipCost: 16,
         trionCost: 18,
         // Trion Types: SPTV cannot price a counter. Once per battle it reads a
-        // melee swing, dodges it, and answers with a free counter-hit.
+        // melee swing, dodges it, and answers with a free 44-damage counter-
+        // hit.
         trionTypeCost:
             const TrionTypeCost({TrionType.physical: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
@@ -542,11 +542,10 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 15,
         trionCost: 18,
-        // Trion Types: SPTV cannot price a counter. A multi-hit burst against
-        // the holder lands only its first hit: a toxin that dulls what they
-        // can feel.
-        trionTypeCost:
-            const TrionTypeCost({TrionType.afflict: 1, TrionType.mental: 1}),
+        // Trion Types: SPTV cannot price a counter, and this one only matters
+        // against a burst: a multi-hit attack on the holder lands its first
+        // hit only. Narrow, so it pays one.
+        trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
         rangeTag: RangeTag.close,
@@ -562,9 +561,10 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 20,
         trionCost: 18,
-        // Trion Types: SPTV 0.44, one of the lowest. The 10 damage is nothing;
-        // Forced Repetition is the ability, and locking someone into repeating
-        // themselves is mental.
+        // Trion Types: SPTV 0.44 misses the ability: Forced Repetition is
+        // unpriced, and it both locks them to their last ability and pins them
+        // to their square for two turns. A snare on the body that takes their
+        // choices away.
         trionTypeCost:
             const TrionTypeCost({TrionType.physical: 1, TrionType.mental: 1}),
         cooldownTurns: 3,
@@ -584,10 +584,10 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 20,
         trionCost: 18,
-        // Trion Types: SPTV 0.44 cannot see the point of it: the counter marks
-        // one enemy and cancels their next area attack. A read of what they
-        // will do (Mental), warded away when it comes (Energy), delivered by a
-        // bullet (Physical).
+        // Trion Types: SPTV 0.44 cannot see the counter: it marks one enemy,
+        // once per enemy per battle, and cancels the next area attack they
+        // make. A read of what they will do (Mental), warded away when it
+        // comes (Energy), delivered by a bullet.
         trionTypeCost: const TrionTypeCost(
             {TrionType.physical: 1, TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 3,
@@ -606,8 +606,9 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 24,
         trionCost: 20,
-        // Trion Types: SPTV 0.40, near the bottom. Ten damage and Misfire: it
-        // scrambles what they meant to do.
+        // Trion Types: SPTV 0.40 misses Misfire, which is unpriced: a chance
+        // their attacks go wrong for two turns. It scrambles what they meant
+        // to do.
         trionTypeCost:
             const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 3,
@@ -625,9 +626,9 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 15,
         trionCost: 14,
-        // Trion Types: SPTV cannot price a counter. It banks damage taken
-        // while Guarded and returns it as bonus damage: taken with the body,
-        // stored, and given back.
+        // Trion Types: SPTV cannot price a counter. While Guarded it banks the
+        // damage taken, then returns it as bonus damage on the next attack:
+        // taken with the body, stored, given back.
         trionTypeCost:
             const TrionTypeCost({TrionType.physical: 1, TrionType.energy: 1}),
         cooldownTurns: 2,
@@ -678,8 +679,8 @@ class TriggerCatalog {
         trionCost: 18,
         // Trion Types: SPTV cannot price a counter. The holder survives a
         // lethal blow at 1 health, acts once more, and is then gone for good
-        // with no Salvage. Nothing but will.
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 2}),
+        // with no Salvage. One more action, bought with the Salvage.
+        trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.close,
@@ -699,8 +700,9 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 24,
         trionCost: 14,
-        // Trion Types: SPTV 2.69. Forty-seven necrotic, dealt to the caster in
-        // full as well, and it links two fates so the pain is shared.
+        // Trion Types: SPTV 2.69 counts the 47 necrotic and not the 47 the
+        // caster takes too. It links two fates so the pain is shared, and the
+        // self-damage is why it pays two rather than three.
         trionTypeCost:
             const TrionTypeCost({TrionType.afflict: 1, TrionType.mental: 1}),
         cooldownTurns: 3,
@@ -718,9 +720,9 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 14,
         trionCost: 8,
-        // Trion Types: SPTV cannot price a unique, but the ability is plain:
-        // spend your own health, deal exactly that as unavoidable true damage.
-        // Paid in blood, for 8 Trion.
+        // Trion Types: SPTV cannot price a unique: spend your own health, deal
+        // exactly that as unavoidable true damage. The health is the price,
+        // and it is paid in blood.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.afflict,
@@ -735,10 +737,12 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 41,
         trionCost: 12,
-        // Trion Types: SPTV cannot price a unique. Below 25% health the caster
-        // is removed from the battle and every enemy takes massive damage. All
-        // the energy they have left, released at once.
-        trionTypeCost: const TrionTypeCost({TrionType.energy: 2}),
+        // Trion Types: SPTV cannot price a unique, and this is the game's
+        // nuke: below 25% health the caster leaves the battle and every enemy
+        // takes massive damage. All the energy they have left, released at
+        // once, and the price of the Trion Types is the only thing standing
+        // between a dying character and pressing it.
+        trionTypeCost: const TrionTypeCost({TrionType.energy: 3}),
         cooldownTurns: 4,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.long,
@@ -771,9 +775,10 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 22,
         trionCost: 14,
-        // Trion Types: SPTV 2.61 before counting the unique, which permanently
-        // destroys one of their Triggers and one of yours. A blade that
-        // corrodes the kit off them.
+        // Trion Types: SPTV 2.61 on the 37 slashing alone; the unique
+        // permanently destroys one of their Triggers and one of yours, which
+        // is symmetric, so the damage is the deal. A blade that corrodes the
+        // kit off them.
         trionTypeCost:
             const TrionTypeCost({TrionType.physical: 1, TrionType.afflict: 1}),
         cooldownTurns: 2,
@@ -793,9 +798,9 @@ class TriggerCatalog {
         category: TriggerCategory.sniper,
         equipCost: 35,
         trionCost: 22,
-        // Trion Types: SPTV 1.66 before the unique, which ignores the first
-        // ward, dodge or counter the target has up. It reads the arc and puts
-        // the shot past their guard.
+        // Trion Types: SPTV 1.66 on the 37 alone; the unique ignores the first
+        // ward, dodge or counter the target has up, so the shot always lands.
+        // That reliability is the second slot.
         trionTypeCost:
             const TrionTypeCost({TrionType.physical: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
@@ -832,8 +837,8 @@ class TriggerCatalog {
         category: TriggerCategory.optional,
         equipCost: 22,
         trionCost: 12,
-        // Trion Types: SPTV cannot price a unique, but this one changes
-        // nothing on the board: it reveals what the enemy is carrying.
+        // Trion Types: SPTV cannot price a unique, and this changes nothing on
+        // the board: it reveals what the enemy is carrying.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.mental,
@@ -866,7 +871,8 @@ class TriggerCatalog {
         equipCost: 19,
         trionCost: 14,
         // Trion Types: SPTV cannot price a unique. It copies the target's last
-        // ability and lets the caster cast it next turn.
+        // ability and lets the caster cast it next turn, so it is worth
+        // whatever they just used.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
@@ -900,7 +906,7 @@ class TriggerCatalog {
         trionCost: 22,
         // Trion Types: SPTV cannot price a unique. Its damage scales with
         // everything that enemy has dealt this battle: dread that feeds on
-        // what they have already done.
+        // what they have done.
         trionTypeCost:
             const TrionTypeCost({TrionType.afflict: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
@@ -917,9 +923,10 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 26,
         trionCost: 14,
-        // Trion Types: SPTV cannot price a unique. For two turns that enemy
-        // can neither be healed or buffed by their allies nor help them.
-        trionTypeCost: const TrionTypeCost({TrionType.mental: 2}),
+        // Trion Types: SPTV cannot price a unique, and this one only matters
+        // against a squad that heals or buffs: for two turns that enemy can
+        // neither be helped nor help. Narrow, so it pays one.
+        trionTypeCost: const TrionTypeCost({TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.mental,
         rangeTag: RangeTag.long,
@@ -934,8 +941,8 @@ class TriggerCatalog {
         equipCost: 24,
         trionCost: 0,
         // Trion Types: SPTV is infinite because it costs no Raw Trion at all,
-        // so every part of its price has to be here. It makes an ally
-        // untargetable for a turn, and gains a charge each time an ally falls.
+        // so its whole price is here. One character untargetable for the
+        // opponent's next turn, and a charge back each time an ally falls.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 3}),
         cooldownTurns: 3,
         originTag: OriginTag.mental,
@@ -985,9 +992,10 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 26,
         trionCost: 18,
-        // Trion Types: SPTV cannot price a unique. It inverts every buff the
+        // Trion Types: SPTV cannot price a unique. It turns every buff the
         // target holds into its debuff equivalent: against a set-up enemy it
-        // undoes a whole turn of their work.
+        // undoes a whole turn of their work in one action, and that is worth
+        // three.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 3}),
         cooldownTurns: 4,
         originTag: OriginTag.mental,
@@ -1006,8 +1014,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 35,
         trionCost: 27,
-        // Trion Types: SPTV 2.17. Fragments (Physical) carried by a blast
-        // (Energy), across three of them.
+        // Trion Types: SPTV 2.17: fragments carried by a blast, 20 to each of
+        // three, at 27 Trion. A fair deal, not a bargain.
         trionTypeCost:
             const TrionTypeCost({TrionType.physical: 1, TrionType.energy: 1}),
         cooldownTurns: 2,
@@ -1025,8 +1033,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 18,
         trionCost: 18,
-        // Trion Types: SPTV 2.45. Nothing but corrosion, over three of them,
-        // and Poisoned after.
+        // Trion Types: SPTV 2.45: nine acid to each of three, and Poisoned for
+        // three turns at 19 SP, from Long range. Two of its own kind.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
@@ -1044,8 +1052,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 35,
         trionCost: 22,
-        // Trion Types: SPTV 2.67. Cold poured over three of them, and they end
-        // up Chilled.
+        // Trion Types: SPTV 2.67: 18 cold to each of three and Chilled. Cold
+        // poured over the line.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
@@ -1063,8 +1071,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 35,
         trionCost: 22,
-        // Trion Types: SPTV 2.29. Thunder loud enough to leave three of them
-        // Overwhelmed.
+        // Trion Types: SPTV 2.29: thunder to three of them, loud enough to
+        // leave them Overwhelmed.
         trionTypeCost:
             const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
@@ -1085,9 +1093,9 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 16,
         trionCost: 18,
-        // Trion Types: SPTV 3.40. Three rounds, and Bleeding is the heaviest
-        // rider in the game at 30 SP, so the wound is doing as much work as
-        // the bullets.
+        // Trion Types: SPTV 3.40: three rounds for 50, and Bleeding at 30 SP
+        // is the heaviest wound in the game, so the Afflict is doing as much
+        // work as the bullets.
         trionTypeCost:
             const TrionTypeCost({TrionType.physical: 2, TrionType.afflict: 1}),
         cooldownTurns: 3,
@@ -1107,9 +1115,10 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 28,
         trionCost: 24,
-        // Trion Types: SPTV 1.76. Five rounds into one target, leaving them
-        // Exposed. Its 24 Trion is already most of the price.
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
+        // Trion Types: SPTV 1.76: five rounds for 50 and Exposed, but at 24
+        // Trion and a 3-turn cooldown it is already paying its way in Raw
+        // Trion.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.mid,
@@ -1127,7 +1136,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 18,
         trionCost: 22,
-        // Trion Types: SPTV 2.55. One shot split across two targets.
+        // Trion Types: SPTV 2.55: one shot, split across two, 56 in all for 22
+        // Trion.
         trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.physical,
@@ -1145,7 +1155,8 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 26,
         trionCost: 20,
-        // Trion Types: SPTV 2.40. Three arcs of lightning across two targets.
+        // Trion Types: SPTV 2.40: three arcs each across two targets, 60 in
+        // all.
         trionTypeCost: const TrionTypeCost({TrionType.energy: 2}),
         cooldownTurns: 3,
         originTag: OriginTag.energy,
@@ -1163,9 +1174,9 @@ class TriggerCatalog {
         category: TriggerCategory.shooter,
         equipCost: 12,
         trionCost: 14,
-        // Trion Types: SPTV 3.21 and a 1-turn cooldown, so it fires every
-        // turn. Three quick shots.
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
+        // Trion Types: SPTV 3.21 on a 1-turn cooldown, so it is 30 damage
+        // every single turn for 14 Trion. Three quick shots.
+        trionTypeCost: const TrionTypeCost({TrionType.physical: 3}),
         cooldownTurns: 1,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.close,
@@ -1182,9 +1193,8 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 19,
         trionCost: 18,
-        // Trion Types: SPTV 3.64. Six doses across two targets for 18 Trion,
-        // and they are Poisoned afterwards. One of the most efficient things
-        // in the game.
+        // Trion Types: SPTV 3.64: six doses across two targets for 54, and
+        // Poisoned after, at 18 Trion.
         trionTypeCost: const TrionTypeCost({TrionType.afflict: 3}),
         cooldownTurns: 2,
         originTag: OriginTag.afflict,
@@ -1205,10 +1215,11 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 35,
         trionCost: 22,
-        // Trion Types: SPTV 2.82. Silenced is a 36 SP rider, the heaviest
-        // control in the game, and this lands it on three minds for 22 Trion.
+        // Trion Types: SPTV 2.82: ten psychic to three of them and Silenced,
+        // which is the heaviest control in the game at 36 SP across three
+        // minds.
         trionTypeCost:
-            const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 2}),
+            const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
         originTag: OriginTag.energy,
         rangeTag: RangeTag.long,
@@ -1225,7 +1236,7 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 18,
         trionCost: 18,
-        // Trion Types: SPTV 2.30. Three minds Blinded at once.
+        // Trion Types: SPTV 2.30: three minds Blinded at once.
         trionTypeCost: const TrionTypeCost({TrionType.mental: 2}),
         cooldownTurns: 2,
         originTag: OriginTag.mental,
@@ -1243,9 +1254,9 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 35,
         trionCost: 27,
-        // Trion Types: The same Silence on three minds as Psychic Scream but
-        // for 27 Trion, so SPTV puts it at 2.30 rather than 2.82. It pays one
-        // less.
+        // Trion Types: The same Silence across three minds as Psychic Scream,
+        // at 27 Trion instead of 22, so SPTV 2.30 rather than 2.82. Same
+        // kinds, and the extra Raw Trion is its price.
         trionTypeCost:
             const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
@@ -1264,8 +1275,8 @@ class TriggerCatalog {
         category: TriggerCategory.attacker,
         equipCost: 35,
         trionCost: 22,
-        // Trion Types: SPTV 2.63. Raw force pushed through three minds, and
-        // Overwhelmed zeroes a stat.
+        // Trion Types: SPTV 2.63: raw force through three minds, and
+        // Overwhelmed takes their criticals and their aim.
         trionTypeCost:
             const TrionTypeCost({TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 2,
