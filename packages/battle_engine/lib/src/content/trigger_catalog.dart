@@ -543,8 +543,12 @@ class TriggerCatalog {
         category: TriggerCategory.trapper,
         equipCost: 20,
         trionCost: 18,
-        // Trion Types: keeps count in bullets.
-        trionTypeCost: const TrionTypeCost({TrionType.physical: 2}),
+        // Trion Types: the shot is the least of it. This marks one enemy and
+        // cancels the next area attack they make, so it is a read of what
+        // they are about to do (Mental) that wards the attack away when it
+        // comes (Energy), delivered by a bullet (Physical).
+        trionTypeCost: const TrionTypeCost(
+            {TrionType.physical: 1, TrionType.energy: 1, TrionType.mental: 1}),
         cooldownTurns: 3,
         originTag: OriginTag.physical,
         rangeTag: RangeTag.mid,
